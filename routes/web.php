@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardTickController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\VoiceflowController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -33,4 +34,11 @@ Route::middleware([
     Route::put('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
     Route::patch('/leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.status');
     Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
+
+    // Phase 5 Voiceflow agent (server-proxied Dialog Manager API).
+    Route::get('/agent', fn () => Inertia::render('Agent/Index', [
+        'configured' => ! empty(config('services.voiceflow.api_key')),
+    ]))->name('agent.index');
+    Route::post('/agent/launch', [VoiceflowController::class, 'launch'])->name('agent.launch');
+    Route::post('/agent/interact', [VoiceflowController::class, 'interact'])->name('agent.interact');
 });

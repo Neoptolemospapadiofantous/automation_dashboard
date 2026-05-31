@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    'voiceflow' => [
+        // Dialog Manager API key (prefix VF.DM.*). Kept server-side only.
+        'api_key' => env('VOICEFLOW_API_KEY'),
+        'version_id' => env('VOICEFLOW_VERSION_ID', 'production'),
+        'project_id' => env('VOICEFLOW_PROJECT_ID'),
+        'runtime_url' => env('VOICEFLOW_RUNTIME_URL', 'https://general-runtime.voiceflow.com'),
+        'api_url' => env('VOICEFLOW_API_URL', 'https://api.voiceflow.com'),
+        // Lead variables to read out of the agent's session after each turn.
+        'lead_variables' => ['name', 'email', 'phone', 'company'],
+        // Webhook shared secret for the Voiceflow Custom Action capture endpoint.
+        'webhook_secret' => env('VOICEFLOW_WEBHOOK_SECRET'),
+    ],
+
 ];

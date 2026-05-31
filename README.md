@@ -93,24 +93,31 @@ Pusher/Reverb (WebSocket) + MySQL + (Redis for queue/cache in prod)
 Configured via `.env` (`VOICEFLOW_API_KEY` — a `VF.DM.*` key from
 Voiceflow → Settings → API keys, kept server-side only):
 
-- **Runtime / Dialog Manager** — `POST {VOICEFLOW_RUNTIME_URL}/state/user/{userID}/interact`
-  launches and advances conversations and injects/reads variables (the lead
-  capture mechanism).
-- **Transcripts API** — `{VOICEFLOW_API_URL}/v2/transcripts/{projectID}` for
-  full conversation records / audit.
-- **Knowledge Base API** — feed qualification docs to the agent.
-- **Custom Actions** — let the agent POST a qualified lead to a Laravel webhook
-  the instant it's captured.
+- **Runtime / Dialog Manager** *(implemented)* — `App\Services\VoiceflowService`
+  proxies `POST {VOICEFLOW_RUNTIME_URL}/state/user/{userID}/interact` to launch
+  and advance conversations and read session variables. Exposed to the UI via
+  `/agent/launch` and `/agent/interact`; captured fields upsert a `Lead`. The
+  chat panel lives at `/agent` (`Agent/Index.vue`).
+- **Custom Actions webhook** *(implemented)* — `POST /api/voiceflow/lead-captured`
+  lets the agent push a qualified lead the instant it's captured, secured by the
+  `X-Webhook-Secret` header (`VOICEFLOW_WEBHOOK_SECRET`).
+- **Transcripts API** *(planned, Phase 7)* — `{VOICEFLOW_API_URL}/v2/transcripts/{projectID}`
+  for full conversation records / audit.
+- **Knowledge Base API** *(optional)* — feed qualification docs to the agent.
+
+See `docs/phase-5-voiceflow.md` for the full breakdown.
 
 ## Build roadmap
 
 - [x] **Phase 1** — Scaffold Laravel 12 + Jetstream (Inertia/Vue, teams), MySQL-ready.
 - [x] **Phase 2** — Real-time backbone (Pusher + Echo + queue) with a live-tick demo.
 - [x] **Phase 3** — Lead domain: model/migration, kanban board, drag-and-drop + live status changes.
-- [ ] **Phase 4** — Voiceflow proxy: `VoiceflowService`, chat panel, variable capture -> leads.
-- [ ] **Phase 5** — Delegation engine: assignment rules, presence, rep-scoped views.
-- [ ] **Phase 6** — Capture webhook + Transcripts backfill.
-- [ ] **Phase 7** — Analytics widgets, notifications, tests, deploy docs.
+- [x] **Phase 5** — Voiceflow agent: `VoiceflowService`, server-proxied chat panel, variable capture -> leads, and the Custom Action capture webhook. (docs/phase-5-voiceflow.md)
+- [ ] **Phase 6** — Delegation engine: assignment rules, presence, rep-scoped views.
+- [ ] **Phase 7** — Transcripts API backfill, analytics widgets, notifications.
+
+> A standalone deploy command (push + Laravel Forge) lives in `bin/deploy.sh`;
+> see docs/phase-4-deploy.md.
 
 ## Deployment (Laravel Forge)
 
