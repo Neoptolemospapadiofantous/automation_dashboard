@@ -12,6 +12,7 @@
 /.vscode
 /database/*.sqlite
 /database/*.sqlite-journal
+/.forge-deploy
 /.zed
 /auth.json
 /node_modules

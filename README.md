@@ -104,24 +104,51 @@ Voiceflow → Settings → API keys, kept server-side only):
 
 - [x] **Phase 1** — Scaffold Laravel 12 + Jetstream (Inertia/Vue, teams), MySQL-ready.
 - [x] **Phase 2** — Real-time backbone (Pusher + Echo + queue) with a live-tick demo.
-- [ ] **Phase 3** — Lead domain: models/migrations, list + kanban, live status changes.
+- [x] **Phase 3** — Lead domain: model/migration, kanban board, drag-and-drop + live status changes.
 - [ ] **Phase 4** — Voiceflow proxy: `VoiceflowService`, chat panel, variable capture -> leads.
 - [ ] **Phase 5** — Delegation engine: assignment rules, presence, rep-scoped views.
 - [ ] **Phase 6** — Capture webhook + Transcripts backfill.
 - [ ] **Phase 7** — Analytics widgets, notifications, tests, deploy docs.
 
-## Deployment
+## Deployment (Laravel Forge)
 
-The app is host-agnostic. Recommended targets:
+This project deploys to **Laravel Forge**. One command pushes your committed
+work and triggers a Forge deployment:
 
-- **Laravel Cloud** — first-party, fully managed (autoscaling, managed MySQL,
-  queues), zero ops.
-- **Laravel Forge + VPS** (e.g. Hetzner EU / DigitalOcean) — full data
-  ownership, low cost; Forge manages deploys, TLS, and queue workers.
-- **Railway / Render / Fly.io** — quick Dockerfile-based PaaS deploys.
+```bash
+bin/deploy.sh          # push current branch + trigger Forge deploy
+# or
+composer deploy
+```
 
-Whichever you pick, run a persistent `queue:work` process (broadcasts depend on
-it) and a scheduler.
+Other flags:
+
+```bash
+bin/deploy.sh --no-deploy        # push only, don't deploy
+bin/deploy.sh --branch main      # push a specific branch
+bin/deploy.sh --status           # poll Forge API for the deploy result
+```
+
+### One-time setup
+
+1. **Server config** — paste `deploy/forge-deploy.sh` into your Forge site's
+   **Deploy Script** box (Site → Apps). Set the site's Git branch to the branch
+   you deploy. Add a queue worker daemon (broadcasts depend on it) under
+   Site → Queue or Server → Daemons.
+2. **Deploy hook** — copy `.forge-deploy.example` to `.forge-deploy`
+   (gitignored) and paste your site's **Deploy Hook** URL (Site → Apps → "Deploy
+   Hook"). Alternatively export `FORGE_DEPLOY_HOOK`. The secret never enters git.
+3. *(Optional)* for `--status`, export `FORGE_API_TOKEN`, `FORGE_SERVER_ID` and
+   `FORGE_SITE_ID`.
+
+`bin/deploy.sh` pushes existing commits (it never commits for you), retries the
+push with backoff on transient network errors, warns if your tree is dirty, then
+pings the deploy hook so Forge runs the server-side deploy script (pull →
+composer → npm build → migrate → cache → `queue:restart`).
+
+> **Other hosts:** the app is host-agnostic — Laravel Cloud, Railway, Render and
+> Fly.io all work too. Whichever you pick, run a persistent `queue:work` process
+> and a scheduler.
 
 ## Testing
 

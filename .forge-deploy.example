@@ -1,0 +1,6 @@
+# Copy this file to ".forge-deploy" (gitignored) and paste your site's
+# Forge Deploy Hook URL on a single line. Find it in Forge:
+#   Site -> Apps -> "Deploy Hook".
+#
+# Example (do NOT commit the real one):
+# https://forge.laravel.com/servers/123456/sites/654321/deploy/http?token=YOUR_TOKEN
