@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Lead;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -13,11 +14,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->withPersonalTeam()->create();
-
-        User::factory()->withPersonalTeam()->create([
+        $user = User::factory()->withPersonalTeam()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        // A spread of demo leads across the pipeline so the board isn't empty.
+        Lead::factory()
+            ->count(18)
+            ->create(['team_id' => $user->currentTeam->id]);
     }
 }
