@@ -127,6 +127,38 @@ class VoiceflowTest extends TestCase
             ->assertJsonStructure(['error', 'upstream_status']);
     }
 
+    public function test_health_detects_when_only_development_works(): void
+    {
+        // production 500s, development succeeds — health should recommend the switch.
+        Http::fake([
+            'general-runtime.voiceflow.com/state/user/*/interact' => function ($request) {
+                return $request->header('versionID')[0] === 'development'
+                    ? Http::response([['type' => 'text', 'payload' => ['message' => 'hi']]], 200)
+                    : Http::response(['message' => 'Internal server error'], 500);
+            },
+        ]);
+
+        $service = new VoiceflowService();
+        $health = $service->health();
+
+        $this->assertTrue($health['ok']);
+        $this->assertSame('development', $health['working_version_id']);
+        $this->assertStringContainsString('development', $health['reason']);
+    }
+
+    public function test_health_reports_500_on_all_versions(): void
+    {
+        Http::fake([
+            'general-runtime.voiceflow.com/state/user/*/interact' => Http::response(['message' => 'Internal server error'], 500),
+        ]);
+
+        $service = new VoiceflowService();
+        $health = $service->health();
+
+        $this->assertFalse($health['ok']);
+        $this->assertStringContainsString('agent itself is erroring', $health['reason']);
+    }
+
     public function test_endpoints_return_503_when_unconfigured(): void
     {
         config()->set('services.voiceflow.api_key', null);

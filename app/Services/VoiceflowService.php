@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -58,6 +59,8 @@ class VoiceflowService
 
     /**
      * Diagnose the integration: configured? reachable? key valid? version found?
+     * Probes both the configured version and the common alternatives so a
+     * publish/version mismatch is obvious.
      *
      * @return array<string, mixed>
      */
@@ -68,40 +71,93 @@ class VoiceflowService
         }
 
         $keyPrefix = substr((string) $this->apiKey, 0, 6);
-        $looksLikeDmKey = str_starts_with((string) $this->apiKey, 'VF.DM.');
 
+        // Probe the configured version plus development/production so a
+        // "works on draft but not published" situation is immediately clear.
+        $candidates = array_values(array_unique([$this->versionId, 'development', 'production']));
+        $probes = [];
+        $anyOk = false;
+        $okVersion = null;
+
+        foreach ($candidates as $version) {
+            $probe = $this->probeVersion($version);
+            $probes[$version] = $probe;
+            if ($probe['ok']) {
+                $anyOk = true;
+                $okVersion ??= $version;
+            }
+        }
+
+        return [
+            'ok' => $anyOk,
+            'configured' => true,
+            'key_prefix' => $keyPrefix,
+            'looks_like_dm_key' => str_starts_with((string) $this->apiKey, 'VF.DM.'),
+            'configured_version_id' => $this->versionId,
+            'working_version_id' => $okVersion,
+            'probes' => $probes,
+            'reason' => $this->summarize($anyOk, $okVersion, $probes),
+        ];
+    }
+
+    /**
+     * Probe a single version id with a launch and report the outcome.
+     *
+     * @return array{ok: bool, status: int|null, body: string|null}
+     */
+    protected function probeVersion(string $versionId): array
+    {
         try {
-            $response = $this->client()
+            $response = Http::baseUrl($this->runtimeUrl)
+                ->withHeaders([
+                    'Authorization' => $this->apiKey,
+                    'versionID' => $versionId,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                ])
+                ->timeout(15)
                 ->post('/state/user/healthcheck-'.uniqid().'/interact', [
                     'action' => ['type' => 'launch'],
                 ]);
 
-            $status = $response->status();
-
             return [
                 'ok' => $response->successful(),
-                'configured' => true,
-                'key_prefix' => $keyPrefix,
-                'looks_like_dm_key' => $looksLikeDmKey,
-                'version_id' => $this->versionId,
-                'upstream_status' => $status,
-                'reason' => match (true) {
-                    $response->successful() => 'Voiceflow responded OK.',
-                    in_array($status, [401, 403], true) => 'Key rejected — check it is a VF.DM.* Dialog Manager key.',
-                    $status === 404 => 'Version not found — publish the agent or fix VOICEFLOW_VERSION_ID.',
-                    default => 'Voiceflow returned HTTP '.$status.'.',
-                },
+                'status' => $response->status(),
+                'body' => $response->successful() ? null : Str::limit((string) $response->body(), 200),
             ];
         } catch (\Throwable $e) {
-            return [
-                'ok' => false,
-                'configured' => true,
-                'key_prefix' => $keyPrefix,
-                'looks_like_dm_key' => $looksLikeDmKey,
-                'version_id' => $this->versionId,
-                'reason' => 'Could not reach Voiceflow: '.$e->getMessage(),
-            ];
+            return ['ok' => false, 'status' => null, 'body' => Str::limit($e->getMessage(), 200)];
         }
+    }
+
+    /**
+     * @param  array<string, array{ok: bool, status: int|null, body: string|null}>  $probes
+     */
+    protected function summarize(bool $anyOk, ?string $okVersion, array $probes): string
+    {
+        if ($anyOk) {
+            if ($okVersion !== $this->versionId) {
+                return "Working on '{$okVersion}' but not '{$this->versionId}'. Set VOICEFLOW_VERSION_ID={$okVersion}, or publish the agent to production.";
+            }
+
+            return 'Voiceflow responded OK.';
+        }
+
+        $statuses = array_map(fn ($p) => $p['status'], $probes);
+
+        if (in_array(401, $statuses, true) || in_array(403, $statuses, true)) {
+            return 'Key rejected — check it is a VF.DM.* Dialog Manager key for THIS project.';
+        }
+
+        if (in_array(404, $statuses, true)) {
+            return 'Version not found — publish/run the agent, or fix VOICEFLOW_VERSION_ID.';
+        }
+
+        if (in_array(500, $statuses, true)) {
+            return 'Voiceflow returns 500 on launch for every version. The agent itself is erroring — open it in Voiceflow and click Run/Test. A brand-new Agentic agent must be built and published before the API can run it.';
+        }
+
+        return 'Could not get a successful response from Voiceflow on any version.';
     }
 
     /**
