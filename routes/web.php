@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardTickController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -21,4 +22,7 @@ Route::middleware([
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
+
+    // Phase 2 live-tick demo: fires a broadcast every connected browser receives.
+    Route::post('/dashboard/tick', DashboardTickController::class)->name('dashboard.tick');
 });
