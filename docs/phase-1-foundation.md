@@ -29,11 +29,11 @@ Scaffold the application and all the plumbing later phases build on.
 ## Verify
 
 ```bash
-composer install && npm install
+composer install && pnpm install
 cp .env.example .env && php artisan key:generate
 touch database/database.sqlite && php artisan migrate
 php artisan test        # Jetstream suite passes
-npm run build           # assets compile
+pnpm run build           # assets compile
 php artisan serve       # / , /login , /up respond; /dashboard redirects to login
 ```
 

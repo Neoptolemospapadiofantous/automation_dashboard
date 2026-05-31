@@ -32,7 +32,7 @@ connected browser receives instantly — no polling, no reload.
 
 ```bash
 php artisan test --filter=DashboardTickTest
-npm run build
+pnpm run build
 ```
 
 To see cross-browser live ticks: set `PUSHER_*` + `BROADCAST_CONNECTION=pusher`

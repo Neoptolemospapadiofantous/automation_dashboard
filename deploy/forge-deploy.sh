@@ -16,9 +16,10 @@ git pull origin $FORGE_SITE_BRANCH
 # PHP dependencies (production, optimized autoloader).
 $FORGE_COMPOSER install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
-# Frontend assets.
-npm ci
-npm run build
+# Frontend assets (pnpm). Forge's "Frontend" install step already runs
+# `pnpm install --frozen-lockfile`; this builds the compiled assets.
+pnpm install --frozen-lockfile
+pnpm run build
 
 # Laravel: run migrations and refresh caches.
 $FORGE_PHP artisan migrate --force

@@ -12,7 +12,7 @@ deployment.
   - Flags: `--no-deploy` (push only), `--branch <name>`, `--status` (poll the
     Forge API until the deploy finishes/fails).
 - **`deploy/forge-deploy.sh`** — the server-side deploy script template to paste
-  into the Forge site (pull → composer → npm build → migrate → cache →
+  into the Forge site (pull → composer → pnpm build → migrate → cache →
   `queue:restart` → FPM reload).
 - **`.forge-deploy.example`** — template for the secret hook URL. The real
   `.forge-deploy` is **gitignored**, so the hook never enters git. The script

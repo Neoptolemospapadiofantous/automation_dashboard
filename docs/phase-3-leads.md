@@ -39,7 +39,7 @@ Phase 2 pipeline.
 php artisan migrate
 php artisan test --filter=LeadTest
 php artisan migrate:fresh --seed   # board populated; log in as test@example.com
-npm run build
+pnpm run build
 ```
 
 The board works without real-time (drag-drop persists via Inertia). Live

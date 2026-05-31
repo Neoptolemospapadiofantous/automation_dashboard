@@ -34,9 +34,11 @@ not a rewrite.
 
 ## Local setup
 
+This project uses **pnpm** for frontend dependencies.
+
 ```bash
 composer install
-npm install
+pnpm install
 cp .env.example .env
 php artisan key:generate
 
@@ -45,7 +47,7 @@ php artisan key:generate
 touch database/database.sqlite
 php artisan migrate
 
-npm run build               # or: npm run dev
+pnpm run build              # or: pnpm run dev
 php artisan serve
 ```
 
@@ -59,7 +61,7 @@ php artisan queue:work
 
 1. Create a free app at <https://dashboard.pusher.com>.
 2. Fill `PUSHER_*` in `.env` and set `BROADCAST_CONNECTION=pusher`.
-3. `npm run build` (Vite bakes the `VITE_PUSHER_*` values into the client).
+3. `pnpm run build` (Vite bakes the `VITE_PUSHER_*` values into the client).
 4. Open `/dashboard` in two browsers and click **Fire a live tick** — both
    update instantly with no refresh.
 
@@ -144,7 +146,7 @@ bin/deploy.sh --status           # poll Forge API for the deploy result
 `bin/deploy.sh` pushes existing commits (it never commits for you), retries the
 push with backoff on transient network errors, warns if your tree is dirty, then
 pings the deploy hook so Forge runs the server-side deploy script (pull →
-composer → npm build → migrate → cache → `queue:restart`).
+composer → pnpm build → migrate → cache → `queue:restart`).
 
 > **Other hosts:** the app is host-agnostic — Laravel Cloud, Railway, Render and
 > Fly.io all work too. Whichever you pick, run a persistent `queue:work` process
