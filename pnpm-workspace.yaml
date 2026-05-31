@@ -1,0 +1,4 @@
+# pnpm settings (pnpm 10+ reads build-script allowances from here, not package.json).
+# Approve packages whose install/build scripts we trust to run.
+onlyBuiltDependencies:
+  - esbuild

@@ -25,10 +25,5 @@
     "dependencies": {
         "laravel-echo": "^2.3.4",
         "pusher-js": "^8.5.0"
-    },
-    "pnpm": {
-        "onlyBuiltDependencies": [
-            "esbuild"
-        ]
     }
 }
