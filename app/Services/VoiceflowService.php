@@ -115,7 +115,8 @@ class VoiceflowService
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
                 ])
-                ->timeout(15)
+                ->connectTimeout(5)
+                ->timeout(12)
                 ->post('/state/user/healthcheck-'.uniqid().'/interact', [
                     'action' => ['type' => 'launch'],
                 ]);
@@ -301,8 +302,13 @@ class VoiceflowService
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
             ])
-            ->timeout(20)
-            ->retry(2, 200);
+            ->connectTimeout(5)
+            ->timeout(12)
+            // Retry only transient connection failures — NOT error responses.
+            // A Voiceflow 500 is persistent, so retrying it just stacks latency
+            // and can exceed Cloudflare's origin timeout (yielding a 502). The
+            // `when` closure limits retries to connection-level exceptions.
+            ->retry(2, 200, when: fn ($e) => $e instanceof \Illuminate\Http\Client\ConnectionException, throw: false);
     }
 
     protected function encode(string $value): string
