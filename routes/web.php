@@ -41,4 +41,5 @@ Route::middleware([
     ]))->name('agent.index');
     Route::post('/agent/launch', [VoiceflowController::class, 'launch'])->name('agent.launch');
     Route::post('/agent/interact', [VoiceflowController::class, 'interact'])->name('agent.interact');
+    Route::get('/agent/health', [VoiceflowController::class, 'health'])->name('agent.health');
 });

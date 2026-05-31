@@ -24,6 +24,15 @@ class VoiceflowController extends Controller
     }
 
     /**
+     * Diagnostic: reports whether Voiceflow is configured, reachable, and
+     * whether the key/version are accepted. Safe — exposes no secrets.
+     */
+    public function health(): JsonResponse
+    {
+        return response()->json($this->voiceflow->health());
+    }
+
+    /**
      * Start (or reset) a conversation. Returns a fresh user id + the opening
      * traces. Optionally pre-fills variables (e.g. an existing lead's details).
      */

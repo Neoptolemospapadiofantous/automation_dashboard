@@ -57,6 +57,54 @@ class VoiceflowService
     }
 
     /**
+     * Diagnose the integration: configured? reachable? key valid? version found?
+     *
+     * @return array<string, mixed>
+     */
+    public function health(): array
+    {
+        if (! $this->isConfigured()) {
+            return ['ok' => false, 'configured' => false, 'reason' => 'VOICEFLOW_API_KEY is not set.'];
+        }
+
+        $keyPrefix = substr((string) $this->apiKey, 0, 6);
+        $looksLikeDmKey = str_starts_with((string) $this->apiKey, 'VF.DM.');
+
+        try {
+            $response = $this->client()
+                ->post('/state/user/healthcheck-'.uniqid().'/interact', [
+                    'action' => ['type' => 'launch'],
+                ]);
+
+            $status = $response->status();
+
+            return [
+                'ok' => $response->successful(),
+                'configured' => true,
+                'key_prefix' => $keyPrefix,
+                'looks_like_dm_key' => $looksLikeDmKey,
+                'version_id' => $this->versionId,
+                'upstream_status' => $status,
+                'reason' => match (true) {
+                    $response->successful() => 'Voiceflow responded OK.',
+                    in_array($status, [401, 403], true) => 'Key rejected — check it is a VF.DM.* Dialog Manager key.',
+                    $status === 404 => 'Version not found — publish the agent or fix VOICEFLOW_VERSION_ID.',
+                    default => 'Voiceflow returned HTTP '.$status.'.',
+                },
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'ok' => false,
+                'configured' => true,
+                'key_prefix' => $keyPrefix,
+                'looks_like_dm_key' => $looksLikeDmKey,
+                'version_id' => $this->versionId,
+                'reason' => 'Could not reach Voiceflow: '.$e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Send a user's text reply and advance the conversation.
      *
      * @return array<int, array<string, mixed>>  Parsed traces.
