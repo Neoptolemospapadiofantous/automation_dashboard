@@ -50,7 +50,10 @@ class VoiceflowController extends Controller
             ]), $variables);
         }
 
-        $traces = $this->voiceflow->launch($userId, $variables);
+        $traces = $this->guard(fn () => $this->voiceflow->launch($userId, $variables));
+        if ($traces instanceof JsonResponse) {
+            return $traces;
+        }
 
         // Remember the Voiceflow user id on the lead for continuity.
         if ($lead && $lead->voiceflow_user_id !== $userId) {
@@ -78,7 +81,10 @@ class VoiceflowController extends Controller
         // Echo the user's message live to the team before we hit Voiceflow.
         $this->broadcastMessage($request, $lead, 'user', $data['message']);
 
-        $traces = $this->voiceflow->sendText($data['user_id'], $data['message']);
+        $traces = $this->guard(fn () => $this->voiceflow->sendText($data['user_id'], $data['message']));
+        if ($traces instanceof JsonResponse) {
+            return $traces;
+        }
 
         return $this->respond($request, $data['user_id'], $lead, $traces);
     }
@@ -194,5 +200,42 @@ class VoiceflowController extends Controller
     protected function abortIfUnconfigured(): void
     {
         abort_unless($this->voiceflow->isConfigured(), 503, 'Voiceflow is not configured.');
+    }
+
+    /**
+     * Run a Voiceflow call, converting upstream failures into a JSON error the
+     * UI can show (instead of a generic 500). Returns the call's result, or a
+     * JsonResponse on failure.
+     *
+     * @template T
+     * @param  callable(): T  $callback
+     * @return T|JsonResponse
+     */
+    protected function guard(callable $callback)
+    {
+        try {
+            return $callback();
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            $status = $e->response->status();
+            report($e);
+
+            $hint = match ($status) {
+                401, 403 => 'Voiceflow rejected the API key. Check VOICEFLOW_API_KEY (must be a VF.DM.* Dialog Manager key).',
+                404 => 'Voiceflow returned 404. Check VOICEFLOW_VERSION_ID / project — the agent version may not be published.',
+                429 => 'Voiceflow rate limit hit. Try again shortly.',
+                default => 'Voiceflow request failed (HTTP '.$status.').',
+            };
+
+            return response()->json([
+                'error' => $hint,
+                'upstream_status' => $status,
+            ], 502);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            report($e);
+
+            return response()->json([
+                'error' => 'Could not reach Voiceflow (network/timeout). Check the server has outbound HTTPS access.',
+            ], 504);
+        }
     }
 }

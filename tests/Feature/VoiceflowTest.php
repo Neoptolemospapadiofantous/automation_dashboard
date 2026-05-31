@@ -114,6 +114,19 @@ class VoiceflowTest extends TestCase
         Event::assertDispatched(LeadMessage::class);
     }
 
+    public function test_launch_surfaces_upstream_auth_error(): void
+    {
+        Http::fake([
+            'general-runtime.voiceflow.com/state/user/*/interact' => Http::response(['message' => 'unauthorized'], 401),
+        ]);
+
+        $this->actingAs($this->user())
+            ->postJson(route('agent.launch'), [])
+            ->assertStatus(502)
+            ->assertJsonPath('upstream_status', 401)
+            ->assertJsonStructure(['error', 'upstream_status']);
+    }
+
     public function test_endpoints_return_503_when_unconfigured(): void
     {
         config()->set('services.voiceflow.api_key', null);

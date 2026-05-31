@@ -74,6 +74,9 @@ async function send(text) {
 
 function errorText(e) {
     if (e?.response?.status === 503) return 'The Voiceflow agent is not configured yet.';
+    // Surface the server's specific reason (key invalid, version not published, etc.).
+    const msg = e?.response?.data?.error;
+    if (msg) return msg;
     return 'Something went wrong reaching the agent. Please try again.';
 }
 
