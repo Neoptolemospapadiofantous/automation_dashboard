@@ -34,6 +34,7 @@ Route::middleware([
     Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
     Route::put('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
     Route::patch('/leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.status');
+    Route::post('/leads/{lead}/assign', [LeadController::class, 'assign'])->name('leads.assign');
     Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
 
     // Phase 5 Voiceflow agent (server-proxied Dialog Manager API).

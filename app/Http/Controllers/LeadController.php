@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AssignmentStrategy;
 use App\Enums\LeadStatus;
 use App\Events\LeadDeleted;
 use App\Events\LeadSaved;
 use App\Models\Lead;
+use App\Services\LeadDelegator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,15 +16,20 @@ use Inertia\Response;
 
 class LeadController extends Controller
 {
+    public function __construct(protected LeadDelegator $delegator) {}
+
     /**
-     * The kanban board of leads for the user's current team.
+     * The kanban board of leads for the user's current team. Supports a
+     * ?mine=1 filter to show only the current user's assigned leads.
      */
     public function index(Request $request): Response
     {
         $team = $request->user()->currentTeam;
+        $mine = $request->boolean('mine');
 
         $leads = Lead::query()
             ->where('team_id', $team->id)
+            ->when($mine, fn ($q) => $q->where('assigned_to', $request->user()->id))
             ->with('assignee:id,name')
             ->latest()
             ->get();
@@ -31,7 +38,34 @@ class LeadController extends Controller
             'leads' => $leads,
             'statuses' => LeadStatus::board(),
             'members' => $team->allUsers()->map->only('id', 'name')->values(),
+            'filters' => ['mine' => $mine],
         ]);
+    }
+
+    /**
+     * Assign (or auto-assign) a lead to a rep, recording the delegation.
+     */
+    public function assign(Request $request, Lead $lead): RedirectResponse
+    {
+        $this->authorizeLead($request, $lead);
+
+        $data = $request->validate([
+            'strategy' => ['required', Rule::enum(AssignmentStrategy::class)],
+            'assigned_to' => ['nullable', 'integer', Rule::in($this->memberIds($request))],
+        ]);
+
+        $strategy = AssignmentStrategy::from($data['strategy']);
+
+        $this->delegator->assign(
+            lead: $lead,
+            strategy: $strategy,
+            byUser: $request->user(),
+            toUserId: $data['assigned_to'] ?? null,
+        );
+
+        broadcast(new LeadSaved($lead->fresh()))->toOthers();
+
+        return back();
     }
 
     public function store(Request $request): RedirectResponse

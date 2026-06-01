@@ -212,11 +212,18 @@ class VoiceflowTest extends TestCase
             ->assertOk()
             ->assertJson(['ok' => true]);
 
+        // Qualified + a team member present → auto-delegated (round-robin),
+        // which advances the status to "assigned".
         $this->assertDatabaseHas('leads', [
             'team_id' => $team->id,
             'email' => 'grace@example.com',
-            'status' => LeadStatus::Qualified->value,
+            'status' => LeadStatus::Assigned->value,
             'source' => 'voiceflow',
+            'assigned_to' => $team->owner->id,
+        ]);
+        $this->assertDatabaseHas('lead_assignments', [
+            'team_id' => $team->id,
+            'strategy' => 'round_robin',
         ]);
 
         Event::assertDispatched(LeadSaved::class);

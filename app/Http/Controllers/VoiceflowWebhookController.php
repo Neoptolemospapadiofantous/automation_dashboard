@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AssignmentStrategy;
 use App\Enums\LeadStatus;
 use App\Events\LeadSaved;
 use App\Models\Lead;
 use App\Models\Team;
+use App\Services\LeadDelegator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -83,6 +85,16 @@ class VoiceflowWebhookController extends Controller
                 'captured' => $data['variables'] ?? [],
                 'last_contacted_at' => now(),
             ]);
+        }
+
+        // Auto-delegate freshly qualified, unassigned leads (round-robin) so a
+        // rep picks them up the instant the agent qualifies them.
+        if (($data['qualified'] ?? false) && ! $lead->assigned_to) {
+            app(LeadDelegator::class)->assign(
+                lead: $lead,
+                strategy: AssignmentStrategy::RoundRobin,
+            );
+            $lead->refresh();
         }
 
         broadcast(new LeadSaved($lead));

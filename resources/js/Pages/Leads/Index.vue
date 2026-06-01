@@ -15,10 +15,28 @@ const props = defineProps({
     leads: { type: Array, required: true },
     statuses: { type: Array, required: true },
     members: { type: Array, required: true },
+    filters: { type: Object, default: () => ({ mine: false }) },
 });
 
 const page = usePage();
 const teamId = computed(() => page.props.auth.user.current_team_id);
+const currentUserId = computed(() => page.props.auth.user.id);
+
+// "My leads" filter toggle (server-side scope).
+function toggleMine() {
+    router.get(route('leads.index'), { mine: props.filters.mine ? undefined : 1 }, {
+        preserveScroll: true,
+    });
+}
+
+// Assign a single lead (manual to a member, or a strategy like round_robin).
+function assign(lead, { strategy = 'manual', assigned_to = null } = {}) {
+    router.post(route('leads.assign', lead.id), { strategy, assigned_to }, {
+        preserveScroll: true,
+        preserveState: true,
+        only: ['leads'],
+    });
+}
 
 // Local reactive store of leads, keyed by id, kept in sync by broadcasts.
 const leads = reactive(new Map(props.leads.map((l) => [l.id, l])));
@@ -106,7 +124,17 @@ function submit() {
                         :title="connected ? 'Live' : 'Offline — set PUSHER_* to enable live updates'"
                     />
                 </h2>
-                <PrimaryButton @click="showCreate = true">New lead</PrimaryButton>
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        class="rounded-md border px-3 py-1.5 text-sm font-medium transition"
+                        :class="filters.mine ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'"
+                        @click="toggleMine"
+                    >
+                        {{ filters.mine ? 'My leads' : 'All leads' }}
+                    </button>
+                    <PrimaryButton @click="showCreate = true">New lead</PrimaryButton>
+                </div>
             </div>
         </template>
 
@@ -132,7 +160,9 @@ function submit() {
                                 v-for="lead in col.leads"
                                 :key="lead.id"
                                 :lead="lead"
+                                :members="members"
                                 @delete="destroy"
+                                @assign="assign"
                             />
                             <p
                                 v-if="!col.leads.length"
