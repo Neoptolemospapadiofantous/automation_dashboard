@@ -16,7 +16,10 @@ return [
     |
     */
 
-    'driver' => env('SCOUT_DRIVER', 'collection'),
+    // An empty SCOUT_DRIVER (the "off" default) resolves to the DB driver so
+    // model writes never crash trying to resolve a blank engine. Set to
+    // "typesense" in production for hybrid keyword + semantic search.
+    'driver' => env('SCOUT_DRIVER') ?: 'database',
 
     /*
     |--------------------------------------------------------------------------

@@ -74,17 +74,19 @@ class ConversationController extends Controller
      */
     protected function runSearch(int $teamId, string $query): Collection
     {
-        $driver = config('scout.driver');
+        // Use the Scout engine only when a real one is configured (e.g.
+        // typesense). Otherwise do a plain DB scan so search works everywhere
+        // without depending on a search service.
+        $engine = env('SCOUT_DRIVER');
+        $useScout = $engine && ! in_array($engine, ['database', 'collection', 'null'], true);
 
-        if ($driver && $driver !== 'null') {
-            // Scout path (Typesense, etc.) — team-scoped.
+        if ($useScout) {
             $messages = Message::search($query)
                 ->where('team_id', $teamId)
                 ->take(50)
                 ->get()
                 ->load('conversation:id,lead_id,voiceflow_user_id');
         } else {
-            // Fallback: plain DB scan (works on SQLite/MySQL with no engine).
             $messages = Message::query()
                 ->where('team_id', $teamId)
                 ->where('text', 'like', '%'.$query.'%')
