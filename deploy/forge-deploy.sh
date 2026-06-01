@@ -27,6 +27,13 @@ $FORGE_PHP artisan config:cache
 $FORGE_PHP artisan route:cache
 $FORGE_PHP artisan view:cache
 
+# Sync the search index when Typesense is the configured engine (no-op on the
+# default DB driver). Safe to run every deploy; keeps the index in step.
+if grep -q '^SCOUT_DRIVER=typesense' .env 2>/dev/null; then
+    $FORGE_PHP artisan scout:sync-index-settings || true
+    $FORGE_PHP artisan scout:import "App\\Models\\Message" || true
+fi
+
 # Restart the queue worker so broadcasts keep flowing after new code ships.
 # (Configure the worker under Forge -> Server -> Daemons or Site -> Queue.)
 $FORGE_PHP artisan queue:restart
