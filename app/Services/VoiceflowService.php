@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -31,6 +33,7 @@ class VoiceflowService
         protected ?string $projectId = null,
         protected ?string $runtimeUrl = null,
         protected ?string $apiUrl = null,
+        protected ?string $analyticsUrl = null,
     ) {
         $config = config('services.voiceflow');
 
@@ -39,6 +42,7 @@ class VoiceflowService
         $this->projectId ??= $config['project_id'] ?? null;
         $this->runtimeUrl ??= rtrim($config['runtime_url'] ?? 'https://general-runtime.voiceflow.com', '/');
         $this->apiUrl ??= rtrim($config['api_url'] ?? 'https://api.voiceflow.com', '/');
+        $this->analyticsUrl ??= rtrim($config['analytics_url'] ?? 'https://analytics-api.voiceflow.com', '/');
     }
 
     /**
@@ -53,7 +57,7 @@ class VoiceflowService
      * Start (or reset) a conversation for a user.
      *
      * @param  array<string, mixed>  $variables  Optional variables to pre-fill.
-     * @return array<int, array<string, mixed>>  Parsed traces.
+     * @return array<int, array<string, mixed>> Parsed traces.
      */
     public function launch(string $userId, array $variables = []): array
     {
@@ -66,7 +70,7 @@ class VoiceflowService
     /**
      * Send a user's text reply and advance the conversation.
      *
-     * @return array<int, array<string, mixed>>  Parsed traces.
+     * @return array<int, array<string, mixed>> Parsed traces.
      */
     public function sendText(string $userId, string $text): array
     {
@@ -78,7 +82,7 @@ class VoiceflowService
      *
      * @param  array<string, mixed>  $action
      * @param  array<string, mixed>  $variables
-     * @return array<int, array<string, mixed>>  Trace objects.
+     * @return array<int, array<string, mixed>> Trace objects.
      */
     public function interact(string $userId, array $action, array $variables = []): array
     {
@@ -243,6 +247,82 @@ class VoiceflowService
             'body' => Str::limit((string) $interact->body(), 200)];
     }
 
+    // --- Transcript / Analytics API ------------------------------------------
+    // Lives on a separate host (analytics-api.voiceflow.com) and is used to
+    // back-fill conversations that happened in Voiceflow (preview/widget) into
+    // the local store.
+
+    /**
+     * Search a project's transcripts (most recent first).
+     *
+     * @param  array<string, mixed>  $body  Optional filters (startDate, endDate, sessionID, ...).
+     * @return array<int, array<string, mixed>> Transcript metadata rows.
+     */
+    public function searchTranscripts(int $take = 25, int $skip = 0, array $body = []): array
+    {
+        $response = $this->analyticsClient()
+            ->post("/v1/transcript/project/{$this->encode($this->projectId)}?take={$take}&skip={$skip}&order=DESC", $body ?: (object) []);
+
+        $response->throw();
+
+        $transcripts = $response->json('transcripts');
+
+        return is_array($transcripts) ? $transcripts : [];
+    }
+
+    /**
+     * Fetch a single transcript with its logs (conversation traces).
+     * Uses filterConversation so only text/speak/handoff traces come back.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getTranscript(string $transcriptId): ?array
+    {
+        $response = $this->analyticsClient()
+            ->get("/v1/transcript/{$this->encode($transcriptId)}?filterConversation=true");
+
+        $response->throw();
+
+        return $response->json('transcript');
+    }
+
+    /**
+     * Reduce a transcript's `logs` to a flat list of chat messages.
+     *
+     * Each log has `type` (trace|action|end) and `data` (the payload). User
+     * input arrives as `action` (request) logs; agent output as `trace` logs
+     * of type text/speak.
+     *
+     * @param  array<string, mixed>  $transcript
+     * @return array<int, array{role: string, text: string, trace_type: string}>
+     */
+    public function transcriptMessages(array $transcript): array
+    {
+        $messages = [];
+
+        foreach ($transcript['logs'] ?? [] as $log) {
+            $type = $log['type'] ?? null;
+            $data = $log['data'] ?? [];
+
+            if ($type === 'trace') {
+                $traceType = $data['type'] ?? null;
+                $text = $data['payload']['message'] ?? null;
+                if (in_array($traceType, ['text', 'speak'], true) && filled($text)) {
+                    $messages[] = ['role' => 'agent', 'text' => (string) $text, 'trace_type' => (string) $traceType];
+                }
+            } elseif ($type === 'action') {
+                // A user text request.
+                $payload = $data['payload'] ?? null;
+                $text = is_string($payload) ? $payload : ($data['payload']['query'] ?? null);
+                if (($data['type'] ?? null) === 'text' && filled($text)) {
+                    $messages[] = ['role' => 'user', 'text' => (string) $text, 'trace_type' => 'text'];
+                }
+            }
+        }
+
+        return $messages;
+    }
+
     /**
      * @param  array<int, array<string, mixed>>  $buttons
      * @return array<int, array{name: string, request: mixed}>
@@ -253,6 +333,25 @@ class VoiceflowService
             'name' => (string) ($b['name'] ?? ''),
             'request' => $b['request'] ?? null,
         ], $buttons);
+    }
+
+    /**
+     * HTTP client for the Analytics/Transcript API (separate host, raw key).
+     */
+    protected function analyticsClient(): PendingRequest
+    {
+        if (! $this->isConfigured()) {
+            throw new RuntimeException('Voiceflow is not configured.');
+        }
+
+        return Http::baseUrl($this->analyticsUrl)
+            ->withHeaders([
+                'authorization' => $this->apiKey,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])
+            ->connectTimeout(5)
+            ->timeout(20);
     }
 
     /**
@@ -284,7 +383,7 @@ class VoiceflowService
     /**
      * POST the start-session endpoint and return the raw response.
      */
-    protected function startSessionResponse(string $userId): \Illuminate\Http\Client\Response
+    protected function startSessionResponse(string $userId): Response
     {
         if (! $this->isConfigured()) {
             throw new RuntimeException('Voiceflow is not configured: set VOICEFLOW_API_KEY and VOICEFLOW_PROJECT_ID.');
@@ -298,7 +397,7 @@ class VoiceflowService
             ])
             ->connectTimeout(5)
             ->timeout(15)
-            ->retry(2, 200, when: fn ($e) => $e instanceof \Illuminate\Http\Client\ConnectionException, throw: false)
+            ->retry(2, 200, when: fn ($e) => $e instanceof ConnectionException, throw: false)
             ->post(sprintf(
                 '/v4/project/%s/environment/%s/session',
                 $this->encode($this->projectId),
