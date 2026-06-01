@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ConversationController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardTickController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\VoiceflowController;
@@ -22,9 +23,7 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     // Phase 2 live-tick demo: fires a broadcast every connected browser receives.
     Route::post('/dashboard/tick', DashboardTickController::class)->name('dashboard.tick');
