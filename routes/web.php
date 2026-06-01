@@ -3,6 +3,7 @@
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardTickController;
+use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\VoiceflowController;
@@ -52,4 +53,9 @@ Route::middleware([
 
     // Notifications (bell): mark all read.
     Route::post('/notifications/read', [NotificationController::class, 'readAll'])->name('notifications.read');
+
+    // Phase 12 Knowledge Base (Voiceflow KB API).
+    Route::get('/knowledge', [KnowledgeBaseController::class, 'index'])->name('knowledge.index');
+    Route::post('/knowledge/url', [KnowledgeBaseController::class, 'storeUrl'])->name('knowledge.url');
+    Route::post('/knowledge/query', [KnowledgeBaseController::class, 'query'])->name('knowledge.query');
 });

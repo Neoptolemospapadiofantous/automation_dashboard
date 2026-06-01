@@ -34,6 +34,7 @@ class VoiceflowService
         protected ?string $runtimeUrl = null,
         protected ?string $apiUrl = null,
         protected ?string $analyticsUrl = null,
+        protected ?string $realtimeUrl = null,
     ) {
         $config = config('services.voiceflow');
 
@@ -43,6 +44,7 @@ class VoiceflowService
         $this->runtimeUrl ??= rtrim($config['runtime_url'] ?? 'https://general-runtime.voiceflow.com', '/');
         $this->apiUrl ??= rtrim($config['api_url'] ?? 'https://api.voiceflow.com', '/');
         $this->analyticsUrl ??= rtrim($config['analytics_url'] ?? 'https://analytics-api.voiceflow.com', '/');
+        $this->realtimeUrl ??= rtrim($config['realtime_url'] ?? 'https://realtime-api.voiceflow.com', '/');
     }
 
     /**
@@ -323,6 +325,94 @@ class VoiceflowService
         return $messages;
     }
 
+    // --- Knowledge Base API --------------------------------------------------
+    // Document management is on the realtime host; the Query endpoint is on the
+    // runtime host. Both auth with the raw VF.DM key.
+
+    /**
+     * List knowledge base documents (most recently updated first).
+     *
+     * @return array{total: int, data: array<int, array<string, mixed>>}
+     */
+    public function listKbDocuments(int $page = 1, int $limit = 20): array
+    {
+        $response = $this->realtimeClient()
+            ->get('/v1alpha1/public/knowledge-base/document', [
+                'page' => $page,
+                'limit' => $limit,
+                'projectEnvironmentIDOrAlias' => $this->environment,
+            ]);
+
+        $response->throw();
+
+        $json = $response->json();
+
+        return [
+            'total' => (int) ($json['total'] ?? 0),
+            'data' => is_array($json['data'] ?? null) ? $json['data'] : [],
+        ];
+    }
+
+    /**
+     * Import a URL as a knowledge base document (scraped by Voiceflow).
+     *
+     * @return array<string, mixed> The created document payload.
+     */
+    public function createKbUrlDocument(string $url, ?string $name = null): array
+    {
+        $response = $this->realtimeClient()
+            ->post('/v1alpha1/public/knowledge-base/document', [
+                'data' => array_filter([
+                    'type' => 'url',
+                    'url' => $url,
+                    'name' => $name,
+                    'projectEnvironmentIDOrAlias' => $this->environment,
+                ], fn ($v) => $v !== null),
+            ]);
+
+        $response->throw();
+
+        return $response->json('data') ?? [];
+    }
+
+    /**
+     * Query the knowledge base — returns a synthesized answer + source chunks.
+     *
+     * @return array{answer: ?string, chunks: array<int, array<string, mixed>>}
+     */
+    public function queryKnowledgeBase(string $question, int $chunkLimit = 5, bool $synthesis = true): array
+    {
+        $response = Http::baseUrl($this->runtimeUrl)
+            ->withHeaders([
+                'authorization' => $this->apiKey,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])
+            ->connectTimeout(5)
+            ->timeout(30)
+            ->post('/knowledge-base/query', [
+                'projectID' => $this->projectId,
+                'question' => $question,
+                'chunkLimit' => $chunkLimit,
+                'synthesis' => $synthesis,
+                'projectEnvironmentIDOrAlias' => $this->environment,
+            ]);
+
+        $response->throw();
+
+        $json = $response->json();
+
+        return [
+            'answer' => $json['output'] ?? null,
+            'chunks' => array_map(fn ($c) => [
+                'content' => $c['content'] ?? '',
+                'score' => $c['score'] ?? null,
+                'documentID' => $c['documentID'] ?? null,
+                'source' => $c['source']['name'] ?? null,
+            ], is_array($json['chunks'] ?? null) ? $json['chunks'] : []),
+        ];
+    }
+
     /**
      * @param  array<int, array<string, mixed>>  $buttons
      * @return array<int, array{name: string, request: mixed}>
@@ -333,6 +423,24 @@ class VoiceflowService
             'name' => (string) ($b['name'] ?? ''),
             'request' => $b['request'] ?? null,
         ], $buttons);
+    }
+
+    /**
+     * HTTP client for the Realtime API (KB document management; separate host).
+     */
+    protected function realtimeClient(): PendingRequest
+    {
+        if (! $this->isConfigured()) {
+            throw new RuntimeException('Voiceflow is not configured.');
+        }
+
+        return Http::baseUrl($this->realtimeUrl)
+            ->withHeaders([
+                'authorization' => $this->apiKey,
+                'Accept' => 'application/json',
+            ])
+            ->connectTimeout(5)
+            ->timeout(30);
     }
 
     /**

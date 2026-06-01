@@ -46,6 +46,8 @@ return [
         'api_url' => env('VOICEFLOW_API_URL', 'https://api.voiceflow.com'),
         // Analytics/Transcript API lives on a separate host.
         'analytics_url' => env('VOICEFLOW_ANALYTICS_URL', 'https://analytics-api.voiceflow.com'),
+        // Knowledge Base document management lives on the realtime host.
+        'realtime_url' => env('VOICEFLOW_REALTIME_URL', 'https://realtime-api.voiceflow.com'),
         // Lead variables to read out of the agent's session after each turn.
         'lead_variables' => ['name', 'email', 'phone', 'company'],
         // Webhook shared secret for the Voiceflow Custom Action capture endpoint.
