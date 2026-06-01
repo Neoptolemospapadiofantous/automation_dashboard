@@ -1,17 +1,36 @@
-# Phase 6 — Conversation storage, indexing & scale (PLAN)
+# Phase 6 — Conversation storage, indexing & scale
 
-Status: **proposal for review** — no code yet.
+Status: **core implemented** (storage + history UI + search). Voiceflow
+transcript sync (End transcript + properties) is the remaining follow-up.
 
 Goal: save every conversation durably, make them searchable at scale, and keep
 Voiceflow's analytics/evaluation working — without slowing the live dashboard.
 
-## Decisions (from review)
+## Decisions (locked)
 
-- **Source of truth:** Hybrid — **local MySQL is primary** (drives dashboard,
-  search, retention; full data ownership), and we **also** persist transcripts
-  to Voiceflow (End transcript + properties) so their analytics/evaluations work.
-- **Search for scale:** **Laravel Scout + Typesense** for fast keyword/fuzzy
-  search now, architected to **add semantic/vector search later** with no rework.
+- **Source of truth:** **local MySQL is primary** (drives dashboard, search,
+  full data ownership). Hybrid Voiceflow transcript sync is a follow-up.
+- **Retention:** **keep everything forever** by default. An opt-in
+  `conversations:prune --days=N --force` command exists for deliberate cleanup
+  only (dry-run unless `--force`).
+- **Search:** **Laravel Scout + Typesense**, configured for **hybrid keyword +
+  semantic (vector) search** in one engine — Typesense auto-generates embeddings
+  from message text via its built-in `ts/all-MiniLM-L12-v2` model (no external
+  embedding API). Zero-infra **DB LIKE fallback** when `SCOUT_DRIVER` is unset,
+  so it works locally/CI and deploys stay green before Typesense is provisioned.
+
+## What shipped
+
+- `conversations` + `messages` tables (team-scoped, indexed; MySQL FULLTEXT
+  fallback). Models, factories.
+- `ConversationRecorder` service; `VoiceflowController` records every user +
+  agent turn and ends the conversation on an `end` trace.
+- Inertia pages: Conversations index (paginated), Show (transcript), Search.
+  "Conversations" nav link.
+- `Message` is Scout-`Searchable` with a Typesense hybrid schema.
+- `conversations:prune` opt-in archival command.
+- Tests: recorder sequencing, one-conversation-per-user, interact persistence,
+  team-scoped index.
 
 ## Data model
 

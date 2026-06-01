@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardTickController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\VoiceflowController;
@@ -42,4 +43,9 @@ Route::middleware([
     Route::post('/agent/launch', [VoiceflowController::class, 'launch'])->name('agent.launch');
     Route::post('/agent/interact', [VoiceflowController::class, 'interact'])->name('agent.interact');
     Route::get('/agent/health', [VoiceflowController::class, 'health'])->name('agent.health');
+
+    // Phase 6 conversation storage, history & search.
+    Route::get('/conversations', [ConversationController::class, 'index'])->name('conversations.index');
+    Route::get('/conversations/search', [ConversationController::class, 'search'])->name('conversations.search');
+    Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
 });

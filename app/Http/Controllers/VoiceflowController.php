@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Events\LeadMessage;
 use App\Events\LeadSaved;
+use App\Models\Conversation;
 use App\Models\Lead;
+use App\Services\ConversationRecorder;
 use App\Services\VoiceflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,8 +21,10 @@ use Illuminate\Support\Str;
  */
 class VoiceflowController extends Controller
 {
-    public function __construct(protected VoiceflowService $voiceflow)
-    {
+    public function __construct(
+        protected VoiceflowService $voiceflow,
+        protected ConversationRecorder $recorder,
+    ) {
     }
 
     /**
@@ -87,7 +91,14 @@ class VoiceflowController extends Controller
 
         $lead = $this->resolveLead($request, $data['lead_id'] ?? null);
 
-        // Echo the user's message live to the team before we hit Voiceflow.
+        $conversation = $this->recorder->resolve(
+            $request->user()->currentTeam->id,
+            $data['user_id'],
+            $lead?->id,
+        );
+
+        // Persist + echo the user's message live before we hit Voiceflow.
+        $this->recorder->record($conversation, 'user', $data['message'], 'text');
         $this->broadcastMessage($request, $lead, 'user', $data['message']);
 
         $traces = $this->guard(fn () => $this->voiceflow->sendText($data['user_id'], $data['message']));
@@ -95,19 +106,30 @@ class VoiceflowController extends Controller
             return $traces;
         }
 
-        return $this->respond($request, $data['user_id'], $lead, $traces);
+        return $this->respond($request, $data['user_id'], $lead, $traces, $conversation);
     }
 
     /**
      * Shared response builder: parse traces, broadcast agent messages, capture
      * lead fields from session variables, upsert the lead.
      */
-    protected function respond(Request $request, string $userId, ?Lead $lead, array $traces): JsonResponse
+    protected function respond(Request $request, string $userId, ?Lead $lead, array $traces, ?Conversation $conversation = null): JsonResponse
     {
         $parsed = $this->voiceflow->parseTraces($traces);
 
+        $conversation ??= $this->recorder->resolve(
+            $request->user()->currentTeam->id,
+            $userId,
+            $lead?->id,
+        );
+
         foreach ($parsed['messages'] as $message) {
+            $this->recorder->record($conversation, 'agent', $message, 'text');
             $this->broadcastMessage($request, $lead, 'agent', $message);
+        }
+
+        if ($parsed['ended']) {
+            $this->recorder->end($conversation);
         }
 
         // Read the captured lead fields out of the agent's session.
@@ -122,7 +144,13 @@ class VoiceflowController extends Controller
 
         $lead = $this->upsertLead($request, $lead, $userId, $fields);
 
+        // Keep the conversation linked to the lead once we know it.
+        if ($lead && $conversation->lead_id !== $lead->id) {
+            $conversation->update(['lead_id' => $lead->id]);
+        }
+
         return response()->json([
+            'conversation_id' => $conversation->id,
             'user_id' => $userId,
             'lead_id' => $lead?->id,
             'messages' => $parsed['messages'],
