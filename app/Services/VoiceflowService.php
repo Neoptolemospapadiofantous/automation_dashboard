@@ -3,28 +3,31 @@
 namespace App\Services;
 
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
- * Server-side client for the Voiceflow Dialog Manager API.
+ * Server-side client for the Voiceflow V4 Conversations API.
  *
- * The Dialog Manager (a.k.a. Conversations) API drives a Voiceflow agent over
- * HTTP: you POST an "action" (launch / text) for a given user id and receive
- * back an array of "trace" objects to render. Session variables (the lead
- * fields the agent captures) are read/written via the variables endpoint.
+ * V4 uses a two-step flow keyed on projectID + environment (alias "main"):
+ *   1. POST /v4/project/{projectID}/environment/{environmentID}/session
+ *      with the VF.DM API key -> returns a `sessionKey`.
+ *   2. POST /v4/interact with the `sessionKey` as the authorization header
+ *      -> returns `{ "traces": [...] }`.
  *
  * The API key (prefix VF.DM.*) is read from config and never leaves the server.
+ * Per-user session keys are cached so a conversation continues across turns.
  *
- * @see https://docs.voiceflow.com/reference/stateinteract-1
- * @see https://docs.voiceflow.com/reference/trace-types
+ * @see https://docs.voiceflow.com/api-reference/session/start-session-specific-environment
+ * @see https://docs.voiceflow.com/api-reference/conversation/interact-non-stream
  */
 class VoiceflowService
 {
     public function __construct(
         protected ?string $apiKey = null,
-        protected ?string $versionId = null,
+        protected ?string $environment = null,
         protected ?string $projectId = null,
         protected ?string $runtimeUrl = null,
         protected ?string $apiUrl = null,
@@ -32,18 +35,18 @@ class VoiceflowService
         $config = config('services.voiceflow');
 
         $this->apiKey ??= $config['api_key'] ?? null;
-        $this->versionId ??= $config['version_id'] ?? 'production';
+        $this->environment ??= $config['environment'] ?? 'main';
         $this->projectId ??= $config['project_id'] ?? null;
         $this->runtimeUrl ??= rtrim($config['runtime_url'] ?? 'https://general-runtime.voiceflow.com', '/');
         $this->apiUrl ??= rtrim($config['api_url'] ?? 'https://api.voiceflow.com', '/');
     }
 
     /**
-     * Whether the integration is configured (has an API key).
+     * Whether the integration is configured (API key + project id).
      */
     public function isConfigured(): bool
     {
-        return ! empty($this->apiKey);
+        return ! empty($this->apiKey) && ! empty($this->projectId);
     }
 
     /**
@@ -54,111 +57,10 @@ class VoiceflowService
      */
     public function launch(string $userId, array $variables = []): array
     {
+        // A launch starts a fresh session; drop any cached session for this user.
+        $this->forgetSession($userId);
+
         return $this->interact($userId, ['type' => 'launch'], $variables);
-    }
-
-    /**
-     * Diagnose the integration: configured? reachable? key valid? version found?
-     * Probes both the configured version and the common alternatives so a
-     * publish/version mismatch is obvious.
-     *
-     * @return array<string, mixed>
-     */
-    public function health(): array
-    {
-        if (! $this->isConfigured()) {
-            return ['ok' => false, 'configured' => false, 'reason' => 'VOICEFLOW_API_KEY is not set.'];
-        }
-
-        $keyPrefix = substr((string) $this->apiKey, 0, 6);
-
-        // Probe the configured version plus development/production so a
-        // "works on draft but not published" situation is immediately clear.
-        $candidates = array_values(array_unique([$this->versionId, 'development', 'production']));
-        $probes = [];
-        $anyOk = false;
-        $okVersion = null;
-
-        foreach ($candidates as $version) {
-            $probe = $this->probeVersion($version);
-            $probes[$version] = $probe;
-            if ($probe['ok']) {
-                $anyOk = true;
-                $okVersion ??= $version;
-            }
-        }
-
-        return [
-            'ok' => $anyOk,
-            'configured' => true,
-            'key_prefix' => $keyPrefix,
-            'looks_like_dm_key' => str_starts_with((string) $this->apiKey, 'VF.DM.'),
-            'configured_version_id' => $this->versionId,
-            'working_version_id' => $okVersion,
-            'probes' => $probes,
-            'reason' => $this->summarize($anyOk, $okVersion, $probes),
-        ];
-    }
-
-    /**
-     * Probe a single version id with a launch and report the outcome.
-     *
-     * @return array{ok: bool, status: int|null, body: string|null}
-     */
-    protected function probeVersion(string $versionId): array
-    {
-        try {
-            $response = Http::baseUrl($this->runtimeUrl)
-                ->withHeaders([
-                    'Authorization' => $this->apiKey,
-                    'versionID' => $versionId,
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                ])
-                ->connectTimeout(5)
-                ->timeout(12)
-                ->post('/state/user/healthcheck-'.uniqid().'/interact', [
-                    'action' => ['type' => 'launch'],
-                ]);
-
-            return [
-                'ok' => $response->successful(),
-                'status' => $response->status(),
-                'body' => $response->successful() ? null : Str::limit((string) $response->body(), 200),
-            ];
-        } catch (\Throwable $e) {
-            return ['ok' => false, 'status' => null, 'body' => Str::limit($e->getMessage(), 200)];
-        }
-    }
-
-    /**
-     * @param  array<string, array{ok: bool, status: int|null, body: string|null}>  $probes
-     */
-    protected function summarize(bool $anyOk, ?string $okVersion, array $probes): string
-    {
-        if ($anyOk) {
-            if ($okVersion !== $this->versionId) {
-                return "Working on '{$okVersion}' but not '{$this->versionId}'. Set VOICEFLOW_VERSION_ID={$okVersion}, or publish the agent to production.";
-            }
-
-            return 'Voiceflow responded OK.';
-        }
-
-        $statuses = array_map(fn ($p) => $p['status'], $probes);
-
-        if (in_array(401, $statuses, true) || in_array(403, $statuses, true)) {
-            return 'Key rejected — check it is a VF.DM.* Dialog Manager key for THIS project.';
-        }
-
-        if (in_array(404, $statuses, true)) {
-            return 'Version not found — publish/run the agent, or fix VOICEFLOW_VERSION_ID.';
-        }
-
-        if (in_array(500, $statuses, true)) {
-            return 'Voiceflow returns 500 on launch for every version. The agent itself is erroring — open it in Voiceflow and click Run/Test. A brand-new Agentic agent must be built and published before the API can run it.';
-        }
-
-        return 'Could not get a successful response from Voiceflow on any version.';
     }
 
     /**
@@ -172,7 +74,7 @@ class VoiceflowService
     }
 
     /**
-     * Low-level interact call.
+     * Low-level interact call: ensures a session, then POSTs the action.
      *
      * @param  array<string, mixed>  $action
      * @param  array<string, mixed>  $variables
@@ -180,27 +82,29 @@ class VoiceflowService
      */
     public function interact(string $userId, array $action, array $variables = []): array
     {
-        $body = [
-            'action' => $action,
-            'config' => [
-                'tts' => false,
-                'stripSSML' => true,
-                'stopAll' => true,
-                'excludeTypes' => ['block', 'debug', 'flow'],
-            ],
-        ];
+        $sessionKey = $this->sessionKey($userId);
 
+        $body = ['action' => $action];
         if ($variables !== []) {
-            $body['state'] = ['variables' => $variables];
+            $body['variables'] = $variables;
         }
 
-        $response = $this->client()
-            ->post("/state/user/{$this->encode($userId)}/interact", $body);
+        $response = Http::baseUrl($this->runtimeUrl)
+            ->withHeaders([
+                'authorization' => $sessionKey,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])
+            ->connectTimeout(5)
+            ->timeout(20)
+            ->post('/v4/interact', $body);
 
         $response->throw();
 
+        $json = $response->json();
+
         /** @var array<int, array<string, mixed>> $traces */
-        $traces = $response->json();
+        $traces = $json['traces'] ?? [];
 
         return is_array($traces) ? $traces : [];
     }
@@ -212,12 +116,17 @@ class VoiceflowService
      */
     public function getVariables(string $userId): array
     {
-        $response = $this->client()
-            ->get("/state/user/{$this->encode($userId)}/variables");
+        // V4 state lookup is keyed on projectID + environment + userID.
+        $response = $this->apiClient()
+            ->get($this->statePath($userId));
 
         $response->throw();
 
-        $vars = $response->json();
+        $json = $response->json();
+
+        // The state endpoint returns the full conversation state; variables
+        // live under `variables` (fall back to the raw payload for safety).
+        $vars = $json['variables'] ?? $json;
 
         return is_array($vars) ? $vars : [];
     }
@@ -275,6 +184,66 @@ class VoiceflowService
     }
 
     /**
+     * Diagnose the integration end to end: configured? can we start a session?
+     * can we launch? Surfaces the precise failing step.
+     *
+     * @return array<string, mixed>
+     */
+    public function health(): array
+    {
+        if (empty($this->apiKey)) {
+            return ['ok' => false, 'configured' => false, 'reason' => 'VOICEFLOW_API_KEY is not set.'];
+        }
+
+        if (empty($this->projectId)) {
+            return ['ok' => false, 'configured' => false, 'reason' => 'VOICEFLOW_PROJECT_ID is not set (required for the V4 API).'];
+        }
+
+        $base = [
+            'configured' => true,
+            'key_prefix' => substr((string) $this->apiKey, 0, 6),
+            'looks_like_dm_key' => str_starts_with((string) $this->apiKey, 'VF.DM.'),
+            'project_id' => $this->projectId,
+            'environment' => $this->environment,
+        ];
+
+        // Step 1: start a session.
+        try {
+            $session = $this->startSessionResponse('healthcheck-'.uniqid());
+        } catch (\Throwable $e) {
+            return [...$base, 'ok' => false, 'step' => 'start_session', 'reason' => 'Could not reach Voiceflow: '.Str::limit($e->getMessage(), 200)];
+        }
+
+        if (! $session->successful()) {
+            return [...$base, 'ok' => false, 'step' => 'start_session', 'upstream_status' => $session->status(),
+                'reason' => $this->sessionFailureReason($session->status()), 'body' => Str::limit((string) $session->body(), 200)];
+        }
+
+        $key = $session->json('sessionKey');
+        if (! $key) {
+            return [...$base, 'ok' => false, 'step' => 'start_session', 'reason' => 'Session started but no sessionKey was returned.'];
+        }
+
+        // Step 2: launch.
+        try {
+            $interact = Http::baseUrl($this->runtimeUrl)
+                ->withHeaders(['authorization' => $key, 'Content-Type' => 'application/json', 'Accept' => 'application/json'])
+                ->connectTimeout(5)->timeout(15)
+                ->post('/v4/interact', ['action' => ['type' => 'launch']]);
+        } catch (\Throwable $e) {
+            return [...$base, 'ok' => false, 'step' => 'interact', 'reason' => 'Could not reach Voiceflow: '.Str::limit($e->getMessage(), 200)];
+        }
+
+        if ($interact->successful()) {
+            return [...$base, 'ok' => true, 'reason' => 'Voiceflow responded OK (session + launch succeeded).'];
+        }
+
+        return [...$base, 'ok' => false, 'step' => 'interact', 'upstream_status' => $interact->status(),
+            'reason' => 'Session started but launch failed (HTTP '.$interact->status().'). The agent may be erroring on launch.',
+            'body' => Str::limit((string) $interact->body(), 200)];
+    }
+
+    /**
      * @param  array<int, array<string, mixed>>  $buttons
      * @return array<int, array{name: string, request: mixed}>
      */
@@ -287,28 +256,102 @@ class VoiceflowService
     }
 
     /**
-     * A configured HTTP client pointed at the runtime, with auth headers.
+     * Get a cached session key for a user, starting a new session if needed.
      */
-    protected function client(): PendingRequest
+    protected function sessionKey(string $userId): string
+    {
+        $cacheKey = $this->sessionCacheKey($userId);
+
+        $key = Cache::get($cacheKey);
+        if (is_string($key) && $key !== '') {
+            return $key;
+        }
+
+        $response = $this->startSessionResponse($userId);
+        $response->throw();
+
+        $key = $response->json('sessionKey');
+        if (! is_string($key) || $key === '') {
+            throw new RuntimeException('Voiceflow start-session did not return a sessionKey.');
+        }
+
+        // Sessions are long-lived; cache for an hour so multi-turn chats reuse it.
+        Cache::put($cacheKey, $key, now()->addHour());
+
+        return $key;
+    }
+
+    /**
+     * POST the start-session endpoint and return the raw response.
+     */
+    protected function startSessionResponse(string $userId): \Illuminate\Http\Client\Response
     {
         if (! $this->isConfigured()) {
-            throw new RuntimeException('Voiceflow is not configured: set VOICEFLOW_API_KEY.');
+            throw new RuntimeException('Voiceflow is not configured: set VOICEFLOW_API_KEY and VOICEFLOW_PROJECT_ID.');
         }
 
         return Http::baseUrl($this->runtimeUrl)
             ->withHeaders([
-                'Authorization' => $this->apiKey,
-                'versionID' => $this->versionId,
+                'authorization' => $this->apiKey,
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
             ])
             ->connectTimeout(5)
-            ->timeout(12)
-            // Retry only transient connection failures — NOT error responses.
-            // A Voiceflow 500 is persistent, so retrying it just stacks latency
-            // and can exceed Cloudflare's origin timeout (yielding a 502). The
-            // `when` closure limits retries to connection-level exceptions.
-            ->retry(2, 200, when: fn ($e) => $e instanceof \Illuminate\Http\Client\ConnectionException, throw: false);
+            ->timeout(15)
+            ->retry(2, 200, when: fn ($e) => $e instanceof \Illuminate\Http\Client\ConnectionException, throw: false)
+            ->post(sprintf(
+                '/v4/project/%s/environment/%s/session',
+                $this->encode($this->projectId),
+                $this->encode($this->environment),
+            ), ['userID' => $userId]);
+    }
+
+    protected function forgetSession(string $userId): void
+    {
+        Cache::forget($this->sessionCacheKey($userId));
+    }
+
+    protected function sessionCacheKey(string $userId): string
+    {
+        return 'vf_session:'.$this->projectId.':'.$this->environment.':'.$userId;
+    }
+
+    /**
+     * Client authed with the raw API key (for state/variables endpoints).
+     */
+    protected function apiClient(): PendingRequest
+    {
+        if (! $this->isConfigured()) {
+            throw new RuntimeException('Voiceflow is not configured.');
+        }
+
+        return Http::baseUrl($this->runtimeUrl)
+            ->withHeaders([
+                'authorization' => $this->apiKey,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])
+            ->connectTimeout(5)
+            ->timeout(15);
+    }
+
+    protected function statePath(string $userId): string
+    {
+        return sprintf(
+            '/v4/project/%s/environment/%s/user/%s/state',
+            $this->encode($this->projectId),
+            $this->encode($this->environment),
+            $this->encode($userId),
+        );
+    }
+
+    protected function sessionFailureReason(int $status): string
+    {
+        return match (true) {
+            in_array($status, [401, 403], true) => 'Key rejected — check VOICEFLOW_API_KEY is a VF.DM.* key for THIS project.',
+            $status === 404 => 'Project or environment not found — check VOICEFLOW_PROJECT_ID and VOICEFLOW_ENVIRONMENT (alias, e.g. "main").',
+            default => 'Start-session failed (HTTP '.$status.').',
+        };
     }
 
     protected function encode(string $value): string

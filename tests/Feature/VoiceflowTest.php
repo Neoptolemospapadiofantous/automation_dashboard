@@ -22,9 +22,26 @@ class VoiceflowTest extends TestCase
         parent::setUp();
 
         config()->set('services.voiceflow.api_key', 'VF.DM.test-key');
-        config()->set('services.voiceflow.version_id', 'production');
+        config()->set('services.voiceflow.environment', 'main');
+        config()->set('services.voiceflow.project_id', 'proj-123');
         config()->set('services.voiceflow.runtime_url', 'https://general-runtime.voiceflow.com');
         config()->set('services.voiceflow.webhook_secret', 'shh-secret');
+    }
+
+    /**
+     * Fake the V4 two-step flow: start-session returns a sessionKey, interact
+     * returns a { traces: [...] } envelope, state returns variables.
+     *
+     * @param  array<int, array<string, mixed>>  $traces
+     * @param  array<string, mixed>  $variables
+     */
+    private function fakeV4(array $traces, array $variables = []): void
+    {
+        Http::fake([
+            'general-runtime.voiceflow.com/v4/project/*/session' => Http::response(['sessionKey' => 'sess-abc']),
+            'general-runtime.voiceflow.com/v4/interact' => Http::response(['traces' => $traces]),
+            'general-runtime.voiceflow.com/v4/project/*/state' => Http::response(['variables' => $variables]),
+        ]);
     }
 
     private function user(): User
@@ -65,11 +82,8 @@ class VoiceflowTest extends TestCase
 
     public function test_launch_proxies_to_voiceflow_and_returns_messages(): void
     {
-        Http::fake([
-            'general-runtime.voiceflow.com/state/user/*/interact' => Http::response([
-                ['type' => 'text', 'payload' => ['message' => 'Hi, what is your name?']],
-            ]),
-            'general-runtime.voiceflow.com/state/user/*/variables' => Http::response([]),
+        $this->fakeV4([
+            ['type' => 'text', 'payload' => ['message' => 'Hi, what is your name?']],
         ]);
 
         $this->actingAs($this->user())
@@ -83,15 +97,10 @@ class VoiceflowTest extends TestCase
     {
         Event::fake([LeadSaved::class, LeadMessage::class]);
 
-        Http::fake([
-            'general-runtime.voiceflow.com/state/user/*/interact' => Http::response([
-                ['type' => 'text', 'payload' => ['message' => 'Thanks Ada!']],
-            ]),
-            'general-runtime.voiceflow.com/state/user/*/variables' => Http::response([
-                'name' => 'Ada Lovelace',
-                'email' => 'ada@example.com',
-            ]),
-        ]);
+        $this->fakeV4(
+            traces: [['type' => 'text', 'payload' => ['message' => 'Thanks Ada!']]],
+            variables: ['name' => 'Ada Lovelace', 'email' => 'ada@example.com'],
+        );
 
         $user = $this->user();
 
@@ -116,8 +125,9 @@ class VoiceflowTest extends TestCase
 
     public function test_launch_surfaces_upstream_auth_error(): void
     {
+        // Start-session rejects the API key.
         Http::fake([
-            'general-runtime.voiceflow.com/state/user/*/interact' => Http::response(['message' => 'unauthorized'], 401),
+            'general-runtime.voiceflow.com/v4/project/*/session' => Http::response(['message' => 'unauthorized'], 401),
         ]);
 
         $this->actingAs($this->user())
@@ -127,36 +137,42 @@ class VoiceflowTest extends TestCase
             ->assertJsonStructure(['error', 'upstream_status']);
     }
 
-    public function test_health_detects_when_only_development_works(): void
+    public function test_health_ok_when_session_and_launch_succeed(): void
     {
-        // production 500s, development succeeds — health should recommend the switch.
-        Http::fake([
-            'general-runtime.voiceflow.com/state/user/*/interact' => function ($request) {
-                return $request->header('versionID')[0] === 'development'
-                    ? Http::response([['type' => 'text', 'payload' => ['message' => 'hi']]], 200)
-                    : Http::response(['message' => 'Internal server error'], 500);
-            },
-        ]);
+        $this->fakeV4([['type' => 'text', 'payload' => ['message' => 'hi']]]);
 
-        $service = new VoiceflowService();
-        $health = $service->health();
+        $health = (new VoiceflowService())->health();
 
         $this->assertTrue($health['ok']);
-        $this->assertSame('development', $health['working_version_id']);
-        $this->assertStringContainsString('development', $health['reason']);
+        $this->assertSame('main', $health['environment']);
     }
 
-    public function test_health_reports_500_on_all_versions(): void
+    public function test_health_reports_session_auth_failure(): void
     {
         Http::fake([
-            'general-runtime.voiceflow.com/state/user/*/interact' => Http::response(['message' => 'Internal server error'], 500),
+            'general-runtime.voiceflow.com/v4/project/*/session' => Http::response(['message' => 'nope'], 403),
         ]);
 
-        $service = new VoiceflowService();
-        $health = $service->health();
+        $health = (new VoiceflowService())->health();
 
         $this->assertFalse($health['ok']);
-        $this->assertStringContainsString('agent itself is erroring', $health['reason']);
+        $this->assertSame('start_session', $health['step']);
+        $this->assertStringContainsString('Key rejected', $health['reason']);
+    }
+
+    public function test_health_reports_agent_launch_failure(): void
+    {
+        // Session starts fine, but the agent 500s on launch.
+        Http::fake([
+            'general-runtime.voiceflow.com/v4/project/*/session' => Http::response(['sessionKey' => 'sess-abc']),
+            'general-runtime.voiceflow.com/v4/interact' => Http::response(['message' => 'Internal server error'], 500),
+        ]);
+
+        $health = (new VoiceflowService())->health();
+
+        $this->assertFalse($health['ok']);
+        $this->assertSame('interact', $health['step']);
+        $this->assertSame(500, $health['upstream_status']);
     }
 
     public function test_endpoints_return_503_when_unconfigured(): void

@@ -38,7 +38,9 @@ return [
     'voiceflow' => [
         // Dialog Manager API key (prefix VF.DM.*). Kept server-side only.
         'api_key' => env('VOICEFLOW_API_KEY'),
-        'version_id' => env('VOICEFLOW_VERSION_ID', 'production'),
+        // V4 uses environments (alias "main") instead of legacy version aliases.
+        'environment' => env('VOICEFLOW_ENVIRONMENT', 'main'),
+        // Required for the V4 start-session endpoint. Found in agent settings.
         'project_id' => env('VOICEFLOW_PROJECT_ID'),
         'runtime_url' => env('VOICEFLOW_RUNTIME_URL', 'https://general-runtime.voiceflow.com'),
         'api_url' => env('VOICEFLOW_API_URL', 'https://api.voiceflow.com'),

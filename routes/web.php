@@ -37,7 +37,7 @@ Route::middleware([
 
     // Phase 5 Voiceflow agent (server-proxied Dialog Manager API).
     Route::get('/agent', fn () => Inertia::render('Agent/Index', [
-        'configured' => ! empty(config('services.voiceflow.api_key')),
+        'configured' => ! empty(config('services.voiceflow.api_key')) && ! empty(config('services.voiceflow.project_id')),
     ]))->name('agent.index');
     Route::post('/agent/launch', [VoiceflowController::class, 'launch'])->name('agent.launch');
     Route::post('/agent/interact', [VoiceflowController::class, 'interact'])->name('agent.interact');

@@ -28,9 +28,9 @@ leads on the board live.
 ## Configuration
 
 ```env
-VOICEFLOW_API_KEY=VF.DM.xxxxxxxx        # Voiceflow → Settings → API keys
-VOICEFLOW_VERSION_ID=production
-VOICEFLOW_PROJECT_ID=...
+VOICEFLOW_API_KEY=VF.DM.xxxxxxxx        # Voiceflow → agent settings → API key
+VOICEFLOW_PROJECT_ID=...                # agent settings (required for V4)
+VOICEFLOW_ENVIRONMENT=main              # V4 environment alias (was version id)
 VOICEFLOW_RUNTIME_URL=https://general-runtime.voiceflow.com
 VOICEFLOW_API_URL=https://api.voiceflow.com
 VOICEFLOW_WEBHOOK_SECRET=...            # also set on the agent's webhook header
@@ -38,18 +38,28 @@ VOICEFLOW_WEBHOOK_SECRET=...            # also set on the agent's webhook header
 
 Which session variables become lead fields is controlled by
 `config/services.php → voiceflow.lead_variables` (default: name, email, phone,
-company). Without an API key the agent page shows a configured=false notice and
-the endpoints return 503.
+company). Without an API key + project id the agent page shows a
+configured=false notice and the endpoints return 503.
 
-## API contract used
+## API contract used (V4 Conversations API)
 
-- **Interact:** `POST {runtime}/state/user/{userID}/interact` with
-  `{ action: { type: 'launch' } }` or `{ action: { type: 'text', payload } }`,
-  headers `Authorization` + `versionID`. Returns an array of trace objects.
-- **Variables:** `GET {runtime}/state/user/{userID}/variables`.
+V4 is a **two-step** flow keyed on projectID + environment (alias `main`); the
+legacy `/state/user/...` + `versionID` endpoints are deprecated.
 
-See <https://docs.voiceflow.com/reference/stateinteract-1> and
-<https://docs.voiceflow.com/reference/trace-types>.
+1. **Start session:** `POST {runtime}/v4/project/{projectID}/environment/{env}/session`
+   with header `authorization: <VF.DM key>` and body `{ "userID": "..." }`
+   → returns `{ "sessionKey": "..." }`.
+2. **Interact:** `POST {runtime}/v4/interact` with header
+   `authorization: <sessionKey>` and body
+   `{ "action": { "type": "launch" | "text", "payload": ... }, "variables": {} }`
+   → returns `{ "traces": [...] }`.
+
+`VoiceflowService` caches the per-user `sessionKey` (1h) so multi-turn chats
+reuse the session; a `launch` resets it. `/agent/health` runs both steps and
+reports exactly which one fails.
+
+See <https://docs.voiceflow.com/api-reference/conversations-api/overview> and
+<https://docs.voiceflow.com/trace-types>.
 
 ## Verify
 
