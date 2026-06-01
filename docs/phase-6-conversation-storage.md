@@ -1,0 +1,129 @@
+# Phase 6 — Conversation storage, indexing & scale (PLAN)
+
+Status: **proposal for review** — no code yet.
+
+Goal: save every conversation durably, make them searchable at scale, and keep
+Voiceflow's analytics/evaluation working — without slowing the live dashboard.
+
+## Decisions (from review)
+
+- **Source of truth:** Hybrid — **local MySQL is primary** (drives dashboard,
+  search, retention; full data ownership), and we **also** persist transcripts
+  to Voiceflow (End transcript + properties) so their analytics/evaluations work.
+- **Search for scale:** **Laravel Scout + Typesense** for fast keyword/fuzzy
+  search now, architected to **add semantic/vector search later** with no rework.
+
+## Data model
+
+```
+conversations
+  id, team_id, lead_id (nullable FK), voiceflow_user_id,
+  voiceflow_session_key (nullable), voiceflow_transcript_id (nullable),
+  channel (web/agent), status (active|ended), started_at, ended_at,
+  last_message_at, message_count, meta (json), timestamps
+  indexes: (team_id, last_message_at), voiceflow_user_id, lead_id
+
+messages
+  id, conversation_id (FK, cascade), team_id (denormalized for scoping/search),
+  role (user|agent|system), text (longtext), trace_type, payload (json),
+  sequence (int), sent_at, created_at
+  indexes: (conversation_id, sequence), (team_id, created_at)
+  FULLTEXT(text)   -- baseline search before Typesense is wired
+```
+
+Why denormalize `team_id` onto messages: team-scoped search + retention without
+a join, and Scout indexes flat documents.
+
+## Write path (how data gets stored)
+
+Today `VoiceflowController` already emits `LeadMessage` for each user/agent turn.
+We add persistence alongside the broadcast:
+
+1. **On launch:** find-or-create a `conversation` for the `voiceflow_user_id`
+   (store the session key, link the lead when known).
+2. **Each turn:** append `messages` rows (user message + each agent trace),
+   bump `message_count`/`last_message_at`. Done in a queued listener so the HTTP
+   response stays fast.
+3. **On `end` trace (or inactivity):** mark conversation `ended`, and dispatch a
+   job to **persist the transcript to Voiceflow** (End transcript) and **tag
+   transcript properties** (`lead_id`, `team_id`, `status`) for their analytics.
+
+Refactor: extract a small `ConversationRecorder` service so the controller stays
+thin and the same path is reused by the capture webhook.
+
+## Voiceflow sync (secondary copy + their analytics)
+
+- **End transcript** when a conversation closes (transcripts are NOT auto-saved).
+- **Transcript properties**: create definitions once (`lead_id`, `team_id`,
+  `outcome`), then set values per transcript — links Voiceflow records to CRM.
+- **Backfill/reconcile job**: nightly `Search transcripts` to fill any gaps
+  (e.g. conversations that happened via the embedded widget, not our proxy).
+- All Voiceflow calls go through the existing `VoiceflowService`, queued, with
+  the fail-fast timeout policy already in place.
+
+## Search & indexing (scale path)
+
+**Tier 1 — now:** Laravel Scout + Typesense.
+- Make `Message` (and optionally `Conversation`) `Searchable`.
+- Index: text, role, team_id, lead_id, conversation_id, sent_at.
+- Typesense self-hosted on the Forge VPS (Docker or binary) — cheap, fast,
+  typo-tolerant; Scout queues indexing so writes stay fast.
+- Team-scoped queries via Scout `where('team_id', ...)`.
+- Fallback: MySQL `FULLTEXT(text)` works out of the box if Typesense isn't up.
+
+**Tier 2 — later (no rework):** semantic/vector search.
+- Add an embedding per message (or per conversation summary) via an embeddings
+  provider; store vectors in Typesense (native vector support) or pgvector.
+- Enables "find conversations about X" by meaning. Slots in behind the same
+  search service interface.
+
+## Scale & retention
+
+- **Queued everything**: persistence, indexing, Voiceflow sync are jobs, not
+  request-blocking. (Queue worker is already required for broadcasts.)
+- **Partition/prune**: a configurable retention policy + `messages` pruning
+  command; consider monthly table partitioning when volume is high.
+- **Read path**: dashboard reads local DB; a conversation detail view streams
+  messages by `sequence`. Live updates continue via the existing `LeadMessage`
+  broadcast (Pusher).
+- **Indexes** above keep team-scoped reads O(log n); Typesense offloads search
+  from MySQL.
+
+## UI additions
+
+- **Conversation history** on the lead detail / agent panel (turn-by-turn).
+- **Global conversation search** page (keyword now, semantic later), team-scoped.
+- Live badge continues to tick new messages in via Echo.
+
+## New config / env
+
+```env
+SCOUT_DRIVER=typesense
+TYPESENSE_HOST=127.0.0.1
+TYPESENSE_PORT=8108
+TYPESENSE_API_KEY=...
+# Voiceflow transcript sync
+VOICEFLOW_SYNC_TRANSCRIPTS=true
+```
+
+## Deploy impact
+
+- Add **Typesense** as a daemon on the Forge server (Server → Daemons), and a
+  Scout import step. Falls back to MySQL fulltext if absent, so deploy stays
+  green even before Typesense is provisioned.
+- No change to the existing queue worker requirement.
+
+## Build order (when approved)
+
+1. Migrations + `Conversation`/`Message` models + relations.
+2. `ConversationRecorder` + queued listener on `LeadMessage`; wire launch/interact.
+3. Conversation history UI + live updates.
+4. Scout + Typesense; make messages searchable; search page (MySQL-fulltext fallback first).
+5. Voiceflow transcript sync (End transcript + properties) + nightly reconcile job.
+6. Retention/prune command; tests throughout.
+
+## Open questions for you
+
+- Retention period (e.g. keep messages 12 months, then prune)?
+- Provision Typesense now, or ship Tier-1 on MySQL fulltext and add Typesense in a follow-up?
+- Do you want semantic/vector search in this phase, or keep it for Phase 7?
