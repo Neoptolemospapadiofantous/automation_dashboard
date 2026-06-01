@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
 import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
@@ -13,6 +13,15 @@ defineProps({
 });
 
 const showingNavigationDropdown = ref(false);
+
+// Notifications (bell): shared from the server via Inertia middleware.
+const page = usePage();
+const notifications = computed(() => page.props.notifications ?? []);
+
+const markNotificationsRead = () => {
+    if (!notifications.value.length) return;
+    router.post(route('notifications.read'), {}, { preserveScroll: true });
+};
 
 const switchToTeam = (team) => {
     router.put(route('current-team.update'), {
@@ -117,6 +126,43 @@ const logout = () => {
                                                     </form>
                                                 </template>
                                             </template>
+                                        </div>
+                                    </template>
+                                </Dropdown>
+                            </div>
+
+                            <!-- Notifications Bell -->
+                            <div class="ms-3 relative">
+                                <Dropdown align="right" width="80">
+                                    <template #trigger>
+                                        <button type="button" class="relative inline-flex items-center rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none">
+                                            <svg class="size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                                            </svg>
+                                            <span v-if="notifications.length" class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
+                                                {{ notifications.length }}
+                                            </span>
+                                        </button>
+                                    </template>
+                                    <template #content>
+                                        <div class="flex items-center justify-between px-4 py-2">
+                                            <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">Notifications</span>
+                                            <button v-if="notifications.length" type="button" class="text-xs text-indigo-600 hover:text-indigo-500" @click="markNotificationsRead">
+                                                Mark all read
+                                            </button>
+                                        </div>
+                                        <div class="max-h-80 overflow-y-auto">
+                                            <Link
+                                                v-for="n in notifications"
+                                                :key="n.id"
+                                                :href="route('leads.index')"
+                                                class="block border-t border-gray-100 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                                            >
+                                                {{ n.message }}
+                                            </Link>
+                                            <p v-if="!notifications.length" class="border-t border-gray-100 px-4 py-6 text-center text-sm text-gray-400">
+                                                You're all caught up.
+                                            </p>
                                         </div>
                                     </template>
                                 </Dropdown>

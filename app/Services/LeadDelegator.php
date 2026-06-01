@@ -8,6 +8,7 @@ use App\Models\Lead;
 use App\Models\LeadAssignment;
 use App\Models\Team;
 use App\Models\User;
+use App\Notifications\LeadAssignedNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -64,6 +65,11 @@ class LeadDelegator
                 'previous_assignee' => $previous,
                 'strategy' => $strategy,
             ]);
+
+            // Notify the newly-assigned rep (skip self-assignment noise).
+            if ($target && $target->id !== $byUser?->id) {
+                $target->notify(new LeadAssignedNotification($lead));
+            }
 
             return $target;
         });

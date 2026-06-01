@@ -37,7 +37,16 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            //
+            // Unread lead notifications for the bell UI.
+            'notifications' => fn () => $request->user()
+                ? $request->user()->unreadNotifications()->latest()->take(10)->get()
+                    ->map(fn ($n) => [
+                        'id' => $n->id,
+                        'lead_id' => $n->data['lead_id'] ?? null,
+                        'message' => $n->data['message'] ?? 'Notification',
+                        'created_at' => $n->created_at->toIso8601String(),
+                    ])->values()
+                : [],
         ];
     }
 }
