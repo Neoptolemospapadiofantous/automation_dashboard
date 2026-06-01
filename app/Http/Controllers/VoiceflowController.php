@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\LeadStatus;
 use App\Events\LeadMessage;
 use App\Events\LeadSaved;
 use App\Models\Conversation;
 use App\Models\Lead;
 use App\Services\ConversationRecorder;
 use App\Services\VoiceflowService;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -24,8 +27,7 @@ class VoiceflowController extends Controller
     public function __construct(
         protected VoiceflowService $voiceflow,
         protected ConversationRecorder $recorder,
-    ) {
-    }
+    ) {}
 
     /**
      * Diagnostic: reports whether Voiceflow is configured, reachable, and
@@ -91,14 +93,12 @@ class VoiceflowController extends Controller
 
         $lead = $this->resolveLead($request, $data['lead_id'] ?? null);
 
-        $conversation = $this->recorder->resolve(
-            $request->user()->currentTeam->id,
-            $data['user_id'],
-            $lead?->id,
-        );
-
         // Persist + echo the user's message live before we hit Voiceflow.
-        $this->recorder->record($conversation, 'user', $data['message'], 'text');
+        // Recording is best-effort: a storage hiccup must never break the chat.
+        $conversation = $this->safelyResolve($request, $data['user_id'], $lead?->id);
+        if ($conversation) {
+            $this->safelyRecord($conversation, 'user', $data['message']);
+        }
         $this->broadcastMessage($request, $lead, 'user', $data['message']);
 
         $traces = $this->guard(fn () => $this->voiceflow->sendText($data['user_id'], $data['message']));
@@ -117,19 +117,21 @@ class VoiceflowController extends Controller
     {
         $parsed = $this->voiceflow->parseTraces($traces);
 
-        $conversation ??= $this->recorder->resolve(
-            $request->user()->currentTeam->id,
-            $userId,
-            $lead?->id,
-        );
+        $conversation ??= $this->safelyResolve($request, $userId, $lead?->id);
 
         foreach ($parsed['messages'] as $message) {
-            $this->recorder->record($conversation, 'agent', $message, 'text');
+            if ($conversation) {
+                $this->safelyRecord($conversation, 'agent', $message);
+            }
             $this->broadcastMessage($request, $lead, 'agent', $message);
         }
 
-        if ($parsed['ended']) {
-            $this->recorder->end($conversation);
+        if ($conversation && $parsed['ended']) {
+            try {
+                $this->recorder->end($conversation);
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         // Read the captured lead fields out of the agent's session.
@@ -145,12 +147,16 @@ class VoiceflowController extends Controller
         $lead = $this->upsertLead($request, $lead, $userId, $fields);
 
         // Keep the conversation linked to the lead once we know it.
-        if ($lead && $conversation->lead_id !== $lead->id) {
-            $conversation->update(['lead_id' => $lead->id]);
+        if ($conversation && $lead && $conversation->lead_id !== $lead->id) {
+            try {
+                $conversation->update(['lead_id' => $lead->id]);
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         return response()->json([
-            'conversation_id' => $conversation->id,
+            'conversation_id' => $conversation?->id,
             'user_id' => $userId,
             'lead_id' => $lead?->id,
             'messages' => $parsed['messages'],
@@ -190,8 +196,8 @@ class VoiceflowController extends Controller
             $merged = array_merge($lead->captured ?? [], $fields);
             $lead->fill($attributes);
             $lead->captured = $merged;
-            if ($lead->status === \App\Enums\LeadStatus::New) {
-                $lead->status = \App\Enums\LeadStatus::Engaging;
+            if ($lead->status === LeadStatus::New) {
+                $lead->status = LeadStatus::Engaging;
             }
             $lead->save();
         } else {
@@ -200,7 +206,7 @@ class VoiceflowController extends Controller
                 'team_id' => $team->id,
                 'name' => $fields['name'] ?? ($fields['email'] ?? 'New contact'),
                 'source' => 'voiceflow',
-                'status' => \App\Enums\LeadStatus::Engaging,
+                'status' => LeadStatus::Engaging,
                 'captured' => $fields,
             ]);
         }
@@ -219,6 +225,37 @@ class VoiceflowController extends Controller
             text: $text,
             at: now()->toIso8601String(),
         ));
+    }
+
+    /**
+     * Resolve (find-or-create) the conversation without ever breaking the chat
+     * if storage fails. Returns null on failure (logged).
+     */
+    protected function safelyResolve(Request $request, string $userId, ?int $leadId): ?Conversation
+    {
+        try {
+            return $this->recorder->resolve(
+                $request->user()->currentTeam->id,
+                $userId,
+                $leadId,
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
+    }
+
+    /**
+     * Record a message best-effort; a storage failure is logged, not fatal.
+     */
+    protected function safelyRecord(Conversation $conversation, string $role, string $text): void
+    {
+        try {
+            $this->recorder->record($conversation, $role, $text, 'text');
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**
@@ -245,6 +282,7 @@ class VoiceflowController extends Controller
      * JsonResponse on failure.
      *
      * @template T
+     *
      * @param  callable(): T  $callback
      * @return T|JsonResponse
      */
@@ -252,7 +290,7 @@ class VoiceflowController extends Controller
     {
         try {
             return $callback();
-        } catch (\Illuminate\Http\Client\RequestException $e) {
+        } catch (RequestException $e) {
             $status = $e->response->status();
             report($e);
 
@@ -267,7 +305,7 @@ class VoiceflowController extends Controller
                 'error' => $hint,
                 'upstream_status' => $status,
             ], 502);
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        } catch (ConnectionException $e) {
             report($e);
 
             return response()->json([

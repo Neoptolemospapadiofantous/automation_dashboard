@@ -31,10 +31,18 @@ return new class extends Migration
             $table->index(['team_id', 'created_at']);
         });
 
-        // MySQL gets a FULLTEXT index as the zero-infra search fallback before
-        // Typesense is provisioned. SQLite (local/CI) skips this gracefully.
-        if (DB::getDriverName() === 'mysql') {
-            DB::statement('ALTER TABLE messages ADD FULLTEXT messages_text_fulltext (text)');
+        // Optional FULLTEXT index on MySQL/MariaDB for the DB search fallback
+        // (before Typesense is provisioned). It is purely a search optimization:
+        // message recording must NEVER depend on it, so a failure here is
+        // swallowed and logged rather than aborting the migration.
+        if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+            try {
+                Schema::table('messages', function (Blueprint $table) {
+                    $table->fullText('text', 'messages_text_fulltext');
+                });
+            } catch (Throwable $e) {
+                report($e);
+            }
         }
     }
 
