@@ -25,6 +25,8 @@ enum OnboardingState: string
 
     /**
      * Resolve the user's current onboarding step from DB state.
+     *
+     * Resolution order matters — earlier checks short-circuit.
      */
     public static function for(User $user): self
     {
@@ -47,16 +49,35 @@ enum OnboardingState: string
             }
         }
 
+        // Active agents are Complete — full stop. status='active' is the
+        // contract for "this is ready to go," set by the state machine on
+        // a passing health check (BYOK) or by CreateAgent::createManaged
+        // immediately after a successful clone (managed). Checking
+        // isConfigured() here was a bug: a managed agent whose
+        // .env-level config drifted (e.g. VOICEFLOW_MASTER_PROJECT_ID
+        // unset) would test as not-configured even when its row says
+        // active, and we'd redirect-loop the user through /onboarding/connect
+        // — which is the BYOK paste-keys form, useless to a managed user.
+        if ($agent->status === Agent::STATUS_ACTIVE) {
+            return self::Complete;
+        }
+
+        // Managed agents are activated atomically at create time. A managed
+        // agent in any non-active state means an admin/system issue (env
+        // misconfig, Voiceflow API down at clone time, manually disabled),
+        // not something the user can fix via the BYOK wizard. Let them
+        // through to the dashboard; surface the problem there.
+        if ($agent->isManaged()) {
+            return self::Complete;
+        }
+
+        // BYOK agent in draft. Has creds → just needs the health check to
+        // pass. No creds → needs the paste-keys form first.
         if (! $agent->isConfigured()) {
             return self::NeedsCredentials;
         }
 
-        if ($agent->status !== Agent::STATUS_ACTIVE) {
-            // Has creds but never passed health check (or was disabled).
-            return self::NeedsHealthCheck;
-        }
-
-        return self::Complete;
+        return self::NeedsHealthCheck;
     }
 
     /**
