@@ -479,7 +479,22 @@ that's trivially diffable in PR reviews. If the state machines grow past
 Total new lifecycle + foundation tests: **30 cases**, 0 regressions on the
 existing 85.
 
-## Phase J — Managed mode (shipped)
+## Phase J — Managed mode (SUPERSEDED — see Phase K)
+
+> ⚠️ **The environment-clone design described below was abandoned.** Web
+> research on Voiceflow's docs (2026-06-03) surfaced two facts that
+> invalidate it: a hard cap of **10 environments per project** across
+> all tiers, AND that KB documents / integrations / secrets / analytics
+> are **SHARED across environments in the same project**. So even if
+> the cap weren't a wall, customers would leak data into each other's
+> agents. **The pool-based replacement is in [Phase K](#phase-k--project-pool-replaces-the-phase-j-environment-clone) below.**
+>
+> This section is kept as a record of what didn't work and why. Don't
+> bring the clone-environment approach back without confirmation from
+> Voiceflow Enterprise that those two limits have been raised in
+> writing.
+
+## Phase J — Managed mode (original, superseded)
 
 The BYOK flow we shipped first asked the user to set up Voiceflow,
 build a project, generate a key, and paste it. Managed mode skips
@@ -559,23 +574,107 @@ without disrupting current users.
 - ✓ BYOK agents unaffected by managed mode flag
 - ✓ Managed wizard skips step 2 (lands on Done directly)
 
-### Switching a deployment to managed
+## Phase K — Project pool (replaces the Phase J environment clone)
 
-1. Sign up at https://creator.voiceflow.com (paid tier needed for
-   Project API access).
-2. Build the lead-qualification flow in their IDE — the captured
+### Architecture
+
+Each tenant gets their **own** Voiceflow project — not their own
+environment. You (operator) manually pre-create N projects from the
+template, store their `project_id + api_key` in
+`voiceflow_project_pool`, and signup allocates the next available
+row to the new agent.
+
+```
+You (one-time, then weekly):
+  Create N Voiceflow projects from template
+  → record project_id + api_key for each
+  → php artisan vf:pool:add  (interactive; secret-safe)
+
+User signup, managed mode:
+  CreateAgent::createManaged
+    → create draft agent shell
+    → PoolAllocator::allocate(agent)
+       SELECT FROM voiceflow_project_pool WHERE status='available' LIMIT 1 FOR UPDATE
+       UPDATE → status='assigned', assigned_to_agent_id, assigned_at
+    → stamp the agent with the entry's keys
+    → status='active', returns to wizard /done
+```
+
+### Why this works where the clone path didn't
+
+- **Real isolation.** Each tenant has a separate Voiceflow project —
+  KB, integrations, secrets, analytics are all project-scoped, so
+  there's no cross-tenant leak path.
+- **Scales to whatever pool size you maintain.** No environment cap.
+- **Zero per-signup latency.** Allocation is a DB write.
+
+Cost: operator pre-provisioning. A signup surge can deplete the
+pool; `vf:pool:list --available-min=10` in cron exits 1 when below
+threshold, pipe to Slack/email alert.
+
+### Operator commands
+
+| Command | What |
+|---|---|
+| `php artisan vf:pool:list` | Counts (available/assigned/retired/total) + 20 most recent. Exits 1 when `available < min`. |
+| `php artisan vf:pool:add --project-id=… --api-key=…` | Add one pool entry. Prompts interactively for missing flags so secrets stay out of shell history. |
+
+### Error model
+
+`PoolExhausted` thrown when allocation finds no available rows.
+Mapped by the global handler to **503 JSON** (`{error, detail}`)
+for the wizard / API, redirect-back-with-error for web. Every 503
+in logs is a lost signup — alert on it.
+
+### Agent deletion
+
+`DeleteAgent::execute` calls `PoolAllocator::release` first, which
+flips the pool row to `retired`. NOT back to `available` — the
+previous tenant's KB + conversation state are still inside the
+Voiceflow project, so reusing it without wiping would leak data.
+Operator must wipe in Voiceflow first, then manually flip retired →
+available (DB update for now; future admin UI would surface it).
+
+### Switching a deployment to Phase K managed mode
+
+1. Sign up for paid Voiceflow.
+2. Build the lead-qualification template project once. Captured
    variables MUST be `name`, `email`, `phone`, `company` (per
-   `services.voiceflow.lead_variables`) and the Custom Action must
-   POST to your dashboard's per-agent webhook URL.
-3. Note the project id and the template environment id.
-4. Set in your deployment's env:
-   - `VOICEFLOW_API_KEY=<your DM key>`
-   - `VOICEFLOW_WORKSPACE_API_KEY=<your workspace key>`  ← required for cloning
-   - `VOICEFLOW_MASTER_PROJECT_ID=<the project>`
-   - `VOICEFLOW_TEMPLATE_ENVIRONMENT_ID=<the template env>`
-   - `VOICEFLOW_MANAGED=true`
-5. Deploy. New signups now get managed agents; existing ones keep
-   their BYOK setup.
+   `services.voiceflow.lead_variables`).
+3. **For each tenant slot you want available**:
+   - In Voiceflow IDE: New project, clone from your template
+   - Generate a Dialog Manager API key in Settings → API keys
+   - Copy the 24-char project id from the URL
+   - `php artisan vf:pool:add` and paste the values
+4. Set in env: `VOICEFLOW_MANAGED=true` (plus
+   `VOICEFLOW_API_KEY` + `VOICEFLOW_WORKSPACE_API_KEY` if you also
+   need workspace-key features like analytics/KB management).
+5. Deploy. New signups now allocate from the pool; existing BYOK
+   agents are untouched.
+
+If/when Voiceflow opens a programmatic project-creation API to
+partners, step 3 becomes a background job. The rest stays the same.
+
+### Files
+
+- `database/migrations/2026_06_03_220000_create_voiceflow_project_pool_table.php`
+- `app/Models/VoiceflowProjectPoolEntry.php` (encrypted credentials, $hidden mirrors Agent)
+- `app/Provisioning/{PoolAllocator, PoolExhausted}.php`
+- `app/Actions/Agents/CreateAgent.php` — `createManaged()` allocates from pool
+- `app/Actions/Agents/DeleteAgent.php` — releases pool entry on delete
+- `app/Console/Commands/{VoiceflowPoolList, VoiceflowPoolAdd}.php`
+- `tests/Feature/PoolAllocatorTest.php` (7 cases)
+
+### Phase J cleanup
+
+When Phase K shipped, the obsolete Phase J pieces were removed:
+
+- `VoiceflowService::cloneEnvironment()` — deleted
+- `services.voiceflow.managed.master_project_id` config key — deleted
+- `services.voiceflow.managed.template_environment_id` config key — deleted
+- `VOICEFLOW_MASTER_PROJECT_ID` / `VOICEFLOW_TEMPLATE_ENVIRONMENT_ID` env vars — deleted from `.env.example`
+- `Agent::isConfigured()` managed-specific branch — collapsed (managed and BYOK now have the same shape: per-row api_key + project_id)
+- `VoiceflowService::forAgent()` managed-specific branch — collapsed (same reason)
 
 ## Roadmap
 
@@ -589,5 +688,6 @@ without disrupting current users.
 | E. Onboarding wizard | ✅ shipped | 3-step `/onboarding` flow + `RequireAgent` middleware |
 | F. Template `.vf` | ⚠️ placeholder shipped | Schema documented; real `.vf` export pending (manual Voiceflow IDE step) |
 | G. Page scoping | ✅ shipped | All lists + detail pages filter by `current_agent_id`; `forAgent()` scope on Lead/Conversation/Message |
-| J. Managed mode | ✅ shipped | `mode` column on agents, `VoiceflowService::cloneEnvironment`, CreateAgent managed branch, wizard collapses to 1 step. Feature flag (`VOICEFLOW_MANAGED`) coexists with BYOK. |
+| J. Managed mode (env-clone, superseded) | ⚠️ removed | `mode` column + wizard collapse still ship. Environment-clone provisioning abandoned after Voiceflow's docs confirmed 10-env-per-project cap + shared KB across environments. |
+| K. Project pool (real managed) | ✅ shipped | One Voiceflow project per tenant, allocated from a pre-created pool via `php artisan vf:pool:add` + `PoolAllocator`. Real isolation. Phase J's dead code removed in same commit. |
 | H. Billing | later | Cashier + Stripe, plan limits |

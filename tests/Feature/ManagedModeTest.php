@@ -66,13 +66,16 @@ class ManagedModeTest extends TestCase
 
     public function test_settings_page_hides_credentials_for_managed_agent(): void
     {
+        // Phase K: managed agents DO carry real credentials (stamped from
+        // the pool); the test is that the SETTINGS PAGE PROJECTION hides
+        // them, not that the row has null values.
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create([
             'mode' => Agent::MODE_MANAGED,
-            'voiceflow_api_key' => null,
-            'voiceflow_project_id' => null,
-            'voiceflow_environment' => 'cloned-env-xyz',
-            'voiceflow_workspace_api_key' => null,
+            'voiceflow_api_key' => 'VF.DM.pool-stamped-secret',
+            'voiceflow_project_id' => 'pool-stamped-project',
+            'voiceflow_environment' => 'main',
+            'voiceflow_workspace_api_key' => 'VF.WS.pool-stamped-ws',
         ]);
 
         $this->actingAs($user->fresh())->get(route('agents.show', $agent))
@@ -97,16 +100,16 @@ class ManagedModeTest extends TestCase
 
     public function test_managed_update_silently_drops_credential_writes(): void
     {
-        // Defence-in-depth: a clever curl trying to write credentials to a
-        // managed agent gets validation success + no-op behaviour, not a
-        // route into stamping per-row creds on something that's supposed
-        // to be controlled by env.
+        // Defence-in-depth: a clever curl trying to overwrite a managed
+        // agent's pool-stamped credentials gets the name change but the
+        // credential fields are dropped — keys can only change via
+        // re-pool-allocation, never via the settings PUT.
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create([
             'mode' => Agent::MODE_MANAGED,
-            'voiceflow_api_key' => null,
-            'voiceflow_project_id' => null,
-            'voiceflow_environment' => 'cloned-env-xyz',
+            'voiceflow_api_key' => 'VF.DM.original-pool-key',
+            'voiceflow_project_id' => 'original-pool-project',
+            'voiceflow_environment' => 'main',
         ]);
 
         $this->actingAs($user->fresh())
@@ -119,9 +122,9 @@ class ManagedModeTest extends TestCase
 
         $fresh = $agent->fresh();
         $this->assertSame('Renamed', $fresh->name);
-        $this->assertNull($fresh->voiceflow_api_key, 'credential injection must be ignored');
-        $this->assertNull($fresh->voiceflow_project_id, 'credential injection must be ignored');
-        $this->assertSame('cloned-env-xyz', $fresh->voiceflow_environment, 'env id should not be overwritten');
+        $this->assertSame('VF.DM.original-pool-key', $fresh->voiceflow_api_key, 'credential injection must not overwrite the pool-stamped key');
+        $this->assertSame('original-pool-project', $fresh->voiceflow_project_id, 'credential injection must not overwrite the pool-stamped project_id');
+        $this->assertSame('main', $fresh->voiceflow_environment, 'env id should not be overwritten');
     }
 
     public function test_managed_wizard_skips_step_2(): void
