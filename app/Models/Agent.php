@@ -123,20 +123,15 @@ class Agent extends Model
     /**
      * Whether this agent has the minimum credentials to make API calls.
      *
-     * byok: the row itself must carry the api_key + project_id.
-     * managed: the row only needs voiceflow_environment (the cloned env id);
-     * api_key + project_id come from .env via VoiceflowService::forAgent.
-     * We still verify the env-level config is populated, otherwise the
-     * call would fail at the auth header.
+     * Post-Phase-K, managed and BYOK agents look identical at the row
+     * level: both store voiceflow_api_key + voiceflow_project_id. The
+     * only difference is who set them — the user (BYOK) vs. the pool
+     * allocator (managed). The earlier managed-specific branch (read
+     * api_key + project_id from .env config) was a workaround for the
+     * removed env-clone design.
      */
     public function isConfigured(): bool
     {
-        if ($this->isManaged()) {
-            return ! empty($this->voiceflow_environment)
-                && ! empty(config('services.voiceflow.api_key'))
-                && ! empty(config('services.voiceflow.managed.master_project_id'));
-        }
-
         return ! empty($this->voiceflow_api_key) && ! empty($this->voiceflow_project_id);
     }
 

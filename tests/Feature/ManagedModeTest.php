@@ -26,8 +26,6 @@ class ManagedModeTest extends TestCase
         config()->set('services.voiceflow.api_key', 'VF.DM.master-key');
         config()->set('services.voiceflow.workspace_api_key', 'VF.WS.master-workspace-key');
         config()->set('services.voiceflow.managed.enabled', true);
-        config()->set('services.voiceflow.managed.master_project_id', 'master-proj-abc');
-        config()->set('services.voiceflow.managed.template_environment_id', 'tmpl-env-001');
     }
 
     // NOTE on prior tests: this file previously had

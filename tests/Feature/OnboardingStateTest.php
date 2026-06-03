@@ -75,22 +75,27 @@ class OnboardingStateTest extends TestCase
         $this->assertSame(OnboardingState::Complete, OnboardingState::for($user));
     }
 
-    public function test_active_agent_is_complete_even_when_env_config_missing(): void
+    public function test_active_agent_is_complete_regardless_of_isconfigured_state(): void
     {
-        // Regression: BEFORE this guard, an active managed agent in a
-        // deployment where VOICEFLOW_MASTER_PROJECT_ID drifted/wasn't set
-        // would test as not-configured and the middleware would redirect
-        // every request to /onboarding/connect — the BYOK paste-keys form,
-        // which is useless to a managed user. The tinker-converted dev
-        // agent hit exactly this path.
-        config()->set('services.voiceflow.api_key', null);
-        config()->set('services.voiceflow.managed.master_project_id', null);
-
+        // Regression: BEFORE this guard, OnboardingState checked
+        // isConfigured() BEFORE status==='active'. For any agent where
+        // isConfigured() returned false (back when the managed-mode
+        // branch checked env config that could drift, or any other
+        // future condition), the middleware would redirect-loop the
+        // user through /onboarding/connect — the BYOK paste-keys form,
+        // which is useless to a managed user.
+        //
+        // The fix: trust status==='active' first. Now applies to
+        // post-Phase-K managed agents too (they carry real per-row
+        // credentials so isConfigured naturally returns true, but the
+        // guard's also-true safety net stays).
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create([
             'mode' => Agent::MODE_MANAGED,
             'status' => Agent::STATUS_ACTIVE,
             'voiceflow_environment' => 'env-xyz',
+            // Intentionally null — simulates the broken state we used to
+            // bounce through onboarding.connect. Now: status=active wins.
             'voiceflow_api_key' => null,
             'voiceflow_project_id' => null,
         ]);
