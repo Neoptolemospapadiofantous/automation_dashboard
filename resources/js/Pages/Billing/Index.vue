@@ -40,7 +40,12 @@ const fmt = (d) => new Date(d).toLocaleString();
                         <div class="text-xs uppercase tracking-wide text-gray-400">Current plan</div>
                         <div class="mt-1 flex items-baseline gap-2">
                             <div class="text-2xl font-semibold text-gray-900">{{ billing?.plan_label }}</div>
-                            <button type="button" class="text-xs font-medium text-indigo-600 hover:text-indigo-500" disabled title="Stripe wiring coming in next release">
+                            <button
+                                type="button"
+                                class="cursor-not-allowed text-xs font-medium text-gray-400 line-through opacity-60"
+                                disabled
+                                title="Stripe Checkout wiring coming in the next release"
+                            >
                                 Upgrade →
                             </button>
                         </div>
@@ -71,8 +76,13 @@ const fmt = (d) => new Date(d).toLocaleString();
                             1 credit = 1 message (each user message and each agent reply). Credits reset on renewal — no rollover.
                         </div>
                         <div v-if="billing?.allows_topups" class="mt-4">
-                            <button type="button" class="rounded-md border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100" disabled title="Stripe wiring coming in next release">
-                                Buy top-up credits
+                            <button
+                                type="button"
+                                class="cursor-not-allowed rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-400 opacity-70"
+                                disabled
+                                title="Stripe Checkout wiring coming in the next release"
+                            >
+                                Buy top-up credits (coming soon)
                             </button>
                         </div>
                     </div>

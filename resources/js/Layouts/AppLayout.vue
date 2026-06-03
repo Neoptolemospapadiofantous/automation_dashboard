@@ -8,7 +8,7 @@ import DropdownLink from '@/Components/DropdownLink.vue';
 import SidebarLink from '@/Components/SidebarLink.vue';
 import CreditMeter from '@/Components/CreditMeter.vue';
 
-defineProps({
+const props = defineProps({
     title: String,
 });
 
@@ -55,14 +55,14 @@ const logout = () => {
                 <div v-if="currentAgent || teamAgents.length" class="border-b border-gray-100 px-3 py-3">
                     <Dropdown align="left" width="56">
                         <template #trigger>
-                            <button type="button" class="flex w-full items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            <button type="button" class="group flex w-full items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-2 text-left text-sm font-medium text-gray-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/30 hover:text-gray-900">
                                 <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-indigo-50 text-indigo-600">
                                     <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                                     </svg>
                                 </span>
                                 <span class="flex-1 truncate">{{ currentAgent?.name ?? 'No agent' }}</span>
-                                <svg class="size-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <svg class="size-4 text-gray-400 transition group-hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
                                 </svg>
                             </button>
@@ -228,19 +228,25 @@ const logout = () => {
 
             <!-- ───────────────────────── Top bar (everywhere) ───────────────────────── -->
             <div class="lg:pl-60">
-                <div class="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6 lg:px-8">
+                <div class="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-gray-200 bg-white/95 px-4 backdrop-blur sm:px-6 lg:px-8">
                     <!-- Hamburger (mobile) -->
                     <button
                         type="button"
-                        class="inline-flex items-center justify-center rounded-md p-2 text-gray-500 hover:bg-gray-100 lg:hidden"
+                        class="inline-flex items-center justify-center rounded-md p-1.5 text-gray-500 hover:bg-gray-100 lg:hidden"
                         @click="showMobileNav = true"
                     >
-                        <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                         </svg>
                     </button>
 
-                    <div class="hidden flex-1 lg:block"><!-- spacer --></div>
+                    <!-- Inline page title: gives the top bar purpose and lets us
+                         shrink the PageHeader on simple pages. Pages that want a
+                         richer header still get one via the PageHeader component. -->
+                    <div v-if="props.title" class="hidden min-w-0 flex-1 lg:flex lg:items-center lg:gap-2">
+                        <span class="truncate text-sm font-medium text-gray-700">{{ props.title }}</span>
+                    </div>
+                    <div v-else class="hidden flex-1 lg:block"><!-- spacer --></div>
 
                     <div class="flex items-center gap-2">
                         <!-- Notifications bell -->
