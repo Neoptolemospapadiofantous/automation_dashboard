@@ -18,6 +18,7 @@ class Message extends Model
     protected $fillable = [
         'conversation_id',
         'team_id',
+        'agent_id',
         'role',
         'text',
         'trace_type',
@@ -42,6 +43,11 @@ class Message extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
     }
 
     /**

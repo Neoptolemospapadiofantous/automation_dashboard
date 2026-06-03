@@ -16,6 +16,7 @@ class LeadAssignment extends Model
     protected $fillable = [
         'lead_id',
         'team_id',
+        'agent_id',
         'assigned_to',
         'assigned_by',
         'previous_assignee',

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Jetstream\Events\TeamCreated;
 use Laravel\Jetstream\Events\TeamDeleted;
 use Laravel\Jetstream\Events\TeamUpdated;
@@ -22,7 +24,33 @@ class Team extends JetstreamTeam
     protected $fillable = [
         'name',
         'personal_team',
+        'current_agent_id',
     ];
+
+    public function agents(): HasMany
+    {
+        return $this->hasMany(Agent::class);
+    }
+
+    public function currentAgent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class, 'current_agent_id');
+    }
+
+    /**
+     * Switch the team's currently-active agent. Returns true on success,
+     * false if the agent doesn't belong to this team.
+     */
+    public function switchAgent(Agent $agent): bool
+    {
+        if ($agent->team_id !== $this->id) {
+            return false;
+        }
+
+        $this->forceFill(['current_agent_id' => $agent->id])->save();
+
+        return true;
+    }
 
     /**
      * The event map for the model.

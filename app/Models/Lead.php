@@ -15,6 +15,7 @@ class Lead extends Model
 
     protected $fillable = [
         'team_id',
+        'agent_id',
         'assigned_to',
         'name',
         'email',
@@ -42,6 +43,11 @@ class Lead extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
     }
 
     public function assignee(): BelongsTo

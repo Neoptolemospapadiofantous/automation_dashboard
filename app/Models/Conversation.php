@@ -15,6 +15,7 @@ class Conversation extends Model
 
     protected $fillable = [
         'team_id',
+        'agent_id',
         'lead_id',
         'voiceflow_user_id',
         'voiceflow_session_key',
@@ -41,6 +42,11 @@ class Conversation extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
     }
 
     public function lead(): BelongsTo
