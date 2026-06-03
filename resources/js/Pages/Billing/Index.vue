@@ -32,7 +32,10 @@ const fmt = (d) => new Date(d).toLocaleString();
     <AppLayout title="Billing">
         <PageHeader title="Billing" description="Your plan, credit usage, and transaction history." />
 
-        <div class="py-8">
+        <div v-if="!billing" class="py-12 text-center text-sm text-gray-400">
+            No billing context — make sure you're on a team.
+        </div>
+        <div v-else class="py-8">
             <div class="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
                 <!-- Current plan + usage -->
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

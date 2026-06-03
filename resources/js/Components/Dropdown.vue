@@ -10,6 +10,18 @@ const props = defineProps({
         type: String,
         default: '48',
     },
+    /**
+     * 'bottom' (default) — panel opens DOWN from the trigger (`mt-2`)
+     * 'top' — panel opens UP from the trigger (`bottom-full mb-2`).
+     *   Required for triggers pinned to the bottom of a fixed-height
+     *   container (e.g. the sidebar user card), where the default 'bottom'
+     *   placement would render the panel off-screen below the viewport.
+     */
+    placement: {
+        type: String,
+        default: 'bottom',
+        validator: (v) => ['bottom', 'top'].includes(v),
+    },
     contentClasses: {
         type: Array,
         default: () => ['py-1', 'bg-white'],
@@ -27,22 +39,38 @@ const closeOnEscape = (e) => {
 onMounted(() => document.addEventListener('keydown', closeOnEscape));
 onUnmounted(() => document.removeEventListener('keydown', closeOnEscape));
 
+// Width prop → Tailwind class. Must be statically referenced (not built
+// via template literal) so Tailwind's JIT compiler picks them up. Add
+// new sizes here as needed.
 const widthClass = computed(() => {
     return {
         '48': 'w-48',
-    }[props.width.toString()];
+        '56': 'w-56',
+        '60': 'w-60',
+        '80': 'w-80',
+    }[props.width.toString()] ?? 'w-48';
 });
 
+const placementClass = computed(() =>
+    props.placement === 'top'
+        ? 'bottom-full mb-2'
+        : 'mt-2',
+);
+
 const alignmentClasses = computed(() => {
+    // origin-* controls the scale-95 → scale-100 transition anchor so the
+    // panel "grows from" the trigger corner instead of the center.
+    const originPrefix = props.placement === 'top' ? 'origin-bottom' : 'origin-top';
+
     if (props.align === 'left') {
-        return 'ltr:origin-top-left rtl:origin-top-right start-0';
+        return `ltr:${originPrefix}-left rtl:${originPrefix}-right start-0`;
     }
 
     if (props.align === 'right') {
-        return 'ltr:origin-top-right rtl:origin-top-left end-0';
+        return `ltr:${originPrefix}-right rtl:${originPrefix}-left end-0`;
     }
 
-    return 'origin-top';
+    return originPrefix;
 });
 </script>
 
@@ -65,8 +93,8 @@ const alignmentClasses = computed(() => {
         >
             <div
                 v-show="open"
-                class="absolute z-50 mt-2 rounded-md shadow-lg"
-                :class="[widthClass, alignmentClasses]"
+                class="absolute z-50 rounded-md shadow-lg"
+                :class="[widthClass, placementClass, alignmentClasses]"
                 style="display: none;"
                 @click="open = false"
             >

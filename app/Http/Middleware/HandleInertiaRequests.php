@@ -37,6 +37,15 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+
+            // Surface session flash payloads under a stable key so Vue pages
+            // can read them via $page.props.flash. Inertia does NOT auto-
+            // share session keys — without this, controllers' ->with('flash.x')
+            // calls land in the session but never reach the front end.
+            'flash' => fn () => array_filter([
+                'webhook_secret_rotated' => $request->session()->get('flash.webhook_secret_rotated'),
+                'plan_limit' => $request->session()->get('flash.plan_limit'),
+            ], fn ($v) => $v !== null),
             // Unread lead notifications for the bell UI.
             'notifications' => fn () => $request->user()
                 ? $request->user()->unreadNotifications()->latest()->take(10)->get()

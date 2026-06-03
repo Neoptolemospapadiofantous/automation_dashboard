@@ -158,6 +158,12 @@ const logout = () => {
                                 </template>
                                 Agents
                             </SidebarLink>
+                            <SidebarLink href="/billing" active-pattern="billing.*">
+                                <template #icon>
+                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>
+                                </template>
+                                Billing
+                            </SidebarLink>
                         </div>
                     </div>
                 </nav>
@@ -165,9 +171,11 @@ const logout = () => {
                 <!-- Credit meter -->
                 <CreditMeter />
 
-                <!-- User card -->
+                <!-- User card. placement="top" because this trigger is pinned
+                     to the bottom of a fixed-height sidebar — opening DOWN
+                     would render the panel off-screen below the viewport. -->
                 <div class="border-t border-gray-100 p-3">
-                    <Dropdown align="left" width="56">
+                    <Dropdown align="left" width="60" placement="top">
                         <template #trigger>
                             <button type="button" class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-gray-50">
                                 <img
@@ -339,10 +347,25 @@ const logout = () => {
                         </button>
                     </div>
 
-                    <!-- Agent context (mobile fix from audit) -->
-                    <div v-if="currentAgent" class="border-b border-gray-100 px-5 py-3 text-sm">
-                        <div class="text-xs uppercase tracking-wide text-gray-400">Current agent</div>
-                        <div class="mt-0.5 font-medium text-gray-900">{{ currentAgent.name }}</div>
+                    <!-- Agent picker (mobile) — full switch list, mirrors desktop.
+                         Previous version only showed the current agent name as
+                         text; mobile users couldn't switch agents at all. -->
+                    <div v-if="currentAgent || teamAgents.length" class="border-b border-gray-100 px-3 py-3">
+                        <div class="px-2 pb-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">Agent</div>
+                        <template v-for="agent in teamAgents" :key="agent.id">
+                            <button
+                                type="button"
+                                class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-gray-50"
+                                :class="agent.id === currentAgent?.id ? 'text-indigo-700' : 'text-gray-700'"
+                                @click="switchToAgent(agent); showMobileNav = false"
+                            >
+                                <svg v-if="agent.id === currentAgent?.id" class="size-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span v-else class="size-4" />
+                                <span class="flex-1 truncate">{{ agent.name }}</span>
+                            </button>
+                        </template>
                     </div>
 
                     <nav class="flex-1 space-y-5 overflow-y-auto px-3 py-4" @click="showMobileNav = false">
@@ -362,6 +385,7 @@ const logout = () => {
                             <div class="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Workspace</div>
                             <SidebarLink :href="route('agents.index')" :active-pattern="['agents.index', 'agents.show']">Agents</SidebarLink>
                             <SidebarLink :href="route('onboarding.intro')" active-pattern="onboarding.*">+ New agent</SidebarLink>
+                            <SidebarLink href="/billing" active-pattern="billing.*">Billing</SidebarLink>
                         </div>
                     </nav>
                 </div>
