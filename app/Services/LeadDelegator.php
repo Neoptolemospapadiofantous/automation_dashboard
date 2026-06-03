@@ -60,6 +60,9 @@ class LeadDelegator
             LeadAssignment::create([
                 'lead_id' => $lead->id,
                 'team_id' => $team->id,
+                // Carry the lead's agent through to the audit row so Phase G
+                // page scoping sees assignment history alongside the leads.
+                'agent_id' => $lead->agent_id,
                 'assigned_to' => $target?->id,
                 'assigned_by' => $byUser?->id,
                 'previous_assignee' => $previous,

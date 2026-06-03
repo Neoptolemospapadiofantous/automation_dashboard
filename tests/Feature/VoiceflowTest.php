@@ -41,7 +41,12 @@ class VoiceflowTest extends TestCase
         Http::fake([
             'general-runtime.voiceflow.com/v4/project/*/session' => Http::response(['sessionKey' => 'sess-abc']),
             'general-runtime.voiceflow.com/v4/interact' => Http::response(['traces' => $traces]),
-            'general-runtime.voiceflow.com/v4/project/*/state' => Http::response(['variables' => $variables]),
+            // State lookup uses the documented endpoint per
+            // docs/voiceflow/conversations/get-conversation-state.md:
+            //   GET /state/user/{userID}  (with projectID header)
+            // Earlier code had a fabricated /v4/.../state path — see the
+            // VoiceflowService audit note.
+            'general-runtime.voiceflow.com/state/user/*' => Http::response(['variables' => $variables]),
         ]);
     }
 

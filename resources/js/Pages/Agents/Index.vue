@@ -64,7 +64,7 @@ function statusClass(status) {
                         <tbody class="divide-y divide-gray-100 bg-white">
                             <tr v-for="agent in agents" :key="agent.id" class="hover:bg-gray-50">
                                 <td class="px-4 py-3">
-                                    <Link :href="route('agents.show', agent.id)" class="font-medium text-gray-900 hover:text-indigo-600">
+                                    <Link :href="route('agents.show', agent.slug)" class="font-medium text-gray-900 hover:text-indigo-600">
                                         {{ agent.name }}
                                     </Link>
                                     <span v-if="agent.is_current" class="ml-2 inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
@@ -90,7 +90,7 @@ function statusClass(status) {
                                     >
                                         Make current
                                     </button>
-                                    <Link :href="route('agents.show', agent.id)" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+                                    <Link :href="route('agents.show', agent.slug)" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
                                         Settings →
                                     </Link>
                                 </td>

@@ -36,6 +36,7 @@ class VoiceflowService
         protected ?string $apiUrl = null,
         protected ?string $analyticsUrl = null,
         protected ?string $realtimeUrl = null,
+        protected ?string $workspaceApiKey = null,
     ) {
         $config = config('services.voiceflow');
 
@@ -50,6 +51,10 @@ class VoiceflowService
         $this->apiUrl ??= rtrim($config['api_url'] ?? 'https://api.voiceflow.com', '/');
         $this->analyticsUrl ??= rtrim($config['analytics_url'] ?? 'https://analytics-api.voiceflow.com', '/');
         $this->realtimeUrl ??= rtrim($config['realtime_url'] ?? 'https://realtime-api.voiceflow.com', '/');
+        // Workspace key is used by transcripts (analytics-api) + KB CRUD
+        // (realtime-api) + KB query. Falls back to the DM key for backwards
+        // compatibility, but most workspace surfaces will 401 without it.
+        $this->workspaceApiKey ??= $config['workspace_api_key'] ?? null;
     }
 
     /**
@@ -69,7 +74,19 @@ class VoiceflowService
             apiKey: $agent->voiceflow_api_key,
             environment: $agent->voiceflow_environment ?: 'main',
             projectId: $agent->voiceflow_project_id,
+            workspaceApiKey: $agent->voiceflow_workspace_api_key,
         );
+    }
+
+    /**
+     * The credential to use for workspace surfaces (transcripts, KB CRUD,
+     * KB query). Falls back to the DM key — some Voiceflow accounts let the
+     * DM key talk to these surfaces too, so this keeps existing flows working
+     * even when the workspace key isn't configured.
+     */
+    protected function workspaceKey(): ?string
+    {
+        return $this->workspaceApiKey ?: $this->apiKey;
     }
 
     /**
@@ -147,17 +164,33 @@ class VoiceflowService
      */
     public function getVariables(string $userId): array
     {
-        // V4 state lookup is keyed on projectID + environment + userID.
-        $response = $this->apiClient()
-            ->get($this->statePath($userId));
+        if (! $this->isConfigured()) {
+            throw new RuntimeException('Voiceflow is not configured.');
+        }
+
+        // Per docs/voiceflow/conversations/get-conversation-state.md the
+        // canonical endpoint is GET /state/user/{userID} on the runtime host,
+        // authenticated with the DM key AND a separate projectID header (no
+        // environment in the path). An earlier rev of this method called a
+        // fabricated /v4/.../state path that returned 404 in production.
+        $response = Http::baseUrl($this->runtimeUrl)
+            ->withHeaders([
+                'authorization' => $this->apiKey,
+                'projectID' => $this->projectId,
+                'Accept' => 'application/json',
+            ])
+            ->connectTimeout(5)
+            ->timeout(15)
+            ->get('/state/user/'.$this->encode($userId));
 
         $response->throw();
 
         $json = $response->json();
 
-        // The state endpoint returns the full conversation state; variables
-        // live under `variables` (fall back to the raw payload for safety).
-        $vars = $json['variables'] ?? $json;
+        // The state endpoint returns {turn, stack, variables, storage}. We
+        // only care about global variables here; the stack-scoped vars are
+        // intentionally ignored (those are flow-internal, not lead fields).
+        $vars = $json['variables'] ?? [];
 
         return is_array($vars) ? $vars : [];
     }
@@ -407,9 +440,15 @@ class VoiceflowService
      */
     public function queryKnowledgeBase(string $question, int $chunkLimit = 5, bool $synthesis = true): array
     {
+        // KB query is a workspace-key surface (per docs/voiceflow/
+        // knowledge-base/query.md). Earlier code passed the DM key here via
+        // the default runtime client — that's the wrong scope and 401s for
+        // tenants that have set a workspace key explicitly. Headers built
+        // once in one withHeaders() call because Laravel's withHeaders
+        // *merges* rather than replacing — a second call doesn't override.
         $response = Http::baseUrl($this->runtimeUrl)
             ->withHeaders([
-                'authorization' => $this->apiKey,
+                'authorization' => $this->workspaceKey(),
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
             ])
@@ -452,6 +491,10 @@ class VoiceflowService
 
     /**
      * HTTP client for the Realtime API (KB document management; separate host).
+     *
+     * Workspace-key surface — the DM key authenticates ✗ here for most
+     * accounts. Falls back to the DM key for backwards compatibility but
+     * the tenant should configure voiceflow_workspace_api_key for KB ops.
      */
     protected function realtimeClient(): PendingRequest
     {
@@ -461,7 +504,7 @@ class VoiceflowService
 
         return Http::baseUrl($this->realtimeUrl)
             ->withHeaders([
-                'authorization' => $this->apiKey,
+                'authorization' => $this->workspaceKey(),
                 'Accept' => 'application/json',
             ])
             ->connectTimeout(5)
@@ -469,7 +512,11 @@ class VoiceflowService
     }
 
     /**
-     * HTTP client for the Analytics/Transcript API (separate host, raw key).
+     * HTTP client for the Analytics/Transcript API (separate host).
+     *
+     * Workspace-key surface (transcripts, transcript properties, evaluations,
+     * usage). The DM key will 401 here for most tenants. Falls back to the
+     * DM key but the tenant should configure voiceflow_workspace_api_key.
      */
     protected function analyticsClient(): PendingRequest
     {
@@ -479,7 +526,7 @@ class VoiceflowService
 
         return Http::baseUrl($this->analyticsUrl)
             ->withHeaders([
-                'authorization' => $this->apiKey,
+                'authorization' => $this->workspaceKey(),
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
             ])

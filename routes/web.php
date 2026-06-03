@@ -60,8 +60,11 @@ Route::middleware([
     Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
 
     // Phase 5 Voiceflow agent (server-proxied Dialog Manager API).
+    // Multi-tenant: "configured" reflects THIS user's current agent, not the
+    // app-wide .env fallback. A SaaS user whose own agent is healthy sees the
+    // chat panel even if the deployment has no global VOICEFLOW_API_KEY.
     Route::get('/agent', fn () => Inertia::render('Agent/Index', [
-        'configured' => ! empty(config('services.voiceflow.api_key')) && ! empty(config('services.voiceflow.project_id')),
+        'configured' => (bool) request()->user()?->currentTeam?->currentAgent?->isConfigured(),
     ]))->name('agent.index');
     Route::post('/agent/launch', [VoiceflowController::class, 'launch'])->name('agent.launch');
     Route::post('/agent/interact', [VoiceflowController::class, 'interact'])->name('agent.interact');

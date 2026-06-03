@@ -94,7 +94,16 @@ class BackfillVoiceflowTranscripts extends Command
                 continue;
             }
 
-            $conversation = $recorder->resolve($team->id, (string) $userId, null, 'voiceflow');
+            // Stamp the team's current agent on backfilled rows so Phase G
+            // scoping picks them up. Backfill that pre-dates multi-tenancy
+            // would otherwise land with agent_id = NULL.
+            $conversation = $recorder->resolve(
+                teamId: $team->id,
+                voiceflowUserId: (string) $userId,
+                leadId: null,
+                channel: 'voiceflow',
+                agentId: $team->current_agent_id,
+            );
             $conversation->forceFill([
                 'voiceflow_transcript_id' => $transcriptId,
                 'status' => $meta['endedAt'] ?? null ? 'ended' : 'active',

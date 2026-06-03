@@ -34,7 +34,7 @@ const { isValid, errorFor } = useVoiceflowValidation(form, { requireKey: false, 
 
 function save() {
     if (!isValid.value) return;
-    form.put(route('agents.update', props.agent.id), { preserveScroll: true });
+    form.put(route('agents.update', props.agent.slug), { preserveScroll: true });
 }
 
 const healthBusy = ref(false);
@@ -44,7 +44,7 @@ async function runHealth() {
     healthBusy.value = true;
     healthResult.value = null;
     try {
-        const { data } = await axios.post(route('agents.health', props.agent.id));
+        const { data } = await axios.post(route('agents.health', props.agent.slug));
         healthResult.value = data;
         // Refresh page to pick up any status change (e.g. draft → active).
         router.reload({ only: ['agent'] });
@@ -59,12 +59,12 @@ function copy(text) {
 
 function rotateSecret() {
     if (!confirm('Rotate the webhook secret? The Voiceflow Custom Action will start failing until you update its X-Webhook-Secret header to match the new value.')) return;
-    router.post(route('agents.rotate-secret', props.agent.id), {}, { preserveScroll: true });
+    router.post(route('agents.rotate-secret', props.agent.slug), {}, { preserveScroll: true });
 }
 
 function destroy() {
     if (!confirm(`Delete agent "${props.agent.name}"? Conversations and leads stay, but lose their agent link.`)) return;
-    router.delete(route('agents.destroy', props.agent.id));
+    router.delete(route('agents.destroy', props.agent.slug));
 }
 </script>
 

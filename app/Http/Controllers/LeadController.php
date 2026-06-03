@@ -72,9 +72,12 @@ class LeadController extends Controller
     {
         $data = $this->validateLead($request);
 
+        // Stamp agent_id from the current team so Phase G's agent-scoped
+        // queries can find this lead. Mirrors VoiceflowController::upsertLead.
         $lead = Lead::create([
             ...$data,
             'team_id' => $request->user()->currentTeam->id,
+            'agent_id' => $request->user()->currentTeam->current_agent_id,
         ]);
 
         broadcast(new LeadSaved($lead))->toOthers();

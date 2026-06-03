@@ -38,6 +38,10 @@ return [
     'voiceflow' => [
         // Dialog Manager API key (prefix VF.DM.*). Kept server-side only.
         'api_key' => env('VOICEFLOW_API_KEY'),
+        // Optional workspace-scoped key. Used by analytics/transcripts (host
+        // analytics-api.voiceflow.com) and KB CRUD/query. Falls back to
+        // the DM key when unset — most tenants need to set this explicitly.
+        'workspace_api_key' => env('VOICEFLOW_WORKSPACE_API_KEY'),
         // V4 uses environments (alias "main") instead of legacy version aliases.
         'environment' => env('VOICEFLOW_ENVIRONMENT', 'main'),
         // Required for the V4 start-session endpoint. Found in agent settings.
