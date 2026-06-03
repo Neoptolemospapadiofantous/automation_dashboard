@@ -96,14 +96,14 @@ class OnboardingWizardTest extends TestCase
         Agent::factory()->draft()->for($user->currentTeam)->create();
 
         $this->actingAs($user)->post(route('onboarding.save'), [
-            'voiceflow_api_key' => 'VF.DM.real',
-            'voiceflow_project_id' => 'real-proj',
+            'voiceflow_api_key' => 'VF.DM.aaaabbbbccccddddeeeeffff.realKey',
+            'voiceflow_project_id' => 'aaaabbbbccccddddeeeeffff',
         ])->assertRedirect(route('onboarding.done'));
 
         $agent = $user->currentTeam->fresh()->currentAgent;
         $this->assertNotNull($agent);
         $this->assertSame(Agent::STATUS_ACTIVE, $agent->status);
-        $this->assertSame('real-proj', $agent->voiceflow_project_id);
+        $this->assertSame('aaaabbbbccccddddeeeeffff', $agent->voiceflow_project_id);
     }
 
     public function test_save_credentials_stays_on_step_2_when_health_fails(): void
@@ -118,8 +118,10 @@ class OnboardingWizardTest extends TestCase
         Agent::factory()->draft()->for($user->currentTeam)->create();
 
         $this->actingAs($user)->post(route('onboarding.save'), [
-            'voiceflow_api_key' => 'VF.DM.bad',
-            'voiceflow_project_id' => 'bad-proj',
+            // Valid format so we pass client-side regex and actually exercise
+            // the upstream-401 path (not the format-validation path).
+            'voiceflow_api_key' => 'VF.DM.aaaabbbbccccddddeeeeffff.badKey',
+            'voiceflow_project_id' => 'aaaabbbbccccddddeeeeffff',
         ])
             ->assertRedirect()
             ->assertSessionHasErrors('voiceflow_api_key');

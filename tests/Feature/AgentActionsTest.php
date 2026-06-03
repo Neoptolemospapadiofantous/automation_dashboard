@@ -65,6 +65,48 @@ class AgentActionsTest extends TestCase
         Event::assertDispatched(AgentActivated::class);
     }
 
+    public function test_update_credentials_health_checks_the_specific_agent_not_the_current(): void
+    {
+        // Regression: UpdateAgentCredentials::runHealthCheck must build the
+        // service from the $agent argument, not from the container's scoped
+        // binding. If it grabs the current agent by mistake, a user
+        // updating a *non-current* agent from settings will health-check
+        // the wrong tenant and either falsely pass or falsely fail.
+        Event::fake([AgentHealthChecked::class]);
+
+        $user = User::factory()->withPersonalTeam()->create();
+
+        // The CURRENT agent: configured + healthy. If the binding's
+        // resolution leaks through, the health probe would hit current-proj.
+        $current = Agent::factory()->for($user->currentTeam)->create([
+            'status' => Agent::STATUS_ACTIVE,
+            'voiceflow_api_key' => 'VF.DM.current-key',
+            'voiceflow_project_id' => 'current-proj',
+            'last_health_ok' => true,
+        ]);
+        $user->currentTeam->forceFill(['current_agent_id' => $current->id])->save();
+
+        // The agent we're saving creds for — different project_id. The
+        // health probe below MUST hit "other-proj", not "current-proj".
+        $other = Agent::factory()->draft()->for($user->currentTeam)->create();
+
+        Http::fake([
+            'general-runtime.voiceflow.com/v4/project/other-proj/*' => Http::response(['sessionKey' => 's'], 200),
+            'general-runtime.voiceflow.com/v4/project/current-proj/*' => Http::response(['error' => 'should not be hit'], 500),
+            'general-runtime.voiceflow.com/v4/interact' => Http::response(['traces' => []], 200),
+        ]);
+
+        $this->actingAs($user->fresh());
+
+        ['agent' => $updated, 'health' => $health] = (new UpdateAgentCredentials())->execute($other, [
+            'voiceflow_api_key' => 'VF.DM.other',
+            'voiceflow_project_id' => 'other-proj',
+        ]);
+
+        $this->assertTrue((bool) $health['ok'], 'Health probe must use the passed agent, not the current one');
+        $this->assertSame(Agent::STATUS_ACTIVE, $updated->status);
+    }
+
     public function test_update_credentials_does_not_activate_when_health_fails(): void
     {
         Event::fake([AgentActivated::class]);

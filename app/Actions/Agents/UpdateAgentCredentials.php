@@ -61,15 +61,14 @@ class UpdateAgentCredentials
             return ['ok' => false, 'reason' => 'Agent has no API key or project id.'];
         }
 
-        // For now the runtime construction reads from .env config. After
-        // Phase B's VoiceflowService::forAgent($agent), this becomes:
-        //   $service = VoiceflowService::forAgent($agent);
-        // For Phase A purposes the health probe is a service concern; we
-        // delegate to whatever the current VoiceflowService can do.
-        $service = app(VoiceflowService::class);
-
+        // Construct the service against THIS agent's credentials directly —
+        // not the container-resolved one. The container binding uses the
+        // current request's currentAgent, which matches the row being saved
+        // only by coincidence in the first-agent flow; a user updating a
+        // non-current agent from the settings page would otherwise health-
+        // check the wrong tenant.
         try {
-            return $service->health();
+            return VoiceflowService::forAgent($agent)->health();
         } catch (\Throwable $e) {
             report($e);
 

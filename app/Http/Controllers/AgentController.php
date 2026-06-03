@@ -69,13 +69,13 @@ class AgentController extends Controller
     {
         $this->authorize($request, $agent);
 
-        $data = $request->validate([
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'voiceflow_api_key' => ['nullable', 'string', 'max:255'],
-            'voiceflow_project_id' => ['nullable', 'string', 'max:255'],
-            'voiceflow_environment' => ['nullable', 'string', 'max:64'],
-            'voiceflow_workspace_api_key' => ['nullable', 'string', 'max:255'],
-        ]);
+        $data = $request->validate(
+            array_merge(
+                ['name' => ['sometimes', 'required', 'string', 'max:255']],
+                OnboardingController::credentialRules(required: false),
+            ),
+            OnboardingController::credentialMessages(),
+        );
 
         if (array_key_exists('name', $data)) {
             $agent->update(['name' => $data['name']]);

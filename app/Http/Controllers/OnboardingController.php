@@ -90,12 +90,7 @@ class OnboardingController extends Controller
 
     public function saveCredentials(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'voiceflow_api_key' => ['required', 'string', 'max:255'],
-            'voiceflow_project_id' => ['required', 'string', 'max:255'],
-            'voiceflow_environment' => ['nullable', 'string', 'max:64'],
-            'voiceflow_workspace_api_key' => ['nullable', 'string', 'max:255'],
-        ]);
+        $data = $request->validate(self::credentialRules(required: true), self::credentialMessages());
 
         $agent = $this->draftAgent($request);
 
@@ -130,6 +125,39 @@ class OnboardingController extends Controller
         return Inertia::render('Onboarding/Done', [
             'agent' => ['id' => $agent->id, 'name' => $agent->name],
         ]);
+    }
+
+    /**
+     * Voiceflow credential validation, shared between this controller and
+     * AgentController so the wizard and the settings page enforce identical
+     * formats. Strict regexes catch the "I pasted my email by accident" class
+     * of error before we even round-trip Voiceflow.
+     *
+     * @return array<string, array<int, string>>
+     */
+    public static function credentialRules(bool $required): array
+    {
+        $base = $required ? ['required'] : ['nullable'];
+
+        return [
+            'voiceflow_api_key' => array_merge($base, ['string', 'max:255', 'regex:/^VF\.DM\.[A-Za-z0-9]+\.[A-Za-z0-9]+$/']),
+            'voiceflow_project_id' => array_merge($base, ['string', 'max:255', 'regex:/^[a-f0-9]{24}$/i']),
+            'voiceflow_environment' => ['nullable', 'string', 'max:64', 'regex:/^[A-Za-z0-9_\-]{2,32}$/'],
+            'voiceflow_workspace_api_key' => ['nullable', 'string', 'max:255', 'regex:/^VF\..+/'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function credentialMessages(): array
+    {
+        return [
+            'voiceflow_api_key.regex' => 'API key should look like VF.DM.xxxxxxxx.yyyy (Voiceflow Dialog Manager key).',
+            'voiceflow_project_id.regex' => 'Project ID should be a 24-character hex string from your Voiceflow URL (e.g. 64f8a1b2c3d4e5f6a7b8c9d0).',
+            'voiceflow_environment.regex' => 'Environment should be a short alphanumeric label (e.g. main, development).',
+            'voiceflow_workspace_api_key.regex' => 'Workspace key should start with VF. (it is the broader workspace token, not the DM key).',
+        ];
     }
 
     /**

@@ -54,12 +54,12 @@ class AgentCrudTest extends TestCase
         $agent = Agent::factory()->draft()->for($user->currentTeam)->create();
 
         $this->actingAs($user)->put(route('agents.update', $agent), [
-            'voiceflow_api_key' => 'VF.DM.new',
-            'voiceflow_project_id' => 'fresh-proj',
+            'voiceflow_api_key' => 'VF.DM.1234567890abcdef12345678.newKey',
+            'voiceflow_project_id' => '1234567890abcdef12345678',
         ])->assertRedirect();
 
         $agent->refresh();
-        $this->assertSame('fresh-proj', $agent->voiceflow_project_id);
+        $this->assertSame('1234567890abcdef12345678', $agent->voiceflow_project_id);
         $this->assertSame(Agent::STATUS_ACTIVE, $agent->status);
         $this->assertTrue($agent->last_health_ok);
     }

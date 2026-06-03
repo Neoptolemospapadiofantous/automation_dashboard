@@ -9,6 +9,7 @@ import DangerButton from '@/Components/DangerButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
+import { useVoiceflowValidation } from '@/composables/useVoiceflowValidation.js';
 
 const props = defineProps({
     agent: { type: Object, required: true },
@@ -27,7 +28,12 @@ const form = useForm({
     voiceflow_workspace_api_key: '',
 });
 
+// On the settings page everything is optional ("leave blank to keep
+// current"). Validation only rejects malformed values; empty fields pass.
+const { isValid, errorFor } = useVoiceflowValidation(form, { requireKey: false, requireProject: false });
+
 function save() {
+    if (!isValid.value) return;
     form.put(route('agents.update', props.agent.id), { preserveScroll: true });
 }
 
@@ -95,31 +101,73 @@ function destroy() {
                     <div class="mt-6 grid grid-cols-2 gap-4">
                         <div class="col-span-2">
                             <InputLabel for="name" value="Name" />
-                            <TextInput id="name" v-model="form.name" type="text" class="mt-1 block w-full" />
+                            <TextInput id="name" v-model="form.name" type="text" class="mt-1 block w-full" required maxlength="255" />
                             <InputError :message="form.errors.name" class="mt-1" />
                         </div>
                         <div class="col-span-2">
                             <InputLabel for="api_key" value="VF.DM.* API key" />
-                            <TextInput id="api_key" v-model="form.voiceflow_api_key" type="password" class="mt-1 block w-full font-mono" :placeholder="agent.has_api_key ? '••••••• (leave blank to keep current)' : 'VF.DM.…'" />
-                            <InputError :message="form.errors.voiceflow_api_key" class="mt-1" />
+                            <TextInput
+                                id="api_key"
+                                v-model="form.voiceflow_api_key"
+                                type="password"
+                                class="mt-1 block w-full font-mono"
+                                :class="{ 'border-rose-300 focus:border-rose-500 focus:ring-rose-500': errorFor('voiceflow_api_key') }"
+                                :placeholder="agent.has_api_key ? '••••••• (leave blank to keep current)' : 'VF.DM.xxxxxxxxxxxxxxxxxxxxxxxx.yyyyyyyyyyyyyyyy'"
+                                autocomplete="off"
+                                spellcheck="false"
+                            />
+                            <InputError :message="errorFor('voiceflow_api_key')" class="mt-1" />
                         </div>
                         <div>
                             <InputLabel for="project" value="Project ID" />
-                            <TextInput id="project" v-model="form.voiceflow_project_id" type="text" class="mt-1 block w-full font-mono" />
-                            <InputError :message="form.errors.voiceflow_project_id" class="mt-1" />
+                            <TextInput
+                                id="project"
+                                v-model="form.voiceflow_project_id"
+                                type="text"
+                                class="mt-1 block w-full font-mono"
+                                :class="{ 'border-rose-300 focus:border-rose-500 focus:ring-rose-500': errorFor('voiceflow_project_id') }"
+                                placeholder="e.g. 64f8a1b2c3d4e5f6a7b8c9d0"
+                                pattern="[a-fA-F0-9]{24}"
+                                minlength="24"
+                                maxlength="24"
+                                autocomplete="off"
+                                spellcheck="false"
+                            />
+                            <p class="mt-1 text-xs text-gray-500">24-character hex ID from the Voiceflow URL.</p>
+                            <InputError :message="errorFor('voiceflow_project_id')" class="mt-1" />
                         </div>
                         <div>
                             <InputLabel for="env" value="Environment" />
-                            <TextInput id="env" v-model="form.voiceflow_environment" type="text" class="mt-1 block w-full font-mono" placeholder="main" />
+                            <TextInput
+                                id="env"
+                                v-model="form.voiceflow_environment"
+                                type="text"
+                                class="mt-1 block w-full font-mono"
+                                :class="{ 'border-rose-300 focus:border-rose-500 focus:ring-rose-500': errorFor('voiceflow_environment') }"
+                                placeholder="main"
+                                pattern="[A-Za-z0-9_-]{2,32}"
+                                maxlength="32"
+                            />
+                            <InputError :message="errorFor('voiceflow_environment')" class="mt-1" />
                         </div>
                         <div class="col-span-2">
                             <InputLabel for="ws" value="Workspace API key (optional — for transcripts + analytics)" />
-                            <TextInput id="ws" v-model="form.voiceflow_workspace_api_key" type="password" class="mt-1 block w-full font-mono" :placeholder="agent.has_workspace_api_key ? '••••••• (leave blank to keep current)' : 'VF.…'" />
+                            <TextInput
+                                id="ws"
+                                v-model="form.voiceflow_workspace_api_key"
+                                type="password"
+                                class="mt-1 block w-full font-mono"
+                                :class="{ 'border-rose-300 focus:border-rose-500 focus:ring-rose-500': errorFor('voiceflow_workspace_api_key') }"
+                                :placeholder="agent.has_workspace_api_key ? '••••••• (leave blank to keep current)' : 'VF.…'"
+                                autocomplete="off"
+                                spellcheck="false"
+                            />
+                            <InputError :message="errorFor('voiceflow_workspace_api_key')" class="mt-1" />
                         </div>
                     </div>
 
                     <div class="mt-6 flex items-center gap-3">
-                        <PrimaryButton :disabled="form.processing" :class="{ 'opacity-50': form.processing }">Save + test connection</PrimaryButton>
+                        <PrimaryButton :disabled="form.processing || !isValid" :class="{ 'opacity-50': form.processing || !isValid }">Save + test connection</PrimaryButton>
                         <SecondaryButton type="button" :disabled="healthBusy" @click="runHealth">
                             {{ healthBusy ? 'Testing…' : 'Test connection now' }}
                         </SecondaryButton>
