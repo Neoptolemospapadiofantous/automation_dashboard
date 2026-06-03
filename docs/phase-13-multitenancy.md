@@ -278,11 +278,41 @@ Voiceflow's `.vf` is an opaque binary tied to canvas coordinates and
 internal IDs; we can't generate a valid one in-repo, so this is a
 one-time manual export.
 
-## Phase G — Page scoping
+## Phase G — Page scoping (shipped)
 
-Every list endpoint gains a `where('agent_id', $team->current_agent_id)`
-clause. The agent picker in the nav (Phase D) sets `current_agent_id` and
-reloads the page; all data swaps in one click.
+Every list/detail endpoint now filters by the team's `current_agent_id`,
+so switching agents in the picker swaps every visible row in one click.
+
+**Implementation**
+
+1. New local scope `forAgent(?int $agentId)` on `Lead`, `Conversation`,
+   `Message` (`app/Models/{Lead,Conversation,Message}.php`). Null
+   `agentId` returns no rows (`whereRaw('1 = 0')`) — explicit "no current
+   agent ⇒ nothing to show" rather than fall-through-to-team-wide. A team
+   without a current agent is mid-onboarding and should be bounced to the
+   wizard before reaching list pages anyway.
+2. `app/Models/Agent.php` gains `messages()` HasMany for symmetry with
+   `leads()` and `conversations()`.
+3. Four controllers updated to scope:
+   - `LeadController::index` — the kanban
+   - `ConversationController::index` — list
+   - `ConversationController::show` — 404 if the convo belongs to a
+     different agent (prevents URL-guessing across agents)
+   - `ConversationController::runSearch` — both Scout and DB-LIKE branches
+   - `DashboardController::stats` — every counter + the per-rep load
+
+**KnowledgeBase page** is already agent-scoped because `VoiceflowService`
+is per-request bound to the current agent via the container.
+
+**Tests** — `AgentScopingTest` (6 cases) covers the picker-swap behavior
+end-to-end: same team / two agents / different leads + conversations per
+agent / switching `current_agent_id` swaps every visible row. Plus a
+cross-agent URL-guessing 404 on the conversation detail page and the
+empty-state when no current agent is set.
+
+Pre-existing tests (`LeadTest`, `LeadDelegationTest`, `DashboardTest`,
+`ConversationTest`) updated to set up a current agent + stamp test
+fixtures with `agent_id`, reflecting the new SaaS model.
 
 ## Migration safety
 
@@ -460,5 +490,5 @@ existing 85.
 | D. Agent CRUD UI | ✅ shipped | `/agents` index + settings, nav picker, switcher, regenerate-secret, delete |
 | E. Onboarding wizard | ✅ shipped | 3-step `/onboarding` flow + `RequireAgent` middleware |
 | F. Template `.vf` | ⚠️ placeholder shipped | Schema documented; real `.vf` export pending (manual Voiceflow IDE step) |
-| G. Page scoping | ⏳ next | All lists filter by `current_agent_id` |
+| G. Page scoping | ✅ shipped | All lists + detail pages filter by `current_agent_id`; `forAgent()` scope on Lead/Conversation/Message |
 | H. Billing | later | Cashier + Stripe, plan limits |

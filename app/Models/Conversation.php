@@ -6,6 +6,7 @@ use App\Lifecycle\ConversationStateMachine;
 use App\Lifecycle\HasLifecycle;
 use App\Lifecycle\StateMachine;
 use Database\Factories\ConversationFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -71,5 +72,18 @@ class Conversation extends Model
     public function isEnded(): bool
     {
         return $this->status === 'ended';
+    }
+
+    /**
+     * Restrict to a single agent — see Lead::scopeForAgent for semantics.
+     * Null agentId returns no rows.
+     */
+    public function scopeForAgent(Builder $query, ?int $agentId): Builder
+    {
+        if ($agentId === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('agent_id', $agentId);
     }
 }

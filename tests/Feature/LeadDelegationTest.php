@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\AssignmentStrategy;
 use App\Enums\LeadStatus;
 use App\Events\LeadSaved;
+use App\Models\Agent;
 use App\Models\Lead;
 use App\Models\Team;
 use App\Models\User;
@@ -28,6 +29,12 @@ class LeadDelegationTest extends TestCase
         $owner = User::factory()->withPersonalTeam()->create();
         $team = $owner->currentTeam;
 
+        // Phase G: tests need a current agent so leads.index returns rows.
+        // Factory leads in these tests get explicit agent_id below.
+        $agent = Agent::factory()->for($team)->create();
+        $team->forceFill(['current_agent_id' => $agent->id])->save();
+        $team = $team->fresh();
+
         $members = collect();
         for ($i = 0; $i < $extra; $i++) {
             $u = User::factory()->create();
@@ -35,7 +42,7 @@ class LeadDelegationTest extends TestCase
             $members->push($u);
         }
 
-        return [$owner, $team, $members];
+        return [$owner->fresh(), $team, $members];
     }
 
     public function test_round_robin_spreads_leads_across_members(): void
@@ -114,8 +121,16 @@ class LeadDelegationTest extends TestCase
         [$owner, $team, $members] = $this->teamWithMembers(1);
         $other = $members->first();
 
-        Lead::factory()->create(['team_id' => $team->id, 'assigned_to' => $owner->id]);
-        Lead::factory()->create(['team_id' => $team->id, 'assigned_to' => $other->id]);
+        Lead::factory()->create([
+            'team_id' => $team->id,
+            'agent_id' => $team->current_agent_id,
+            'assigned_to' => $owner->id,
+        ]);
+        Lead::factory()->create([
+            'team_id' => $team->id,
+            'agent_id' => $team->current_agent_id,
+            'assigned_to' => $other->id,
+        ]);
 
         $this->actingAs($owner)
             ->get(route('leads.index', ['mine' => 1]))

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\MessageFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -75,5 +76,19 @@ class Message extends Model
     public function shouldBeSearchable(): bool
     {
         return filled($this->text);
+    }
+
+    /**
+     * Restrict to a single agent — see Lead::scopeForAgent for semantics.
+     * Null agentId returns no rows. Used by Phase G's conversation-search
+     * fallback path.
+     */
+    public function scopeForAgent(Builder $query, ?int $agentId): Builder
+    {
+        if ($agentId === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('agent_id', $agentId);
     }
 }

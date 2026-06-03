@@ -18,17 +18,22 @@ class DashboardController extends Controller
      */
     public function __invoke(Request $request): Response
     {
-        $teamId = $request->user()->currentTeam->id;
+        $team = $request->user()->currentTeam;
 
-        return Inertia::render('Dashboard', $this->stats($teamId));
+        return Inertia::render('Dashboard', $this->stats($team->id, $team->current_agent_id));
     }
 
     /**
+     * Phase G: counters are scoped to the team's current agent so the
+     * dashboard reflects what the user is currently working in. Switching
+     * agents swaps every number on the page.
+     *
      * @return array<string, mixed>
      */
-    protected function stats(int $teamId): array
+    protected function stats(int $teamId, ?int $agentId): array
     {
         $byStatus = Lead::where('team_id', $teamId)
+            ->forAgent($agentId)
             ->selectRaw('status, COUNT(*) as c')
             ->groupBy('status')
             ->pluck('c', 'status');
@@ -50,8 +55,9 @@ class DashboardController extends Controller
             'count' => (int) ($byStatus[$s['value']] ?? 0),
         ])->values();
 
-        // Per-rep open load (assigned + qualified).
+        // Per-rep open load (assigned + qualified), scoped to the current agent.
         $repLoad = Lead::where('team_id', $teamId)
+            ->forAgent($agentId)
             ->whereIn('status', [LeadStatus::Assigned->value, LeadStatus::Qualified->value])
             ->whereNotNull('assigned_to')
             ->with('assignee:id,name')
@@ -72,9 +78,9 @@ class DashboardController extends Controller
                 'won' => $won,
                 'lost' => $lost,
                 'conversion_rate' => $conversionRate,
-                'conversations' => Conversation::where('team_id', $teamId)->count(),
-                'messages' => Message::where('team_id', $teamId)->count(),
-                'active_conversations' => Conversation::where('team_id', $teamId)->where('status', 'active')->count(),
+                'conversations' => Conversation::where('team_id', $teamId)->forAgent($agentId)->count(),
+                'messages' => Message::where('team_id', $teamId)->forAgent($agentId)->count(),
+                'active_conversations' => Conversation::where('team_id', $teamId)->forAgent($agentId)->where('status', 'active')->count(),
             ],
             'funnel' => $funnel,
             'rep_load' => $repLoad,

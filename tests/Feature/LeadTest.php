@@ -25,13 +25,21 @@ class LeadTest extends TestCase
         $this->get('/leads')->assertRedirect('/login');
     }
 
-    public function test_board_only_shows_current_team_leads(): void
+    public function test_board_only_shows_current_team_and_agent_leads(): void
     {
+        // Phase G: scoping is by (team_id, current_agent_id), not team_id
+        // alone. Set up an active agent + stamp the visible lead with it.
         $user = $this->user();
-        $mine = Lead::factory()->create(['team_id' => $user->currentTeam->id]);
+        $agent = \App\Models\Agent::factory()->for($user->currentTeam)->create();
+        $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
+
+        $mine = Lead::factory()->create([
+            'team_id' => $user->currentTeam->id,
+            'agent_id' => $agent->id,
+        ]);
         $other = Lead::factory()->create(); // different team
 
-        $this->actingAs($user)->get('/leads')
+        $this->actingAs($user->fresh())->get('/leads')
             ->assertInertia(fn ($page) => $page
                 ->component('Leads/Index')
                 ->has('leads', 1)

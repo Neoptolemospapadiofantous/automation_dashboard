@@ -7,6 +7,7 @@ use App\Lifecycle\HasLifecycle;
 use App\Lifecycle\LeadStateMachine;
 use App\Lifecycle\StateMachine;
 use Database\Factories\LeadFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -62,5 +63,22 @@ class Lead extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /**
+     * Restrict the query to a single agent. Phase G's per-agent page
+     * scoping uses this from LeadController::index + DashboardController.
+     *
+     * Passing null returns an empty result set (not "all"). The SaaS
+     * model is "one current agent at a time" — a team with no current
+     * agent is mid-onboarding and shouldn't be seeing leads at all.
+     */
+    public function scopeForAgent(Builder $query, ?int $agentId): Builder
+    {
+        if ($agentId === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('agent_id', $agentId);
     }
 }

@@ -100,6 +100,11 @@ class Agent extends Model
         return $this->hasMany(Conversation::class);
     }
 
+    public function messages(): HasMany
+    {
+        return $this->hasMany(Message::class);
+    }
+
     /**
      * Whether this agent has the minimum credentials to make API calls.
      */

@@ -16,10 +16,13 @@ class ConversationController extends Controller
      */
     public function index(Request $request): Response
     {
-        $teamId = $request->user()->currentTeam->id;
+        $team = $request->user()->currentTeam;
 
+        // Phase G: agent-scoped so switching agents swaps the conversation
+        // list. forAgent(null) returns no rows (no current agent = nothing to show).
         $conversations = Conversation::query()
-            ->where('team_id', $teamId)
+            ->where('team_id', $team->id)
+            ->forAgent($team->current_agent_id)
             ->with('lead:id,name,email')
             ->orderByDesc('last_message_at')
             ->paginate(20)
@@ -35,7 +38,17 @@ class ConversationController extends Controller
      */
     public function show(Request $request, Conversation $conversation): Response
     {
-        abort_unless($conversation->team_id === $request->user()->currentTeam->id, 403);
+        $team = $request->user()->currentTeam;
+        abort_unless($conversation->team_id === $team->id, 403);
+
+        // Phase G: detail view is reachable only when the conversation
+        // belongs to the team's CURRENT agent. Prevents users from
+        // seeing other agents' transcripts via URL guessing after
+        // switching agents.
+        abort_unless(
+            $conversation->agent_id === $team->current_agent_id,
+            404,
+        );
 
         $conversation->load('lead:id,name,email');
         $messages = $conversation->messages()->orderBy('sequence')->get();
@@ -54,13 +67,13 @@ class ConversationController extends Controller
      */
     public function search(Request $request): Response
     {
-        $teamId = $request->user()->currentTeam->id;
+        $team = $request->user()->currentTeam;
         $query = trim((string) $request->input('q', ''));
 
         $results = collect();
 
         if ($query !== '') {
-            $results = $this->runSearch($teamId, $query);
+            $results = $this->runSearch($team->id, $team->current_agent_id, $query);
         }
 
         return Inertia::render('Conversations/Search', [
@@ -72,7 +85,7 @@ class ConversationController extends Controller
     /**
      * @return Collection<int, array<string, mixed>>
      */
-    protected function runSearch(int $teamId, string $query): Collection
+    protected function runSearch(int $teamId, ?int $agentId, string $query): Collection
     {
         // Use the Scout engine only when a real one is configured (e.g.
         // typesense). Otherwise do a plain DB scan so search works everywhere
@@ -84,15 +97,24 @@ class ConversationController extends Controller
         $engine = config('scout.driver');
         $useScout = $engine && ! in_array($engine, ['database', 'collection', 'null'], true);
 
+        // Phase G: agent scope on both branches. Scout takes ->where(...)
+        // filters that translate to the upstream engine's filter syntax;
+        // a null agent yields no results (matches the model scope).
+        if ($agentId === null) {
+            return collect();
+        }
+
         if ($useScout) {
             $messages = Message::search($query)
                 ->where('team_id', $teamId)
+                ->where('agent_id', $agentId)
                 ->take(50)
                 ->get()
                 ->load('conversation:id,lead_id,voiceflow_user_id');
         } else {
             $messages = Message::query()
                 ->where('team_id', $teamId)
+                ->forAgent($agentId)
                 ->where('text', 'like', '%'.$query.'%')
                 ->latest('sent_at')
                 ->limit(50)

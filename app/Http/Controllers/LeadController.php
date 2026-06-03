@@ -27,8 +27,12 @@ class LeadController extends Controller
         $team = $request->user()->currentTeam;
         $mine = $request->boolean('mine');
 
+        // Phase G: scope by the team's current agent so the picker swaps
+        // data. forAgent(null) returns no rows — a team mid-onboarding
+        // gets bounced to the wizard before reaching this page anyway.
         $leads = Lead::query()
             ->where('team_id', $team->id)
+            ->forAgent($team->current_agent_id)
             ->when($mine, fn ($q) => $q->where('assigned_to', $request->user()->id))
             ->with('assignee:id,name')
             ->latest()

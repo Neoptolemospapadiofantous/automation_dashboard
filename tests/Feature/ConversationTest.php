@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Agent;
 use App\Models\Conversation;
 use App\Models\User;
 use App\Services\ConversationRecorder;
@@ -85,13 +86,28 @@ class ConversationTest extends TestCase
         $this->assertSame(2, $conversation->fresh()->message_count);
     }
 
-    public function test_conversation_index_is_team_scoped(): void
+    public function test_conversation_index_is_agent_scoped(): void
     {
+        // Phase G: conversations are filtered by current_agent_id, not
+        // just team_id. Confirm both isolation boundaries hold.
         $user = $this->user();
-        $mine = Conversation::factory()->create(['team_id' => $user->currentTeam->id]);
-        $other = Conversation::factory()->create(); // different team
+        $agent = Agent::factory()->for($user->currentTeam)->create();
+        $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
 
-        $this->actingAs($user)->get(route('conversations.index'))
+        $mine = Conversation::factory()->create([
+            'team_id' => $user->currentTeam->id,
+            'agent_id' => $agent->id,
+        ]);
+        // Same team, different agent — must NOT show.
+        $otherAgent = Agent::factory()->for($user->currentTeam)->create();
+        Conversation::factory()->create([
+            'team_id' => $user->currentTeam->id,
+            'agent_id' => $otherAgent->id,
+        ]);
+        // Different team — must NOT show.
+        Conversation::factory()->create();
+
+        $this->actingAs($user->fresh())->get(route('conversations.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Conversations/Index')
