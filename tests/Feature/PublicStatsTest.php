@@ -53,6 +53,16 @@ class PublicStatsTest extends TestCase
                 'leads_total' => 0,
                 'leads_qualified' => 0,
                 'messages_handled' => 0,
+                // Every count below the 10-bucket → display.* is null so
+                // the landing site can hide the field instead of saying
+                // "0 agents running" which screams empty platform.
+                'display' => [
+                    'teams_count' => null,
+                    'agents_active' => null,
+                    'leads_total' => null,
+                    'leads_qualified' => null,
+                    'messages_handled' => null,
+                ],
             ]);
     }
 
@@ -85,7 +95,60 @@ class PublicStatsTest extends TestCase
                 'leads_total' => 2,
                 'leads_qualified' => 1,
                 'messages_handled' => 5,
+                // All counts still under 10 → all bucketed labels null.
+                'display' => [
+                    'teams_count' => null,
+                    'agents_active' => null,
+                    'leads_total' => null,
+                    'leads_qualified' => null,
+                    'messages_handled' => null,
+                ],
             ]);
+    }
+
+    public function test_display_buckets_snap_to_marketing_tiers(): void
+    {
+        // Drive teams_count up across bucket boundaries and verify the
+        // display label snaps DOWN to the bucket rather than rounding.
+        // The bucket ladder is 10, 25, 50, 100, 250, 500, 1k, 2.5k, …
+        // so 12 → "10+", 60 → "50+", 1234 → "1k+".
+        $cases = [
+            0 => null,
+            9 => null,
+            10 => '10+',
+            24 => '10+',
+            25 => '25+',
+            49 => '25+',
+            50 => '50+',
+            99 => '50+',
+            100 => '100+',
+            249 => '100+',
+            250 => '250+',
+            1234 => '1k+',
+            2499 => '1k+',
+            2500 => '2.5k+',
+            10_000 => '10k+',
+            1_234_567 => '1M+',
+        ];
+
+        foreach ($cases as $n => $expected) {
+            Cache::flush();
+            // Seed exactly $n teams (cheaper than $n full User factories).
+            \DB::table('teams')->truncate();
+            for ($i = 0; $i < $n; $i++) {
+                \DB::table('teams')->insert([
+                    'user_id' => 1,
+                    'name' => "t-$i",
+                    'personal_team' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            $this->getJson(route('public.stats'))
+                ->assertOk()
+                ->assertJsonPath('display.teams_count', $expected, "teams_count=$n should bucket to ".var_export($expected, true));
+        }
     }
 
     public function test_endpoint_sets_cors_headers_for_landing_site(): void
