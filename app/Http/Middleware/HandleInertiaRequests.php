@@ -47,6 +47,21 @@ class HandleInertiaRequests extends Middleware
                         'created_at' => $n->created_at->toIso8601String(),
                     ])->values()
                 : [],
+
+            // Agent picker data for the nav. Shared on every Inertia request
+            // so the picker stays in sync without each page re-querying.
+            'currentAgent' => fn () => $request->user()?->currentTeam?->currentAgent
+                ? [
+                    'id' => $request->user()->currentTeam->currentAgent->id,
+                    'name' => $request->user()->currentTeam->currentAgent->name,
+                    'status' => $request->user()->currentTeam->currentAgent->status,
+                ]
+                : null,
+            'teamAgents' => fn () => $request->user()?->currentTeam
+                ? $request->user()->currentTeam->agents()->orderBy('created_at')->get()
+                    ->map(fn ($a) => ['id' => $a->id, 'name' => $a->name, 'status' => $a->status])
+                    ->values()
+                : [],
         ];
     }
 }

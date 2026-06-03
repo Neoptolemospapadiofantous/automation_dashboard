@@ -1,0 +1,138 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Agent;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
+
+class AgentCrudTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_index_lists_only_current_team_agents(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $mine = Agent::factory()->for($user->currentTeam)->create();
+        $foreign = Agent::factory()->create(); // different team
+
+        $this->actingAs($user)->get(route('agents.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Agents/Index')
+                ->has('agents', 1)
+                ->where('agents.0.id', $mine->id)
+            );
+    }
+
+    public function test_store_creates_agent_and_redirects_to_settings(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+
+        $this->actingAs($user)->post(route('agents.store'), ['name' => 'Support bot'])
+            ->assertRedirectContains('/agents/');
+
+        $this->assertDatabaseHas('agents', [
+            'team_id' => $user->currentTeam->id,
+            'name' => 'Support bot',
+            'status' => Agent::STATUS_DRAFT,
+        ]);
+    }
+
+    public function test_update_saves_credentials_and_activates_on_green_health(): void
+    {
+        Http::fake([
+            'general-runtime.voiceflow.com/v4/project/*' => Http::response(['sessionKey' => 's'], 200),
+            'general-runtime.voiceflow.com/v4/interact' => Http::response(['traces' => []], 200),
+        ]);
+        config()->set('services.voiceflow.api_key', 'VF.DM.x');
+        config()->set('services.voiceflow.project_id', 'p');
+
+        $user = User::factory()->withPersonalTeam()->create();
+        $agent = Agent::factory()->draft()->for($user->currentTeam)->create();
+
+        $this->actingAs($user)->put(route('agents.update', $agent), [
+            'voiceflow_api_key' => 'VF.DM.new',
+            'voiceflow_project_id' => 'fresh-proj',
+        ])->assertRedirect();
+
+        $agent->refresh();
+        $this->assertSame('fresh-proj', $agent->voiceflow_project_id);
+        $this->assertSame(Agent::STATUS_ACTIVE, $agent->status);
+        $this->assertTrue($agent->last_health_ok);
+    }
+
+    public function test_destroy_removes_agent_and_falls_back_current(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $a = Agent::factory()->for($user->currentTeam)->create();
+        $b = Agent::factory()->for($user->currentTeam)->create();
+        $user->currentTeam->forceFill(['current_agent_id' => $a->id])->save();
+
+        $this->actingAs($user)->delete(route('agents.destroy', $a))->assertRedirect(route('agents.index'));
+
+        $this->assertDatabaseMissing('agents', ['id' => $a->id]);
+        $this->assertSame($b->id, $user->currentTeam->fresh()->current_agent_id);
+    }
+
+    public function test_rotate_secret_replaces_value_and_flashes_new(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $agent = Agent::factory()->for($user->currentTeam)->create();
+        $before = $agent->webhook_secret;
+
+        $this->actingAs($user)
+            ->post(route('agents.rotate-secret', $agent))
+            ->assertRedirect()
+            ->assertSessionHas('flash.webhook_secret_rotated');
+
+        $this->assertNotSame($before, $agent->fresh()->webhook_secret);
+    }
+
+    public function test_switch_current_sets_team_current_agent(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $a = Agent::factory()->for($user->currentTeam)->create();
+        $b = Agent::factory()->for($user->currentTeam)->create();
+
+        $this->actingAs($user)
+            ->put(route('current-agent.update'), ['agent_id' => $b->id])
+            ->assertRedirect();
+
+        $this->assertSame($b->id, $user->currentTeam->fresh()->current_agent_id);
+    }
+
+    public function test_switch_current_rejects_foreign_agent(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $foreign = Agent::factory()->create(); // different team
+
+        $this->actingAs($user)
+            ->put(route('current-agent.update'), ['agent_id' => $foreign->id])
+            ->assertStatus(403);
+    }
+
+    public function test_settings_page_blocks_foreign_agent(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $foreign = Agent::factory()->create();
+
+        $this->actingAs($user)->get(route('agents.show', $foreign))->assertStatus(403);
+    }
+
+    public function test_settings_page_surfaces_webhook_url_and_secret(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $agent = Agent::factory()->for($user->currentTeam)->create();
+
+        $this->actingAs($user)->get(route('agents.show', $agent))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Agents/Show')
+                ->where('webhook_url', route('voiceflow.webhook', $agent))
+                ->where('agent.webhook_secret', $agent->webhook_secret)
+            );
+    }
+}

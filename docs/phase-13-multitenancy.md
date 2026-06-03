@@ -209,44 +209,74 @@ Tests added in `VoiceflowTest`:
 All 3 pre-existing webhook tests updated to use the per-agent URL +
 per-agent secret pattern.
 
-## Phase D — Agent CRUD UI
+## Phase D — Agent CRUD UI (shipped)
 
 | Route | Page | Purpose |
 |---|---|---|
-| `GET /agents` | `Agents/Index.vue` | List team's agents + "Create" CTA |
-| `GET /agents/create` | redirects to wizard | Same flow as onboarding for additional agents |
-| `GET /agents/{agent}` | `Agents/Show.vue` | Edit name + keys, copy webhook URL, run health check, disable, delete |
-| `PUT /current-agent` | (action) | Switch which agent is current (parallel to Jetstream's `current-team.update`) |
+| `GET /agents` | `Agents/Index.vue` | List team's agents + status + "Make current" + "Create" CTA |
+| `POST /agents` | (action) | Creates a draft agent via `CreateAgent`; redirects to settings |
+| `GET /agents/{agent}` | `Agents/Show.vue` | Edit name + paste keys, copy webhook URL + secret, "Test connection" button, rotate-secret, delete |
+| `PUT /agents/{agent}` | (action) | Calls `UpdateAgentCredentials` — health-checks and activates on green |
+| `DELETE /agents/{agent}` | (action) | Calls `DeleteAgent` — falls back `current_agent_id` to next available |
+| `POST /agents/{agent}/rotate-secret` | (action) | Calls `RotateWebhookSecret` — flashes the new value once |
+| `POST /agents/{agent}/health` | (JSON) | On-demand probe re-running the activation pipeline |
+| `PUT /current-agent` | (action) | Switches `current_agent_id` (parallels Jetstream's `current-team.update`) |
 
-Plus an agent picker in `AppLayout.vue` next to the team switcher.
+`HandleInertiaRequests` shares `currentAgent` and `teamAgents` on every
+request so the nav picker in `AppLayout.vue` stays in sync without each
+page re-querying. Picker exposes "All agents", "Add new agent" (re-enters
+the wizard for additional agents) and a per-agent switch list when more
+than one exists.
 
-## Phase E — Onboarding wizard
+Tests in `AgentCrudTest` (9 cases): index team-scoping, store →
+settings redirect, update activates on green health, destroy with
+current-agent fallback, rotate-secret flash, switch-current rejects
+foreign agents, settings page surfaces webhook URL + secret correctly.
 
-Three Inertia pages (`/onboarding/{step}`):
+## Phase E — Onboarding wizard (shipped)
 
-1. **Intro** — value prop + "Sign up for Voiceflow" + "Download template" buttons.
-2. **Connect** — paste DM key + project ID; the "Test connection" button hits
-   `/agent/health` against the entered values without persisting; only "Save"
-   commits the row.
-3. **Done** — confetti page → "Start chatting" → `/agent`.
+Three Inertia pages, all under `/onboarding`:
 
-`RequireAgent` middleware (registered on the protected route group) checks
-`auth()->user()->currentTeam?->currentAgent?->status === 'active'`. If not,
-it redirects to step 1.
+1. **`Intro`** (`GET /onboarding`): value prop, "Sign up for Voiceflow"
+   external link, "Download template" link to `/templates/lead-qualification.vf`.
+   The "Continue" button POSTs to `/onboarding/start` which calls
+   `CreateAgent` to create a draft row (idempotent — re-clicking reuses the
+   existing draft) and redirects to step 2.
+2. **`Connect`** (`GET/POST /onboarding/connect`): the form for the DM
+   key + project ID + optional workspace key. POST runs
+   `UpdateAgentCredentials` which probes Voiceflow; on green, the agent
+   transitions to `active` and becomes the team's `current_agent_id`. On
+   failure, stays on the page with the failure reason via
+   `withErrors([...])`. Shows the per-agent webhook URL + secret so the
+   user can paste them into Voiceflow's Custom Action while they're here.
+3. **`Done`** (`GET /onboarding/done`): success page → "Start chatting"
+   button to `/agent`, or skip to `/dashboard`.
 
-## Phase F — Template asset
+**`RequireAgent` middleware** (`app/Http/Middleware/RequireAgent.php`) sits
+in the protected route group. It calls `OnboardingState::for($user)` and
+redirects to `$state->nextRoute()` until `Complete`. Bypass list (routes
+that must stay reachable mid-onboarding): `onboarding.*`, `agents.*`,
+`current-agent.*`, `profile.*`, `two-factor.*`, `api-tokens.*`,
+`teams.*`, `current-team.*`, `logout`.
 
-`resources/voiceflow/lead-qualification.vf` — a pre-built Voiceflow project
-the user imports. The template must:
-- Capture variables exactly `name`, `email`, `phone`, `company` (matches the
-  existing `services.voiceflow.lead_variables`).
-- POST to `{{webhook_url}}` (a placeholder Voiceflow's importer substitutes
-  with the user's actual `/api/voiceflow/lead-captured/{slug}` URL during the
-  wizard) with `X-Webhook-Secret: {{webhook_secret}}`.
+**Wizard tests** (`OnboardingWizardTest`, 8 cases) explicitly re-enable
+the middleware via `$this->withMiddleware(RequireAgent::class)` — the
+global test base class disables it for the broader suite so the existing
+113 tests don't all bounce to onboarding on every authenticated request.
 
-This file has to be built and exported in the Voiceflow IDE — I can't generate
-a valid `.vf` artifact. See `resources/voiceflow/README.md` for the schema spec
-the template must conform to.
+## Phase F — Template asset (placeholder shipped)
+
+`resources/voiceflow/README.md` documents the exact shape the template
+must take: the four captured variables (`name`, `email`, `phone`,
+`company`), the Custom Action POST contract, the recommended flow
+shape, and Voiceflow IDE build instructions.
+
+`public/templates/lead-qualification.vf` is a **text-stub placeholder** —
+a real `.vf` export from the Voiceflow IDE must replace it before the
+wizard's "Download template" link gives users a working starting point.
+Voiceflow's `.vf` is an opaque binary tied to canvas coordinates and
+internal IDs; we can't generate a valid one in-repo, so this is a
+one-time manual export.
 
 ## Phase G — Page scoping
 
@@ -427,8 +457,8 @@ existing 85.
 | L. Lifecycle layer | ✅ shipped | State machines, domain events, actions, OnboardingState |
 | B. Service refactor | ✅ shipped | `VoiceflowService::forAgent` + scoped container binding + recorder agent_id propagation |
 | C. Per-agent webhook | ✅ shipped | `/api/voiceflow/lead-captured/{agent:slug}` with per-agent secret |
-| D. Agent CRUD UI | ⏳ | `/agents`, picker, settings page |
-| E. Onboarding wizard | ⏳ | `/onboarding` 3-step flow + middleware |
-| F. Template `.vf` | ⏳ (manual) | Build + export in Voiceflow IDE |
-| G. Page scoping | ⏳ | All lists filter by `current_agent_id` |
+| D. Agent CRUD UI | ✅ shipped | `/agents` index + settings, nav picker, switcher, regenerate-secret, delete |
+| E. Onboarding wizard | ✅ shipped | 3-step `/onboarding` flow + `RequireAgent` middleware |
+| F. Template `.vf` | ⚠️ placeholder shipped | Schema documented; real `.vf` export pending (manual Voiceflow IDE step) |
+| G. Page scoping | ⏳ next | All lists filter by `current_agent_id` |
 | H. Billing | later | Cashier + Stripe, plan limits |

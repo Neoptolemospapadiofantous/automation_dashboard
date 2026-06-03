@@ -31,6 +31,14 @@ const switchToTeam = (team) => {
     });
 };
 
+const switchToAgent = (agent) => {
+    router.put(route('current-agent.update'), {
+        agent_id: agent.id,
+    }, {
+        preserveState: false,
+    });
+};
+
 const logout = () => {
     router.post(route('logout'));
 };
@@ -76,6 +84,49 @@ const logout = () => {
                         </div>
 
                         <div class="hidden sm:flex sm:items-center sm:ms-6">
+                            <!-- Agent picker -->
+                            <div v-if="$page.props.currentAgent || ($page.props.teamAgents && $page.props.teamAgents.length)" class="ms-3 relative">
+                                <Dropdown align="right" width="60">
+                                    <template #trigger>
+                                        <span class="inline-flex rounded-md">
+                                            <button type="button" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none focus:bg-gray-50 active:bg-gray-50 transition ease-in-out duration-150">
+                                                <svg class="me-1.5 size-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                                                </svg>
+                                                {{ $page.props.currentAgent?.name ?? 'No agent' }}
+                                                <svg class="ms-2 -me-0.5 size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+                                                </svg>
+                                            </button>
+                                        </span>
+                                    </template>
+                                    <template #content>
+                                        <div class="w-60">
+                                            <div class="block px-4 py-2 text-xs text-gray-400">Manage Agents</div>
+                                            <DropdownLink :href="route('agents.index')">All agents</DropdownLink>
+                                            <DropdownLink :href="route('onboarding.intro')">Add new agent</DropdownLink>
+                                            <template v-if="$page.props.teamAgents && $page.props.teamAgents.length > 1">
+                                                <div class="border-t border-gray-200" />
+                                                <div class="block px-4 py-2 text-xs text-gray-400">Switch Agent</div>
+                                                <template v-for="agent in $page.props.teamAgents" :key="agent.id">
+                                                    <form @submit.prevent="switchToAgent(agent)">
+                                                        <DropdownLink as="button">
+                                                            <div class="flex items-center">
+                                                                <svg v-if="agent.id === $page.props.currentAgent?.id" class="me-2 size-5 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                </svg>
+                                                                <span v-else class="me-2 size-5" />
+                                                                <div>{{ agent.name }}</div>
+                                                            </div>
+                                                        </DropdownLink>
+                                                    </form>
+                                                </template>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </Dropdown>
+                            </div>
+
                             <div class="ms-3 relative">
                                 <!-- Teams Dropdown -->
                                 <Dropdown v-if="$page.props.jetstream.hasTeamFeatures" align="right" width="60">

@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\AgentController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardTickController;
 use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\VoiceflowController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -24,7 +26,26 @@ Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
+    \App\Http\Middleware\RequireAgent::class,
 ])->group(function () {
+    // Phase 13 — Agent CRUD + onboarding wizard. Both bypass RequireAgent
+    // (the middleware whitelists their route name prefixes) so the user can
+    // reach them even when no active agent exists yet.
+    Route::get('/onboarding', [OnboardingController::class, 'intro'])->name('onboarding.intro');
+    Route::post('/onboarding/start', [OnboardingController::class, 'startAgent'])->name('onboarding.start');
+    Route::get('/onboarding/connect', [OnboardingController::class, 'connect'])->name('onboarding.connect');
+    Route::post('/onboarding/connect', [OnboardingController::class, 'saveCredentials'])->name('onboarding.save');
+    Route::get('/onboarding/done', [OnboardingController::class, 'done'])->name('onboarding.done');
+
+    Route::get('/agents', [AgentController::class, 'index'])->name('agents.index');
+    Route::post('/agents', [AgentController::class, 'store'])->name('agents.store');
+    Route::get('/agents/{agent}', [AgentController::class, 'show'])->name('agents.show');
+    Route::put('/agents/{agent}', [AgentController::class, 'update'])->name('agents.update');
+    Route::delete('/agents/{agent}', [AgentController::class, 'destroy'])->name('agents.destroy');
+    Route::post('/agents/{agent}/rotate-secret', [AgentController::class, 'rotateSecret'])->name('agents.rotate-secret');
+    Route::post('/agents/{agent}/health', [AgentController::class, 'health'])->name('agents.health');
+    Route::put('/current-agent', [AgentController::class, 'switchCurrent'])->name('current-agent.update');
+
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     // Phase 2 live-tick demo: fires a broadcast every connected browser receives.
