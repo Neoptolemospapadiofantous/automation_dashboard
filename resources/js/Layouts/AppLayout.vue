@@ -158,7 +158,7 @@ const logout = () => {
                                 </template>
                                 Agents
                             </SidebarLink>
-                            <SidebarLink href="/billing" active-pattern="billing.*">
+                            <SidebarLink :href="route('billing.index')" active-pattern="billing.*">
                                 <template #icon>
                                     <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>
                                 </template>
@@ -280,7 +280,7 @@ const logout = () => {
                                     <Link
                                         v-for="n in notifications"
                                         :key="n.id"
-                                        :href="route('leads.index')"
+                                        :href="route('leads.index', n.lead_id ? { focus: n.lead_id } : {})"
                                         class="block border-t border-gray-100 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
                                     >
                                         {{ n.message }}
@@ -385,7 +385,7 @@ const logout = () => {
                             <div class="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Workspace</div>
                             <SidebarLink :href="route('agents.index')" :active-pattern="['agents.index', 'agents.show']">Agents</SidebarLink>
                             <SidebarLink :href="route('onboarding.intro')" active-pattern="onboarding.*">+ New agent</SidebarLink>
-                            <SidebarLink href="/billing" active-pattern="billing.*">Billing</SidebarLink>
+                            <SidebarLink :href="route('billing.index')" active-pattern="billing.*">Billing</SidebarLink>
                         </div>
                     </nav>
                 </div>

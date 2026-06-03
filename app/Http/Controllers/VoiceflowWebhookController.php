@@ -76,11 +76,14 @@ class VoiceflowWebhookController extends Controller
             }
             $lead->captured = array_merge($lead->captured ?? [], $data['variables'] ?? []);
             $lead->last_contacted_at = now();
-            // Only advance the status forward, never regress a won/lost/assigned lead.
-            if (in_array($lead->status, [LeadStatus::New, LeadStatus::Engaging], true)) {
-                $lead->status = $status;
-            }
             $lead->save();
+            // Status: only advance forward via the state machine. canTransitionTo
+            // returns false for terminal/regressive moves (Won→Qualified etc.),
+            // mirroring the original "never regress a won/lost/assigned lead"
+            // intent — but with typed events firing on every legal forward step.
+            if ($lead->status !== $status && $lead->canTransitionTo($status)) {
+                $lead->transitionTo($status);
+            }
         } else {
             $lead = Lead::create([
                 ...$attributes,

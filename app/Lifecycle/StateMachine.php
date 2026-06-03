@@ -6,7 +6,6 @@ use App\Events\Domain\StateChanged;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
 /**
  * Base class for a domain entity's state machine.
@@ -76,20 +75,16 @@ abstract class StateMachine
     {
         $from = $this->current();
         if ($from === null) {
-            throw new InvalidArgumentException(class_basename($this->model).' has no current state to transition from.');
+            throw new InvalidTransition($this->model, '(none)', $to, 'no current state');
         }
 
         $transition = $this->findTransition($from, $to);
         if ($transition === null) {
-            throw new InvalidArgumentException(
-                class_basename($this->model)." cannot transition from '{$this->name($from)}' to '{$this->name($to)}'."
-            );
+            throw new InvalidTransition($this->model, $from, $to, 'transition not declared');
         }
 
         if (! $transition->isAllowedFor($this->model)) {
-            throw new InvalidArgumentException(
-                class_basename($this->model)." transition '{$this->name($from)}' → '{$this->name($to)}' is blocked by guard."
-            );
+            throw new InvalidTransition($this->model, $from, $to, 'blocked by guard');
         }
 
         DB::transaction(function () use ($to, $from, $transition, $context) {

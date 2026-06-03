@@ -58,16 +58,22 @@ class BillingPlanLimitsTest extends TestCase
         $this->assertSame(10, $user->currentTeam->agents()->count());
     }
 
-    public function test_agent_controller_store_redirects_with_flash_on_plan_limit(): void
+    public function test_agent_controller_store_flashes_plan_limit_on_cap(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
         // Already at Free's cap (1 agent).
         Agent::factory()->for($user->currentTeam)->create();
 
-        $this->actingAs($user->fresh())
-            ->post(route('agents.store'), ['name' => 'Second bot'])
-            ->assertRedirect(route('agents.index'))
-            ->assertSessionHas('flash.plan_limit');
+        // Now handled by the global exception renderer in bootstrap/app.php.
+        // Web requests get back()->with('flash.plan_limit', ...). The exact
+        // redirect target is `back()` which depends on the Referer header
+        // (defaults to '/' in tests), so we don't assert the destination —
+        // only that we got a redirect with the flash payload.
+        $response = $this->actingAs($user->fresh())
+            ->post(route('agents.store'), ['name' => 'Second bot']);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('flash.plan_limit');
     }
 
     public function test_exception_carries_plan_metadata(): void

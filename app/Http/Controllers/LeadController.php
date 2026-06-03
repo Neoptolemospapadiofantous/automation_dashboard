@@ -85,19 +85,14 @@ class LeadController extends Controller
         return back();
     }
 
-    public function update(Request $request, Lead $lead): RedirectResponse
-    {
-        $this->authorizeLead($request, $lead);
-
-        $lead->update($this->validateLead($request));
-
-        broadcast(new LeadSaved($lead))->toOthers();
-
-        return back();
-    }
-
     /**
      * Lightweight status change used by drag-and-drop on the board.
+     *
+     * Routes through the LeadStateMachine so the typed event chain
+     * (LeadStatusChanged / LeadQualified / LeadAssigned / LeadWon / LeadLost)
+     * fires consistently with the rest of the app. Invalid transitions
+     * (e.g. dragging from Won back to Engaging) throw InvalidTransition
+     * which the exception handler maps to 422 with a friendly message.
      */
     public function updateStatus(Request $request, Lead $lead): RedirectResponse
     {
@@ -107,9 +102,13 @@ class LeadController extends Controller
             'status' => ['required', Rule::enum(LeadStatus::class)],
         ]);
 
-        $lead->update($data);
+        $newStatus = LeadStatus::from($data['status']);
 
-        broadcast(new LeadSaved($lead))->toOthers();
+        if ($lead->status !== $newStatus) {
+            $lead->transitionTo($newStatus);
+        }
+
+        broadcast(new LeadSaved($lead->fresh()))->toOthers();
 
         return back();
     }

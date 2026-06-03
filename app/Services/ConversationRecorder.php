@@ -94,8 +94,11 @@ class ConversationRecorder
      */
     public function end(Conversation $conversation): void
     {
-        if ($conversation->status !== 'ended') {
-            $conversation->forceFill(['status' => 'ended', 'ended_at' => now()])->save();
+        if ($conversation->status !== 'ended' && $conversation->canTransitionTo('ended')) {
+            $conversation->forceFill(['ended_at' => now()])->save();
+            // State machine fires ConversationEnded + StateChanged events
+            // and persists the status change atomically.
+            $conversation->transitionTo('ended');
         }
     }
 }

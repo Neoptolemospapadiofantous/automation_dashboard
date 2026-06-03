@@ -77,7 +77,11 @@ class ConversationController extends Controller
         // Use the Scout engine only when a real one is configured (e.g.
         // typesense). Otherwise do a plain DB scan so search works everywhere
         // without depending on a search service.
-        $engine = env('SCOUT_DRIVER');
+        //
+        // Read via config() not env() — env() returns null after
+        // `php artisan config:cache`, which would silently force the
+        // DB-LIKE fallback even when Typesense is correctly configured.
+        $engine = config('scout.driver');
         $useScout = $engine && ! in_array($engine, ['database', 'collection', 'null'], true);
 
         if ($useScout) {

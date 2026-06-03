@@ -7,7 +7,6 @@ use App\Actions\Agents\DeleteAgent;
 use App\Actions\Agents\RotateWebhookSecret;
 use App\Actions\Agents\SwitchAgent;
 use App\Actions\Agents\UpdateAgentCredentials;
-use App\Billing\Exceptions\PlanLimitExceeded;
 use App\Models\Agent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -56,20 +55,11 @@ class AgentController extends Controller
             'name' => ['required', 'string', 'max:255'],
         ]);
 
-        try {
-            $agent = (new CreateAgent())->execute($request->user()->currentTeam, $data['name']);
-        } catch (PlanLimitExceeded $e) {
-            // Bounce back to the agents list with a flash error + plan
-            // metadata so the UI can render an upgrade CTA.
-            return redirect()
-                ->route('agents.index')
-                ->with('flash.plan_limit', [
-                    'message' => $e->getMessage(),
-                    'plan' => $e->plan->value,
-                    'limit' => $e->limit,
-                    'resource' => $e->resource,
-                ]);
-        }
+        // PlanLimitExceeded is handled by the global exception renderer
+        // in bootstrap/app.php — JSON requests get 403, web requests get
+        // a redirect-back with the flash.plan_limit payload. Don't catch
+        // it here or the global handler can't pick the right shape.
+        $agent = (new CreateAgent())->execute($request->user()->currentTeam, $data['name']);
 
         return redirect()->route('agents.show', $agent);
     }

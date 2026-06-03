@@ -22,8 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Out-of-credits is a billing/payment state, not an app error.
-        // Map to HTTP 402 with a JSON payload the chat UI knows how to
-        // render as an upgrade prompt.
+        // 402 Payment Required with a JSON payload the chat UI renders as
+        // an upgrade prompt.
         $exceptions->render(function (\App\Billing\Exceptions\OutOfCredits $e, $request) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -35,5 +35,44 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return back()->withErrors(['credits' => $e->getMessage()]);
+        });
+
+        // Plan limit (e.g. "5 agents max on Pro"). Previously handled
+        // inline in AgentController::store only — any other caller (jobs,
+        // API endpoints) would have leaked as 500. 403 Forbidden with
+        // structured payload so the UI knows what limit was hit.
+        $exceptions->render(function (\App\Billing\Exceptions\PlanLimitExceeded $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'error' => $e->getMessage(),
+                    'resource' => $e->resource,
+                    'limit' => $e->limit,
+                    'plan' => $e->plan->value,
+                    'plan_label' => $e->plan->label(),
+                ], 403);
+            }
+
+            return back()->with('flash.plan_limit', [
+                'message' => $e->getMessage(),
+                'plan' => $e->plan->value,
+                'limit' => $e->limit,
+                'resource' => $e->resource,
+            ]);
+        });
+
+        // State machine refusal (illegal transition / guard fail). Maps
+        // to 422 Unprocessable so the kanban / status-change UIs render
+        // it as a validation-style error instead of a 500.
+        $exceptions->render(function (\App\Lifecycle\InvalidTransition $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'error' => $e->getMessage(),
+                    'from' => $e->from instanceof \BackedEnum ? $e->from->value : $e->from,
+                    'to' => $e->to instanceof \BackedEnum ? $e->to->value : $e->to,
+                    'reason' => $e->reason,
+                ], 422);
+            }
+
+            return back()->withErrors(['status' => $e->getMessage()]);
         });
     })->create();

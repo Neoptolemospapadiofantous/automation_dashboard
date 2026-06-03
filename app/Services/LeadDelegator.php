@@ -51,11 +51,15 @@ class LeadDelegator
             }
 
             $lead->assigned_to = $target?->id;
-            // Auto-advance to "assigned" when a rep takes it.
-            if ($target && in_array($lead->status, [LeadStatus::Qualified, LeadStatus::New, LeadStatus::Engaging], true)) {
-                $lead->status = LeadStatus::Assigned;
-            }
             $lead->save();
+            // Auto-advance to "assigned" via the state machine when a rep takes
+            // it. canTransitionTo() returns false from Won/Lost so we don't
+            // resurrect terminal leads; it also returns false from Assigned →
+            // Assigned (no transition declared), making re-assignment a no-op
+            // on the state machine while still updating assigned_to above.
+            if ($target && $lead->canTransitionTo(LeadStatus::Assigned)) {
+                $lead->transitionTo(LeadStatus::Assigned);
+            }
 
             LeadAssignment::create([
                 'lead_id' => $lead->id,

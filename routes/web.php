@@ -69,7 +69,10 @@ Route::middleware([
     // Phase 3 lead pipeline (kanban board with live updates).
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
     Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
-    Route::put('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+    // leads.update intentionally removed — there's no edit-lead UI; the
+    // kanban uses leads.status for status-only changes and the create modal
+    // covers the only field-editing surface. Re-add when a per-lead edit
+    // page actually exists.
     Route::patch('/leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.status');
     Route::post('/leads/{lead}/assign', [LeadController::class, 'assign'])->name('leads.assign');
     Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');

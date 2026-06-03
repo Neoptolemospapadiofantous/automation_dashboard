@@ -5,6 +5,7 @@ namespace App\Events;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -14,8 +15,10 @@ use Illuminate\Queue\SerializesModels;
  * It broadcasts on a public "dashboard" channel so any connected browser
  * receives an instant tick without authentication. Later phases broadcast
  * domain events (LeadCreated, LeadAssigned, ...) on private/presence channels.
+ *
+ * Queued so the Pusher HTTP call doesn't block the request.
  */
-class DashboardTick implements ShouldBroadcast
+class DashboardTick implements ShouldBroadcast, ShouldQueue
 {
     use Dispatchable;
     use InteractsWithSockets;

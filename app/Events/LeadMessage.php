@@ -5,14 +5,16 @@ namespace App\Events;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
  * Broadcast a single conversation message so an open lead/board view shows the
  * Voiceflow exchange ticking in live.
+ * Queued so the Pusher HTTP call doesn't add latency to each chat turn.
  */
-class LeadMessage implements ShouldBroadcast
+class LeadMessage implements ShouldBroadcast, ShouldQueue
 {
     use Dispatchable;
     use InteractsWithSockets;

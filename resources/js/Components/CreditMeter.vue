@@ -39,7 +39,7 @@ const textClass = computed(() => ({
 
 <template>
     <div v-if="billing" class="border-t border-gray-100 p-3">
-        <Link href="/billing" class="block rounded-md px-2 py-2 hover:bg-gray-50">
+        <Link :href="route('billing.index')" class="block rounded-md px-2 py-2 hover:bg-gray-50">
             <div class="flex items-center justify-between text-xs">
                 <span class="font-semibold uppercase tracking-wide text-gray-400">
                     {{ billing.plan_label }} plan

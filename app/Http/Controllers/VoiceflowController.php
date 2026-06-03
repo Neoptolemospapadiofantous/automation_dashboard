@@ -233,10 +233,13 @@ class VoiceflowController extends Controller
             if (! $lead->agent_id && $team->current_agent_id) {
                 $lead->agent_id = $team->current_agent_id;
             }
-            if ($lead->status === LeadStatus::New) {
-                $lead->status = LeadStatus::Engaging;
-            }
             $lead->save();
+            // Status transitions go through the lifecycle layer so typed
+            // events fire. canTransitionTo guards against repeated calls
+            // (idempotent — re-touching an Engaging lead is a no-op).
+            if ($lead->canTransitionTo(LeadStatus::Engaging)) {
+                $lead->transitionTo(LeadStatus::Engaging);
+            }
         } else {
             $lead = Lead::create([
                 ...$attributes,
