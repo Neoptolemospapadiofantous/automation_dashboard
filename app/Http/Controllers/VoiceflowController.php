@@ -196,6 +196,10 @@ class VoiceflowController extends Controller
             $merged = array_merge($lead->captured ?? [], $fields);
             $lead->fill($attributes);
             $lead->captured = $merged;
+            // Backfill agent_id on rows that pre-date multi-tenancy.
+            if (! $lead->agent_id && $team->current_agent_id) {
+                $lead->agent_id = $team->current_agent_id;
+            }
             if ($lead->status === LeadStatus::New) {
                 $lead->status = LeadStatus::Engaging;
             }
@@ -204,6 +208,7 @@ class VoiceflowController extends Controller
             $lead = Lead::create([
                 ...$attributes,
                 'team_id' => $team->id,
+                'agent_id' => $team->current_agent_id,
                 'name' => $fields['name'] ?? ($fields['email'] ?? 'New contact'),
                 'source' => 'voiceflow',
                 'status' => LeadStatus::Engaging,
@@ -234,10 +239,13 @@ class VoiceflowController extends Controller
     protected function safelyResolve(Request $request, string $userId, ?int $leadId): ?Conversation
     {
         try {
+            $team = $request->user()->currentTeam;
+
             return $this->recorder->resolve(
-                $request->user()->currentTeam->id,
-                $userId,
-                $leadId,
+                teamId: $team->id,
+                voiceflowUserId: $userId,
+                leadId: $leadId,
+                agentId: $team->current_agent_id,
             );
         } catch (\Throwable $e) {
             report($e);

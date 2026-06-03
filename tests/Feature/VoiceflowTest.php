@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\LeadStatus;
 use App\Events\LeadMessage;
 use App\Events\LeadSaved;
+use App\Models\Agent;
 use App\Models\Lead;
 use App\Models\User;
 use App\Services\VoiceflowService;
@@ -187,9 +188,9 @@ class VoiceflowTest extends TestCase
     public function test_webhook_rejects_bad_secret(): void
     {
         $team = $this->user()->currentTeam;
+        $agent = Agent::factory()->for($team)->create();
 
-        $this->postJson(route('voiceflow.webhook'), [
-            'team_id' => $team->id,
+        $this->postJson(route('voiceflow.webhook', $agent), [
             'name' => 'Grace',
         ], ['X-Webhook-Secret' => 'wrong'])
             ->assertStatus(401);
@@ -200,22 +201,24 @@ class VoiceflowTest extends TestCase
         Event::fake([LeadSaved::class]);
 
         $team = $this->user()->currentTeam;
+        $agent = Agent::factory()->for($team)->create();
 
-        $this->postJson(route('voiceflow.webhook'), [
-            'team_id' => $team->id,
+        $this->postJson(route('voiceflow.webhook', $agent), [
             'name' => 'Grace Hopper',
             'email' => 'grace@example.com',
             'score' => 90,
             'qualified' => true,
             'voiceflow_user_id' => 'web-xyz',
-        ], ['X-Webhook-Secret' => 'shh-secret'])
+        ], ['X-Webhook-Secret' => $agent->webhook_secret])
             ->assertOk()
             ->assertJson(['ok' => true]);
 
         // Qualified + a team member present → auto-delegated (round-robin),
-        // which advances the status to "assigned".
+        // which advances the status to "assigned". Lead is stamped with the
+        // per-agent agent_id from the route, not the team's current_agent_id.
         $this->assertDatabaseHas('leads', [
             'team_id' => $team->id,
+            'agent_id' => $agent->id,
             'email' => 'grace@example.com',
             'status' => LeadStatus::Assigned->value,
             'source' => 'voiceflow',
@@ -232,11 +235,36 @@ class VoiceflowTest extends TestCase
     public function test_webhook_requires_name_or_email(): void
     {
         $team = $this->user()->currentTeam;
+        $agent = Agent::factory()->for($team)->create();
 
-        $this->postJson(route('voiceflow.webhook'), [
-            'team_id' => $team->id,
+        $this->postJson(route('voiceflow.webhook', $agent), [
             'phone' => '555-1234',
-        ], ['X-Webhook-Secret' => 'shh-secret'])
+        ], ['X-Webhook-Secret' => $agent->webhook_secret])
             ->assertStatus(422);
+    }
+
+    public function test_webhook_rejects_disabled_agent(): void
+    {
+        $team = $this->user()->currentTeam;
+        $agent = Agent::factory()->disabled()->for($team)->create();
+
+        $this->postJson(route('voiceflow.webhook', $agent), [
+            'name' => 'Grace',
+        ], ['X-Webhook-Secret' => $agent->webhook_secret])
+            ->assertStatus(503);
+    }
+
+    public function test_webhook_rejects_another_agents_secret(): void
+    {
+        // Cross-agent isolation: agent A's URL with agent B's secret must fail.
+        $team = $this->user()->currentTeam;
+        $a = Agent::factory()->for($team)->create();
+        $b = Agent::factory()->for($team)->create();
+
+        $this->postJson(route('voiceflow.webhook', $a), [
+            'name' => 'Grace',
+            'email' => 'grace@example.com',
+        ], ['X-Webhook-Secret' => $b->webhook_secret])
+            ->assertStatus(401);
     }
 }

@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Enums\AssignmentStrategy;
 use App\Enums\LeadStatus;
 use App\Events\LeadSaved;
+use App\Models\Agent;
 use App\Models\Lead;
-use App\Models\Team;
 use App\Services\LeadDelegator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,19 +15,19 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Inbound webhook for Voiceflow Custom Actions.
  *
- * A Voiceflow agent can POST a qualified lead here the instant it's captured,
- * rather than us polling session variables. Secured by a shared secret because
- * Voiceflow calls it directly (no user session). Configure the agent to send
- * the X-Webhook-Secret header matching VOICEFLOW_WEBHOOK_SECRET.
+ * A Voiceflow agent POSTs a qualified lead here the instant it's captured.
+ * The URL is per-agent — {agent:slug} route-binds to the Agent model — and
+ * authenticated against that agent's own webhook_secret. team_id is derived
+ * from the agent, so the Voiceflow side never has to send (or know) it.
  */
 class VoiceflowWebhookController extends Controller
 {
-    public function leadCaptured(Request $request): JsonResponse
+    public function leadCaptured(Request $request, Agent $agent): JsonResponse
     {
-        $this->verifySecret($request);
+        $this->verifySecret($request, $agent);
+        $this->verifyAgentAcceptingWebhooks($agent);
 
         $data = $request->validate([
-            'team_id' => ['required', 'integer', 'exists:teams,id'],
             'voiceflow_user_id' => ['nullable', 'string', 'max:255'],
             'name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
@@ -46,11 +46,13 @@ class VoiceflowWebhookController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $team = Team::findOrFail($data['team_id']);
-
-        // Match an existing lead by Voiceflow user id, else by email.
-        $lead = Lead::where('team_id', $team->id)
-            ->when($data['voiceflow_user_id'] ?? null, fn ($q, $vid) => $q->where('voiceflow_user_id', $vid))
+        // Match an existing lead by Voiceflow user id within THIS agent, else
+        // by email within the team. Scoping the voiceflow_user_id match to
+        // agent_id avoids collisions when two agents in the same team happen
+        // to issue identical session ids (rare but possible).
+        $lead = Lead::query()
+            ->where('team_id', $agent->team_id)
+            ->when($data['voiceflow_user_id'] ?? null, fn ($q, $vid) => $q->where('agent_id', $agent->id)->where('voiceflow_user_id', $vid))
             ->when(! ($data['voiceflow_user_id'] ?? null) && ($data['email'] ?? null), fn ($q) => $q->where('email', $data['email']))
             ->first();
 
@@ -68,6 +70,10 @@ class VoiceflowWebhookController extends Controller
 
         if ($lead) {
             $lead->fill($attributes);
+            // Backfill agent_id on rows that pre-date multi-tenancy.
+            if (! $lead->agent_id) {
+                $lead->agent_id = $agent->id;
+            }
             $lead->captured = array_merge($lead->captured ?? [], $data['variables'] ?? []);
             $lead->last_contacted_at = now();
             // Only advance the status forward, never regress a won/lost/assigned lead.
@@ -78,7 +84,8 @@ class VoiceflowWebhookController extends Controller
         } else {
             $lead = Lead::create([
                 ...$attributes,
-                'team_id' => $team->id,
+                'team_id' => $agent->team_id,
+                'agent_id' => $agent->id,
                 'name' => $attributes['name'] ?? $attributes['email'],
                 'source' => 'voiceflow',
                 'status' => $status,
@@ -102,14 +109,32 @@ class VoiceflowWebhookController extends Controller
         return response()->json(['ok' => true, 'lead_id' => $lead->id]);
     }
 
-    protected function verifySecret(Request $request): void
+    /**
+     * Per-agent shared secret check. Constant-time compare; uniform error
+     * shape so a 401 doesn't disclose whether the secret was wrong vs. unset.
+     */
+    protected function verifySecret(Request $request, Agent $agent): void
     {
-        $expected = config('services.voiceflow.webhook_secret');
+        $expected = (string) $agent->webhook_secret;
+        $provided = (string) $request->header('X-Webhook-Secret', '');
 
-        abort_if(empty($expected), Response::HTTP_SERVICE_UNAVAILABLE, 'Webhook secret not configured.');
-
-        $provided = $request->header('X-Webhook-Secret', '');
-
+        // The Agent model always generates a non-empty secret on create, but
+        // guard explicitly so a manually-emptied row can't be exploited.
+        abort_if($expected === '', Response::HTTP_SERVICE_UNAVAILABLE, 'Agent has no webhook secret configured.');
         abort_unless(hash_equals($expected, $provided), Response::HTTP_UNAUTHORIZED, 'Invalid webhook secret.');
+    }
+
+    /**
+     * Disabled agents stop accepting webhook leads. Draft agents (still in
+     * onboarding) DO accept — the first capture is sometimes how a user
+     * realises the agent is wired up correctly.
+     */
+    protected function verifyAgentAcceptingWebhooks(Agent $agent): void
+    {
+        abort_if(
+            $agent->status === Agent::STATUS_DISABLED,
+            Response::HTTP_SERVICE_UNAVAILABLE,
+            'Agent is disabled and not accepting captures.',
+        );
     }
 }

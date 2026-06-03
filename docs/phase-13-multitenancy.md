@@ -130,51 +130,84 @@ and `switchAgent(Agent)` that rejects cross-team switches.
 - route binding uses slug
 - backfill behaviour vs. newly-created teams
 
-## Phase B — Service refactor (next)
+## Phase B — Service refactor (shipped)
 
-`VoiceflowService::__construct` already accepts per-instance overrides
-(it was built this way for testing). The refactor:
+`VoiceflowService::__construct` already accepted per-instance overrides
+(it was built this way for testing), which made the refactor surgical:
 
-1. Add a static factory: `VoiceflowService::forAgent(Agent $agent): self`.
-2. Replace the container binding:
+1. **`VoiceflowService::forAgent(Agent $agent): self`** — the canonical
+   SaaS entrypoint, builds an instance from the agent's encrypted
+   credential columns.
+2. Container binding in `AppServiceProvider::register()` is now
+   `$this->app->scoped(VoiceflowService::class, ...)`. The closure
+   resolves the request's current Agent via
+   `auth()->user()?->currentTeam?->currentAgent` and constructs through
+   `forAgent`. **Fallback path:** when there's no authenticated user OR no
+   current agent (cron / artisan / pre-onboarding), it constructs from
+   `.env` config so transcript backfill, KB sync, and other background work
+   stay usable.
+3. **Downstream files unchanged.** `VoiceflowController`,
+   `ConversationController`, `KnowledgeBaseController`,
+   `ConversationRecorder`, `LeadDelegator`, and the `voiceflow:backfill`
+   command keep injecting `VoiceflowService` through DI; the container
+   hands them the agent-scoped instance automatically.
+4. **`ConversationRecorder::resolve()`** now accepts an optional `agentId`.
+   New conversations and their messages get stamped with the agent id so
+   Phase G's page-scoping (`where('agent_id', current_agent_id)`) can
+   filter them. Existing rows that were backfilled to the team's default
+   agent by the Phase A migration remain visible.
+5. **`VoiceflowController::upsertLead`** stamps `agent_id =
+   $team->current_agent_id` on lead create and backfills it on pre-existing
+   lead rows the agent re-touches.
 
-```php
-// app/Providers/AppServiceProvider.php
-$this->app->scoped(VoiceflowService::class, function ($app) {
-    $agent = $app['request']->user()?->currentTeam?->currentAgent;
-    return $agent
-        ? VoiceflowService::forAgent($agent)
-        : new VoiceflowService(); // unconfigured — methods throw via isConfigured() gate
-});
-```
+Tests added in `VoiceflowServiceResolutionTest` (5 cases):
+- Service resolved through the container uses the current agent's credentials
+- Falls back to `.env` config when no agent is current
+- End-to-end through `/agent/health`: tenant sees their `project_id`
+- End-to-end through `/agent/health`: no-agent user sees the env fallback
+- `forAgent()` factory tested directly
 
-3. Controllers that need a specific agent (e.g. the webhook hits a route
-   with `{agent}`) construct via `VoiceflowService::forAgent($route->agent)`.
+## Phase C — Per-agent webhook (shipped)
 
-The downstream files (`VoiceflowController`, `ConversationController`,
-`KnowledgeBaseController`, `ConversationRecorder`, `LeadDelegator`,
-`voiceflow:backfill` command) **don't change** — they keep injecting
-`VoiceflowService` from the container; the container hands them the
-agent-scoped instance.
-
-## Phase C — Per-agent webhook
-
-Old:
+Old (single-tenant):
 ```
 POST /api/voiceflow/lead-captured
 X-Webhook-Secret: <global VOICEFLOW_WEBHOOK_SECRET>
+body: { team_id, name, email, ... }
 ```
 
-New:
+New (per-agent):
 ```
 POST /api/voiceflow/lead-captured/{agent:slug}
 X-Webhook-Secret: <agent.webhook_secret>
+body: { name, email, ... }   # team_id derived from agent
 ```
 
-`VoiceflowWebhookController` looks up the agent via route binding, then
-checks `hash_equals($agent->webhook_secret, $providedHeader)`. The agent
-edit page shows the unique URL with a copy button and a "regenerate
-secret" action that rolls the random value.
+Implementation:
+- **Route** binds `{agent:slug}` to the `Agent` model (via
+  `Agent::getRouteKeyName()` returning `'slug'`).
+- **`VoiceflowWebhookController::leadCaptured(Request, Agent)`** verifies
+  the secret with `hash_equals($agent->webhook_secret, $providedHeader)`
+  and rejects requests against a `disabled` agent with 503 (draft agents
+  still accept — the first capture is sometimes how a user discovers the
+  agent is wired up).
+- **`team_id` removed from the request body** — the agent owns it.
+- **`agent_id` stamped on new leads** and backfilled on pre-existing
+  leads the agent re-touches.
+- **Voiceflow user-id matching scoped to `agent_id`** so two agents in the
+  same team can't collide on identical session ids.
+
+The Phase A backfill migration reused the existing global webhook secret
+as the default agent's `webhook_secret`, so the only change a current
+single-tenant deployment needs is updating its Voiceflow Custom Action URL
+to include `/<agent_slug>` — the secret already matches.
+
+Tests added in `VoiceflowTest`:
+- `webhook rejects disabled agent` (503)
+- `webhook rejects another agent's secret` (cross-agent 401)
+
+All 3 pre-existing webhook tests updated to use the per-agent URL +
+per-agent secret pattern.
 
 ## Phase D — Agent CRUD UI
 
@@ -392,8 +425,8 @@ existing 85.
 |---|---|---|
 | A. Foundation | ✅ shipped | `agents` table, FKs, model, backfill, Team mods |
 | L. Lifecycle layer | ✅ shipped | State machines, domain events, actions, OnboardingState |
-| B. Service refactor | ⏳ next | `VoiceflowService::forAgent` + container binding |
-| C. Per-agent webhook | ⏳ | `/api/voiceflow/lead-captured/{agent:slug}` |
+| B. Service refactor | ✅ shipped | `VoiceflowService::forAgent` + scoped container binding + recorder agent_id propagation |
+| C. Per-agent webhook | ✅ shipped | `/api/voiceflow/lead-captured/{agent:slug}` with per-agent secret |
 | D. Agent CRUD UI | ⏳ | `/agents`, picker, settings page |
 | E. Onboarding wizard | ⏳ | `/onboarding` 3-step flow + middleware |
 | F. Template `.vf` | ⏳ (manual) | Build + export in Voiceflow IDE |

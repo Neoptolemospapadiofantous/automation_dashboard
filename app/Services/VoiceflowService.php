@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Agent;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -38,6 +39,10 @@ class VoiceflowService
     ) {
         $config = config('services.voiceflow');
 
+        // Credentials default to .env config for backwards compatibility:
+        // CLI commands, background jobs, and tests that don't act-as a user
+        // can still get a usable client without resolving an Agent first.
+        // Per-request HTTP calls flow through forAgent() instead (see below).
         $this->apiKey ??= $config['api_key'] ?? null;
         $this->environment ??= $config['environment'] ?? 'main';
         $this->projectId ??= $config['project_id'] ?? null;
@@ -45,6 +50,26 @@ class VoiceflowService
         $this->apiUrl ??= rtrim($config['api_url'] ?? 'https://api.voiceflow.com', '/');
         $this->analyticsUrl ??= rtrim($config['analytics_url'] ?? 'https://analytics-api.voiceflow.com', '/');
         $this->realtimeUrl ??= rtrim($config['realtime_url'] ?? 'https://realtime-api.voiceflow.com', '/');
+    }
+
+    /**
+     * Build a service instance authenticated as a specific Agent.
+     *
+     * This is the canonical SaaS entrypoint: the container binding resolves
+     * the current request's Agent via auth context and constructs through
+     * here, and the per-agent webhook controller does the same after
+     * route-binding {agent:slug}.
+     *
+     * URLs (runtime, analytics, realtime, api) still come from .env config —
+     * those are infrastructure-wide and don't vary per tenant.
+     */
+    public static function forAgent(Agent $agent): self
+    {
+        return new self(
+            apiKey: $agent->voiceflow_api_key,
+            environment: $agent->voiceflow_environment ?: 'main',
+            projectId: $agent->voiceflow_project_id,
+        );
     }
 
     /**
