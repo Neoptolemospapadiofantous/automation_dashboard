@@ -34,6 +34,15 @@ const switchToAgent = (agent) => {
 const logout = () => {
     router.post(route('logout'));
 };
+
+// Mobile sidebar dismisses on link/button taps but NOT on group-label clicks.
+// Previously the close handler sat on `<nav>` and any tap (including the
+// "Inbox"/"Knowledge" group labels) collapsed the menu, which felt broken.
+const handleMobileNavClick = (event) => {
+    if (event.target.closest('a, button')) {
+        showMobileNav.value = false;
+    }
+};
 </script>
 
 <template>
@@ -71,7 +80,12 @@ const logout = () => {
                             <div class="w-56">
                                 <div class="block px-4 py-2 text-xs uppercase tracking-wide text-gray-400">Agents</div>
                                 <DropdownLink :href="route('agents.index')">All agents</DropdownLink>
-                                <DropdownLink :href="route('onboarding.intro')">+ New agent</DropdownLink>
+                                <!-- Second+ agents skip the onboarding wizard
+                                     (it's a one-time welcome). Land on the
+                                     agents index where the create-dialog
+                                     enforces plan limits and routes BYOK vs.
+                                     managed correctly. -->
+                                <DropdownLink :href="route('agents.index')">+ New agent</DropdownLink>
                                 <template v-if="teamAgents.length > 1">
                                     <div class="border-t border-gray-200" />
                                     <div class="block px-4 py-2 text-xs uppercase tracking-wide text-gray-400">Switch</div>
@@ -103,11 +117,11 @@ const logout = () => {
                         </template>
                         Dashboard
                     </SidebarLink>
-                    <SidebarLink :href="route('agent.index')" active-pattern="agent.index">
+                    <SidebarLink :href="route('chat.index')" active-pattern="chat.index">
                         <template #icon>
                             <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" /></svg>
                         </template>
-                        Agent chat
+                        Chat
                     </SidebarLink>
 
                     <!-- Inbox group -->
@@ -368,24 +382,29 @@ const logout = () => {
                         </template>
                     </div>
 
-                    <nav class="flex-1 space-y-5 overflow-y-auto px-3 py-4" @click="showMobileNav = false">
+                    <nav class="flex-1 space-y-5 overflow-y-auto px-3 py-4" @click="handleMobileNavClick">
                         <SidebarLink :href="route('dashboard')" active-pattern="dashboard">Dashboard</SidebarLink>
-                        <SidebarLink :href="route('agent.index')" active-pattern="agent.index">Agent chat</SidebarLink>
+                        <SidebarLink :href="route('chat.index')" active-pattern="chat.index">Chat</SidebarLink>
                         <div>
                             <div class="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Inbox</div>
-                            <SidebarLink :href="route('leads.index')" active-pattern="leads.*">Leads</SidebarLink>
-                            <SidebarLink :href="route('conversations.index')" :active-pattern="['conversations.index', 'conversations.show']">Conversations</SidebarLink>
-                            <SidebarLink :href="route('conversations.search')" active-pattern="conversations.search">Search</SidebarLink>
+                            <div class="space-y-0.5">
+                                <SidebarLink :href="route('leads.index')" active-pattern="leads.*">Leads</SidebarLink>
+                                <SidebarLink :href="route('conversations.index')" :active-pattern="['conversations.index', 'conversations.show']">Conversations</SidebarLink>
+                                <SidebarLink :href="route('conversations.search')" active-pattern="conversations.search">Search</SidebarLink>
+                            </div>
                         </div>
                         <div>
                             <div class="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Knowledge</div>
-                            <SidebarLink :href="route('knowledge.index')" active-pattern="knowledge.*">Documents</SidebarLink>
+                            <div class="space-y-0.5">
+                                <SidebarLink :href="route('knowledge.index')" active-pattern="knowledge.*">Documents</SidebarLink>
+                            </div>
                         </div>
                         <div>
                             <div class="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Workspace</div>
-                            <SidebarLink :href="route('agents.index')" :active-pattern="['agents.index', 'agents.show']">Agents</SidebarLink>
-                            <SidebarLink :href="route('onboarding.intro')" active-pattern="onboarding.*">+ New agent</SidebarLink>
-                            <SidebarLink :href="route('billing.index')" active-pattern="billing.*">Billing</SidebarLink>
+                            <div class="space-y-0.5">
+                                <SidebarLink :href="route('agents.index')" :active-pattern="['agents.index', 'agents.show']">Agents</SidebarLink>
+                                <SidebarLink :href="route('billing.index')" active-pattern="billing.*">Billing</SidebarLink>
+                            </div>
                         </div>
                     </nav>
                 </div>

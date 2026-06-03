@@ -33,10 +33,10 @@ class AgentIndexConfiguredFlagTest extends TestCase
         ]);
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
 
-        $this->actingAs($user->fresh())->get(route('agent.index'))
+        $this->actingAs($user->fresh())->get(route('chat.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Agent/Index')
+                ->component('Chat/Index')
                 ->where('configured', true)
             );
     }
@@ -48,7 +48,7 @@ class AgentIndexConfiguredFlagTest extends TestCase
         config()->set('services.voiceflow.api_key', null);
         config()->set('services.voiceflow.project_id', null);
 
-        $this->actingAs($user)->get(route('agent.index'))
+        $this->actingAs($user)->get(route('chat.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('configured', false));
     }
@@ -59,7 +59,7 @@ class AgentIndexConfiguredFlagTest extends TestCase
         $agent = Agent::factory()->unconfigured()->for($user->currentTeam)->create();
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
 
-        $this->actingAs($user->fresh())->get(route('agent.index'))
+        $this->actingAs($user->fresh())->get(route('chat.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('configured', false));
     }

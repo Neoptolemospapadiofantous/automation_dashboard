@@ -69,7 +69,7 @@ class ConversationTest extends TestCase
 
         $user = $this->user();
 
-        $response = $this->actingAs($user)->postJson(route('agent.interact'), [
+        $response = $this->actingAs($user)->postJson(route('chat.interact'), [
             'user_id' => 'web-42',
             'message' => 'Hello there',
         ])->assertOk();

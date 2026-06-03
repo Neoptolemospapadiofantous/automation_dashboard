@@ -77,16 +77,20 @@ Route::middleware([
     Route::post('/leads/{lead}/assign', [LeadController::class, 'assign'])->name('leads.assign');
     Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
 
-    // Phase 5 Voiceflow agent (server-proxied Dialog Manager API).
-    // Multi-tenant: "configured" reflects THIS user's current agent, not the
+    // Phase 5 chat panel (server-proxied Voiceflow Dialog Manager API).
+    // Multi-tenant: `configured` reflects THIS user's current agent, not the
     // app-wide .env fallback. A SaaS user whose own agent is healthy sees the
     // chat panel even if the deployment has no global VOICEFLOW_API_KEY.
-    Route::get('/agent', fn () => Inertia::render('Agent/Index', [
+    //
+    // Named `chat.*` (not `agent.*`) to avoid collision with the `agents.*`
+    // CRUD routes — the one-letter difference between `agent.index` and
+    // `agents.index` was a constant footgun.
+    Route::get('/chat', fn () => Inertia::render('Chat/Index', [
         'configured' => (bool) request()->user()?->currentTeam?->currentAgent?->isConfigured(),
-    ]))->name('agent.index');
-    Route::post('/agent/launch', [VoiceflowController::class, 'launch'])->name('agent.launch');
-    Route::post('/agent/interact', [VoiceflowController::class, 'interact'])->name('agent.interact');
-    Route::get('/agent/health', [VoiceflowController::class, 'health'])->name('agent.health');
+    ]))->name('chat.index');
+    Route::post('/chat/launch', [VoiceflowController::class, 'launch'])->name('chat.launch');
+    Route::post('/chat/interact', [VoiceflowController::class, 'interact'])->name('chat.interact');
+    Route::get('/chat/health', [VoiceflowController::class, 'health'])->name('chat.health');
 
     // Phase 6 conversation storage, history & search.
     Route::get('/conversations', [ConversationController::class, 'index'])->name('conversations.index');

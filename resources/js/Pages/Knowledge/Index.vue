@@ -56,7 +56,7 @@ const statusTone = (s) => ({
         <div class="py-8">
             <div class="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
                 <div v-if="!configured" class="lg:col-span-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                    Voiceflow isn't configured. Set <code>VOICEFLOW_API_KEY</code> and <code>VOICEFLOW_PROJECT_ID</code>.
+                    Your agent isn't set up yet — finish onboarding to add documents to its knowledge base.
                 </div>
 
                 <!-- Documents -->

@@ -33,7 +33,7 @@ defineProps({
                 </p>
 
                 <div class="mt-8 flex items-center justify-center gap-3">
-                    <Link :href="route('agent.index')">
+                    <Link :href="route('chat.index')">
                         <PrimaryButton>Start chatting</PrimaryButton>
                     </Link>
                     <Link :href="route('dashboard')" class="text-sm text-gray-500 hover:text-gray-700">Go to dashboard →</Link>

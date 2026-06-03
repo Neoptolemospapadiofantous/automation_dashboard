@@ -69,7 +69,7 @@ class BillingCreditMeterTest extends TestCase
         ])->save();
 
         $this->actingAs($user->fresh())
-            ->postJson(route('agent.interact'), ['user_id' => 'web-x', 'message' => 'hello'])
+            ->postJson(route('chat.interact'), ['user_id' => 'web-x', 'message' => 'hello'])
             ->assertStatus(402)
             ->assertJsonStructure(['error', 'plan', 'plan_label', 'allows_topups']);
     }
@@ -86,7 +86,7 @@ class BillingCreditMeterTest extends TestCase
         $start = $user->currentTeam->credit_balance;
 
         $this->actingAs($user->fresh())
-            ->postJson(route('agent.interact'), ['user_id' => 'web-x', 'message' => 'hi'])
+            ->postJson(route('chat.interact'), ['user_id' => 'web-x', 'message' => 'hi'])
             ->assertOk();
 
         // 1 user message + 1 agent reply (the fake returns 1 text trace) = 2 credits.

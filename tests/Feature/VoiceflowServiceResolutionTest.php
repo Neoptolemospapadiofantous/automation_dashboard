@@ -69,7 +69,7 @@ class VoiceflowServiceResolutionTest extends TestCase
             '*' => Http::response(['sessionKey' => 'a'], 200),
         ]);
 
-        $this->actingAs($alice->fresh())->getJson(route('agent.health'))
+        $this->actingAs($alice->fresh())->getJson(route('chat.health'))
             ->assertOk()
             ->assertJsonPath('project_id', 'alice-proj');
     }
@@ -89,7 +89,7 @@ class VoiceflowServiceResolutionTest extends TestCase
             '*' => Http::response(['sessionKey' => 'k'], 200),
         ]);
 
-        $this->actingAs($user->fresh())->getJson(route('agent.health'))
+        $this->actingAs($user->fresh())->getJson(route('chat.health'))
             ->assertOk()
             ->assertJsonPath('project_id', 'env-project');
     }

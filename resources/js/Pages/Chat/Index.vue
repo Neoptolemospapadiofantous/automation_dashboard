@@ -1,6 +1,7 @@
 <script setup>
 import { nextTick, ref } from 'vue';
 import axios from 'axios';
+import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -39,7 +40,7 @@ function applyResponse(data) {
 async function start() {
     busy.value = true;
     try {
-        const { data } = await axios.post(route('agent.launch'), {});
+        const { data } = await axios.post(route('chat.launch'), {});
         started.value = true;
         applyResponse(data);
     } catch (e) {
@@ -60,7 +61,7 @@ async function send(text) {
     scrollToEnd();
 
     try {
-        const { data } = await axios.post(route('agent.interact'), {
+        const { data } = await axios.post(route('chat.interact'), {
             user_id: userId.value,
             message,
             lead_id: leadId.value,
@@ -74,7 +75,7 @@ async function send(text) {
 }
 
 function errorText(e) {
-    if (e?.response?.status === 503) return 'The Voiceflow agent is not configured yet.';
+    if (e?.response?.status === 503) return 'Your agent isn’t set up yet. Finish onboarding to start chatting.';
     // Surface the server's specific reason (key invalid, version not published, etc.).
     const msg = e?.response?.data?.error;
     if (msg) return msg;
@@ -85,8 +86,8 @@ const capturedEntries = () => Object.entries(captured.value);
 </script>
 
 <template>
-    <AppLayout title="Lead Agent">
-        <PageHeader title="Agent chat" description="Talk to your current agent the way a lead would. Captured fields appear on the right and sync to the board live." />
+    <AppLayout title="Chat">
+        <PageHeader title="Chat" description="Talk to your current agent the way a lead would. Captured fields appear on the right and sync to the board live." />
 
         <div class="py-8">
             <div class="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
@@ -94,7 +95,9 @@ const capturedEntries = () => Object.entries(captured.value);
                 <div class="lg:col-span-2">
                     <div class="flex h-[32rem] flex-col overflow-hidden rounded-xl bg-white shadow">
                         <div v-if="!configured" class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-700">
-                            Voiceflow isn't configured. Set <code>VOICEFLOW_API_KEY</code> to enable the agent.
+                            Your agent isn't set up yet.
+                            <Link :href="route('agents.index')" class="font-medium underline">Finish onboarding</Link>
+                            to start chatting.
                         </div>
 
                         <div ref="scroller" class="flex-1 space-y-3 overflow-y-auto p-4">

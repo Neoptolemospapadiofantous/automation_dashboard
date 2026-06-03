@@ -93,7 +93,7 @@ class VoiceflowTest extends TestCase
         ]);
 
         $this->actingAs($this->user())
-            ->postJson(route('agent.launch'), [])
+            ->postJson(route('chat.launch'), [])
             ->assertOk()
             ->assertJsonStructure(['user_id', 'messages', 'buttons', 'ended', 'captured'])
             ->assertJsonPath('messages.0', 'Hi, what is your name?');
@@ -111,7 +111,7 @@ class VoiceflowTest extends TestCase
         $user = $this->user();
 
         $this->actingAs($user)
-            ->postJson(route('agent.interact'), [
+            ->postJson(route('chat.interact'), [
                 'user_id' => 'web-123',
                 'message' => 'My name is Ada',
             ])
@@ -137,7 +137,7 @@ class VoiceflowTest extends TestCase
         ]);
 
         $this->actingAs($this->user())
-            ->postJson(route('agent.launch'), [])
+            ->postJson(route('chat.launch'), [])
             ->assertStatus(502)
             ->assertJsonPath('upstream_status', 401)
             ->assertJsonStructure(['error', 'upstream_status']);
@@ -186,7 +186,7 @@ class VoiceflowTest extends TestCase
         config()->set('services.voiceflow.api_key', null);
 
         $this->actingAs($this->user())
-            ->postJson(route('agent.launch'), [])
+            ->postJson(route('chat.launch'), [])
             ->assertStatus(503);
     }
 

@@ -44,9 +44,8 @@ function continueOn() {
             <div v-if="managed" class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
                 <h1 class="text-2xl font-semibold text-gray-900">Welcome to {{ team.name }}.</h1>
                 <p class="mt-2 text-gray-600">
-                    Click the button below and we'll provision your AI lead-qualification
-                    agent. Takes about 10 seconds. You don't need to set anything up
-                    on Voiceflow — we handle that for you.
+                    Click below and we'll provision your AI lead-qualification agent
+                    instantly. No accounts to create, nothing to configure.
                 </p>
 
                 <div class="mt-6 rounded-lg bg-indigo-50 p-4 text-sm text-indigo-900">
@@ -54,7 +53,7 @@ function continueOn() {
                     <ul class="mt-2 list-disc space-y-1 pl-5 text-indigo-800">
                         <li>An AI agent that qualifies inbound leads conversationally</li>
                         <li>Live chat panel + kanban board to track everything</li>
-                        <li>{{ team.name }}'s own isolated workspace — your data never mixes with anyone else's</li>
+                        <li>Your own isolated workspace — your data never mixes with anyone else's</li>
                     </ul>
                 </div>
 

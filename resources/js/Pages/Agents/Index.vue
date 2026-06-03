@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue';
-import { Link, router, useForm } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import EmptyState from '@/Components/EmptyState.vue';
@@ -15,8 +15,27 @@ defineProps({
     agents: { type: Array, required: true },
 });
 
+const page = usePage();
+const billing = computed(() => page.props.billing ?? null);
+const planLimitFlash = computed(() => page.props.flash?.plan_limit ?? null);
+
+// Plan gate. `max_agents >= 9999` is the sentinel for "unlimited" tiers; below
+// that, the New-agent button locks once `agents_count` hits the cap. The
+// server enforces the same limit and redirects-back with a `plan_limit` flash —
+// this is the client-side preview so users see WHY before they click.
+const atPlanLimit = computed(() => {
+    if (!billing.value) return false;
+    if (billing.value.max_agents >= 9999) return false;
+    return billing.value.agents_count >= billing.value.max_agents;
+});
+
 const showCreate = ref(false);
 const form = useForm({ name: '' });
+
+function openCreate() {
+    if (atPlanLimit.value) return;
+    showCreate.value = true;
+}
 
 function submit() {
     form.post(route('agents.store'), {
@@ -40,21 +59,53 @@ function statusClass(status) {
         disabled: 'bg-gray-100 text-gray-500',
     }[status] ?? 'bg-gray-100 text-gray-500';
 }
+
+// "5 min ago" style for the last-check column — way easier to scan than full
+// localised timestamps when most rows checked in the last hour.
+function relativeTime(iso) {
+    if (!iso) return '—';
+    const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} h ago`;
+    if (diff < 7 * 86400) return `${Math.floor(diff / 86400)} d ago`;
+    return new Date(iso).toLocaleDateString();
+}
 </script>
 
 <template>
     <AppLayout title="Agents">
         <PageHeader
             title="Agents"
-            description="Each agent is one Voiceflow project. Switch between them in the top-left."
+            description="Each agent qualifies leads in one channel or persona. Switch between them from the top-left."
         >
             <template #actions>
-                <PrimaryButton @click="showCreate = true">New agent</PrimaryButton>
+                <span v-if="billing && billing.max_agents < 9999" class="text-xs text-gray-500">
+                    {{ billing.agents_count }} / {{ billing.max_agents }} on {{ billing.plan_label }}
+                </span>
+                <PrimaryButton
+                    :disabled="atPlanLimit"
+                    :class="{ 'opacity-50 cursor-not-allowed': atPlanLimit }"
+                    :title="atPlanLimit ? `Your ${billing.plan_label} plan allows ${billing.max_agents} agents. Upgrade for more.` : null"
+                    @click="openCreate"
+                >
+                    New agent
+                </PrimaryButton>
             </template>
         </PageHeader>
 
         <div class="py-8">
-            <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div class="mx-auto max-w-6xl space-y-4 px-4 sm:px-6 lg:px-8">
+                <!-- Server-side plan-limit flash. Lands after the controller
+                     blocks an over-cap agents.store. Self-dismisses on the
+                     next non-redirect navigation. -->
+                <div v-if="planLimitFlash" class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    <svg class="mt-0.5 size-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.732 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    <div>{{ planLimitFlash }}</div>
+                </div>
+
                 <div class="overflow-hidden rounded-xl bg-white shadow ring-1 ring-black/5">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50">
@@ -82,8 +133,8 @@ function statusClass(status) {
                                     <span v-if="!agent.is_configured" class="ml-2 text-xs text-amber-600">Needs credentials</span>
                                     <span v-else-if="!agent.last_health_ok" class="ml-2 text-xs text-rose-600">Health check failing</span>
                                 </td>
-                                <td class="px-4 py-3 text-gray-600">
-                                    {{ agent.last_health_check_at ? new Date(agent.last_health_check_at).toLocaleString() : '—' }}
+                                <td class="px-4 py-3 text-gray-600" :title="agent.last_health_check_at ? new Date(agent.last_health_check_at).toLocaleString() : ''">
+                                    {{ relativeTime(agent.last_health_check_at) }}
                                 </td>
                                 <td class="px-4 py-3 text-right">
                                     <button
@@ -103,10 +154,12 @@ function statusClass(status) {
                                 <td colspan="4">
                                     <EmptyState
                                         title="No agents yet"
-                                        description="Create your first agent to start qualifying leads. Each agent is a separate Voiceflow project with its own keys."
+                                        description="Create your first agent to start qualifying inbound leads automatically."
                                     >
                                         <template #actions>
-                                            <PrimaryButton @click="showCreate = true">Create your first agent</PrimaryButton>
+                                            <PrimaryButton :disabled="atPlanLimit" :class="{ 'opacity-50': atPlanLimit }" @click="openCreate">
+                                                Create your first agent
+                                            </PrimaryButton>
                                         </template>
                                     </EmptyState>
                                 </td>
@@ -120,7 +173,9 @@ function statusClass(status) {
         <DialogModal :show="showCreate" @close="showCreate = false">
             <template #title>New agent</template>
             <template #content>
-                <p class="text-sm text-gray-600">Give it a name. You'll paste the Voiceflow credentials on the next screen.</p>
+                <p class="text-sm text-gray-600">
+                    Give it a name. We'll provision the rest automatically — usually under 10 seconds.
+                </p>
                 <div class="mt-4">
                     <InputLabel for="name" value="Agent name" />
                     <TextInput id="name" v-model="form.name" type="text" class="mt-1 block w-full" placeholder="e.g. Sales bot" />

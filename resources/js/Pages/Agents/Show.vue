@@ -93,19 +93,21 @@ function destroy() {
                 : 'Voiceflow credentials, webhook URL, and health status for this agent.'"
         >
             <template #actions>
-                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium" :class="{
-                    'bg-green-50 text-green-700': agent.status === 'active',
-                    'bg-amber-50 text-amber-700': agent.status === 'draft',
-                    'bg-gray-100 text-gray-500': agent.status === 'disabled',
-                }">
-                    {{ agent.status }}
-                </span>
-                <span v-if="isManaged" class="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
-                    Managed
-                </span>
-                <span v-if="is_current" class="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
-                    Current
-                </span>
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium" :class="{
+                        'bg-green-50 text-green-700': agent.status === 'active',
+                        'bg-amber-50 text-amber-700': agent.status === 'draft',
+                        'bg-gray-100 text-gray-500': agent.status === 'disabled',
+                    }">
+                        {{ agent.status }}
+                    </span>
+                    <span v-if="isManaged" class="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
+                        Managed
+                    </span>
+                    <span v-if="is_current" class="inline-flex rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700">
+                        Current
+                    </span>
+                </div>
             </template>
         </PageHeader>
 
