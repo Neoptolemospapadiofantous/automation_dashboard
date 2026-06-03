@@ -46,6 +46,21 @@ Route::middleware([
     Route::post('/agents/{agent}/health', [AgentController::class, 'health'])->name('agents.health');
     Route::put('/current-agent', [AgentController::class, 'switchCurrent'])->name('current-agent.update');
 
+    // Billing landing page. Placeholder until Phase H3 wires Stripe Checkout
+    // + customer portal. For now: shows current plan + credits history +
+    // upgrade buttons that link to a "coming soon" notice.
+    Route::get('/billing', fn () => Inertia::render('Billing/Index', [
+        'transactions' => request()->user()->currentTeam->creditTransactions()
+            ->latest()->take(50)->get()
+            ->map(fn ($t) => [
+                'id' => $t->id,
+                'amount' => $t->amount,
+                'reason' => $t->reason,
+                'meta' => $t->meta,
+                'created_at' => $t->created_at->toIso8601String(),
+            ]),
+    ]))->name('billing.index');
+
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     // Phase 2 live-tick demo: fires a broadcast every connected browser receives.

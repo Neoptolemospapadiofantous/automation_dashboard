@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Billing\CreditMeter;
+use App\Billing\Exceptions\OutOfCredits;
 use App\Enums\LeadStatus;
 use App\Events\LeadMessage;
 use App\Events\LeadSaved;
@@ -27,6 +29,7 @@ class VoiceflowController extends Controller
     public function __construct(
         protected VoiceflowService $voiceflow,
         protected ConversationRecorder $recorder,
+        protected CreditMeter $credits,
     ) {}
 
     /**
@@ -45,6 +48,10 @@ class VoiceflowController extends Controller
     public function launch(Request $request): JsonResponse
     {
         $this->abortIfUnconfigured();
+
+        if (($credits = $this->ensureCredits($request)) instanceof JsonResponse) {
+            return $credits;
+        }
 
         $data = $request->validate([
             'lead_id' => ['nullable', 'integer'],
@@ -85,6 +92,10 @@ class VoiceflowController extends Controller
     {
         $this->abortIfUnconfigured();
 
+        if (($credits = $this->ensureCredits($request)) instanceof JsonResponse) {
+            return $credits;
+        }
+
         $data = $request->validate([
             'user_id' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string', 'max:2000'],
@@ -118,6 +129,28 @@ class VoiceflowController extends Controller
         $parsed = $this->voiceflow->parseTraces($traces);
 
         $conversation ??= $this->safelyResolve($request, $userId, $lead?->id);
+
+        // Debit credits: 1 for the user's incoming message + 1 per agent reply.
+        // Done AFTER the Voiceflow call succeeds so users aren't charged for
+        // failures. The pre-call ensureCredits() already proved there was
+        // capacity; this consume() can still throw on a race condition with
+        // a concurrent request, in which case the JSON error surfaces upstream.
+        $team = $request->user()->currentTeam;
+        $messagesBilled = 1 + count($parsed['messages']);
+        try {
+            $this->credits->consume(
+                team: $team,
+                amount: $messagesBilled,
+                agentId: $team->current_agent_id,
+                meta: ['conversation_id' => $conversation?->id, 'user_id' => $userId],
+            );
+        } catch (OutOfCredits) {
+            // Edge case: post-call balance went negative due to concurrency.
+            // We still want to return the assistant's reply (they paid for the
+            // turn implicitly), but flag the empty wallet so the next turn fails.
+            // Logged but not propagated — penalize the next interact() instead.
+            report(new \RuntimeException('Credit debit raced past zero for team '.$team->id));
+        }
 
         foreach ($parsed['messages'] as $message) {
             if ($conversation) {
@@ -282,6 +315,31 @@ class VoiceflowController extends Controller
     protected function abortIfUnconfigured(): void
     {
         abort_unless($this->voiceflow->isConfigured(), 503, 'Voiceflow is not configured.');
+    }
+
+    /**
+     * Quick pre-flight credit check. Returns a JsonResponse on failure
+     * (mapped to HTTP 402 Payment Required so the chat UI can render an
+     * "Out of credits" state). Returns null on success.
+     *
+     * We pre-check before the Voiceflow round-trip so users don't watch
+     * a request hang then fail at the meter. The actual debit happens
+     * inside respond() after Voiceflow returns successfully.
+     */
+    protected function ensureCredits(Request $request): ?JsonResponse
+    {
+        $team = $request->user()->currentTeam;
+
+        if ($team->hasCredits()) {
+            return null;
+        }
+
+        return response()->json([
+            'error' => 'Out of credits for this billing period.',
+            'plan' => $team->planObject()->value,
+            'plan_label' => $team->planObject()->label(),
+            'allows_topups' => $team->planObject()->allowsTopUps(),
+        ], 402);
     }
 
     /**

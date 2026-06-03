@@ -21,5 +21,19 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Out-of-credits is a billing/payment state, not an app error.
+        // Map to HTTP 402 with a JSON payload the chat UI knows how to
+        // render as an upgrade prompt.
+        $exceptions->render(function (\App\Billing\Exceptions\OutOfCredits $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'error' => $e->getMessage(),
+                    'plan' => $e->plan->value,
+                    'plan_label' => $e->plan->label(),
+                    'allows_topups' => $e->plan->allowsTopUps(),
+                ], 402);
+            }
+
+            return back()->withErrors(['credits' => $e->getMessage()]);
+        });
     })->create();

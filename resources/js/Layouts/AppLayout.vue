@@ -6,6 +6,7 @@ import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import SidebarLink from '@/Components/SidebarLink.vue';
+import CreditMeter from '@/Components/CreditMeter.vue';
 
 defineProps({
     title: String,
@@ -160,6 +161,9 @@ const logout = () => {
                         </div>
                     </div>
                 </nav>
+
+                <!-- Credit meter -->
+                <CreditMeter />
 
                 <!-- User card -->
                 <div class="border-t border-gray-100 p-3">

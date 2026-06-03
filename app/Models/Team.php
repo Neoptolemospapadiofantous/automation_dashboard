@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Billing\Plan;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +26,9 @@ class Team extends JetstreamTeam
         'name',
         'personal_team',
         'current_agent_id',
+        'plan',
+        'credit_balance',
+        'credits_renewed_at',
     ];
 
     public function agents(): HasMany
@@ -72,6 +76,34 @@ class Team extends JetstreamTeam
     {
         return [
             'personal_team' => 'boolean',
+            'plan' => Plan::class,
+            'credit_balance' => 'integer',
+            'credits_renewed_at' => 'datetime',
         ];
+    }
+
+    public function creditTransactions(): HasMany
+    {
+        return $this->hasMany(CreditTransaction::class);
+    }
+
+    /**
+     * Convenience for guards: does the team have any credits left to spend?
+     * Read straight off the cached balance; the audit log is the ground truth
+     * but consulting it on every interact() would be wasteful.
+     */
+    public function hasCredits(int $atLeast = 1): bool
+    {
+        return $this->credit_balance >= $atLeast;
+    }
+
+    /**
+     * The plan enum, defaulting to Free when the column is somehow null
+     * (e.g. a team created before the billing migration that didn't run
+     * the backfill). Safe default keeps the app working.
+     */
+    public function planObject(): Plan
+    {
+        return $this->plan instanceof Plan ? $this->plan : Plan::Free;
     }
 }

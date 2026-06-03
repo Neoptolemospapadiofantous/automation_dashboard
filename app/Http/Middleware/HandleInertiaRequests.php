@@ -62,6 +62,22 @@ class HandleInertiaRequests extends Middleware
                     ->map(fn ($a) => ['id' => $a->id, 'name' => $a->name, 'status' => $a->status])
                     ->values()
                 : [],
+
+            // Billing snapshot for the credit pill in the sidebar. Cheap —
+            // already cached on the team row, no extra query. Allows the
+            // UI to render "234 / 5000 credits" without each page asking.
+            'billing' => fn () => $request->user()?->currentTeam
+                ? [
+                    'plan' => $request->user()->currentTeam->planObject()->value,
+                    'plan_label' => $request->user()->currentTeam->planObject()->label(),
+                    'credits_used' => max(0, $request->user()->currentTeam->planObject()->monthlyCredits() - $request->user()->currentTeam->credit_balance),
+                    'credits_total' => $request->user()->currentTeam->planObject()->monthlyCredits(),
+                    'credits_remaining' => $request->user()->currentTeam->credit_balance,
+                    'max_agents' => $request->user()->currentTeam->planObject()->maxAgents(),
+                    'agents_count' => $request->user()->currentTeam->agents()->count(),
+                    'allows_topups' => $request->user()->currentTeam->planObject()->allowsTopUps(),
+                ]
+                : null,
         ];
     }
 }
