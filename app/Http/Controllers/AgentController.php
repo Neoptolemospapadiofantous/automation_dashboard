@@ -44,7 +44,12 @@ class AgentController extends Controller
 
         return Inertia::render('Agents/Show', [
             'agent' => $this->presentForSettings($agent),
-            'webhook_url' => route('voiceflow.webhook', $agent),
+            // Webhook URL only matters for BYOK — the user has to paste it
+            // into their own Voiceflow Custom Action. In managed mode we
+            // configure that on the master template ourselves, so the URL
+            // is an implementation detail (and surfacing it would invite
+            // the user to misconfigure something they don't own).
+            'webhook_url' => $agent->isManaged() ? null : route('voiceflow.webhook', $agent),
             'is_current' => $request->user()->currentTeam->current_agent_id === $agent->id,
         ]);
     }
@@ -72,6 +77,23 @@ class AgentController extends Controller
     public function update(Request $request, Agent $agent): RedirectResponse
     {
         $this->authorize($request, $agent);
+
+        // Managed agents have no user-editable credentials — the keys live in
+        // .env and the env id was minted by us on signup. Only the display
+        // name is editable. Anything else in the payload is silently dropped
+        // (no error, just no-op) so a clever curl can't sneak credential
+        // writes into a managed row.
+        if ($agent->isManaged()) {
+            $data = $request->validate([
+                'name' => ['sometimes', 'required', 'string', 'max:255'],
+            ]);
+
+            if (array_key_exists('name', $data)) {
+                $agent->update(['name' => $data['name']]);
+            }
+
+            return back();
+        }
 
         $data = $request->validate(
             array_merge(
@@ -183,21 +205,34 @@ class AgentController extends Controller
      */
     protected function presentForSettings(Agent $agent): array
     {
-        // Exposes credentials so the form can pre-fill (masked) values. The
-        // $hidden list on the model blocks them from the default toArray()
-        // path; this explicit projection is the one sanctioned route.
-        return [
+        // Mode-dependent projection. Managed agents hide every Voiceflow
+        // credential field + the webhook URL/secret — the user neither set
+        // those values nor needs to touch them (we configured the Voiceflow
+        // Custom Action in the master template). Surfacing them would be
+        // confusing at best and a security smell at worst.
+        $base = [
             'id' => $agent->id,
             'name' => $agent->name,
             'slug' => $agent->slug,
             'status' => $agent->status,
+            'mode' => $agent->mode,
+            'last_health_check_at' => optional($agent->last_health_check_at)->toIso8601String(),
+            'last_health_ok' => (bool) $agent->last_health_ok,
+        ];
+
+        if ($agent->isManaged()) {
+            return $base;
+        }
+
+        // BYOK only — explicit credential surface (the $hidden list on the
+        // model blocks these from default serialisation; this is the one
+        // sanctioned escape hatch).
+        return array_merge($base, [
             'voiceflow_project_id' => $agent->voiceflow_project_id,
             'voiceflow_environment' => $agent->voiceflow_environment,
             'has_api_key' => ! empty($agent->voiceflow_api_key),
             'has_workspace_api_key' => ! empty($agent->voiceflow_workspace_api_key),
             'webhook_secret' => $agent->webhook_secret,
-            'last_health_check_at' => optional($agent->last_health_check_at)->toIso8601String(),
-            'last_health_ok' => (bool) $agent->last_health_ok,
-        ];
+        ]);
     }
 }

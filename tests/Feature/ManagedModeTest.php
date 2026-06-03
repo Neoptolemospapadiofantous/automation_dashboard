@@ -120,6 +120,66 @@ class ManagedModeTest extends TestCase
             'BYOK agent must keep using its own key even when managed mode is on globally');
     }
 
+    public function test_settings_page_hides_credentials_for_managed_agent(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $agent = Agent::factory()->for($user->currentTeam)->create([
+            'mode' => Agent::MODE_MANAGED,
+            'voiceflow_api_key' => null,
+            'voiceflow_project_id' => null,
+            'voiceflow_environment' => 'cloned-env-xyz',
+            'voiceflow_workspace_api_key' => null,
+        ]);
+
+        $this->actingAs($user->fresh())->get(route('agents.show', $agent))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Agents/Show')
+                ->where('agent.mode', Agent::MODE_MANAGED)
+                // Webhook URL is null for managed agents — we configure the
+                // Voiceflow Custom Action on our master template, not theirs.
+                ->where('webhook_url', null)
+                // None of the credential-ish keys should appear in the
+                // settings projection for managed agents — explicitly
+                // missing, not present-and-null. ->missing() catches
+                // accidental "leak by re-adding to the projection".
+                ->missing('agent.voiceflow_project_id')
+                ->missing('agent.voiceflow_environment')
+                ->missing('agent.webhook_secret')
+                ->missing('agent.has_api_key')
+                ->missing('agent.has_workspace_api_key')
+            );
+    }
+
+    public function test_managed_update_silently_drops_credential_writes(): void
+    {
+        // Defence-in-depth: a clever curl trying to write credentials to a
+        // managed agent gets validation success + no-op behaviour, not a
+        // route into stamping per-row creds on something that's supposed
+        // to be controlled by env.
+        $user = User::factory()->withPersonalTeam()->create();
+        $agent = Agent::factory()->for($user->currentTeam)->create([
+            'mode' => Agent::MODE_MANAGED,
+            'voiceflow_api_key' => null,
+            'voiceflow_project_id' => null,
+            'voiceflow_environment' => 'cloned-env-xyz',
+        ]);
+
+        $this->actingAs($user->fresh())
+            ->put(route('agents.update', $agent), [
+                'name' => 'Renamed',
+                'voiceflow_api_key' => 'VF.DM.attempted-injection.x',
+                'voiceflow_project_id' => '111111111111111111111111',
+            ])
+            ->assertRedirect();
+
+        $fresh = $agent->fresh();
+        $this->assertSame('Renamed', $fresh->name);
+        $this->assertNull($fresh->voiceflow_api_key, 'credential injection must be ignored');
+        $this->assertNull($fresh->voiceflow_project_id, 'credential injection must be ignored');
+        $this->assertSame('cloned-env-xyz', $fresh->voiceflow_environment, 'env id should not be overwritten');
+    }
+
     public function test_managed_wizard_skips_step_2(): void
     {
         $this->withMiddleware(RequireAgent::class);
