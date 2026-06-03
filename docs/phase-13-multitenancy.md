@@ -479,6 +479,104 @@ that's trivially diffable in PR reviews. If the state machines grow past
 Total new lifecycle + foundation tests: **30 cases**, 0 regressions on the
 existing 85.
 
+## Phase J — Managed mode (shipped)
+
+The BYOK flow we shipped first asked the user to set up Voiceflow,
+build a project, generate a key, and paste it. Managed mode skips
+all of that — **we** own the Voiceflow workspace + a master project,
+and on signup we clone the template environment into a fresh
+per-tenant environment via the Project API. The user clicks one
+button and lands on a working chat 10 seconds later.
+
+### The constraint that shapes the design
+
+Voiceflow's public API has **no `POST /project` endpoint** — verified
+against the mirrored docs (see `docs/voiceflow/projects/README.md`).
+What it DOES support is `POST /v1alpha1/project/{ourProjectId}/environment`
+with a `cloneFromEnvironmentID` parameter. Each tenant gets their own
+environment inside our shared project. KB, conversation state, and
+variables are environment-scoped, so isolation holds.
+
+### Architecture
+
+```
+Voiceflow (we own)             Our app                 User
+──────────────────             ───────                 ────
+ONE master project ─┐
+  ├─ env "template" ┼──── on signup ────── click "Set up my agent"
+  │ (the agent      │       ↓
+  │  flow we built) │       CreateAgent::createManaged:
+  ├─ env "alice"    │         1. POST /v1alpha1/project/{ours}/environment
+  ├─ env "bob"      │            with cloneFromEnvironmentID: tmpl-env-id
+  └─ env "carol"    │         2. Store returned env_id on agent row
+                              3. Mark status=active immediately (clone
+                                 success already proved the env works)
+                              All Voiceflow calls use:
+                                projectID = ours (env config)
+                                environment = tenant's clone (agent row)
+                                key = ours workspace (env config)
+```
+
+### What changed in the code
+
+| File | Change |
+|---|---|
+| `database/migrations/2026_06_03_200000_add_mode_to_agents.php` | New `mode` column on agents (`byok` default, `managed` opt-in) |
+| `app/Models/Agent.php` | `MODE_BYOK`, `MODE_MANAGED` constants. `isConfigured()` branches per mode (managed requires only `voiceflow_environment` + env config). `isManaged()` helper. |
+| `config/services.php` | New `voiceflow.managed.{enabled, master_project_id, template_environment_id}` keys |
+| `.env.example` | `VOICEFLOW_MANAGED`, `VOICEFLOW_MASTER_PROJECT_ID`, `VOICEFLOW_TEMPLATE_ENVIRONMENT_ID` documented |
+| `app/Services/VoiceflowService.php` | `cloneEnvironment()` method (POST to realtime-api with workspace key). `forAgent()` falls back to env config for managed agents — they only store the env id |
+| `app/Actions/Agents/CreateAgent.php` | Branches on `config('services.voiceflow.managed.enabled')`. `createByok()` is the original behaviour; `createManaged()` calls `cloneEnvironment()` BEFORE the DB write so a Voiceflow failure doesn't leave an orphan local row |
+| `app/Http/Controllers/OnboardingController.php` | `intro()` shares the `managed` flag; `startAgent()` redirects to Done (not Connect) when the agent is managed |
+| `resources/js/Pages/Onboarding/Intro.vue` | Single-step "Set up my agent" CTA in managed mode; original 3-step instructions in BYOK |
+
+### Feature flag
+
+`VOICEFLOW_MANAGED=true` flips the wizard for **new signups**. Existing
+agents stay on whatever mode they were created with — the `mode` column
+is per-agent, not per-deployment. This lets you A/B managed vs BYOK
+without disrupting current users.
+
+### What you take on by going managed
+
+- **Voiceflow's bill is yours.** Credits + Stripe (Phase H3 when it
+  lands) recover it. The credit meter we built earlier is exactly
+  this rail.
+- **Shared rate limits** across all your tenants (one workspace).
+- **Shared outage blast radius** — Voiceflow goes down, every tenant's
+  chat goes down. BYOK isolates this per-tenant.
+- **No per-tenant flow customization** in v1. The cloned environment
+  is the template; users can change KB documents but not the agent
+  flow itself. Adding customization needs either a flow editor we
+  build or a way to expose Voiceflow's IDE to tenants.
+
+### Tests
+
+`ManagedModeTest` (5 cases):
+- ✓ Create agent clones environment and marks active
+- ✓ Managed create propagates Voiceflow failure (no orphan row)
+- ✓ Managed `isConfigured()` requires env config
+- ✓ BYOK agents unaffected by managed mode flag
+- ✓ Managed wizard skips step 2 (lands on Done directly)
+
+### Switching a deployment to managed
+
+1. Sign up at https://creator.voiceflow.com (paid tier needed for
+   Project API access).
+2. Build the lead-qualification flow in their IDE — the captured
+   variables MUST be `name`, `email`, `phone`, `company` (per
+   `services.voiceflow.lead_variables`) and the Custom Action must
+   POST to your dashboard's per-agent webhook URL.
+3. Note the project id and the template environment id.
+4. Set in your deployment's env:
+   - `VOICEFLOW_API_KEY=<your DM key>`
+   - `VOICEFLOW_WORKSPACE_API_KEY=<your workspace key>`  ← required for cloning
+   - `VOICEFLOW_MASTER_PROJECT_ID=<the project>`
+   - `VOICEFLOW_TEMPLATE_ENVIRONMENT_ID=<the template env>`
+   - `VOICEFLOW_MANAGED=true`
+5. Deploy. New signups now get managed agents; existing ones keep
+   their BYOK setup.
+
 ## Roadmap
 
 | Phase | Status | What |
@@ -491,4 +589,5 @@ existing 85.
 | E. Onboarding wizard | ✅ shipped | 3-step `/onboarding` flow + `RequireAgent` middleware |
 | F. Template `.vf` | ⚠️ placeholder shipped | Schema documented; real `.vf` export pending (manual Voiceflow IDE step) |
 | G. Page scoping | ✅ shipped | All lists + detail pages filter by `current_agent_id`; `forAgent()` scope on Lead/Conversation/Message |
+| J. Managed mode | ✅ shipped | `mode` column on agents, `VoiceflowService::cloneEnvironment`, CreateAgent managed branch, wizard collapses to 1 step. Feature flag (`VOICEFLOW_MANAGED`) coexists with BYOK. |
 | H. Billing | later | Cashier + Stripe, plan limits |

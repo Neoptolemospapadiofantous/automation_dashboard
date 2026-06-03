@@ -36,6 +36,10 @@ class OnboardingController extends Controller
         return Inertia::render('Onboarding/Intro', [
             'team' => ['id' => $request->user()->currentTeam->id, 'name' => $request->user()->currentTeam->name],
             'template_url' => '/templates/lead-qualification.vf',
+            // The Vue page changes its copy + flow based on this — managed
+            // shows a one-click "Set up my agent" CTA; byok keeps the
+            // 3-step "create VF account / import template / paste key" copy.
+            'managed' => (bool) config('services.voiceflow.managed.enabled'),
         ]);
     }
 
@@ -50,6 +54,12 @@ class OnboardingController extends Controller
         // Don't create a second draft if the user re-clicks Continue.
         $existing = $team->agents()->where('status', Agent::STATUS_DRAFT)->latest()->first();
         $agent = $existing ?: (new CreateAgent())->execute($team, $data['name'] ?? 'Default agent');
+
+        // Managed mode: CreateAgent already cloned an env and marked active.
+        // Skip step 2 (no credentials to paste) and land on Done.
+        if ($agent->isManaged()) {
+            return redirect()->route('onboarding.done');
+        }
 
         return redirect()->route('onboarding.connect');
     }

@@ -70,12 +70,74 @@ class VoiceflowService
      */
     public static function forAgent(Agent $agent): self
     {
+        // Managed agents (Phase J) only store voiceflow_environment — the
+        // cloned env id. Project_id + api_key + workspace_key come from .env.
+        // The constructor's null-coalescing already does the right thing
+        // when these are passed as null, falling back to config values.
+        if ($agent->isManaged()) {
+            return new self(
+                apiKey: config('services.voiceflow.api_key'),
+                environment: $agent->voiceflow_environment ?: 'main',
+                projectId: config('services.voiceflow.managed.master_project_id'),
+                workspaceApiKey: config('services.voiceflow.workspace_api_key'),
+            );
+        }
+
         return new self(
             apiKey: $agent->voiceflow_api_key,
             environment: $agent->voiceflow_environment ?: 'main',
             projectId: $agent->voiceflow_project_id,
             workspaceApiKey: $agent->voiceflow_workspace_api_key,
         );
+    }
+
+    /**
+     * Clone an environment inside the master project — the managed-mode
+     * primitive that lets us mint a fresh per-tenant Voiceflow environment
+     * without the user touching Voiceflow.
+     *
+     * Authenticates with the workspace key against realtime-api.voiceflow.com.
+     * Per docs/voiceflow/projects/create-environment.md the clone is the
+     * ONLY way to create an environment via public API (no "from scratch"
+     * variant exists). Default source is the project's main env if
+     * $sourceEnvironmentId is null.
+     *
+     * @return string The newly-created environment id.
+     *
+     * @throws RuntimeException if managed mode isn't configured or the
+     *                          response shape is unexpected.
+     */
+    public function cloneEnvironment(string $masterProjectId, string $name, ?string $sourceEnvironmentId = null): string
+    {
+        if (empty($this->workspaceKey())) {
+            throw new RuntimeException('Cannot clone environment without a workspace API key — set VOICEFLOW_WORKSPACE_API_KEY.');
+        }
+
+        $body = array_filter([
+            'name' => $name,
+            'cloneFromEnvironmentID' => $sourceEnvironmentId,
+        ], fn ($v) => $v !== null);
+
+        $response = Http::baseUrl($this->realtimeUrl)
+            ->withHeaders([
+                'authorization' => $this->workspaceKey(),
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])
+            ->connectTimeout(5)
+            ->timeout(30)
+            ->post('/v1alpha1/project/'.$this->encode($masterProjectId).'/environment', $body);
+
+        $response->throw();
+
+        $json = $response->json();
+        $envId = $json['_id'] ?? $json['id'] ?? null;
+
+        if (! is_string($envId) || $envId === '') {
+            throw new RuntimeException('Voiceflow clone-environment response had no environment id.');
+        }
+
+        return $envId;
     }
 
     /**

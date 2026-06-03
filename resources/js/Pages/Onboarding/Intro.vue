@@ -5,6 +5,12 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 const props = defineProps({
     team: { type: Object, required: true },
     template_url: { type: String, required: true },
+    /**
+     * Phase J: managed=true means the backend will provision a Voiceflow
+     * environment on the user's behalf when they click Continue. No
+     * credential paste step. The wizard collapses to 1 visible step.
+     */
+    managed: { type: Boolean, default: false },
 });
 
 const form = useForm({ name: 'Default agent' });
@@ -18,8 +24,14 @@ function continueOn() {
     <Head title="Welcome — Set up your agent" />
     <div class="min-h-screen bg-gray-50">
         <div class="mx-auto max-w-2xl px-4 py-12">
+            <!-- Step indicator (different shape per mode) -->
             <div class="mb-8 flex items-center justify-between text-xs">
-                <ol class="flex items-center gap-2 font-medium text-gray-500">
+                <ol v-if="managed" class="flex items-center gap-2 font-medium text-gray-500">
+                    <li class="text-indigo-600">1. Set up agent</li>
+                    <li>→</li>
+                    <li>2. Done</li>
+                </ol>
+                <ol v-else class="flex items-center gap-2 font-medium text-gray-500">
                     <li class="text-indigo-600">1. Create agent</li>
                     <li>→</li>
                     <li>2. Connect Voiceflow</li>
@@ -28,7 +40,33 @@ function continueOn() {
                 </ol>
             </div>
 
-            <div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
+            <!-- Managed mode: one-click setup -->
+            <div v-if="managed" class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
+                <h1 class="text-2xl font-semibold text-gray-900">Welcome to {{ team.name }}.</h1>
+                <p class="mt-2 text-gray-600">
+                    Click the button below and we'll provision your AI lead-qualification
+                    agent. Takes about 10 seconds. You don't need to set anything up
+                    on Voiceflow — we handle that for you.
+                </p>
+
+                <div class="mt-6 rounded-lg bg-indigo-50 p-4 text-sm text-indigo-900">
+                    <p class="font-medium">What you're getting:</p>
+                    <ul class="mt-2 list-disc space-y-1 pl-5 text-indigo-800">
+                        <li>An AI agent that qualifies inbound leads conversationally</li>
+                        <li>Live chat panel + kanban board to track everything</li>
+                        <li>{{ team.name }}'s own isolated workspace — your data never mixes with anyone else's</li>
+                    </ul>
+                </div>
+
+                <div class="mt-8 flex justify-end">
+                    <PrimaryButton :disabled="form.processing" :class="{ 'opacity-50': form.processing }" @click="continueOn">
+                        {{ form.processing ? 'Setting up your agent…' : 'Set up my agent' }}
+                    </PrimaryButton>
+                </div>
+            </div>
+
+            <!-- BYOK mode: 3-step instructions (existing flow) -->
+            <div v-else class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
                 <h1 class="text-2xl font-semibold text-gray-900">Welcome to {{ team.name }}.</h1>
                 <p class="mt-2 text-gray-600">
                     Your dashboard is ready. The last thing left is connecting a

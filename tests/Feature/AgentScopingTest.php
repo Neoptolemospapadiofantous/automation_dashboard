@@ -40,9 +40,13 @@ class AgentScopingTest extends TestCase
 
         $team->forceFill(['current_agent_id' => $agentA->id])->save();
 
-        // 2 leads + 1 conversation under A, 1 of each under B.
-        Lead::factory()->count(2)->create(['team_id' => $team->id, 'agent_id' => $agentA->id]);
-        Lead::factory()->create(['team_id' => $team->id, 'agent_id' => $agentB->id]);
+        // 2 leads + 1 conversation under A, 1 of each under B. Pin the
+        // status to New so the dashboard counter test below can assert
+        // exact totals — LeadFactory's default status is randomised.
+        Lead::factory()->count(2)->status(LeadStatus::New)
+            ->create(['team_id' => $team->id, 'agent_id' => $agentA->id]);
+        Lead::factory()->status(LeadStatus::New)
+            ->create(['team_id' => $team->id, 'agent_id' => $agentB->id]);
 
         Conversation::factory()->create(['team_id' => $team->id, 'agent_id' => $agentA->id]);
         Conversation::factory()->create(['team_id' => $team->id, 'agent_id' => $agentB->id]);

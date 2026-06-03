@@ -37,7 +37,25 @@ return [
 
     'voiceflow' => [
         // Dialog Manager API key (prefix VF.DM.*). Kept server-side only.
+        // In BYOK mode this is a fallback for cron/CLI; in managed mode
+        // it's the master DM key for the workspace where every tenant
+        // environment lives.
         'api_key' => env('VOICEFLOW_API_KEY'),
+
+        // Managed mode (Phase J): we own one master Voiceflow project +
+        // a template environment. On signup, CreateAgent clones the
+        // template into a fresh per-tenant environment via the Project
+        // API. Users never paste keys.
+        //
+        // Set VOICEFLOW_MANAGED=true + provide the project + template
+        // env IDs to enable. BYOK keeps working for all existing agents
+        // (their mode column stays 'byok'); only NEW signups go through
+        // the managed flow when enabled.
+        'managed' => [
+            'enabled' => env('VOICEFLOW_MANAGED', false),
+            'master_project_id' => env('VOICEFLOW_MASTER_PROJECT_ID'),
+            'template_environment_id' => env('VOICEFLOW_TEMPLATE_ENVIRONMENT_ID'),
+        ],
         // Optional workspace-scoped key. Used by analytics/transcripts (host
         // analytics-api.voiceflow.com) and KB CRUD/query. Falls back to
         // the DM key when unset — most tenants need to set this explicitly.

@@ -31,6 +31,20 @@ class Agent extends Model
     public const STATUS_ACTIVE = 'active';
     public const STATUS_DISABLED = 'disabled';
 
+    /**
+     * Provisioning mode (Phase J).
+     *
+     * byok    — user pastes their own Voiceflow VF.DM key + project id.
+     *           Default for existing rows; the original Phase 13 behaviour.
+     * managed — we own the Voiceflow workspace + master project. On signup,
+     *           CreateAgent clones the template environment via the Project
+     *           API into a fresh per-tenant env. The agent row stores only
+     *           the cloned environment id — auth + project_id come from
+     *           .env at request time via VoiceflowService::forAgent.
+     */
+    public const MODE_BYOK = 'byok';
+    public const MODE_MANAGED = 'managed';
+
     public function stateMachine(): StateMachine
     {
         return new AgentStateMachine($this);
@@ -46,6 +60,7 @@ class Agent extends Model
         'voiceflow_workspace_api_key',
         'webhook_secret',
         'status',
+        'mode',
         'last_health_check_at',
         'last_health_ok',
     ];
@@ -107,10 +122,27 @@ class Agent extends Model
 
     /**
      * Whether this agent has the minimum credentials to make API calls.
+     *
+     * byok: the row itself must carry the api_key + project_id.
+     * managed: the row only needs voiceflow_environment (the cloned env id);
+     * api_key + project_id come from .env via VoiceflowService::forAgent.
+     * We still verify the env-level config is populated, otherwise the
+     * call would fail at the auth header.
      */
     public function isConfigured(): bool
     {
+        if ($this->isManaged()) {
+            return ! empty($this->voiceflow_environment)
+                && ! empty(config('services.voiceflow.api_key'))
+                && ! empty(config('services.voiceflow.managed.master_project_id'));
+        }
+
         return ! empty($this->voiceflow_api_key) && ! empty($this->voiceflow_project_id);
+    }
+
+    public function isManaged(): bool
+    {
+        return $this->mode === self::MODE_MANAGED;
     }
 
     /**
