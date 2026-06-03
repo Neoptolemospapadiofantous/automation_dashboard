@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Enums\LeadStatus;
+use App\Lifecycle\HasLifecycle;
+use App\Lifecycle\LeadStateMachine;
+use App\Lifecycle\StateMachine;
 use Database\Factories\LeadFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +15,12 @@ class Lead extends Model
 {
     /** @use HasFactory<LeadFactory> */
     use HasFactory;
+    use HasLifecycle;
+
+    public function stateMachine(): StateMachine
+    {
+        return new LeadStateMachine($this);
+    }
 
     protected $fillable = [
         'team_id',

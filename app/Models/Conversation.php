@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Lifecycle\ConversationStateMachine;
+use App\Lifecycle\HasLifecycle;
+use App\Lifecycle\StateMachine;
 use Database\Factories\ConversationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +15,12 @@ class Conversation extends Model
 {
     /** @use HasFactory<ConversationFactory> */
     use HasFactory;
+    use HasLifecycle;
+
+    public function stateMachine(): StateMachine
+    {
+        return new ConversationStateMachine($this);
+    }
 
     protected $fillable = [
         'team_id',

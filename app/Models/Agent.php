@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Lifecycle\AgentStateMachine;
+use App\Lifecycle\HasLifecycle;
+use App\Lifecycle\StateMachine;
 use Database\Factories\AgentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,10 +25,16 @@ class Agent extends Model
 {
     /** @use HasFactory<AgentFactory> */
     use HasFactory;
+    use HasLifecycle;
 
     public const STATUS_DRAFT = 'draft';
     public const STATUS_ACTIVE = 'active';
     public const STATUS_DISABLED = 'disabled';
+
+    public function stateMachine(): StateMachine
+    {
+        return new AgentStateMachine($this);
+    }
 
     protected $fillable = [
         'team_id',
