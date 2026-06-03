@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import axios from 'axios';
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
@@ -70,26 +71,24 @@ function destroy() {
 
 <template>
     <AppLayout :title="`Agent — ${agent.name}`">
-        <template #header>
-            <div class="flex items-center justify-between">
-                <div>
-                    <Link :href="route('agents.index')" class="text-sm text-indigo-600 hover:text-indigo-500">← All agents</Link>
-                    <h2 class="mt-1 text-xl font-semibold leading-tight text-gray-800">{{ agent.name }}</h2>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium" :class="{
-                        'bg-green-50 text-green-700': agent.status === 'active',
-                        'bg-amber-50 text-amber-700': agent.status === 'draft',
-                        'bg-gray-100 text-gray-500': agent.status === 'disabled',
-                    }">
-                        {{ agent.status }}
-                    </span>
-                    <span v-if="is_current" class="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
-                        Current agent
-                    </span>
-                </div>
-            </div>
-        </template>
+        <PageHeader
+            :breadcrumbs="[{ label: 'Agents', href: route('agents.index') }, { label: agent.name }]"
+            :title="agent.name"
+            description="Voiceflow credentials, webhook URL, and health status for this agent."
+        >
+            <template #actions>
+                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium" :class="{
+                    'bg-green-50 text-green-700': agent.status === 'active',
+                    'bg-amber-50 text-amber-700': agent.status === 'draft',
+                    'bg-gray-100 text-gray-500': agent.status === 'disabled',
+                }">
+                    {{ agent.status }}
+                </span>
+                <span v-if="is_current" class="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
+                    Current
+                </span>
+            </template>
+        </PageHeader>
 
         <div class="py-8">
             <div class="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">

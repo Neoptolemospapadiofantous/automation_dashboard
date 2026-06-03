@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -50,9 +51,7 @@ const statusTone = (s) => ({
 
 <template>
     <AppLayout title="Knowledge Base">
-        <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">Knowledge Base</h2>
-        </template>
+        <PageHeader title="Knowledge Base" description="Ground your agent in your own content. Add URLs, ask the KB for answers." />
 
         <div class="py-8">
             <div class="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">

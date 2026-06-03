@@ -2,6 +2,7 @@
 import { nextTick, ref } from 'vue';
 import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 
@@ -85,9 +86,7 @@ const capturedEntries = () => Object.entries(captured.value);
 
 <template>
     <AppLayout title="Lead Agent">
-        <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">Lead Agent</h2>
-        </template>
+        <PageHeader title="Agent chat" description="Talk to your current agent the way a lead would. Captured fields appear on the right and sync to the board live." />
 
         <div class="py-8">
             <div class="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">

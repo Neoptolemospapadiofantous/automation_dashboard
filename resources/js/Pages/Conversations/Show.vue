@@ -1,6 +1,7 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 
 defineProps({
     conversation: { type: Object, required: true },
@@ -12,16 +13,14 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '');
 
 <template>
     <AppLayout title="Conversation">
-        <template #header>
-            <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                    {{ conversation.lead?.name || conversation.voiceflow_user_id }}
-                </h2>
-                <Link :href="route('conversations.index')" class="text-sm text-indigo-600 hover:text-indigo-500">
-                    ← All conversations
-                </Link>
-            </div>
-        </template>
+        <PageHeader
+            :breadcrumbs="[
+                { label: 'Conversations', href: route('conversations.index') },
+                { label: conversation.lead?.name || conversation.voiceflow_user_id }
+            ]"
+            :title="conversation.lead?.name || conversation.voiceflow_user_id"
+            :description="`Started ${fmt(conversation.started_at)} · ${conversation.message_count} messages`"
+        />
 
         <div class="py-8">
             <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">

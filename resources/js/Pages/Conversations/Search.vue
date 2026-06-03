@@ -2,6 +2,7 @@
 import { router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 import TextInput from '@/Components/TextInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 
@@ -19,9 +20,11 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '');
 
 <template>
     <AppLayout title="Search conversations">
-        <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">Search conversations</h2>
-        </template>
+        <PageHeader
+            :breadcrumbs="[{ label: 'Conversations', href: route('conversations.index') }, { label: 'Search' }]"
+            title="Search conversations"
+            description="Find messages by keyword or meaning (semantic search powered by Typesense when configured)."
+        />
 
         <div class="py-8">
             <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">

@@ -2,6 +2,8 @@
 import { ref } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import PageHeader from '@/Components/PageHeader.vue';
+import EmptyState from '@/Components/EmptyState.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DialogModal from '@/Components/DialogModal.vue';
@@ -42,12 +44,14 @@ function statusClass(status) {
 
 <template>
     <AppLayout title="Agents">
-        <template #header>
-            <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold leading-tight text-gray-800">Agents</h2>
+        <PageHeader
+            title="Agents"
+            description="Each agent is one Voiceflow project. Switch between them in the top-left."
+        >
+            <template #actions>
                 <PrimaryButton @click="showCreate = true">New agent</PrimaryButton>
-            </div>
-        </template>
+            </template>
+        </PageHeader>
 
         <div class="py-8">
             <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -96,8 +100,15 @@ function statusClass(status) {
                                 </td>
                             </tr>
                             <tr v-if="!agents.length">
-                                <td colspan="4" class="px-4 py-10 text-center text-sm text-gray-400">
-                                    No agents yet — create one to get started.
+                                <td colspan="4">
+                                    <EmptyState
+                                        title="No agents yet"
+                                        description="Create your first agent to start qualifying leads. Each agent is a separate Voiceflow project with its own keys."
+                                    >
+                                        <template #actions>
+                                            <PrimaryButton @click="showCreate = true">Create your first agent</PrimaryButton>
+                                        </template>
+                                    </EmptyState>
                                 </td>
                             </tr>
                         </tbody>

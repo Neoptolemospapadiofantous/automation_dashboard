@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 import LeadCard from '@/Components/LeadCard.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DialogModal from '@/Components/DialogModal.vue';
@@ -114,29 +115,26 @@ function submit() {
 
 <template>
     <AppLayout title="Leads">
-        <template #header>
-            <div class="flex items-center justify-between">
-                <h2 class="flex items-center gap-2 text-xl font-semibold leading-tight text-gray-800">
-                    Leads
-                    <span
-                        class="inline-block h-2 w-2 rounded-full"
-                        :class="connected ? 'bg-green-500 animate-pulse' : 'bg-gray-300'"
-                        :title="connected ? 'Live' : 'Offline — set PUSHER_* to enable live updates'"
-                    />
-                </h2>
-                <div class="flex items-center gap-2">
-                    <button
-                        type="button"
-                        class="rounded-md border px-3 py-1.5 text-sm font-medium transition"
-                        :class="filters.mine ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'"
-                        @click="toggleMine"
-                    >
-                        {{ filters.mine ? 'My leads' : 'All leads' }}
-                    </button>
-                    <PrimaryButton @click="showCreate = true">New lead</PrimaryButton>
-                </div>
-            </div>
-        </template>
+        <PageHeader title="Leads" description="Kanban board of every lead in this agent. Drag cards to move statuses.">
+            <template #actions>
+                <span
+                    class="inline-flex items-center gap-1.5 rounded-full bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600"
+                    :title="connected ? 'Live' : 'Offline — set PUSHER_* to enable live updates'"
+                >
+                    <span class="inline-block h-1.5 w-1.5 rounded-full" :class="connected ? 'bg-green-500 animate-pulse' : 'bg-gray-300'" />
+                    {{ connected ? 'Live' : 'Offline' }}
+                </span>
+                <button
+                    type="button"
+                    class="rounded-md border px-3 py-1.5 text-sm font-medium transition"
+                    :class="filters.mine ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'"
+                    @click="toggleMine"
+                >
+                    {{ filters.mine ? 'My leads' : 'All leads' }}
+                </button>
+                <PrimaryButton @click="showCreate = true">New lead</PrimaryButton>
+            </template>
+        </PageHeader>
 
         <div class="py-8">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

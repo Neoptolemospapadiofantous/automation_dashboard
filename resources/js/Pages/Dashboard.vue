@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 import { useEcho } from '@/composables/useEcho';
 
 const props = defineProps({
@@ -49,16 +50,17 @@ const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)
 
 <template>
     <AppLayout title="Dashboard">
-        <template #header>
-            <h2 class="flex items-center gap-2 text-xl font-semibold leading-tight text-gray-800">
-                Dashboard
+        <PageHeader title="Dashboard" description="Pipeline at a glance, live across all connected screens.">
+            <template #actions>
                 <span
-                    class="inline-block h-2 w-2 rounded-full"
-                    :class="connected ? 'bg-green-500 animate-pulse' : 'bg-gray-300'"
+                    class="inline-flex items-center gap-1.5 rounded-full bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600"
                     :title="connected ? 'Live' : 'Offline — set PUSHER_* to enable live updates'"
-                />
-            </h2>
-        </template>
+                >
+                    <span class="inline-block h-1.5 w-1.5 rounded-full" :class="connected ? 'bg-green-500 animate-pulse' : 'bg-gray-300'" />
+                    {{ connected ? 'Live' : 'Offline' }}
+                </span>
+            </template>
+        </PageHeader>
 
         <div class="py-8">
             <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">

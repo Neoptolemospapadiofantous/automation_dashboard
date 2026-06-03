@@ -2,6 +2,7 @@
 import { Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import PageHeader from '@/Components/PageHeader.vue';
 import TextInput from '@/Components/TextInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 
@@ -19,9 +20,8 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
 
 <template>
     <AppLayout title="Conversations">
-        <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">Conversations</h2>
-        </template>
+        <PageHeader title="Conversations" description="Every chat that's happened with your agents." />
+
 
         <div class="py-8">
             <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
