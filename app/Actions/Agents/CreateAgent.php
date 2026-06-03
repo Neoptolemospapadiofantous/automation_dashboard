@@ -6,30 +6,31 @@ use App\Billing\Exceptions\PlanLimitExceeded;
 use App\Events\Domain\AgentCreated;
 use App\Models\Agent;
 use App\Models\Team;
-use App\Services\VoiceflowService;
-use RuntimeException;
+use App\Provisioning\PoolAllocator;
 
 /**
  * The single entry point for "make a new agent."
  *
- * Used by the onboarding wizard step 1, the agent CRUD page, and any future
- * API. Returns a draft Agent — credentials get filled in later via
- * UpdateAgentCredentials, then the agent activates on a passing health check.
+ * Two paths:
+ * - BYOK: empty draft, user pastes their own Voiceflow credentials in
+ *   onboarding step 2, then UpdateAgentCredentials health-checks + activates.
+ * - Managed (Phase J + K): allocates a pre-created Voiceflow project from
+ *   the `voiceflow_project_pool` table, stamps the agent, marks active
+ *   immediately. The user never sees Voiceflow.
  *
- * Phase J: when managed mode is enabled, CreateAgent clones the master
- * project's template environment into a fresh per-tenant environment via
- * the Voiceflow Project API. The user never sees Voiceflow. The agent
- * activates immediately (no credential paste step, no separate health check).
- *
- * Why an action class rather than a method on the model: this is the layer
- * where business rules go (only one agent per team on a free plan, default
- * name based on existing agents, fires creation events). Keeping it out of
- * the model means the model stays a thin data container.
+ * Why a pool? Earlier design cloned environments inside one master
+ * Voiceflow project per tenant. Voiceflow docs (researched 2026-06-03)
+ * confirm two blockers: 10-env hard cap per project across all tiers
+ * AND shared KB/integrations/analytics across environments in a project.
+ * That meant clone-per-tenant capped at 10 customers + leaked data
+ * between them. The pool sidesteps both — each customer gets a
+ * separately-created Voiceflow project (real isolation) at the cost
+ * of operator pre-provisioning.
  */
 class CreateAgent
 {
     /**
-     * @param  array<string, mixed>  $attributes  Optional initial creds — usually empty (wizard fills them in step 2).
+     * @param  array<string, mixed>  $attributes  Optional initial creds (BYOK only).
      */
     public function execute(Team $team, string $name, array $attributes = []): Agent
     {
@@ -84,51 +85,43 @@ class CreateAgent
     }
 
     /**
-     * Managed path: ask Voiceflow to clone the template environment, store
-     * the resulting env id, mark active immediately. The agent is usable
-     * the moment this returns — no second wizard step.
+     * Managed path: allocate the next available pre-created Voiceflow
+     * project from the pool, stamp this agent with that project's keys.
      *
-     * Failures here (Voiceflow rejects auth, template env not found, network
-     * down) propagate up so the wizard can surface a real error rather than
-     * landing the user on a half-created agent.
+     * Allocation failure (PoolExhausted — operator hasn't refilled) leaves
+     * the draft agent row deleted so we don't accumulate half-provisioned
+     * rows. The user sees a 503 from the global exception handler.
      */
     protected function createManaged(Team $team, string $name): Agent
     {
-        $masterProjectId = config('services.voiceflow.managed.master_project_id');
-        $templateEnvId = config('services.voiceflow.managed.template_environment_id');
-
-        if (empty($masterProjectId) || empty($templateEnvId)) {
-            throw new RuntimeException(
-                'Managed mode is enabled but VOICEFLOW_MASTER_PROJECT_ID / VOICEFLOW_TEMPLATE_ENVIRONMENT_ID are unset.'
-            );
-        }
-
-        // Hit Voiceflow BEFORE the DB write so a clone failure doesn't
-        // leave us with an orphaned local row. Using a fresh service
-        // instance (not the request-scoped one) so we don't accidentally
-        // authenticate as a tenant that hasn't been created yet.
-        $service = new VoiceflowService();
-        $envId = $service->cloneEnvironment(
-            masterProjectId: $masterProjectId,
-            name: $team->name.' — '.$name,
-            sourceEnvironmentId: $templateEnvId,
-        );
-
-        return $team->agents()->create([
+        // Create the agent shell first so the pool entry has something to
+        // FK to. On allocation failure we delete the row in the catch.
+        $agent = $team->agents()->create([
             'name' => $name,
             'mode' => Agent::MODE_MANAGED,
-            // Only the env id is per-tenant. Auth + project_id come from
-            // .env via VoiceflowService::forAgent.
-            'voiceflow_api_key' => null,
-            'voiceflow_project_id' => null,
-            'voiceflow_environment' => $envId,
-            'voiceflow_workspace_api_key' => null,
-            // Active immediately — Voiceflow already proved the env exists
-            // by returning a valid clone id. No second-step health check.
+            'status' => Agent::STATUS_DRAFT,
+        ]);
+
+        try {
+            $entry = app(PoolAllocator::class)->allocate($agent);
+        } catch (\Throwable $e) {
+            $agent->delete();
+            throw $e;
+        }
+
+        $agent->forceFill([
+            'voiceflow_api_key' => $entry->voiceflow_api_key,
+            'voiceflow_project_id' => $entry->voiceflow_project_id,
+            'voiceflow_environment' => $entry->voiceflow_environment ?: 'main',
+            'voiceflow_workspace_api_key' => $entry->voiceflow_workspace_api_key,
+            // Active immediately — the project + key were validated when
+            // the operator added them to the pool. No health check.
             'status' => Agent::STATUS_ACTIVE,
             'last_health_check_at' => now(),
             'last_health_ok' => true,
-        ]);
+        ])->save();
+
+        return $agent;
     }
 
     protected function defaultName(Team $team): string

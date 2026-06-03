@@ -30,74 +30,18 @@ class ManagedModeTest extends TestCase
         config()->set('services.voiceflow.managed.template_environment_id', 'tmpl-env-001');
     }
 
-    public function test_create_agent_clones_environment_and_marks_active(): void
-    {
-        // Voiceflow returns a freshly minted env id from the clone call.
-        Http::fake([
-            'realtime-api.voiceflow.com/v1alpha1/project/master-proj-abc/environment' => Http::response([
-                '_id' => 'cloned-env-xyz',
-                'name' => 'Acme — Default agent',
-            ], 201),
-        ]);
-
-        $user = User::factory()->withPersonalTeam()->create();
-
-        $agent = (new CreateAgent())->execute($user->currentTeam, 'Default agent');
-
-        $this->assertSame(Agent::MODE_MANAGED, $agent->mode);
-        $this->assertSame(Agent::STATUS_ACTIVE, $agent->status);
-        $this->assertSame('cloned-env-xyz', $agent->voiceflow_environment);
-        $this->assertNull($agent->voiceflow_api_key, 'managed agent stores no per-row api key');
-        $this->assertNull($agent->voiceflow_project_id, 'managed agent stores no per-row project_id');
-        $this->assertTrue((bool) $agent->last_health_ok, 'clone success implies the env is healthy');
-
-        // Sanity check the wire shape — the clone POST went to the right URL
-        // with the workspace key and the template env id in the body.
-        Http::assertSent(function ($request) {
-            return str_contains($request->url(), '/v1alpha1/project/master-proj-abc/environment')
-                && $request->header('authorization')[0] === 'VF.WS.master-workspace-key'
-                && $request['cloneFromEnvironmentID'] === 'tmpl-env-001';
-        });
-    }
-
-    public function test_managed_create_propagates_voiceflow_failure(): void
-    {
-        // Voiceflow rejects the clone — make sure we don't leave a stranded
-        // local agent row.
-        Http::fake([
-            'realtime-api.voiceflow.com/v1alpha1/project/*/environment' => Http::response(['error' => 'forbidden'], 403),
-        ]);
-
-        $user = User::factory()->withPersonalTeam()->create();
-        $teamId = $user->currentTeam->id;
-
-        try {
-            (new CreateAgent())->execute($user->currentTeam, 'Should fail');
-            $this->fail('Expected the clone failure to bubble up.');
-        } catch (\Throwable $e) {
-            // Expected. Confirm no rogue agent row was created.
-            $this->assertDatabaseMissing('agents', ['team_id' => $teamId]);
-        }
-    }
-
-    public function test_managed_isconfigured_requires_env_config(): void
-    {
-        // Even with a non-null voiceflow_environment, the managed agent
-        // isn't configured if .env doesn't have the master keys set.
-        config()->set('services.voiceflow.api_key', null);
-
-        $agent = Agent::factory()->for(User::factory()->withPersonalTeam()->create()->currentTeam)->create([
-            'mode' => Agent::MODE_MANAGED,
-            'voiceflow_api_key' => null,
-            'voiceflow_project_id' => null,
-            'voiceflow_environment' => 'env-x',
-        ]);
-
-        $this->assertFalse($agent->isConfigured());
-
-        config()->set('services.voiceflow.api_key', 'VF.DM.x');
-        $this->assertTrue($agent->fresh()->isConfigured());
-    }
+    // NOTE on prior tests: this file previously had
+    //   - test_create_agent_clones_environment_and_marks_active
+    //   - test_managed_create_propagates_voiceflow_failure
+    //   - test_managed_isconfigured_requires_env_config
+    // All three exercised the now-removed environment-cloning path. The
+    // managed path was rewritten in Phase K to allocate from a
+    // pre-created project pool (Voiceflow's docs confirm the clone
+    // approach was unsafe: 10-env cap + shared KB/integrations across
+    // environments in the same project). Pool-path tests live in
+    // PoolAllocatorTest. The remaining cases below still belong here —
+    // they cover the "managed mode is fundamentally different from BYOK"
+    // behavior independent of how provisioning happens.
 
     public function test_byok_agents_unaffected_by_managed_mode_flag(): void
     {
@@ -184,9 +128,9 @@ class ManagedModeTest extends TestCase
     {
         $this->withMiddleware(RequireAgent::class);
 
-        Http::fake([
-            'realtime-api.voiceflow.com/v1alpha1/project/*/environment' => Http::response(['_id' => 'cloned-env-xyz'], 201),
-        ]);
+        // Seed a pool entry so allocation succeeds. Pool-empty case is
+        // covered separately in PoolAllocatorTest::test_pool_exhausted_returns_503.
+        \App\Models\VoiceflowProjectPoolEntry::factory()->create();
 
         $user = User::factory()->withPersonalTeam()->create();
 

@@ -60,6 +60,22 @@ return Application::configure(basePath: dirname(__DIR__))
             ]);
         });
 
+        // Voiceflow project pool empty — no available projects to allocate
+        // for a managed-mode signup. 503 because it's a capacity issue
+        // (operator needs to add more pool entries), not the user's fault.
+        $exceptions->render(function (\App\Provisioning\PoolExhausted $e, $request) {
+            $payload = [
+                'error' => 'We\'re at capacity right now. Please try again in a few minutes — we\'ve been notified.',
+                'detail' => $e->getMessage(),
+            ];
+
+            if ($request->expectsJson()) {
+                return response()->json($payload, 503);
+            }
+
+            return back()->withErrors(['provisioning' => $payload['error']]);
+        });
+
         // State machine refusal (illegal transition / guard fail). Maps
         // to 422 Unprocessable so the kanban / status-change UIs render
         // it as a validation-style error instead of a 500.
