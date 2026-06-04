@@ -162,4 +162,161 @@ class BillingDisplayMathTest extends TestCase
                 ->where('billing.credits_used', 0)
             );
     }
+
+    // -------------------------------------------------------------------
+    // Zero-balance scenarios: when the user has burned every credit, the
+    // bar should pin at 100% used / 0 remaining without the denominator
+    // mysteriously shrinking. Per industry-standard (Pattern A), the max
+    // stays at "everything granted this period."
+    // -------------------------------------------------------------------
+
+    public function test_zero_balance_no_topups_pins_bar_at_100_percent(): void
+    {
+        // Pure monthly allotment, fully consumed. The bar shows 1,000 /
+        // 1,000 used · 0 remaining — credits_used equals credits_total so
+        // the front-end's `usedPercent` lands at 100% (rose-500 in the
+        // CreditMeter tone map).
+        $user = User::factory()->withPersonalTeam()->create();
+        $user->currentTeam->forceFill([
+            'plan' => Plan::Free->value,
+            'credit_balance' => 0,
+            'credits_renewed_at' => now()->subDays(5),
+        ])->save();
+
+        $this->actingAs($user->fresh())
+            ->get(route('billing.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('billing.credits_total', 1_000)
+                ->where('billing.credits_used', 1_000)
+                ->where('billing.credits_remaining', 0)
+            );
+    }
+
+    public function test_zero_balance_with_topups_keeps_full_period_denominator(): void
+    {
+        // 1k monthly + 1k top-up earlier in the period → all 2k consumed.
+        // Critical assertion: credits_total stays at 2,000 (not 1,000) so
+        // the user can see they burned through both the monthly AND the
+        // top-up. Pattern A: the denominator never shrinks within a period.
+        $user = User::factory()->withPersonalTeam()->create();
+        $team = $user->currentTeam;
+        $team->forceFill([
+            'plan' => Plan::Free->value,
+            'credit_balance' => 0,
+            'credits_renewed_at' => now()->subDays(5),
+        ])->save();
+
+        \DB::table('credit_transactions')->insert([
+            'team_id' => $team->id,
+            'amount' => 1_000,
+            'reason' => CreditTransaction::REASON_GRANT_TOPUP,
+            'meta' => json_encode(['pack' => 'small']),
+            'created_at' => now()->subDays(3),
+            'updated_at' => now()->subDays(3),
+        ]);
+
+        $this->actingAs($user->fresh())
+            ->get(route('billing.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('billing.credits_total', 2_000) // monthly + topup
+                ->where('billing.credits_used', 2_000) // everything spent
+                ->where('billing.credits_remaining', 0)
+            );
+    }
+
+    public function test_topup_at_zero_drops_bar_proportionally(): void
+    {
+        // User hits zero after consuming 2k (monthly + topup). They buy a
+        // SECOND top-up to keep going. The denominator should now include
+        // BOTH top-ups (3k total): bar reads "2,000 / 3,000 used · 1,000
+        // remaining" — they regain headroom without losing the audit of
+        // what they already spent.
+        $user = User::factory()->withPersonalTeam()->create();
+        $team = $user->currentTeam;
+        $team->forceFill([
+            'plan' => Plan::Free->value,
+            'credit_balance' => 0,
+            'credits_renewed_at' => now()->subDays(5),
+        ])->save();
+
+        // First top-up — already consumed.
+        \DB::table('credit_transactions')->insert([
+            'team_id' => $team->id,
+            'amount' => 1_000,
+            'reason' => CreditTransaction::REASON_GRANT_TOPUP,
+            'meta' => json_encode(['pack' => 'small']),
+            'created_at' => now()->subDays(3),
+            'updated_at' => now()->subDays(3),
+        ]);
+
+        // Buy a second top-up via the real endpoint.
+        $this->actingAs($user->fresh())
+            ->post(route('billing.topup'), ['pack' => TopUpPack::Small->value])
+            ->assertRedirect();
+
+        $this->actingAs($user->fresh())
+            ->get(route('billing.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('billing.credits_total', 3_000) // 1k monthly + 2k topups
+                ->where('billing.credits_used', 2_000) // first 2k still counted
+                ->where('billing.credits_remaining', 1_000)
+            );
+    }
+
+    public function test_monthly_renewal_resets_denominator_and_drops_prior_topups(): void
+    {
+        // The calendar period rolled over. grantMonthlyRenewal bumps
+        // credits_renewed_at and hard-resets balance to the plan's monthly
+        // allotment. Past-period top-ups (now BEFORE credits_renewed_at)
+        // should drop out of the sum entirely — fresh "0 / 1,000" display.
+        $user = User::factory()->withPersonalTeam()->create();
+        $team = $user->currentTeam;
+        $team->forceFill([
+            'plan' => Plan::Free->value,
+            'credit_balance' => 1_000,
+            // Renewal JUST happened (boundary is now).
+            'credits_renewed_at' => now(),
+        ])->save();
+
+        // Stale top-up from the prior period. Must NOT contribute.
+        \DB::table('credit_transactions')->insert([
+            'team_id' => $team->id,
+            'amount' => 5_000,
+            'reason' => CreditTransaction::REASON_GRANT_TOPUP,
+            'meta' => json_encode([]),
+            'created_at' => now()->subDays(10),
+            'updated_at' => now()->subDays(10),
+        ]);
+
+        $this->actingAs($user->fresh())
+            ->get(route('billing.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                // Just the plan monthly — prior-period top-ups excluded.
+                ->where('billing.credits_total', 1_000)
+                ->where('billing.credits_used', 0)
+                ->where('billing.credits_remaining', 1_000)
+            );
+    }
+
+    public function test_out_of_credits_blocks_consume_at_zero(): void
+    {
+        // Backend invariant: at zero balance the meter must REFUSE further
+        // consumption. The 402-mapping exception renderer + the UI
+        // upgrade prompt are downstream of this; if consume() ever lets a
+        // zero-balance message through, every fix above is academic.
+        $user = User::factory()->withPersonalTeam()->create();
+        $team = $user->currentTeam;
+        $team->forceFill([
+            'plan' => Plan::Free->value,
+            'credit_balance' => 0,
+            'credits_renewed_at' => now()->subDays(1),
+        ])->save();
+
+        $this->expectException(\App\Billing\Exceptions\OutOfCredits::class);
+        (new \App\Billing\CreditMeter())->consume($team, 1);
+    }
 }
