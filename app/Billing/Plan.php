@@ -35,13 +35,18 @@ enum Plan: string
 
     /**
      * Monthly credit allotment. 1 credit = 1 message (user OR agent direction).
+     *
+     * Custom returns 0: no auto-renewal grant. Custom is project-based —
+     * credits are negotiated per engagement and granted manually by ops.
+     * UI (HandleInertiaRequests + Billing/Index.vue) detects Custom and
+     * shows "Custom — negotiated" instead of "0 / 0".
      */
     public function monthlyCredits(): int
     {
         return match ($this) {
             self::Free => 1_000,
             self::Pro => 10_000,
-            self::Business => 50_000,
+            self::Business => 0,
         };
     }
 
@@ -73,12 +78,17 @@ enum Plan: string
 
     /**
      * Whether the plan can buy top-up credit packs when its monthly
-     * allotment runs out. Starter is locked to hard cap to push upgrades
-     * to Operator; Custom is project-based and handled out-of-band.
+     * allotment runs out. Both paid tiers can; Custom is project-based
+     * and handled out-of-band.
+     *
+     * Pack pricing is intentionally unfavourable at low volume (see
+     * TopUpPack) so heavy users still feel pressure to upgrade rather
+     * than top-up forever — but the door stays open for someone who
+     * just needs a one-off bump to finish the month.
      */
     public function allowsTopUps(): bool
     {
-        return $this === self::Pro;
+        return $this === self::Free || $this === self::Pro;
     }
 
     /**

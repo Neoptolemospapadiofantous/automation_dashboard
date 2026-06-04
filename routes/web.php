@@ -46,20 +46,11 @@ Route::middleware([
     Route::post('/agents/{agent}/health', [AgentController::class, 'health'])->name('agents.health');
     Route::put('/current-agent', [AgentController::class, 'switchCurrent'])->name('current-agent.update');
 
-    // Billing landing page. Placeholder until Phase H3 wires Stripe Checkout
-    // + customer portal. For now: shows current plan + credits history +
-    // upgrade buttons that link to a "coming soon" notice.
-    Route::get('/billing', fn () => Inertia::render('Billing/Index', [
-        'transactions' => request()->user()->currentTeam->creditTransactions()
-            ->latest()->take(50)->get()
-            ->map(fn ($t) => [
-                'id' => $t->id,
-                'amount' => $t->amount,
-                'reason' => $t->reason,
-                'meta' => $t->meta,
-                'created_at' => $t->created_at->toIso8601String(),
-            ]),
-    ]))->name('billing.index');
+    // Billing — current plan, credit history, top-up purchase.
+    // Top-up flow is DEV-MODE (instant grant) until Phase H wires Stripe
+    // Checkout. See BillingController::topup for the swap-over plan.
+    Route::get('/billing', [\App\Http\Controllers\BillingController::class, 'index'])->name('billing.index');
+    Route::post('/billing/topup', [\App\Http\Controllers\BillingController::class, 'topup'])->name('billing.topup');
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 

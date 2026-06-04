@@ -73,19 +73,32 @@ class HandleInertiaRequests extends Middleware
                 : [],
 
             // Billing snapshot for the credit pill in the sidebar. Cheap —
-            // already cached on the team row, no extra query. Allows the
-            // UI to render "234 / 5000 credits" without each page asking.
+            // already cached on the team row, no extra query.
+            //
+            // Custom plan exposes `is_custom: true` and credits_total = null
+            // because Custom credits aren't a fixed monthly grant; they're
+            // negotiated per engagement. UI checks is_custom to show
+            // "Custom · X credits remaining" instead of "X / Y used".
             'billing' => fn () => $request->user()?->currentTeam
-                ? [
-                    'plan' => $request->user()->currentTeam->planObject()->value,
-                    'plan_label' => $request->user()->currentTeam->planObject()->label(),
-                    'credits_used' => max(0, $request->user()->currentTeam->planObject()->monthlyCredits() - $request->user()->currentTeam->credit_balance),
-                    'credits_total' => $request->user()->currentTeam->planObject()->monthlyCredits(),
-                    'credits_remaining' => $request->user()->currentTeam->credit_balance,
-                    'max_agents' => $request->user()->currentTeam->planObject()->maxAgents(),
-                    'agents_count' => $request->user()->currentTeam->agents()->count(),
-                    'allows_topups' => $request->user()->currentTeam->planObject()->allowsTopUps(),
-                ]
+                ? (function () use ($request) {
+                    $team = $request->user()->currentTeam;
+                    $plan = $team->planObject();
+                    $isCustom = $plan === \App\Billing\Plan::Business;
+
+                    return [
+                        'plan' => $plan->value,
+                        'plan_label' => $plan->label(),
+                        'is_custom' => $isCustom,
+                        'credits_used' => $isCustom
+                            ? null
+                            : max(0, $plan->monthlyCredits() - $team->credit_balance),
+                        'credits_total' => $isCustom ? null : $plan->monthlyCredits(),
+                        'credits_remaining' => $team->credit_balance,
+                        'max_agents' => $plan->maxAgents(),
+                        'agents_count' => $team->agents()->count(),
+                        'allows_topups' => $plan->allowsTopUps(),
+                    ];
+                })()
                 : null,
         ];
     }

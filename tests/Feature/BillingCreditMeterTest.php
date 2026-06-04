@@ -123,10 +123,14 @@ class BillingCreditMeterTest extends TestCase
         $this->assertSame(600, $team->fresh()->credit_balance);
     }
 
-    public function test_grant_topup_refuses_free_plan(): void
+    public function test_grant_topup_refuses_custom_plan(): void
     {
+        // Custom is project-based — credits are negotiated per engagement
+        // and granted manually by ops, not via self-serve top-ups. Both
+        // paid SaaS tiers (Starter, Operator) DO allow top-ups; only
+        // Custom (Plan::Business) refuses.
         $team = User::factory()->withPersonalTeam()->create()->currentTeam;
-        // Default Free plan — no top-ups allowed.
+        $team->forceFill(['plan' => Plan::Business->value])->save();
 
         $this->expectException(\RuntimeException::class);
         (new CreditMeter())->grantTopUp($team, 500);
