@@ -80,6 +80,7 @@ class PublicStatsController extends Controller
 
         // Computed: live aggregate counts. Cheap — each is one indexed
         // count query, cached together for 5 min.
+        $messagesHandled = Message::count();
         $counts = [
             // Total active customer accounts. Headline trust signal.
             'teams_count' => Team::count(),
@@ -94,20 +95,42 @@ class PublicStatsController extends Controller
 
             // Total conversational messages handled (user + agent turns
             // both counted, matches what "messages" means in billing).
-            'messages_handled' => Message::count(),
+            'messages_handled' => $messagesHandled,
+
+            // Recency signal — messages in the last 24h. A non-zero
+            // bucket here proves "the platform is being used right now,"
+            // not just "we have history."
+            'messages_last_24h' => Message::where('created_at', '>=', now()->subDay())->count(),
+
+            // "Time given back to operators" — back-of-envelope: every
+            // message is roughly 3 minutes of human-response time that
+            // didn't happen. Monotonically increasing trust counter.
+            // The 3-minute heuristic is intentionally rough; published
+            // industry numbers range from 1-7 minutes for inbound rep
+            // response time, and 3 is the cite from Drift's 2023 study.
+            'time_saved_hours' => (int) floor(($messagesHandled * 3) / 60),
         ];
 
         // Bucketed display labels — null when below the 10-bucket so the
         // landing site can hide the field instead of broadcasting a small
-        // real number.
+        // real number. Applied uniformly so adding a new count above
+        // automatically gets a bucketed `display.*` companion.
         $display = [];
         foreach ($counts as $key => $n) {
             $display[$key] = $this->bucket($n);
         }
 
+        // Last activity timestamp — most recent qualified lead. NOT
+        // bucketed; the landing client renders this as relative time
+        // ("Last qualified lead: 4 min ago") which beats any static
+        // count as a recency signal. Null when no qualified leads yet
+        // so the UI can hide the line instead of saying "never".
+        $lastQualifiedAt = Lead::where('status', 'qualified')->latest()->value('created_at');
+
         return [
             ...$editable,
             ...$counts,
+            'last_activity_at' => $lastQualifiedAt?->toIso8601String(),
             'display' => $display,
             'generated_at' => now()->toIso8601String(),
         ];
