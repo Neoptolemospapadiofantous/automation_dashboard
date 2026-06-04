@@ -10,20 +10,26 @@ leads on the board live.
   (Conversations) API: `launch`, `sendText`, low-level `interact`,
   `getVariables`, plus `parseTraces` (text/choice/end) and `extractLeadFields`.
   API key (prefix `VF.DM.*`) is read from config and never exposed.
-- **`VoiceflowController`** (`/agent/launch`, `/agent/interact`) — proxies the
+- **`VoiceflowController`** (`/chat/launch`, `/chat/interact`) — proxies the
   conversation, parses traces into chat messages + quick-reply buttons, reads
   the agent's session variables, and **upserts a team-scoped `Lead`** from the
   captured fields. Broadcasts `LeadMessage` (live transcript) and `LeadSaved`
   (board updates).
-- **`VoiceflowWebhookController`** (`POST /api/voiceflow/lead-captured`) — an
-  inbound webhook for Voiceflow **Custom Actions** to push a qualified lead the
-  instant it's captured, secured by a shared-secret header
-  (`X-Webhook-Secret` = `VOICEFLOW_WEBHOOK_SECRET`).
+
+  > Routes were renamed from `agent.*` → `chat.*` in Phase 14 to
+  > disambiguate from the agents-CRUD routes (`agents.*`). Same controller,
+  > same behaviour, new URL + route name.
+- **`VoiceflowWebhookController`** (`POST /api/voiceflow/lead-captured/{agent:slug}`)
+  — an inbound webhook for Voiceflow **Custom Actions** to push a qualified
+  lead the instant it's captured, secured by a per-agent shared-secret header
+  (`X-Webhook-Secret` = `Agent::$webhook_secret`).
+
+  > Phase 13 made this per-agent (was app-wide in Phase 5).
 - **`LeadMessage`** broadcast event on the private `team.{id}` channel.
-- **Vue chat panel** (`Agent/Index.vue`) — start a conversation, send replies,
-  tap quick-reply buttons, and watch captured lead fields populate live with a
-  link through to the board.
-- **"Agent" nav link**; feature tests with HTTP faking.
+- **Vue chat panel** (`Pages/Chat/Index.vue`) — start a conversation, send
+  replies, tap quick-reply buttons, and watch captured lead fields populate
+  live with a link through to the board.
+- **"Chat" nav link**; feature tests with HTTP faking.
 
 ## Configuration
 
@@ -55,7 +61,7 @@ legacy `/state/user/...` + `versionID` endpoints are deprecated.
    → returns `{ "traces": [...] }`.
 
 `VoiceflowService` caches the per-user `sessionKey` (1h) so multi-turn chats
-reuse the session; a `launch` resets it. `/agent/health` runs both steps and
+reuse the session; a `launch` resets it. `/chat/health` runs both steps and
 reports exactly which one fails.
 
 See <https://docs.voiceflow.com/api-reference/conversations-api/overview> and

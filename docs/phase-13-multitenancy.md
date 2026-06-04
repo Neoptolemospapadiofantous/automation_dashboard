@@ -691,3 +691,18 @@ When Phase K shipped, the obsolete Phase J pieces were removed:
 | J. Managed mode (env-clone, superseded) | ⚠️ removed | `mode` column + wizard collapse still ship. Environment-clone provisioning abandoned after Voiceflow's docs confirmed 10-env-per-project cap + shared KB across environments. |
 | K. Project pool (real managed) | ✅ shipped | One Voiceflow project per tenant, allocated from a pre-created pool via `php artisan vf:pool:add` + `PoolAllocator`. Real isolation. Phase J's dead code removed in same commit. |
 | H. Billing | later | Cashier + Stripe, plan limits |
+
+## Adjacent work — chat-route rename
+
+Shipped alongside Phase 14. The chat-panel routes (`agent.*`,
+`Pages/Agent/`) were renamed to `chat.*` / `Pages/Chat/` to remove the
+long-standing one-letter collision with the agents-CRUD routes
+(`agents.*`). Same controller logic, new URLs + route names. See
+[phase-14-public-stats.md](./phase-14-public-stats.md#routes-also-renamed-in-this-phase)
+for the full rename map. Phase 5 doc has been updated to match.
+
+## See also
+
+This phase scaled tenants; **[phase-14-public-stats.md](./phase-14-public-stats.md)**
+exposes a curated slice of the resulting cross-tenant aggregates to the
+marketing site as `/api/public/stats`.
