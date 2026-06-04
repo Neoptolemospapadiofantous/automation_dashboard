@@ -41,27 +41,29 @@ class AgentCrudTest extends TestCase
         ]);
     }
 
-    public function test_update_saves_credentials_and_activates_on_green_health(): void
+    public function test_update_only_accepts_name_and_drops_credential_fields(): void
     {
-        Http::fake([
-            'general-runtime.voiceflow.com/v4/project/*' => Http::response(['sessionKey' => 's'], 200),
-            'general-runtime.voiceflow.com/v4/interact' => Http::response(['traces' => []], 200),
-        ]);
-        config()->set('services.voiceflow.api_key', 'VF.DM.x');
-        config()->set('services.voiceflow.project_id', 'p');
-
+        // Phase 14: BYOK left the product surface. The update endpoint only
+        // touches `name`; any credential field in the payload is silently
+        // dropped so a clever curl can't sneak credential writes regardless
+        // of the agent's mode. Credential admin for ops-wired BYOK happens
+        // via tinker, not via HTTP.
         $user = User::factory()->withPersonalTeam()->create();
-        $agent = Agent::factory()->draft()->for($user->currentTeam)->create();
+        $agent = Agent::factory()->for($user->currentTeam)->create([
+            'voiceflow_api_key' => 'VF.DM.original.key',
+            'voiceflow_project_id' => 'aaaabbbbccccddddeeeeffff',
+        ]);
 
         $this->actingAs($user)->put(route('agents.update', $agent), [
-            'voiceflow_api_key' => 'VF.DM.1234567890abcdef12345678.newKey',
-            'voiceflow_project_id' => '1234567890abcdef12345678',
+            'name' => 'Renamed',
+            'voiceflow_api_key' => 'VF.DM.attempted.injection',
+            'voiceflow_project_id' => '111111111111111111111111',
         ])->assertRedirect();
 
         $agent->refresh();
-        $this->assertSame('1234567890abcdef12345678', $agent->voiceflow_project_id);
-        $this->assertSame(Agent::STATUS_ACTIVE, $agent->status);
-        $this->assertTrue($agent->last_health_ok);
+        $this->assertSame('Renamed', $agent->name);
+        $this->assertSame('VF.DM.original.key', $agent->voiceflow_api_key, 'credential injection must not overwrite the row');
+        $this->assertSame('aaaabbbbccccddddeeeeffff', $agent->voiceflow_project_id);
     }
 
     public function test_destroy_removes_agent_and_falls_back_current(): void
@@ -122,8 +124,11 @@ class AgentCrudTest extends TestCase
         $this->actingAs($user)->get(route('agents.show', $foreign))->assertStatus(403);
     }
 
-    public function test_settings_page_surfaces_webhook_url_and_secret(): void
+    public function test_settings_page_hides_webhook_url_and_credentials_for_every_agent(): void
     {
+        // Phase 14: BYOK was removed from the product surface. The settings
+        // page no longer exposes credential fields OR the webhook URL/secret
+        // for any agent — credentials live entirely server-side now.
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create();
 
@@ -131,8 +136,11 @@ class AgentCrudTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Agents/Show')
-                ->where('webhook_url', route('voiceflow.webhook', $agent))
-                ->where('agent.webhook_secret', $agent->webhook_secret)
+                ->where('webhook_url', null)
+                ->missing('agent.webhook_secret')
+                ->missing('agent.voiceflow_project_id')
+                ->missing('agent.voiceflow_environment')
+                ->missing('agent.has_api_key')
             );
     }
 }

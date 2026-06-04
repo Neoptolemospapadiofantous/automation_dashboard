@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Agents\CreateAgent;
-use App\Actions\Agents\UpdateAgentCredentials;
 use App\Lifecycle\OnboardingState;
 use App\Models\Agent;
 use Illuminate\Http\RedirectResponse;
@@ -12,20 +11,25 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * The 3-step onboarding wizard.
+ * The (now single-step) onboarding wizard.
  *
- * Every step reads OnboardingState to decide where the user actually belongs:
- * if they refresh in the middle, or come back tomorrow, they land at the
- * right step automatically. Each form submission goes through an action so
- * the business rules (one agent per team's first run, activation only on
- * green health, etc.) live in exactly one place.
+ * Phase 14 collapsed the wizard from 3 steps (intro → connect → done)
+ * to 2 (intro → done) when BYOK was removed from the product surface.
+ * The wizard is now always managed: user clicks "Set up my agent",
+ * CreateAgent allocates from the Voiceflow project pool, marks the
+ * agent active, redirects to Done.
+ *
+ * The dormant pieces (credentialRules, credentialMessages,
+ * UpdateAgentCredentials action) stay because ops uses them via
+ * tinker for one-off Custom-tier BYOK setups. They're not reachable
+ * via any user-facing route — the Connect + saveCredentials methods
+ * were deleted in Phase 14.
  */
 class OnboardingController extends Controller
 {
     /**
-     * Step 1 — explain the flow, point at Voiceflow, offer the template
-     * download. Creates a draft agent on "Continue" so step 2 has something
-     * to save creds against.
+     * Step 1 — explain the one-click setup. POST'ing to startAgent below
+     * provisions from the pool and lands on Done immediately.
      */
     public function intro(Request $request): Response|RedirectResponse
     {
@@ -35,11 +39,6 @@ class OnboardingController extends Controller
 
         return Inertia::render('Onboarding/Intro', [
             'team' => ['id' => $request->user()->currentTeam->id, 'name' => $request->user()->currentTeam->name],
-            'template_url' => '/templates/lead-qualification.vf',
-            // The Vue page changes its copy + flow based on this — managed
-            // shows a one-click "Set up my agent" CTA; byok keeps the
-            // 3-step "create VF account / import template / paste key" copy.
-            'managed' => (bool) config('services.voiceflow.managed.enabled'),
         ]);
     }
 
@@ -51,84 +50,18 @@ class OnboardingController extends Controller
 
         $team = $request->user()->currentTeam;
 
-        // Re-click protection. Two scenarios for "agent already exists":
-        //   - BYOK: previous click landed a DRAFT row that's awaiting creds.
-        //   - Managed: previous click already allocated from the pool and
-        //              the row is ACTIVE. Without the second clause we'd
-        //              create a second managed agent + burn another pool
-        //              slot on each re-POST.
-        // Prefer the draft if present (re-resume the wizard); otherwise pick
-        // up the latest active row so we route to Done without provisioning.
+        // Re-click protection. If the user double-submits, pick up the
+        // already-created agent rather than burning another pool slot.
+        // Looks for DRAFT-or-ACTIVE because managed signups land ACTIVE
+        // immediately; a previous click would have provisioned already.
         $existing = $team->agents()
             ->whereIn('status', [Agent::STATUS_DRAFT, Agent::STATUS_ACTIVE])
             ->latest()
             ->first();
-        $agent = $existing ?: (new CreateAgent())->execute($team, $data['name'] ?? 'Default agent');
+        $existing ?: (new CreateAgent())->execute($team, $data['name'] ?? 'Default agent');
 
-        // Managed mode: CreateAgent already provisioned from the pool and
-        // marked the agent active. Skip step 2 (no credentials to paste).
-        if ($agent->isManaged()) {
-            return redirect()->route('onboarding.done');
-        }
-
-        return redirect()->route('onboarding.connect');
-    }
-
-    /**
-     * Step 2 — paste DM key + project ID. The form posts here; we run the
-     * health probe (via UpdateAgentCredentials) and either land the user on
-     * Done or render the same page with the failure reason.
-     */
-    public function connect(Request $request): Response|RedirectResponse
-    {
-        $state = OnboardingState::for($request->user());
-
-        // Step 2 only makes sense once an agent row exists.
-        if (in_array($state, [OnboardingState::NeedsTeam, OnboardingState::NeedsAgent], true)) {
-            return redirect()->route($state->nextRoute());
-        }
-
-        if ($state === OnboardingState::Complete) {
-            return redirect()->route('onboarding.done');
-        }
-
-        $agent = $this->draftAgent($request);
-
-        return Inertia::render('Onboarding/Connect', [
-            'agent' => [
-                'id' => $agent->id,
-                'name' => $agent->name,
-                'voiceflow_project_id' => $agent->voiceflow_project_id,
-                'voiceflow_environment' => $agent->voiceflow_environment,
-                'has_api_key' => ! empty($agent->voiceflow_api_key),
-                'last_health_ok' => (bool) $agent->last_health_ok,
-                'webhook_url' => route('voiceflow.webhook', $agent),
-                'webhook_secret' => $agent->webhook_secret,
-            ],
-        ]);
-    }
-
-    public function saveCredentials(Request $request): RedirectResponse
-    {
-        $data = $request->validate(self::credentialRules(required: true), self::credentialMessages());
-
-        $agent = $this->draftAgent($request);
-
-        ['agent' => $updated, 'health' => $health] = (new UpdateAgentCredentials())->execute($agent, $data);
-
-        if (! ($health['ok'] ?? false)) {
-            // Stay on Connect with the failure surfaced via session flash.
-            return back()->withErrors([
-                'voiceflow_api_key' => $health['reason'] ?? 'Voiceflow rejected those credentials.',
-            ]);
-        }
-
-        // Health passed → action transitioned the agent to ACTIVE.
-        // Make sure it's the team's current_agent_id (CreateAgent already
-        // did this for first-agent teams; this is a safety net for users
-        // adding a second agent through the same wizard).
-        $request->user()->currentTeam->forceFill(['current_agent_id' => $updated->id])->save();
-
+        // Managed signups are activated atomically by CreateAgent — no
+        // credential-paste step. Go straight to Done.
         return redirect()->route('onboarding.done');
     }
 
@@ -148,10 +81,13 @@ class OnboardingController extends Controller
     }
 
     /**
-     * Voiceflow credential validation, shared between this controller and
-     * AgentController so the wizard and the settings page enforce identical
-     * formats. Strict regexes catch the "I pasted my email by accident" class
-     * of error before we even round-trip Voiceflow.
+     * Voiceflow credential validation, shared with AgentController so the
+     * (now ops-only) BYOK path enforces identical formats. Strict regexes
+     * catch the "I pasted my email by accident" class of error before we
+     * even round-trip Voiceflow.
+     *
+     * Kept public + static even though the only call site is the dormant
+     * BYOK update path — ops calls it from tinker.
      *
      * @return array<string, array<int, string>>
      */
@@ -181,30 +117,15 @@ class OnboardingController extends Controller
     }
 
     /**
-     * The team's most-recent draft agent. The wizard creates one in step 1
-     * and we keep reusing it through step 2.
-     */
-    protected function draftAgent(Request $request): Agent
-    {
-        $team = $request->user()->currentTeam;
-        $agent = $team->agents()->where('status', Agent::STATUS_DRAFT)->latest()->first();
-
-        abort_if($agent === null, 404, 'No draft agent — restart onboarding from step 1.');
-
-        return $agent;
-    }
-
-    /**
-     * If the user lands on step N but OnboardingState says they belong further
-     * along, bounce them forward. Idempotent — refreshing any wizard URL
-     * always lands on the right step.
+     * If the user lands on Intro but OnboardingState says they belong
+     * further along, bounce forward. Refreshing any wizard URL always
+     * lands on the right step.
      */
     protected function jumpIfFurtherAlong(Request $request): ?RedirectResponse
     {
         $state = OnboardingState::for($request->user());
 
         return match ($state) {
-            OnboardingState::NeedsCredentials, OnboardingState::NeedsHealthCheck => redirect()->route('onboarding.connect'),
             OnboardingState::Complete => redirect()->route('onboarding.done'),
             default => null,
         };

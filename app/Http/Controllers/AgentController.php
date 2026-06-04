@@ -49,7 +49,10 @@ class AgentController extends Controller
             // configure that on the master template ourselves, so the URL
             // is an implementation detail (and surfacing it would invite
             // the user to misconfigure something they don't own).
-            'webhook_url' => $agent->isManaged() ? null : route('voiceflow.webhook', $agent),
+            // Phase 14: always null now that BYOK left the product surface;
+            // kept the field shape so Vue's `webhook_url` prop binding
+            // doesn't need a follow-up change.
+            'webhook_url' => null,
             'is_current' => $request->user()->currentTeam->current_agent_id === $agent->id,
         ]);
     }
@@ -70,48 +73,26 @@ class AgentController extends Controller
     }
 
     /**
-     * Update name + credentials. The action also runs a health probe and
-     * activates the agent if the probe passes — so this is the only path
-     * users have to take a draft agent into active state from the UI.
+     * Update agent name. Credentials are no longer user-editable — Phase 14
+     * removed BYOK from the product surface, so all user-flow agents are
+     * managed (credentials minted by the pool, never touched by the user).
+     *
+     * The endpoint ONLY validates `name`. Any credential field in the
+     * payload is silently dropped — a clever curl can't sneak credential
+     * writes regardless of the agent's mode. If ops wires a BYOK agent
+     * for a Custom-tier customer, ops updates credentials via tinker
+     * (the UpdateAgentCredentials action is still importable).
      */
     public function update(Request $request, Agent $agent): RedirectResponse
     {
         $this->authorize($request, $agent);
 
-        // Managed agents have no user-editable credentials — the keys live in
-        // .env and the env id was minted by us on signup. Only the display
-        // name is editable. Anything else in the payload is silently dropped
-        // (no error, just no-op) so a clever curl can't sneak credential
-        // writes into a managed row.
-        if ($agent->isManaged()) {
-            $data = $request->validate([
-                'name' => ['sometimes', 'required', 'string', 'max:255'],
-            ]);
-
-            if (array_key_exists('name', $data)) {
-                $agent->update(['name' => $data['name']]);
-            }
-
-            return back();
-        }
-
-        $data = $request->validate(
-            array_merge(
-                ['name' => ['sometimes', 'required', 'string', 'max:255']],
-                OnboardingController::credentialRules(required: false),
-            ),
-            OnboardingController::credentialMessages(),
-        );
+        $data = $request->validate([
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+        ]);
 
         if (array_key_exists('name', $data)) {
             $agent->update(['name' => $data['name']]);
-        }
-
-        $credentialKeys = ['voiceflow_api_key', 'voiceflow_project_id', 'voiceflow_environment', 'voiceflow_workspace_api_key'];
-        $hasCredentialChange = array_intersect_key($data, array_flip($credentialKeys));
-
-        if ($hasCredentialChange) {
-            (new UpdateAgentCredentials())->execute($agent, $data);
         }
 
         return back();
@@ -205,12 +186,15 @@ class AgentController extends Controller
      */
     protected function presentForSettings(Agent $agent): array
     {
-        // Mode-dependent projection. Managed agents hide every Voiceflow
-        // credential field + the webhook URL/secret — the user neither set
-        // those values nor needs to touch them (we configured the Voiceflow
-        // Custom Action in the master template). Surfacing them would be
-        // confusing at best and a security smell at worst.
-        $base = [
+        // Phase 14: BYOK is gone from the product surface, so the settings
+        // page only ever renders the managed projection. Credential fields
+        // + webhook URL/secret are intentionally absent — the user neither
+        // set them nor needs to touch them.
+        //
+        // Ops-wired BYOK agents (Custom-tier one-offs) get the same
+        // projection here; their credentials are administered out-of-band
+        // via tinker, not via the UI.
+        return [
             'id' => $agent->id,
             'name' => $agent->name,
             'slug' => $agent->slug,
@@ -219,20 +203,5 @@ class AgentController extends Controller
             'last_health_check_at' => optional($agent->last_health_check_at)->toIso8601String(),
             'last_health_ok' => (bool) $agent->last_health_ok,
         ];
-
-        if ($agent->isManaged()) {
-            return $base;
-        }
-
-        // BYOK only — explicit credential surface (the $hidden list on the
-        // model blocks these from default serialisation; this is the one
-        // sanctioned escape hatch).
-        return array_merge($base, [
-            'voiceflow_project_id' => $agent->voiceflow_project_id,
-            'voiceflow_environment' => $agent->voiceflow_environment,
-            'has_api_key' => ! empty($agent->voiceflow_api_key),
-            'has_workspace_api_key' => ! empty($agent->voiceflow_workspace_api_key),
-            'webhook_secret' => $agent->webhook_secret,
-        ]);
     }
 }

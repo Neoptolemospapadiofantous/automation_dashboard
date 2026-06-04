@@ -13,20 +13,21 @@ use App\Models\User;
  * whether a feature should be visible — call OnboardingState::for($user)
  * and switch on the result. No more scattered "if (Agent::count() === 0)".
  *
+ * Phase 14 collapsed the state machine: NeedsCredentials and
+ * NeedsHealthCheck were BYOK-only and unreachable now that the wizard
+ * is one-step managed. The three remaining states cover everything:
+ * no team, team-but-no-agent, or done.
+ *
  * Order matters: each case is "the next thing blocking the user."
  */
 enum OnboardingState: string
 {
     case NeedsTeam = 'needs_team';
     case NeedsAgent = 'needs_agent';
-    case NeedsCredentials = 'needs_credentials';
-    case NeedsHealthCheck = 'needs_health_check';
     case Complete = 'complete';
 
     /**
      * Resolve the user's current onboarding step from DB state.
-     *
-     * Resolution order matters — earlier checks short-circuit.
      */
     public static function for(User $user): self
     {
@@ -36,61 +37,34 @@ enum OnboardingState: string
             return self::NeedsTeam;
         }
 
-        $agent = $team->currentAgent;
+        $agent = $team->currentAgent
+            ?? $team->agents()->latest()->first();
 
         if (! $agent) {
-            // Pick the team's most recent agent if any exists — being on a
-            // team with agents but no current_agent_id just means we need to
-            // set one. Otherwise the user must create one first.
-            $agent = $team->agents()->latest()->first();
-
-            if (! $agent) {
-                return self::NeedsAgent;
-            }
+            return self::NeedsAgent;
         }
 
-        // Active agents are Complete — full stop. status='active' is the
-        // contract for "this is ready to go," set by the state machine on
-        // a passing health check (BYOK) or by CreateAgent::createManaged
-        // immediately after a successful clone (managed). Checking
-        // isConfigured() here was a bug: a managed agent whose
-        // .env-level config drifted (e.g. VOICEFLOW_MASTER_PROJECT_ID
-        // unset) would test as not-configured even when its row says
-        // active, and we'd redirect-loop the user through /onboarding/connect
-        // — which is the BYOK paste-keys form, useless to a managed user.
-        if ($agent->status === Agent::STATUS_ACTIVE) {
-            return self::Complete;
-        }
-
-        // Managed agents are activated atomically at create time. A managed
-        // agent in any non-active state means an admin/system issue (env
-        // misconfig, Voiceflow API down at clone time, manually disabled),
-        // not something the user can fix via the BYOK wizard. Let them
-        // through to the dashboard; surface the problem there.
-        if ($agent->isManaged()) {
-            return self::Complete;
-        }
-
-        // BYOK agent in draft. Has creds → just needs the health check to
-        // pass. No creds → needs the paste-keys form first.
-        if (! $agent->isConfigured()) {
-            return self::NeedsCredentials;
-        }
-
-        return self::NeedsHealthCheck;
+        // Managed signups land ACTIVE atomically (pool allocate + stamp
+        // credentials + status='active' in one CreateAgent call). Anything
+        // less than active = ops/provisioning issue, not something the
+        // user can resolve from a wizard — let them through to the
+        // dashboard, surface the problem there.
+        //
+        // Dormant BYOK agents (ops-wired for Custom-tier customers) are
+        // also treated as Complete: the user can't paste credentials via
+        // the UI anymore, so there's no productive onboarding redirect.
+        return self::Complete;
     }
 
     /**
-     * The route the wizard should send the user to for this step. Returns
-     * null when complete (let the caller decide where "done" goes).
+     * The route the wizard should send the user to for this step.
+     * Returns null when complete (caller picks where "done" goes).
      */
     public function nextRoute(): ?string
     {
         return match ($this) {
             self::NeedsTeam => 'teams.create',
             self::NeedsAgent => 'onboarding.intro',
-            self::NeedsCredentials => 'onboarding.connect',
-            self::NeedsHealthCheck => 'onboarding.connect',
             self::Complete => null,
         };
     }
@@ -107,9 +81,7 @@ enum OnboardingState: string
     {
         return match ($this) {
             self::NeedsTeam => 'Create your team',
-            self::NeedsAgent => 'Create your first agent',
-            self::NeedsCredentials => 'Connect Voiceflow',
-            self::NeedsHealthCheck => 'Verify the connection',
+            self::NeedsAgent => 'Set up your agent',
             self::Complete => 'Ready to chat',
         };
     }

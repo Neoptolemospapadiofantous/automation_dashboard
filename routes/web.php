@@ -31,10 +31,14 @@ Route::middleware([
     // Phase 13 — Agent CRUD + onboarding wizard. Both bypass RequireAgent
     // (the middleware whitelists their route name prefixes) so the user can
     // reach them even when no active agent exists yet.
+    //
+    // Phase 14: BYOK was removed from the product surface — the wizard is
+    // now a single managed-only flow (intro → start → done). The Connect
+    // step (paste keys / saveCredentials) is gone. The controller still
+    // ships the credential-validation rules + UpdateAgentCredentials action
+    // because ops uses them via tinker for one-off Custom-tier BYOK setups.
     Route::get('/onboarding', [OnboardingController::class, 'intro'])->name('onboarding.intro');
     Route::post('/onboarding/start', [OnboardingController::class, 'startAgent'])->name('onboarding.start');
-    Route::get('/onboarding/connect', [OnboardingController::class, 'connect'])->name('onboarding.connect');
-    Route::post('/onboarding/connect', [OnboardingController::class, 'saveCredentials'])->name('onboarding.save');
     Route::get('/onboarding/done', [OnboardingController::class, 'done'])->name('onboarding.done');
 
     Route::get('/agents', [AgentController::class, 'index'])->name('agents.index');

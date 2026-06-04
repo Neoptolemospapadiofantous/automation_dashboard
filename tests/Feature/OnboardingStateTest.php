@@ -23,24 +23,18 @@ class OnboardingStateTest extends TestCase
         $this->assertFalse($state->isComplete());
     }
 
-    public function test_team_with_unconfigured_agent_needs_credentials(): void
+    public function test_team_with_any_agent_is_complete(): void
     {
+        // Phase 14 collapsed the state machine: NeedsCredentials and
+        // NeedsHealthCheck were BYOK-only and are gone. ANY existing agent
+        // (draft, active, with/without creds) resolves to Complete now —
+        // the wizard doesn't run for users who already have an agent row.
+        // Provisioning issues surface as banners on the dashboard, not as
+        // redirect loops through a paste-keys form.
         $user = User::factory()->withPersonalTeam()->create();
         Agent::factory()->unconfigured()->for($user->currentTeam)->create();
 
-        $this->assertSame(OnboardingState::NeedsCredentials, OnboardingState::for($user));
-    }
-
-    public function test_team_with_configured_but_draft_agent_needs_health_check(): void
-    {
-        $user = User::factory()->withPersonalTeam()->create();
-        Agent::factory()->draft()->for($user->currentTeam)->create([
-            'voiceflow_api_key' => 'VF.DM.k',
-            'voiceflow_project_id' => 'p',
-            'last_health_ok' => false,
-        ]);
-
-        $this->assertSame(OnboardingState::NeedsHealthCheck, OnboardingState::for($user));
+        $this->assertSame(OnboardingState::Complete, OnboardingState::for($user));
     }
 
     public function test_team_with_active_agent_is_complete(): void
