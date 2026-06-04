@@ -15,6 +15,18 @@ namespace App\Billing;
  * fire). Credit grants happen on subscription_created and on each
  * invoice_paid (monthly renewal).
  */
+/**
+ * NOTE on enum case names: cases stayed `free`/`pro`/`business` because the
+ * `teams.plan` column persists the string value — renaming would need a
+ * data migration. The offer was rebranded in the Starter / Operator /
+ * Custom direction (see priceUsd() + label() + features); future Phase H
+ * Stripe wiring can introduce new case names + migration as needed.
+ *
+ * Offer tiers (current):
+ *   - Starter  ($19/mo)  — 1 agent, 1k credits, "try out the product"
+ *   - Operator ($79/mo)  — up to 5 agents, 10k credits, top-ups enabled
+ *   - Custom   (from $6k project) — bespoke agents + n8n ops + integrations
+ */
 enum Plan: string
 {
     case Free = 'free';
@@ -27,8 +39,8 @@ enum Plan: string
     public function monthlyCredits(): int
     {
         return match ($this) {
-            self::Free => 100,
-            self::Pro => 5_000,
+            self::Free => 1_000,
+            self::Pro => 10_000,
             self::Business => 50_000,
         };
     }
@@ -46,12 +58,27 @@ enum Plan: string
     }
 
     /**
+     * Monthly recurring price in USD. Returned as int so display code
+     * can format consistently. Null on Custom — that tier is project-based
+     * (from $6k fixed-scope) rather than recurring SaaS.
+     */
+    public function priceUsd(): ?int
+    {
+        return match ($this) {
+            self::Free => 19,
+            self::Pro => 79,
+            self::Business => null,
+        };
+    }
+
+    /**
      * Whether the plan can buy top-up credit packs when its monthly
-     * allotment runs out. Free is locked to hard cap to push upgrades.
+     * allotment runs out. Starter is locked to hard cap to push upgrades
+     * to Operator; Custom is project-based and handled out-of-band.
      */
     public function allowsTopUps(): bool
     {
-        return $this !== self::Free;
+        return $this === self::Pro;
     }
 
     /**
@@ -62,18 +89,18 @@ enum Plan: string
     public function stripePriceId(): ?string
     {
         return match ($this) {
-            self::Free => null,
-            self::Pro => config('billing.stripe_price.pro'),
-            self::Business => config('billing.stripe_price.business'),
+            self::Free => config('billing.stripe_price.starter'),
+            self::Pro => config('billing.stripe_price.operator'),
+            self::Business => null, // Custom is project-based, not Stripe-priced
         };
     }
 
     public function label(): string
     {
         return match ($this) {
-            self::Free => 'Free',
-            self::Pro => 'Pro',
-            self::Business => 'Business',
+            self::Free => 'Starter',
+            self::Pro => 'Operator',
+            self::Business => 'Custom',
         };
     }
 
