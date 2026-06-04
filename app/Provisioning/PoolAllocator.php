@@ -61,6 +61,10 @@ class PoolAllocator
             ->update([
                 'status' => VoiceflowProjectPoolEntry::STATUS_RETIRED,
                 'assigned_at' => null,
+                // FK constraint nulls this on agent delete, but we run inside
+                // the same transaction as the delete — null explicitly so the
+                // row reflects intent regardless of the delete order.
+                'assigned_to_agent_id' => null,
             ]);
     }
 

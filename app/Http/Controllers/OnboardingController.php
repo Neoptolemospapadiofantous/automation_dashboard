@@ -51,12 +51,22 @@ class OnboardingController extends Controller
 
         $team = $request->user()->currentTeam;
 
-        // Don't create a second draft if the user re-clicks Continue.
-        $existing = $team->agents()->where('status', Agent::STATUS_DRAFT)->latest()->first();
+        // Re-click protection. Two scenarios for "agent already exists":
+        //   - BYOK: previous click landed a DRAFT row that's awaiting creds.
+        //   - Managed: previous click already allocated from the pool and
+        //              the row is ACTIVE. Without the second clause we'd
+        //              create a second managed agent + burn another pool
+        //              slot on each re-POST.
+        // Prefer the draft if present (re-resume the wizard); otherwise pick
+        // up the latest active row so we route to Done without provisioning.
+        $existing = $team->agents()
+            ->whereIn('status', [Agent::STATUS_DRAFT, Agent::STATUS_ACTIVE])
+            ->latest()
+            ->first();
         $agent = $existing ?: (new CreateAgent())->execute($team, $data['name'] ?? 'Default agent');
 
-        // Managed mode: CreateAgent already cloned an env and marked active.
-        // Skip step 2 (no credentials to paste) and land on Done.
+        // Managed mode: CreateAgent already provisioned from the pool and
+        // marked the agent active. Skip step 2 (no credentials to paste).
         if ($agent->isManaged()) {
             return redirect()->route('onboarding.done');
         }

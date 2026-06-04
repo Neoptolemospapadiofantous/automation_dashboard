@@ -380,6 +380,16 @@ const handleMobileNavClick = (event) => {
                                 <span class="flex-1 truncate">{{ agent.name }}</span>
                             </button>
                         </template>
+                        <!-- Mirror the desktop dropdown's "+ New agent" shortcut.
+                             Lands on agents.index (NOT onboarding.intro — that
+                             wizard is for the team's first agent only). -->
+                        <Link
+                            :href="route('agents.index')"
+                            class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-gray-600 hover:bg-gray-50"
+                        >
+                            <span class="size-4" />
+                            <span class="flex-1">+ New agent</span>
+                        </Link>
                     </div>
 
                     <nav class="flex-1 space-y-5 overflow-y-auto px-3 py-4" @click="handleMobileNavClick">
