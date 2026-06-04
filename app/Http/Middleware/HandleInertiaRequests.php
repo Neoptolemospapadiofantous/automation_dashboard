@@ -72,27 +72,54 @@ class HandleInertiaRequests extends Middleware
                     ->values()
                 : [],
 
-            // Billing snapshot for the credit pill in the sidebar. Cheap —
-            // already cached on the team row, no extra query.
+            // Billing snapshot for the credit pill in the sidebar.
             //
-            // Custom plan exposes `is_custom: true` and credits_total = null
-            // because Custom credits aren't a fixed monthly grant; they're
-            // negotiated per engagement. UI checks is_custom to show
-            // "Custom · X credits remaining" instead of "X / Y used".
+            // credits_total = monthly allotment + top-ups granted in the
+            // current billing period (since the last grant_monthly_renewal).
+            // Without that addition the bar reads "0 / 1,000 used · 1,100
+            // remaining" the moment anyone tops up — the denominator stays
+            // pinned to the plan's monthly while the balance overshoots it.
+            //
+            // Custom plan exposes is_custom: true + credits_total: null.
+            // Credits are negotiated per engagement, no fixed period grant.
             'billing' => fn () => $request->user()?->currentTeam
                 ? (function () use ($request) {
                     $team = $request->user()->currentTeam;
                     $plan = $team->planObject();
                     $isCustom = $plan === \App\Billing\Plan::Business;
 
+                    if ($isCustom) {
+                        return [
+                            'plan' => $plan->value,
+                            'plan_label' => $plan->label(),
+                            'is_custom' => true,
+                            'credits_used' => null,
+                            'credits_total' => null,
+                            'credits_remaining' => $team->credit_balance,
+                            'max_agents' => $plan->maxAgents(),
+                            'agents_count' => $team->agents()->count(),
+                            'allows_topups' => $plan->allowsTopUps(),
+                        ];
+                    }
+
+                    // Sum of top-up grants since the last renewal. Falls back
+                    // to "all time" when credits_renewed_at hasn't been set
+                    // yet (fresh teams pre-first-renewal). Single COUNT-style
+                    // query per request — cheap.
+                    $topupsThisPeriod = (int) \App\Models\CreditTransaction::query()
+                        ->where('team_id', $team->id)
+                        ->where('reason', \App\Models\CreditTransaction::REASON_GRANT_TOPUP)
+                        ->when($team->credits_renewed_at, fn ($q) => $q->where('created_at', '>=', $team->credits_renewed_at))
+                        ->sum('amount');
+
+                    $totalGranted = $plan->monthlyCredits() + $topupsThisPeriod;
+
                     return [
                         'plan' => $plan->value,
                         'plan_label' => $plan->label(),
-                        'is_custom' => $isCustom,
-                        'credits_used' => $isCustom
-                            ? null
-                            : max(0, $plan->monthlyCredits() - $team->credit_balance),
-                        'credits_total' => $isCustom ? null : $plan->monthlyCredits(),
+                        'is_custom' => false,
+                        'credits_used' => max(0, $totalGranted - $team->credit_balance),
+                        'credits_total' => $totalGranted,
                         'credits_remaining' => $team->credit_balance,
                         'max_agents' => $plan->maxAgents(),
                         'agents_count' => $team->agents()->count(),
