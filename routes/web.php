@@ -98,5 +98,12 @@ Route::middleware([
     // Phase 12 Knowledge Base (Voiceflow KB API).
     Route::get('/knowledge', [KnowledgeBaseController::class, 'index'])->name('knowledge.index');
     Route::post('/knowledge/url', [KnowledgeBaseController::class, 'storeUrl'])->name('knowledge.url');
+    Route::post('/knowledge/file', [KnowledgeBaseController::class, 'storeFile'])->name('knowledge.file');
     Route::post('/knowledge/query', [KnowledgeBaseController::class, 'query'])->name('knowledge.query');
+    Route::get('/knowledge/{documentID}', [KnowledgeBaseController::class, 'show'])
+        ->where('documentID', '[A-Za-z0-9_\-]+')
+        ->name('knowledge.show');
+    Route::delete('/knowledge/{documentID}', [KnowledgeBaseController::class, 'destroy'])
+        ->where('documentID', '[A-Za-z0-9_\-]+')
+        ->name('knowledge.destroy');
 });

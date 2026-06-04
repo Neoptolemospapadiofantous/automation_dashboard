@@ -396,16 +396,19 @@ class VoiceflowService
     /**
      * List knowledge base documents (most recently updated first).
      *
+     * @param  string|null  $documentType  Filter to a single Voiceflow type:
+     *   url, pdf, text, docx, md, csv, xlsx, table.
      * @return array{total: int, data: array<int, array<string, mixed>>}
      */
-    public function listKbDocuments(int $page = 1, int $limit = 20): array
+    public function listKbDocuments(int $page = 1, int $limit = 20, ?string $documentType = null): array
     {
         $response = $this->realtimeClient()
-            ->get('/v1alpha1/public/knowledge-base/document', [
+            ->get('/v1alpha1/public/knowledge-base/document', array_filter([
                 'page' => $page,
                 'limit' => $limit,
+                'documentType' => $documentType,
                 'projectEnvironmentIDOrAlias' => $this->environment,
-            ]);
+            ], fn ($v) => $v !== null && $v !== ''));
 
         $response->throw();
 
@@ -437,6 +440,70 @@ class VoiceflowService
         $response->throw();
 
         return $response->json('data') ?? [];
+    }
+
+    /**
+     * Upload a file as a knowledge base document. Voiceflow detects the type
+     * from the filename + content (PDF / DOCX / TXT / MD / CSV / XLSX).
+     * Hard cap per Voiceflow docs: 10 MB.
+     *
+     * Used by KnowledgeBaseController::storeFile after the controller has
+     * stashed the upload to a temp path. We pass the path + intended name
+     * separately so the operator-visible name stays the original upload
+     * filename even if the tempfile is mangled.
+     *
+     * @return array<string, mixed> The created document payload.
+     */
+    public function createKbFileDocument(string $filePath, string $name): array
+    {
+        $response = $this->realtimeClient()
+            ->asMultipart()
+            ->attach('file', file_get_contents($filePath), $name)
+            ->post('/v1alpha1/public/knowledge-base/document', array_filter([
+                'projectEnvironmentIDOrAlias' => $this->environment,
+            ], fn ($v) => $v !== null && $v !== ''));
+
+        $response->throw();
+
+        return $response->json('data') ?? [];
+    }
+
+    /**
+     * Fetch one document including its chunks and metadata. Used by the
+     * KB UI's "view" affordance so users can inspect what was actually
+     * scraped/parsed before trusting the answer the agent gives.
+     *
+     * @return array{data: array<string, mixed>, chunks: array<int, array<string, mixed>>, metadata: array<int, array<string, mixed>>}
+     */
+    public function getKbDocument(string $documentID): array
+    {
+        $response = $this->realtimeClient()
+            ->get('/v1alpha1/public/knowledge-base/document/'.urlencode($documentID), array_filter([
+                'projectEnvironmentIDOrAlias' => $this->environment,
+            ], fn ($v) => $v !== null && $v !== ''));
+
+        $response->throw();
+
+        $json = $response->json();
+
+        return [
+            'data' => is_array($json['data'] ?? null) ? $json['data'] : [],
+            'chunks' => is_array($json['chunks'] ?? null) ? $json['chunks'] : [],
+            'metadata' => is_array($json['metadata'] ?? null) ? $json['metadata'] : [],
+        ];
+    }
+
+    /**
+     * Delete a document from the agent's KB.
+     */
+    public function deleteKbDocument(string $documentID): void
+    {
+        $response = $this->realtimeClient()
+            ->delete('/v1alpha1/public/knowledge-base/document/'.urlencode($documentID), array_filter([
+                'projectEnvironmentIDOrAlias' => $this->environment,
+            ], fn ($v) => $v !== null && $v !== ''));
+
+        $response->throw();
     }
 
     /**

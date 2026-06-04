@@ -97,4 +97,127 @@ class KnowledgeBaseTest extends TestCase
             ->postJson(route('knowledge.query'), ['question' => 'hi'])
             ->assertStatus(503);
     }
+
+    public function test_index_shares_current_agent_so_ui_can_scope_copy(): void
+    {
+        // The UI relies on `agent.name` to caption the page ("Documents
+        // belong to <name>"). Without this share, switching agents in the
+        // picker wouldn't surface in the KB header even though the docs
+        // themselves change.
+        Http::fake(['*' => Http::response(['total' => 0, 'data' => []])]);
+
+        $user = $this->user();
+        $agent = \App\Models\Agent::factory()->for($user->currentTeam)->create([
+            'name' => 'Sales bot',
+            'status' => \App\Models\Agent::STATUS_ACTIVE,
+        ]);
+        $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
+
+        $this->actingAs($user->fresh())->get(route('knowledge.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('agent.name', 'Sales bot')
+                ->where('agent.id', $agent->id)
+            );
+    }
+
+    public function test_index_accepts_type_filter_and_forwards_to_voiceflow(): void
+    {
+        Http::fake([
+            'realtime-api.voiceflow.com/v1alpha1/public/knowledge-base/document*' => Http::response([
+                'total' => 0, 'data' => [],
+            ]),
+        ]);
+
+        $this->actingAs($this->user())->get(route('knowledge.index', ['type' => 'pdf']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('filter.type', 'pdf'));
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'documentType=pdf'));
+    }
+
+    public function test_index_rejects_unknown_type_filter(): void
+    {
+        // The whitelist (accepted_types) is the contract — anything outside
+        // it fails validation, not silently passes through to Voiceflow.
+        Http::fake();
+
+        $this->actingAs($this->user())->get(route('knowledge.index', ['type' => 'wat']))
+            ->assertSessionHasErrors('type');
+    }
+
+    public function test_show_returns_document_with_chunks(): void
+    {
+        Http::fake([
+            'realtime-api.voiceflow.com/v1alpha1/public/knowledge-base/document/doc-99*' => Http::response([
+                'data' => ['documentID' => 'doc-99', 'data' => ['type' => 'pdf', 'name' => 'manual.pdf']],
+                'chunks' => [
+                    ['chunkID' => 'c1', 'content' => 'Section one body', 'metadata' => []],
+                    ['chunkID' => 'c2', 'content' => 'Section two body', 'metadata' => []],
+                ],
+                'metadata' => [],
+            ]),
+        ]);
+
+        $this->actingAs($this->user())
+            ->getJson(route('knowledge.show', 'doc-99'))
+            ->assertOk()
+            ->assertJsonPath('data.documentID', 'doc-99')
+            ->assertJsonCount(2, 'chunks');
+    }
+
+    public function test_destroy_deletes_document(): void
+    {
+        Http::fake([
+            'realtime-api.voiceflow.com/v1alpha1/public/knowledge-base/document/doc-42*' => Http::response([], 200),
+        ]);
+
+        $this->actingAs($this->user())
+            ->delete(route('knowledge.destroy', 'doc-42'))
+            ->assertRedirect();
+
+        Http::assertSent(fn ($request) => $request->method() === 'DELETE'
+            && str_contains($request->url(), '/v1alpha1/public/knowledge-base/document/doc-42'));
+    }
+
+    public function test_store_file_uploads_to_voiceflow(): void
+    {
+        Http::fake([
+            'realtime-api.voiceflow.com/v1alpha1/public/knowledge-base/document' => Http::response([
+                'data' => ['documentID' => 'doc-new', 'status' => ['type' => 'PENDING']],
+            ], 201),
+        ]);
+
+        $file = \Illuminate\Http\Testing\File::fake()->createWithContent('handbook.pdf', '%PDF-1.4 fake');
+
+        $this->actingAs($this->user())
+            ->post(route('knowledge.file'), ['file' => $file])
+            ->assertRedirect();
+
+        // Multipart bodies don't expose JSON keys via $request[]; check that
+        // a POST hit the right path. Service-level upload mechanics covered
+        // by integration with Voiceflow live.
+        Http::assertSent(fn ($request) => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/v1alpha1/public/knowledge-base/document'));
+    }
+
+    public function test_store_file_rejects_unsupported_mime(): void
+    {
+        $file = \Illuminate\Http\Testing\File::fake()->createWithContent('photo.jpg', "\xFF\xD8\xFF\xE0 jpeg");
+
+        $this->actingAs($this->user())
+            ->post(route('knowledge.file'), ['file' => $file])
+            ->assertSessionHasErrors('file');
+    }
+
+    public function test_store_file_rejects_oversize_upload(): void
+    {
+        // 11 MB — over the 10 MB ceiling. Laravel validation catches before
+        // we open a stream to Voiceflow.
+        $file = \Illuminate\Http\Testing\File::fake()->create('huge.pdf', 11 * 1024, 'application/pdf');
+
+        $this->actingAs($this->user())
+            ->post(route('knowledge.file'), ['file' => $file])
+            ->assertSessionHasErrors('file');
+    }
 }
