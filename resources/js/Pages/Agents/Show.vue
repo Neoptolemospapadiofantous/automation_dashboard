@@ -1,5 +1,6 @@
 <script setup>
-import { router, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -17,6 +18,18 @@ const props = defineProps({
      */
     webhook_url: { type: String, default: null },
     is_current: { type: Boolean, default: false },
+    activity: { type: Object, default: () => ({ leads: 0, leads_qualified: 0, conversations: 0, messages: 0, last_message_at: null }) },
+});
+
+const lastActivityLabel = computed(() => {
+    if (!props.activity?.last_message_at) return 'No activity yet';
+    const diffMs = Date.now() - new Date(props.activity.last_message_at).getTime();
+    const min = Math.floor(diffMs / 60_000);
+    if (min < 1) return 'Active just now';
+    if (min < 60) return `Last activity ${min} min ago`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `Last activity ${hr} h ago`;
+    return `Last activity ${Math.floor(hr / 24)} d ago`;
 });
 
 // Phase 14: the settings page is managed-view only. BYOK was removed
@@ -58,6 +71,39 @@ function destroy() {
 
         <div class="py-8">
             <div class="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
+                <!-- Activity counters: pulse-check + cross-links to the
+                     relevant lists. Counters are click-throughs so the
+                     operator can pivot from "what's going on" to "show me." -->
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <Link
+                        :href="route('leads.index')"
+                        class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5 transition hover:ring-indigo-200"
+                    >
+                        <div class="text-xs uppercase tracking-wide text-gray-400">Leads</div>
+                        <div class="mt-1 flex items-baseline gap-1.5">
+                            <span class="text-2xl font-semibold text-gray-900">{{ activity.leads.toLocaleString() }}</span>
+                            <span v-if="activity.leads_qualified" class="text-xs text-green-700">· {{ activity.leads_qualified }} qualified</span>
+                        </div>
+                    </Link>
+                    <Link
+                        :href="route('conversations.index')"
+                        class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5 transition hover:ring-indigo-200"
+                    >
+                        <div class="text-xs uppercase tracking-wide text-gray-400">Conversations</div>
+                        <div class="mt-1 text-2xl font-semibold text-gray-900">{{ activity.conversations.toLocaleString() }}</div>
+                    </Link>
+                    <div class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5">
+                        <div class="text-xs uppercase tracking-wide text-gray-400">Messages</div>
+                        <div class="mt-1 text-2xl font-semibold text-gray-900">{{ activity.messages.toLocaleString() }}</div>
+                    </div>
+                    <div class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5">
+                        <div class="text-xs uppercase tracking-wide text-gray-400">Pulse</div>
+                        <div class="mt-1 text-sm font-medium" :class="activity.last_message_at ? 'text-gray-900' : 'text-gray-400'">
+                            {{ lastActivityLabel }}
+                        </div>
+                    </div>
+                </div>
+
                 <form class="rounded-xl bg-white p-6 shadow ring-1 ring-black/5" @submit.prevent="save">
                     <h3 class="text-base font-semibold text-gray-800">Agent details</h3>
                     <p class="mt-1 text-sm text-gray-500">

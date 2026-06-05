@@ -8,6 +8,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 
 defineProps({
     conversations: { type: Object, required: true },
+    filter_lead: { type: Object, default: null },
 });
 
 const q = ref('');
@@ -25,6 +26,20 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
 
         <div class="py-8">
             <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+                <!-- Cross-link filter banner — landed here via a LeadCard's
+                     conversation-count chip. Clear button strips ?lead_id
+                     and returns to the full list. -->
+                <div v-if="filter_lead" class="mb-4 flex items-center justify-between gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+                    <div>
+                        Showing conversations for
+                        <Link :href="route('leads.index')" class="font-semibold underline">{{ filter_lead.name }}</Link>
+                        <span v-if="filter_lead.email" class="text-indigo-700"> · {{ filter_lead.email }}</span>
+                    </div>
+                    <Link :href="route('conversations.index')" class="text-xs font-medium text-indigo-700 underline hover:text-indigo-900">
+                        Clear filter ✕
+                    </Link>
+                </div>
+
                 <form class="mb-6 flex gap-2" @submit.prevent="search">
                     <TextInput v-model="q" type="search" class="flex-1" placeholder="Search all conversations…" />
                     <PrimaryButton>Search</PrimaryButton>

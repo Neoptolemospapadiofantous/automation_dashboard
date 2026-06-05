@@ -42,8 +42,22 @@ class AgentController extends Controller
     {
         $this->authorize($request, $agent);
 
+        // Per-agent activity counters — proves the agent is doing work AND
+        // gives the operator a quick pulse. Cheap: each is one indexed
+        // count on agent_id. Last-activity timestamp short-circuits "is
+        // this agent dead?" questions without the operator having to dig
+        // into Conversations.
+        $activity = [
+            'leads' => $agent->leads()->count(),
+            'leads_qualified' => $agent->leads()->where('status', 'qualified')->count(),
+            'conversations' => $agent->conversations()->count(),
+            'messages' => $agent->messages()->count(),
+            'last_message_at' => $agent->messages()->latest('sent_at')->value('sent_at')?->toIso8601String(),
+        ];
+
         return Inertia::render('Agents/Show', [
             'agent' => $this->presentForSettings($agent),
+            'activity' => $activity,
             // Webhook URL only matters for BYOK — the user has to paste it
             // into their own Voiceflow Custom Action. In managed mode we
             // configure that on the master template ourselves, so the URL

@@ -30,11 +30,16 @@ class LeadController extends Controller
         // Phase G: scope by the team's current agent so the picker swaps
         // data. forAgent(null) returns no rows — a team mid-onboarding
         // gets bounced to the wizard before reaching this page anyway.
+        // withCount('conversations') powers the conversation-count chip on
+        // LeadCard so users can jump from a lead to its transcripts in one
+        // click. Single subquery per row — cheap with the conversations
+        // table's lead_id index.
         $leads = Lead::query()
             ->where('team_id', $team->id)
             ->forAgent($team->current_agent_id)
             ->when($mine, fn ($q) => $q->where('assigned_to', $request->user()->id))
             ->with('assignee:id,name')
+            ->withCount('conversations')
             ->latest()
             ->get();
 

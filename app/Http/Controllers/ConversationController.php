@@ -18,11 +18,24 @@ class ConversationController extends Controller
     {
         $team = $request->user()->currentTeam;
 
+        // Optional cross-link filter: LeadCard "View conversations" chip
+        // links here with ?lead_id=N. Validate the lead belongs to the
+        // current team + agent (no cross-tenant peek via URL guessing).
+        $leadFilter = null;
+        if ($request->filled('lead_id')) {
+            $leadFilter = \App\Models\Lead::query()
+                ->where('team_id', $team->id)
+                ->forAgent($team->current_agent_id)
+                ->find($request->integer('lead_id'));
+            abort_if($leadFilter === null, 404, 'Lead not found in this team.');
+        }
+
         // Phase G: agent-scoped so switching agents swaps the conversation
         // list. forAgent(null) returns no rows (no current agent = nothing to show).
         $conversations = Conversation::query()
             ->where('team_id', $team->id)
             ->forAgent($team->current_agent_id)
+            ->when($leadFilter, fn ($q) => $q->where('lead_id', $leadFilter->id))
             ->with('lead:id,name,email')
             ->orderByDesc('last_message_at')
             ->paginate(20)
@@ -30,6 +43,11 @@ class ConversationController extends Controller
 
         return Inertia::render('Conversations/Index', [
             'conversations' => $conversations,
+            'filter_lead' => $leadFilter ? [
+                'id' => $leadFilter->id,
+                'name' => $leadFilter->name,
+                'email' => $leadFilter->email,
+            ] : null,
         ]);
     }
 

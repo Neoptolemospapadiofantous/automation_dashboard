@@ -1,4 +1,6 @@
 <script setup>
+import { Link } from '@inertiajs/vue3';
+
 const props = defineProps({
     lead: { type: Object, required: true },
     members: { type: Array, default: () => [] },
@@ -44,9 +46,22 @@ function onAssignChange(e) {
         <p v-if="lead.email" class="mt-1 truncate text-xs text-gray-500">{{ lead.email }}</p>
 
         <div class="mt-2 flex items-center justify-between">
-            <span class="rounded bg-gray-50 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-gray-400">
-                {{ lead.source }}
-            </span>
+            <div class="flex items-center gap-1.5">
+                <span class="rounded bg-gray-50 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-gray-400">
+                    {{ lead.source }}
+                </span>
+                <Link
+                    v-if="lead.conversations_count"
+                    :href="route('conversations.index', { lead_id: lead.id })"
+                    class="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 hover:bg-indigo-100"
+                    :title="`View ${lead.conversations_count} conversation${lead.conversations_count === 1 ? '' : 's'}`"
+                    @click.stop
+                    @mousedown.stop
+                    @dragstart.prevent
+                >
+                    💬 {{ lead.conversations_count }}
+                </Link>
+            </div>
             <button
                 type="button"
                 class="text-xs text-gray-300 opacity-0 transition hover:text-rose-500 group-hover:opacity-100"

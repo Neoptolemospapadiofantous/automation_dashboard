@@ -1,4 +1,5 @@
 <script setup>
+import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 
@@ -19,7 +20,25 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '');
             ]"
             :title="conversation.lead?.name || conversation.voiceflow_user_id"
             :description="`Started ${fmt(conversation.started_at)} · ${conversation.message_count} messages`"
-        />
+        >
+            <template v-if="conversation.lead" #actions>
+                <!-- Cross-link to the lead's other conversations + back to
+                     the kanban. Lets the operator pivot from a single
+                     transcript to the lead's full footprint in one click. -->
+                <Link
+                    :href="route('conversations.index', { lead_id: conversation.lead.id })"
+                    class="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                >
+                    💬 All conversations with {{ conversation.lead.name }}
+                </Link>
+                <Link
+                    :href="route('leads.index')"
+                    class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                >
+                    → View on board
+                </Link>
+            </template>
+        </PageHeader>
 
         <div class="py-8">
             <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
