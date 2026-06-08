@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Lifecycle\OnboardingState;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -57,7 +58,7 @@ class RequireAgent
 
         // No route to bounce to (e.g. NeedsTeam without a teams.create route
         // wired) → let the request through rather than infinite-loop.
-        if ($target === null || ! \Illuminate\Support\Facades\Route::has($target)) {
+        if ($target === null || ! Route::has($target)) {
             return $next($request);
         }
 

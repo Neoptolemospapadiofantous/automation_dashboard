@@ -17,7 +17,9 @@ class VoiceflowProjectPoolEntry extends Model
     use HasFactory;
 
     public const STATUS_AVAILABLE = 'available';
+
     public const STATUS_ASSIGNED = 'assigned';
+
     public const STATUS_RETIRED = 'retired';
 
     protected $table = 'voiceflow_project_pool';

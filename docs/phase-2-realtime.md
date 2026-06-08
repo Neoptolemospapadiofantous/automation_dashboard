@@ -42,4 +42,4 @@ app runs fine.
 
 ## Next
 
-Phase 3 broadcasts real domain events (leads) over this same pipeline.
+[[phase-3-leads|Phase 3 broadcasts real domain events (leads) over this same pipeline.]]

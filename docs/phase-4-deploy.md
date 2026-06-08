@@ -32,7 +32,7 @@ bin/deploy.sh --status        # poll Forge for the deploy result
 ## One-time setup
 
 1. Paste `deploy/forge-deploy.sh` into the Forge site's **Deploy Script** box;
-   set the site's Git branch; add a queue worker daemon (live broadcasts need
+   set the site's Git branch; add a queue worker daemon ([[phase-2-realtime|live broadcasts]] need
    it).
 2. `cp .forge-deploy.example .forge-deploy` and paste the site's **Deploy Hook**
    URL (Forge → Site → Apps → "Deploy Hook"). Or export `FORGE_DEPLOY_HOOK`.

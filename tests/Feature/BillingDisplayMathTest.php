@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Billing\CreditMeter;
+use App\Billing\Exceptions\OutOfCredits;
 use App\Billing\Plan;
 use App\Billing\TopUpPack;
 use App\Models\CreditTransaction;
@@ -316,7 +318,7 @@ class BillingDisplayMathTest extends TestCase
             'credits_renewed_at' => now()->subDays(1),
         ])->save();
 
-        $this->expectException(\App\Billing\Exceptions\OutOfCredits::class);
-        (new \App\Billing\CreditMeter())->consume($team, 1);
+        $this->expectException(OutOfCredits::class);
+        (new CreditMeter)->consume($team, 1);
     }
 }

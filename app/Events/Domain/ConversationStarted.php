@@ -9,7 +9,5 @@ class ConversationStarted
 {
     use Dispatchable;
 
-    public function __construct(public readonly Conversation $conversation)
-    {
-    }
+    public function __construct(public readonly Conversation $conversation) {}
 }

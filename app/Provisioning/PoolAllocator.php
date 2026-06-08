@@ -37,7 +37,7 @@ class PoolAllocator
                 ->first();
 
             if (! $entry) {
-                throw new PoolExhausted();
+                throw new PoolExhausted;
             }
 
             $entry->forceFill([

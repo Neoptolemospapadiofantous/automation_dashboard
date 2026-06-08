@@ -25,10 +25,13 @@ class Agent extends Model
 {
     /** @use HasFactory<AgentFactory> */
     use HasFactory;
+
     use HasLifecycle;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_DISABLED = 'disabled';
 
     /**
@@ -43,6 +46,7 @@ class Agent extends Model
      *           .env at request time via VoiceflowService::forAgent.
      */
     public const MODE_BYOK = 'byok';
+
     public const MODE_MANAGED = 'managed';
 
     public function stateMachine(): StateMachine

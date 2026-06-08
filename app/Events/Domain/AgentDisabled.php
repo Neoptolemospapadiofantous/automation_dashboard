@@ -2,6 +2,4 @@
 
 namespace App\Events\Domain;
 
-class AgentDisabled extends StateChanged
-{
-}
+class AgentDisabled extends StateChanged {}

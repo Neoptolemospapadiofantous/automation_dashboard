@@ -66,7 +66,7 @@ class PoolAllocatorTest extends TestCase
             'voiceflow_api_key' => 'VF.DM.pooled-key',
         ]);
 
-        $agent = (new CreateAgent())->execute($user->currentTeam, 'Sales bot');
+        $agent = (new CreateAgent)->execute($user->currentTeam, 'Sales bot');
 
         $this->assertSame(Agent::MODE_MANAGED, $agent->mode);
         $this->assertSame(Agent::STATUS_ACTIVE, $agent->status);
@@ -88,7 +88,7 @@ class PoolAllocatorTest extends TestCase
         $teamId = $user->currentTeam->id;
 
         try {
-            (new CreateAgent())->execute($user->currentTeam, 'Will fail');
+            (new CreateAgent)->execute($user->currentTeam, 'Will fail');
             $this->fail('Expected PoolExhausted');
         } catch (PoolExhausted) {
             $this->assertDatabaseMissing('agents', ['team_id' => $teamId]);
@@ -110,8 +110,8 @@ class PoolAllocatorTest extends TestCase
         $user = User::factory()->withPersonalTeam()->create();
         VoiceflowProjectPoolEntry::factory()->create();
 
-        $agent = (new CreateAgent())->execute($user->currentTeam, 'Sales bot');
-        (new DeleteAgent())->execute($agent);
+        $agent = (new CreateAgent)->execute($user->currentTeam, 'Sales bot');
+        (new DeleteAgent)->execute($agent);
 
         $this->assertDatabaseHas('voiceflow_project_pool', [
             'voiceflow_project_id' => $agent->voiceflow_project_id,

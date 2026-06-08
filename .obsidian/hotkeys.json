@@ -1,0 +1,9 @@
+{
+  "graph:open": [{ "modifiers": ["Mod"], "key": "G" }],
+  "graph:open-local": [{ "modifiers": ["Mod", "Shift"], "key": "G" }],
+  "command-palette:open": [{ "modifiers": ["Mod"], "key": "P" }],
+  "switcher:open": [{ "modifiers": ["Mod"], "key": "O" }],
+  "global-search:open": [{ "modifiers": ["Mod", "Shift"], "key": "F" }],
+  "backlink:open": [{ "modifiers": ["Mod", "Shift"], "key": "B" }],
+  "outline:open": [{ "modifiers": ["Mod", "Shift"], "key": "O" }]
+}

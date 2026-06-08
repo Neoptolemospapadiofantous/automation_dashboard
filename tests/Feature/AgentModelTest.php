@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Agent;
-use App\Models\Conversation;
 use App\Models\Lead;
 use App\Models\Team;
 use App\Models\User;
@@ -87,7 +86,7 @@ class AgentModelTest extends TestCase
     {
         // Per-agent webhook URL contains the slug, so route binding must
         // resolve {agent} by slug — not id.
-        $this->assertSame('slug', (new Agent())->getRouteKeyName());
+        $this->assertSame('slug', (new Agent)->getRouteKeyName());
     }
 
     public function test_seeded_data_is_team_scoped_by_agent_id_after_backfill(): void

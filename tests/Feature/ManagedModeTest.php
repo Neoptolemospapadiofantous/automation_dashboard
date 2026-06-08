@@ -6,8 +6,9 @@ use App\Actions\Agents\CreateAgent;
 use App\Http\Middleware\RequireAgent;
 use App\Models\Agent;
 use App\Models\User;
+use App\Models\VoiceflowProjectPoolEntry;
+use App\Services\VoiceflowService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -53,7 +54,7 @@ class ManagedModeTest extends TestCase
             'voiceflow_project_id' => 'byok-proj',
         ]);
 
-        $service = \App\Services\VoiceflowService::forAgent($byok);
+        $service = VoiceflowService::forAgent($byok);
         $ref = new \ReflectionClass($service);
         $apiKey = $ref->getProperty('apiKey');
         $apiKey->setAccessible(true);
@@ -131,7 +132,7 @@ class ManagedModeTest extends TestCase
 
         // Seed a pool entry so allocation succeeds. Pool-empty case is
         // covered separately in PoolAllocatorTest::test_pool_exhausted_returns_503.
-        \App\Models\VoiceflowProjectPoolEntry::factory()->create();
+        VoiceflowProjectPoolEntry::factory()->create();
 
         $user = User::factory()->withPersonalTeam()->create();
 

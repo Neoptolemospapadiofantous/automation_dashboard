@@ -1,7 +1,7 @@
 # Phase 6 — Conversation storage, indexing & scale
 
-Status: **core implemented** (storage + history UI + search). Voiceflow
-transcript sync (End transcript + properties) is the remaining follow-up.
+Status: **core implemented** (storage + history UI + search). [[phase-11-transcript-backfill|Voiceflow
+transcript sync]] (End transcript + properties) is the remaining follow-up.
 
 Goal: save every conversation durably, make them searchable at scale, and keep
 Voiceflow's analytics/evaluation working — without slowing the live dashboard.
@@ -85,7 +85,7 @@ thin and the same path is reused by the capture webhook.
 **Tier 1 — now:** Laravel Scout + Typesense.
 - Make `Message` (and optionally `Conversation`) `Searchable`.
 - Index: text, role, team_id, lead_id, conversation_id, sent_at.
-- Typesense self-hosted on the Forge VPS (Docker or binary) — cheap, fast,
+- Typesense self-hosted on the [[phase-4-deploy|Forge]] VPS (Docker or binary) — cheap, fast,
   typo-tolerant; Scout queues indexing so writes stay fast.
 - Team-scoped queries via Scout `where('team_id', ...)`.
 - Fallback: MySQL `FULLTEXT(text)` works out of the box if Typesense isn't up.
@@ -112,7 +112,7 @@ thin and the same path is reused by the capture webhook.
 
 - **Conversation history** on the lead detail / agent panel (turn-by-turn).
 - **Global conversation search** page (keyword now, semantic later), team-scoped.
-- Live badge continues to tick new messages in via Echo.
+- Live badge continues to tick new messages in via [[phase-2-realtime|Echo]].
 
 ## New config / env
 
@@ -145,4 +145,4 @@ VOICEFLOW_SYNC_TRANSCRIPTS=true
 
 - Retention period (e.g. keep messages 12 months, then prune)?
 - Provision Typesense now, or ship Tier-1 on MySQL fulltext and add Typesense in a follow-up?
-- Do you want semantic/vector search in this phase, or keep it for Phase 7?
+- Do you want semantic/vector search in this phase, or keep it for [[phase-7-delegation|Phase 7]]?

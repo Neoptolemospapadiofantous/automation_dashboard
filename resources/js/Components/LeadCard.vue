@@ -66,6 +66,7 @@ function onAssignChange(e) {
                 type="button"
                 class="text-xs text-gray-300 opacity-0 transition hover:text-rose-500 group-hover:opacity-100"
                 title="Delete lead"
+                aria-label="Delete lead"
                 @click="$emit('delete', lead)"
             >
                 ✕
@@ -77,6 +78,7 @@ function onAssignChange(e) {
             <select
                 class="w-full rounded border-gray-200 py-1 text-xs text-gray-600 focus:border-indigo-400 focus:ring-indigo-400"
                 :value="lead.assigned_to ?? ''"
+                aria-label="Assign lead"
                 @change="onAssignChange"
                 @click.stop
             >

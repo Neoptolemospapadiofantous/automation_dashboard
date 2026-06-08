@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Billing\Plan;
+use App\Models\CreditTransaction;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -86,7 +88,7 @@ class HandleInertiaRequests extends Middleware
                 ? (function () use ($request) {
                     $team = $request->user()->currentTeam;
                     $plan = $team->planObject();
-                    $isCustom = $plan === \App\Billing\Plan::Business;
+                    $isCustom = $plan === Plan::Business;
 
                     if ($isCustom) {
                         return [
@@ -106,9 +108,9 @@ class HandleInertiaRequests extends Middleware
                     // to "all time" when credits_renewed_at hasn't been set
                     // yet (fresh teams pre-first-renewal). Single COUNT-style
                     // query per request — cheap.
-                    $topupsThisPeriod = (int) \App\Models\CreditTransaction::query()
+                    $topupsThisPeriod = (int) CreditTransaction::query()
                         ->where('team_id', $team->id)
-                        ->where('reason', \App\Models\CreditTransaction::REASON_GRANT_TOPUP)
+                        ->where('reason', CreditTransaction::REASON_GRANT_TOPUP)
                         ->when($team->credits_renewed_at, fn ($q) => $q->where('created_at', '>=', $team->credits_renewed_at))
                         ->sum('amount');
 

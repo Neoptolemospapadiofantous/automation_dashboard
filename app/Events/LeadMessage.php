@@ -29,8 +29,7 @@ class LeadMessage implements ShouldBroadcast, ShouldQueue
         public string $role,
         public string $text,
         public string $at,
-    ) {
-    }
+    ) {}
 
     public function broadcastOn(): PrivateChannel
     {

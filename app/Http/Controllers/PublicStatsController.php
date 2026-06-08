@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\Cache;
 class PublicStatsController extends Controller
 {
     private const CACHE_KEY = 'public_stats';
+
     private const CACHE_TTL = 300; // 5 minutes
 
     /**
@@ -169,12 +170,15 @@ class PublicStatsController extends Controller
     {
         if ($n >= 1_000_000) {
             $m = $n / 1_000_000;
+
             return ($m == (int) $m ? (string) (int) $m : (string) $m).'M';
         }
         if ($n >= 1000) {
             $k = $n / 1000;
+
             return ($k == (int) $k ? (string) (int) $k : (string) $k).'k';
         }
+
         return (string) $n;
     }
 }

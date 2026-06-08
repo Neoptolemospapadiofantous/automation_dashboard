@@ -28,8 +28,7 @@ final class Transition
         public readonly BackedEnum|string $to,
         public readonly ?Closure $guard = null,
         public readonly ?string $event = null,
-    ) {
-    }
+    ) {}
 
     public function matches(BackedEnum|string $from, BackedEnum|string $to): bool
     {

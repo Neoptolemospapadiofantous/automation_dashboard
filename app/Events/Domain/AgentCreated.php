@@ -14,7 +14,5 @@ class AgentCreated
 {
     use Dispatchable;
 
-    public function __construct(public readonly Agent $agent)
-    {
-    }
+    public function __construct(public readonly Agent $agent) {}
 }

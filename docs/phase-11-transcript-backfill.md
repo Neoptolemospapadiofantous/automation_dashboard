@@ -1,8 +1,8 @@
 # Phase 11 — Voiceflow transcript backfill
 
 Pull conversations that happened **inside Voiceflow** (the preview chat, the
-embedded widget, or anything before local storage existed) into the local
-conversation store via Voiceflow's Transcript (Analytics) API.
+embedded widget, or anything before local storage existed) into the [[phase-6-conversation-storage|local
+conversation store]] via [[docs/voiceflow/transcripts/README|Voiceflow's Transcript (Analytics) API]].
 
 ## What shipped
 
@@ -29,8 +29,9 @@ php artisan voiceflow:backfill --team=1 --take=50 --skip=0
 ```
 
 > Note: Voiceflow transcripts are **not auto-saved** — only conversations that
-> were ended/persisted on Voiceflow's side appear in the search. Conversations
-> already captured live through `/agent` are skipped (matched by transcript id).
+> were ended/persisted on Voiceflow's side appear in the search. [[phase-5-voiceflow|Conversations
+> already captured live through `/chat`]] are skipped (matched by transcript id).
+> ([[phase-14-public-stats|`/agent` was renamed to `/chat` in Phase 14]].)
 
 ## Scheduling (optional)
 

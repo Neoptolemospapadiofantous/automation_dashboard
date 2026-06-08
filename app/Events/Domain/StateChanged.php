@@ -26,6 +26,5 @@ class StateChanged
         public readonly BackedEnum|string $from,
         public readonly BackedEnum|string $to,
         public readonly array $context = [],
-    ) {
-    }
+    ) {}
 }

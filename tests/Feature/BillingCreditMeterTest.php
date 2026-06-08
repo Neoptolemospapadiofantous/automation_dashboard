@@ -36,7 +36,7 @@ class BillingCreditMeterTest extends TestCase
         $team = User::factory()->withPersonalTeam()->create()->currentTeam;
         $start = $team->credit_balance;
 
-        (new CreditMeter())->consume($team, 3, agentId: null, meta: ['source' => 'test']);
+        (new CreditMeter)->consume($team, 3, agentId: null, meta: ['source' => 'test']);
 
         $this->assertSame($start - 3, $team->fresh()->credit_balance);
         $this->assertDatabaseHas('credit_transactions', [
@@ -52,7 +52,7 @@ class BillingCreditMeterTest extends TestCase
         $team->forceFill(['credit_balance' => 2])->save();
 
         $this->expectException(OutOfCredits::class);
-        (new CreditMeter())->consume($team, 3);
+        (new CreditMeter)->consume($team, 3);
     }
 
     public function test_interact_endpoint_returns_402_when_team_is_dry(): void
@@ -99,7 +99,7 @@ class BillingCreditMeterTest extends TestCase
         // User burned through most of the month but didn't use all credits.
         $team->forceFill(['credit_balance' => 12])->save();
 
-        (new CreditMeter())->grantMonthlyRenewal($team);
+        (new CreditMeter)->grantMonthlyRenewal($team);
 
         // Hard reset to plan allotment — the 12 leftover credits are gone.
         $this->assertSame(Plan::Free->monthlyCredits(), $team->fresh()->credit_balance);
@@ -118,7 +118,7 @@ class BillingCreditMeterTest extends TestCase
             'credit_balance' => 100,
         ])->save();
 
-        (new CreditMeter())->grantTopUp($team, 500, ['stripe_invoice' => 'inv_xxx']);
+        (new CreditMeter)->grantTopUp($team, 500, ['stripe_invoice' => 'inv_xxx']);
 
         $this->assertSame(600, $team->fresh()->credit_balance);
     }
@@ -133,6 +133,6 @@ class BillingCreditMeterTest extends TestCase
         $team->forceFill(['plan' => Plan::Business->value])->save();
 
         $this->expectException(\RuntimeException::class);
-        (new CreditMeter())->grantTopUp($team, 500);
+        (new CreditMeter)->grantTopUp($team, 500);
     }
 }

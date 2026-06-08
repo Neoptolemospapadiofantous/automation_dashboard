@@ -28,9 +28,7 @@ class LeadSaved implements ShouldBroadcast, ShouldQueue
     use InteractsWithSockets;
     use SerializesModels;
 
-    public function __construct(public Lead $lead)
-    {
-    }
+    public function __construct(public Lead $lead) {}
 
     public function broadcastOn(): PrivateChannel
     {

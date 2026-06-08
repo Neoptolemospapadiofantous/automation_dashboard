@@ -27,7 +27,7 @@ class AppServiceProvider extends ServiceProvider
 
             return $agent
                 ? VoiceflowService::forAgent($agent)
-                : new VoiceflowService();
+                : new VoiceflowService;
         });
     }
 

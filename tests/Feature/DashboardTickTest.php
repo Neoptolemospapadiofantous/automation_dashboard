@@ -6,7 +6,6 @@ use App\Events\DashboardTick;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
-use Laravel\Jetstream\Jetstream;
 use Tests\TestCase;
 
 class DashboardTickTest extends TestCase

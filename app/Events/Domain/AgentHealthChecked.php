@@ -20,6 +20,5 @@ class AgentHealthChecked
         public readonly Agent $agent,
         public readonly bool $ok,
         public readonly array $result = [],
-    ) {
-    }
+    ) {}
 }

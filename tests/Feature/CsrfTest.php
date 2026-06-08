@@ -5,8 +5,9 @@ namespace Tests\Feature;
 use App\Models\Agent;
 use App\Models\User;
 use Illuminate\Contracts\Http\Kernel;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 /**
@@ -41,7 +42,7 @@ class CsrfTest extends TestCase
     {
         // The api group has its own (no-CSRF) pipeline. Confirm the route
         // we publish for Voiceflow lives there, not in web.
-        $route = \Illuminate\Support\Facades\Route::getRoutes()->getByName('voiceflow.webhook');
+        $route = Route::getRoutes()->getByName('voiceflow.webhook');
 
         $this->assertNotNull($route, 'Webhook route must be named voiceflow.webhook');
         $this->assertContains('api', $route->middleware(), 'Webhook must live in the api middleware group');

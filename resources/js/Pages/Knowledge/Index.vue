@@ -5,7 +5,6 @@ import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
@@ -192,10 +191,12 @@ const description = computed(() => {
                                 />
                                 <InputError :message="urlForm.errors.url" />
                                 <TextInput
+                                    id="url-name"
                                     v-model="urlForm.name"
                                     type="text"
                                     class="block w-full"
                                     placeholder="Name (optional)"
+                                    aria-label="URL display name (optional)"
                                     :disabled="!configured || urlForm.processing"
                                 />
                                 <PrimaryButton :disabled="urlForm.processing || !configured || !urlForm.url">
@@ -293,7 +294,7 @@ const description = computed(() => {
                                 <h3 class="text-sm font-semibold text-gray-700">
                                     Document chunks
                                 </h3>
-                                <button class="text-xs text-gray-400 hover:text-gray-600" @click="inspecting = null">Close ×</button>
+                                <button type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="inspecting = null">Close ×</button>
                             </div>
                             <div v-if="inspectLoading" class="text-sm text-gray-400">Loading…</div>
                             <div v-else-if="inspectError" class="text-sm text-rose-600">{{ inspectError }}</div>

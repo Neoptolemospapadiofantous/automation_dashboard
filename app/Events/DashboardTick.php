@@ -28,12 +28,8 @@ class DashboardTick implements ShouldBroadcast, ShouldQueue
         public int $count,
         public string $message,
         public string $at,
-    ) {
-    }
+    ) {}
 
-    /**
-     * @return Channel
-     */
     public function broadcastOn(): Channel
     {
         return new Channel('dashboard');

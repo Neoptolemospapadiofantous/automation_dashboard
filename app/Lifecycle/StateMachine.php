@@ -23,9 +23,7 @@ use Illuminate\Support\Facades\DB;
  */
 abstract class StateMachine
 {
-    public function __construct(protected Model $model)
-    {
-    }
+    public function __construct(protected Model $model) {}
 
     /**
      * @return array<int, Transition>

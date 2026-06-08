@@ -16,6 +16,7 @@ class Conversation extends Model
 {
     /** @use HasFactory<ConversationFactory> */
     use HasFactory;
+
     use HasLifecycle;
 
     public function stateMachine(): StateMachine

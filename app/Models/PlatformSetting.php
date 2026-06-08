@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Tiny key/value model for editable platform-wide settings.
@@ -17,8 +18,11 @@ use Illuminate\Database\Eloquent\Model;
 class PlatformSetting extends Model
 {
     protected $primaryKey = 'key';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
+
     public $timestamps = false;
 
     protected $fillable = ['key', 'value'];
@@ -47,6 +51,6 @@ class PlatformSetting extends Model
         // Bust the cached public stats response — operators set values via
         // CLI expecting the landing site to pick them up on next page load,
         // not 5 minutes later when the cache TTL expires.
-        \Illuminate\Support\Facades\Cache::forget('public_stats');
+        Cache::forget('public_stats');
     }
 }

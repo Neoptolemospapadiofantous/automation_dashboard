@@ -2,7 +2,7 @@
 
 The first real domain feature: a team-scoped lead pipeline rendered as a kanban
 board that updates live across every connected browser, broadcasting over the
-Phase 2 pipeline.
+[[phase-2-realtime|Phase 2 pipeline]].
 
 ## What this phase delivers
 
@@ -47,5 +47,5 @@ cross-browser updates require Pusher credentials + a running `queue:work`.
 
 ## Next
 
-Phase 4 adds the Voiceflow proxy: conversations capture variables that
-create/update leads, which then tick onto this board live.
+[[phase-5-voiceflow|Phase 4 adds the Voiceflow proxy]]: [[phase-5-voiceflow|conversations capture variables that
+create/update leads]], which then tick onto this board live.

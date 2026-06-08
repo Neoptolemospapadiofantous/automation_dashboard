@@ -109,15 +109,15 @@ See `docs/phase-5-voiceflow.md` for the full breakdown.
 
 ## Build roadmap
 
-- [x] **Phase 1** — Scaffold Laravel 12 + Jetstream (Inertia/Vue, teams), MySQL-ready.
-- [x] **Phase 2** — Real-time backbone (Pusher + Echo + queue) with a live-tick demo.
-- [x] **Phase 3** — Lead domain: model/migration, kanban board, drag-and-drop + live status changes.
-- [x] **Phase 5** — Voiceflow agent: `VoiceflowService`, server-proxied chat panel, variable capture -> leads, and the Custom Action capture webhook. (docs/phase-5-voiceflow.md)
+- [x] **[[phase-1-foundation|Phase 1]]** — Scaffold Laravel 12 + Jetstream (Inertia/Vue, teams), MySQL-ready.
+- [x] **[[phase-2-realtime|Phase 2]]** — Real-time backbone (Pusher + Echo + queue) with a live-tick demo.
+- [x] **[[phase-3-leads|Phase 3]]** — Lead domain: model/migration, kanban board, drag-and-drop + live status changes.
+- [x] **Phase 5** — Voiceflow agent: `VoiceflowService`, server-proxied chat panel, variable capture -> leads, and the Custom Action capture webhook. ([[phase-5-voiceflow|docs/phase-5-voiceflow.md]])
 - [ ] **Phase 6** — Delegation engine: assignment rules, presence, rep-scoped views.
 - [ ] **Phase 7** — Transcripts API backfill, analytics widgets, notifications.
 
 > A standalone deploy command (push + Laravel Forge) lives in `bin/deploy.sh`;
-> see docs/phase-4-deploy.md.
+> see [[phase-4-deploy|docs/phase-4-deploy.md]].
 
 ## Deployment (Laravel Forge)
 

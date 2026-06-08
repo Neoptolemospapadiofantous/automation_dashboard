@@ -17,6 +17,7 @@ class Lead extends Model
 {
     /** @use HasFactory<LeadFactory> */
     use HasFactory;
+
     use HasLifecycle;
 
     public function stateMachine(): StateMachine

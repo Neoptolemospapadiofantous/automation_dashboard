@@ -27,7 +27,7 @@ class AgentActionsTest extends TestCase
         Event::fake([AgentCreated::class]);
 
         $team = User::factory()->withPersonalTeam()->create()->currentTeam;
-        $agent = (new CreateAgent())->execute($team, 'Sales bot');
+        $agent = (new CreateAgent)->execute($team, 'Sales bot');
 
         $this->assertDatabaseHas('agents', ['id' => $agent->id, 'name' => 'Sales bot', 'status' => Agent::STATUS_DRAFT]);
         $this->assertSame($agent->id, $team->fresh()->current_agent_id, 'First agent becomes current');
@@ -54,7 +54,7 @@ class AgentActionsTest extends TestCase
 
         $agent = Agent::factory()->unconfigured()->create();
 
-        ['agent' => $updated, 'health' => $health] = (new UpdateAgentCredentials())->execute($agent, [
+        ['agent' => $updated, 'health' => $health] = (new UpdateAgentCredentials)->execute($agent, [
             'voiceflow_api_key' => 'VF.DM.fresh',
             'voiceflow_project_id' => 'proj-1',
         ]);
@@ -98,7 +98,7 @@ class AgentActionsTest extends TestCase
 
         $this->actingAs($user->fresh());
 
-        ['agent' => $updated, 'health' => $health] = (new UpdateAgentCredentials())->execute($other, [
+        ['agent' => $updated, 'health' => $health] = (new UpdateAgentCredentials)->execute($other, [
             'voiceflow_api_key' => 'VF.DM.other',
             'voiceflow_project_id' => 'other-proj',
         ]);
@@ -121,7 +121,7 @@ class AgentActionsTest extends TestCase
 
         $agent = Agent::factory()->unconfigured()->create();
 
-        ['agent' => $updated] = (new UpdateAgentCredentials())->execute($agent, [
+        ['agent' => $updated] = (new UpdateAgentCredentials)->execute($agent, [
             'voiceflow_api_key' => 'VF.DM.bad',
             'voiceflow_project_id' => 'proj-x',
         ]);
@@ -136,7 +136,7 @@ class AgentActionsTest extends TestCase
         $agent = Agent::factory()->create();
         $before = $agent->webhook_secret;
 
-        $after = (new RotateWebhookSecret())->execute($agent)->webhook_secret;
+        $after = (new RotateWebhookSecret)->execute($agent)->webhook_secret;
 
         $this->assertNotSame($before, $after);
         $this->assertGreaterThanOrEqual(40, strlen($after));
@@ -148,11 +148,11 @@ class AgentActionsTest extends TestCase
         $mine = Agent::factory()->for($team)->create();
         $foreign = Agent::factory()->create(); // different team
 
-        (new SwitchAgent())->execute($team, $mine);
+        (new SwitchAgent)->execute($team, $mine);
         $this->assertSame($mine->id, $team->fresh()->current_agent_id);
 
         $this->expectException(InvalidArgumentException::class);
-        (new SwitchAgent())->execute($team, $foreign);
+        (new SwitchAgent)->execute($team, $foreign);
     }
 
     public function test_delete_agent_falls_back_current_agent_to_another_team_agent(): void
@@ -162,7 +162,7 @@ class AgentActionsTest extends TestCase
         $b = Agent::factory()->for($team)->create();
         $team->forceFill(['current_agent_id' => $a->id])->save();
 
-        (new DeleteAgent())->execute($a);
+        (new DeleteAgent)->execute($a);
 
         $this->assertSame($b->id, $team->fresh()->current_agent_id);
         $this->assertDatabaseMissing('agents', ['id' => $a->id]);
@@ -174,7 +174,7 @@ class AgentActionsTest extends TestCase
         $only = Agent::factory()->for($team)->create();
         $team->forceFill(['current_agent_id' => $only->id])->save();
 
-        (new DeleteAgent())->execute($only);
+        (new DeleteAgent)->execute($only);
 
         $this->assertNull($team->fresh()->current_agent_id);
     }

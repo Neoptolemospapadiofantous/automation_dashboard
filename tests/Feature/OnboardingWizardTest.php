@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use App\Http\Middleware\RequireAgent;
 use App\Models\Agent;
 use App\Models\User;
+use App\Models\VoiceflowProjectPoolEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class OnboardingWizardTest extends TestCase
@@ -74,7 +74,7 @@ class OnboardingWizardTest extends TestCase
         // Phase 14: the wizard collapsed to a single step. POSTing to
         // onboarding.start now allocates from the pool, marks the agent
         // active, and redirects straight to Done. No Connect step exists.
-        \App\Models\VoiceflowProjectPoolEntry::factory()->create();
+        VoiceflowProjectPoolEntry::factory()->create();
         config()->set('services.voiceflow.managed.enabled', true);
 
         $user = User::factory()->withPersonalTeam()->create();

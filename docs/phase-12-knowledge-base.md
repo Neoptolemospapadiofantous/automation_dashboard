@@ -1,11 +1,11 @@
 # Phase 12 — Voiceflow Knowledge Base
 
 Ground the agent (and the dashboard) in your own content — pricing, FAQs,
-product docs — via Voiceflow's Knowledge Base API.
+product docs — via [[docs/voiceflow/knowledge-base/README|Voiceflow's Knowledge Base API]].
 
 ## What shipped
 
-- **`VoiceflowService` KB methods**:
+- **[[phase-5-voiceflow|`VoiceflowService` KB methods]]**:
   - `listKbDocuments($page, $limit)` → `GET {realtime}/v1alpha1/public/knowledge-base/document`
   - `createKbUrlDocument($url, $name)` → `POST {realtime}/v1alpha1/public/knowledge-base/document` (scrapes a URL)
   - `queryKnowledgeBase($question, $chunkLimit, $synthesis)` →
@@ -32,12 +32,18 @@ The query body sends `projectID` + `question` + `projectEnvironmentIDOrAlias`.
 2. Add a URL (e.g. your pricing page) — Voiceflow scrapes + chunks it
    (status goes PENDING → SUCCESS).
 3. Ask a question; you get a synthesized answer plus the source chunks.
-4. The same KB powers the agent's answers during lead conversations.
+4. The same KB powers [[phase-5-voiceflow|the agent's answers during lead conversations]].
 
 See <https://docs.voiceflow.com/api-reference/kbpublicapidocument/create-document>,
 <https://docs.voiceflow.com/api-reference/public-docs/query>.
 
 ## Next ideas
 
-- File upload (multipart) in addition to URLs.
-- Delete document + per-document metadata for agent KB filtering.
+> **Note (auto-synced 2026-06-05):** File upload, delete, inspect, and
+> type filter shipped in `00c83fd` (per-agent KB UX). Current
+> KB routes: `/knowledge` (index), `POST /knowledge/url`,
+> `POST /knowledge/file`, `POST /knowledge/query`,
+> `GET /knowledge/{documentID}` (inspect), `DELETE /knowledge/{documentID}`.
+> See `routes/web.php` and `KnowledgeBaseController`.
+
+- Per-document metadata for agent KB filtering.

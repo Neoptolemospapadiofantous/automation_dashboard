@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\LeadStatus;
 use App\Events\LeadDeleted;
 use App\Events\LeadSaved;
+use App\Models\Agent;
 use App\Models\Lead;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,7 +31,7 @@ class LeadTest extends TestCase
         // Phase G: scoping is by (team_id, current_agent_id), not team_id
         // alone. Set up an active agent + stamp the visible lead with it.
         $user = $this->user();
-        $agent = \App\Models\Agent::factory()->for($user->currentTeam)->create();
+        $agent = Agent::factory()->for($user->currentTeam)->create();
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
 
         $mine = Lead::factory()->create([

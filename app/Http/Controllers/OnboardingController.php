@@ -58,7 +58,7 @@ class OnboardingController extends Controller
             ->whereIn('status', [Agent::STATUS_DRAFT, Agent::STATUS_ACTIVE])
             ->latest()
             ->first();
-        $existing ?: (new CreateAgent())->execute($team, $data['name'] ?? 'Default agent');
+        $existing ?: (new CreateAgent)->execute($team, $data['name'] ?? 'Default agent');
 
         // Managed signups are activated atomically by CreateAgent — no
         // credential-paste step. Go straight to Done.

@@ -81,7 +81,7 @@ class AgentController extends Controller
         // in bootstrap/app.php — JSON requests get 403, web requests get
         // a redirect-back with the flash.plan_limit payload. Don't catch
         // it here or the global handler can't pick the right shape.
-        $agent = (new CreateAgent())->execute($request->user()->currentTeam, $data['name']);
+        $agent = (new CreateAgent)->execute($request->user()->currentTeam, $data['name']);
 
         return redirect()->route('agents.show', $agent);
     }
@@ -116,7 +116,7 @@ class AgentController extends Controller
     {
         $this->authorize($request, $agent);
 
-        (new DeleteAgent())->execute($agent);
+        (new DeleteAgent)->execute($agent);
 
         return redirect()->route('agents.index');
     }
@@ -130,7 +130,7 @@ class AgentController extends Controller
     {
         $this->authorize($request, $agent);
 
-        $rotated = (new RotateWebhookSecret())->execute($agent);
+        $rotated = (new RotateWebhookSecret)->execute($agent);
 
         return back()->with('flash.webhook_secret_rotated', $rotated->webhook_secret);
     }
@@ -147,7 +147,7 @@ class AgentController extends Controller
         $agent = Agent::findOrFail($data['agent_id']);
 
         try {
-            (new SwitchAgent())->execute($request->user()->currentTeam, $agent);
+            (new SwitchAgent)->execute($request->user()->currentTeam, $agent);
         } catch (\InvalidArgumentException) {
             abort(403, 'That agent does not belong to your current team.');
         }
@@ -167,7 +167,7 @@ class AgentController extends Controller
 
         // Re-run the existing pipeline so activation rules (draft → active on
         // green) stay in exactly one place.
-        ['health' => $health] = (new UpdateAgentCredentials())->execute($agent, []);
+        ['health' => $health] = (new UpdateAgentCredentials)->execute($agent, []);
 
         return response()->json($health);
     }
