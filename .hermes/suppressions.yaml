@@ -1,0 +1,42 @@
+# Hermes Fleet Suppressions
+#
+# Each entry is a finding that was reviewed by a human and confirmed as intentional.
+# The fleet coordinator (and /hermes-lifecycle Phase 2) reads this file before
+# synthesizing specialist reports; suppressed findings are skipped, not applied.
+#
+# Format per entry:
+#   - finding:   The report-format tag the specialist emits (e.g. XSS_RISK, MISSING_THROTTLE)
+#     location:  file:line, or a glob like "app/Services/Voiceflow/**"
+#     reason:    Why this is intentional. Future maintainers (and future fleets) read this.
+#     reviewed:  YYYY-MM-DD — date a human last confirmed this is still intentional.
+#     expires:   YYYY-MM-DD or `never`. After expiry, the finding resurfaces as "review-due".
+#
+# Lifecycle:
+#   - Add entries when a fleet flags something you've decided to keep.
+#   - Set `expires` so suppressions don't accumulate uncritically — a 1-year default
+#     forces periodic re-confirmation. Use `never` only for hard, principled cases.
+#   - When code changes and a suppression's location no longer matches, the fleet
+#     surfaces "stale_suppression" so you can remove the entry.
+
+version: 1
+
+suppressions:
+  - finding: XSS_RISK
+    location: resources/js/Pages/Conversations/Index.vue:99
+    reason: |
+      Laravel paginator labels are server-controlled HTML entities (&laquo; / &raquo;
+      for previous/next), not user input. The `link.label` field comes from
+      LengthAwarePaginator::linkCollection() which only emits safe markup.
+      A v-text replacement would lose the entity rendering with no security gain.
+    reviewed: 2026-06-08
+    expires: 2027-06-08
+
+  - finding: DOM_ACCESS
+    location: resources/js/Pages/Chat/Index.vue:96
+    reason: |
+      Standard Laravel CSRF token read pattern. The streaming chat path uses a raw
+      `fetch()` (axios isn't available for ReadableStream), so the CSRF token must
+      be retrieved from the <meta> tag manually. This is NOT a Vue reactivity bypass
+      — the token is read once per request, not held in component state.
+    reviewed: 2026-06-08
+    expires: never

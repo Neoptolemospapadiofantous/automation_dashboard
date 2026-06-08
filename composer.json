@@ -19,12 +19,14 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
+        "larastan/larastan": "^3.10",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.24",
         "laravel/sail": "^1.41",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
-        "phpunit/phpunit": "^11.5.50"
+        "phpunit/phpunit": "^11.5.50",
+        "shipmonk/dead-code-detector": "^1.2"
     },
     "autoload": {
         "psr-4": {
@@ -54,6 +56,33 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@php artisan test"
+        ],
+        "hermes": [
+            "bash scripts/hermes.sh"
+        ],
+        "hermes-fast": [
+            "bash scripts/hermes.sh --fast"
+        ],
+        "hermes-audit": [
+            "bash scripts/agents/audit_sentinel.sh"
+        ],
+        "hermes-update": [
+            "bash scripts/agents/update_inspector.sh"
+        ],
+        "hermes-system": [
+            "bash scripts/agents/system_check.sh"
+        ],
+        "hermes-all": [
+            "bash scripts/hermes_all.sh"
+        ],
+        "hermes-status": [
+            "bash scripts/hermes_status.sh"
+        ],
+        "hermes-dashboard": [
+            "bash scripts/hermes_dashboard.sh"
+        ],
+        "voiceflow:coverage": [
+            "bash scripts/voiceflow_coverage.sh"
         ],
         "deploy": [
             "bin/deploy.sh"

@@ -22,6 +22,14 @@
 /storage/*.key
 /storage/pail
 /vendor
+/data
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Obsidian — keep shared vault config, ignore per-user state
+/.obsidian/workspace.json
+/.obsidian/workspace-mobile.json
+/.obsidian/workspaces.json
+/.obsidian/cache
+/.obsidian/.trash/
