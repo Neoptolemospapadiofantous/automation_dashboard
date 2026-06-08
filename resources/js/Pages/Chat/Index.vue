@@ -50,6 +50,11 @@ async function start() {
     }
 }
 
+const streamSupported = typeof window !== 'undefined'
+    && typeof window.ReadableStream === 'function'
+    && typeof window.fetch === 'function'
+    && typeof window.TextDecoder === 'function';
+
 async function send(text) {
     const message = (text ?? input.value).trim();
     if (!message || busy.value || !userId.value) return;
@@ -61,16 +66,120 @@ async function send(text) {
     scrollToEnd();
 
     try {
-        const { data } = await axios.post(route('chat.interact'), {
-            user_id: userId.value,
-            message,
-            lead_id: leadId.value,
-        });
-        applyResponse(data);
+        if (streamSupported) {
+            await sendStreaming(message);
+        } else {
+            await sendBlocking(message);
+        }
     } catch (e) {
         messages.value.push({ role: 'agent', text: errorText(e) });
     } finally {
         busy.value = false;
+    }
+}
+
+async function sendBlocking(message) {
+    const { data } = await axios.post(route('chat.interact'), {
+        user_id: userId.value,
+        message,
+        lead_id: leadId.value,
+    });
+    applyResponse(data);
+}
+
+/**
+ * Streaming path: open POST to /chat/interact/stream, read SSE events as they
+ * arrive, append text in-place on a single assistant bubble. The final
+ * `event: summary` frame carries buttons/ended/lead_id.
+ */
+async function sendStreaming(message) {
+    // @hermes-keep: standard Laravel CSRF read for raw fetch() — axios reads it
+    // automatically but ReadableStream needs fetch(), not axios. Not a reactivity bypass.
+    const csrf = document.head.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const response = await fetch(route('chat.interact-stream'), {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrf,
+            'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify({
+            user_id: userId.value,
+            message,
+            lead_id: leadId.value,
+        }),
+    });
+
+    if (!response.ok) {
+        // Fall back to blocking on any non-2xx.
+        return sendBlocking(message);
+    }
+
+    // One assistant bubble per stream — its `.text` mutates as tokens arrive.
+    const assistantBubble = { role: 'agent', text: '' };
+    messages.value.push(assistantBubble);
+    scrollToEnd();
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE frames are separated by \n\n.
+        let idx;
+        while ((idx = buffer.indexOf('\n\n')) !== -1) {
+            const rawEvent = buffer.slice(0, idx);
+            buffer = buffer.slice(idx + 2);
+            handleSseFrame(rawEvent, assistantBubble);
+        }
+    }
+    // Tail
+    if (buffer.trim()) handleSseFrame(buffer, assistantBubble);
+
+    // Strip empty bubble if Voiceflow returned no text traces.
+    if (assistantBubble.text === '') {
+        messages.value = messages.value.filter((m) => m !== assistantBubble);
+    }
+}
+
+function handleSseFrame(rawFrame, assistantBubble) {
+    let eventType = 'message';
+    const dataLines = [];
+    rawFrame.split('\n').forEach((line) => {
+        if (line.startsWith('event:')) eventType = line.slice(6).trim();
+        else if (line.startsWith('data:')) dataLines.push(line.slice(5).trim());
+    });
+    if (dataLines.length === 0) return;
+
+    let data;
+    try {
+        data = JSON.parse(dataLines.join('\n'));
+    } catch (e) {
+        return;
+    }
+
+    if (eventType === 'trace') {
+        // Append text-style payloads to the live bubble.
+        if (data?.type === 'text' || data?.type === 'speak') {
+            const text = data.payload?.message ?? '';
+            if (text) {
+                assistantBubble.text += (assistantBubble.text ? '\n' : '') + text;
+                scrollToEnd();
+            }
+        }
+    } else if (eventType === 'summary') {
+        // Final frame: buttons + ended + lead_id.
+        if (data.lead_id) leadId.value = data.lead_id;
+        buttons.value = Array.isArray(data.buttons) ? data.buttons : [];
+        ended.value = !!data.ended;
+        scrollToEnd();
+    } else if (eventType === 'error') {
+        messages.value.push({ role: 'agent', text: data?.error ?? 'Stream error' });
     }
 }
 

@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Agent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Testing\File;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -107,9 +109,9 @@ class KnowledgeBaseTest extends TestCase
         Http::fake(['*' => Http::response(['total' => 0, 'data' => []])]);
 
         $user = $this->user();
-        $agent = \App\Models\Agent::factory()->for($user->currentTeam)->create([
+        $agent = Agent::factory()->for($user->currentTeam)->create([
             'name' => 'Sales bot',
-            'status' => \App\Models\Agent::STATUS_ACTIVE,
+            'status' => Agent::STATUS_ACTIVE,
         ]);
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
 
@@ -188,7 +190,7 @@ class KnowledgeBaseTest extends TestCase
             ], 201),
         ]);
 
-        $file = \Illuminate\Http\Testing\File::fake()->createWithContent('handbook.pdf', '%PDF-1.4 fake');
+        $file = File::fake()->createWithContent('handbook.pdf', '%PDF-1.4 fake');
 
         $this->actingAs($this->user())
             ->post(route('knowledge.file'), ['file' => $file])
@@ -203,7 +205,7 @@ class KnowledgeBaseTest extends TestCase
 
     public function test_store_file_rejects_unsupported_mime(): void
     {
-        $file = \Illuminate\Http\Testing\File::fake()->createWithContent('photo.jpg', "\xFF\xD8\xFF\xE0 jpeg");
+        $file = File::fake()->createWithContent('photo.jpg', "\xFF\xD8\xFF\xE0 jpeg");
 
         $this->actingAs($this->user())
             ->post(route('knowledge.file'), ['file' => $file])
@@ -214,7 +216,7 @@ class KnowledgeBaseTest extends TestCase
     {
         // 11 MB — over the 10 MB ceiling. Laravel validation catches before
         // we open a stream to Voiceflow.
-        $file = \Illuminate\Http\Testing\File::fake()->create('huge.pdf', 11 * 1024, 'application/pdf');
+        $file = File::fake()->create('huge.pdf', 11 * 1024, 'application/pdf');
 
         $this->actingAs($this->user())
             ->post(route('knowledge.file'), ['file' => $file])

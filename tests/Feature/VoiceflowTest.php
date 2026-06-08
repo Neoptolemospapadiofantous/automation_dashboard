@@ -57,7 +57,7 @@ class VoiceflowTest extends TestCase
 
     public function test_service_parses_text_and_choice_traces(): void
     {
-        $service = new VoiceflowService();
+        $service = new VoiceflowService;
 
         $parsed = $service->parseTraces([
             ['type' => 'text', 'payload' => ['message' => 'Hello!']],
@@ -74,7 +74,7 @@ class VoiceflowTest extends TestCase
 
     public function test_service_extracts_only_configured_lead_fields(): void
     {
-        $service = new VoiceflowService();
+        $service = new VoiceflowService;
 
         $fields = $service->extractLeadFields([
             'name' => 'Ada',
@@ -147,7 +147,7 @@ class VoiceflowTest extends TestCase
     {
         $this->fakeV4([['type' => 'text', 'payload' => ['message' => 'hi']]]);
 
-        $health = (new VoiceflowService())->health();
+        $health = (new VoiceflowService)->health();
 
         $this->assertTrue($health['ok']);
         $this->assertSame('main', $health['environment']);
@@ -159,7 +159,7 @@ class VoiceflowTest extends TestCase
             'general-runtime.voiceflow.com/v4/project/*/session' => Http::response(['message' => 'nope'], 403),
         ]);
 
-        $health = (new VoiceflowService())->health();
+        $health = (new VoiceflowService)->health();
 
         $this->assertFalse($health['ok']);
         $this->assertSame('start_session', $health['step']);
@@ -174,7 +174,7 @@ class VoiceflowTest extends TestCase
             'general-runtime.voiceflow.com/v4/interact' => Http::response(['message' => 'Internal server error'], 500),
         ]);
 
-        $health = (new VoiceflowService())->health();
+        $health = (new VoiceflowService)->health();
 
         $this->assertFalse($health['ok']);
         $this->assertSame('interact', $health['step']);

@@ -9,13 +9,16 @@ use App\Events\LeadMessage;
 use App\Events\LeadSaved;
 use App\Models\Conversation;
 use App\Models\Lead;
+use App\Models\Team;
 use App\Services\ConversationRecorder;
+use App\Services\Voiceflow\Client\StreamingClient;
 use App\Services\VoiceflowService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Server-side proxy for the Voiceflow Dialog Manager API.
@@ -118,6 +121,141 @@ class VoiceflowController extends Controller
         }
 
         return $this->respond($request, $data['user_id'], $lead, $traces, $conversation);
+    }
+
+    /**
+     * Streaming variant of interact() — re-emits Voiceflow's SSE frames to the
+     * browser in real time. After the upstream stream closes, falls through to
+     * the same post-processing (debit credits, record agent messages, broadcast,
+     * capture lead) as the non-streaming path.
+     */
+    public function interactStream(Request $request, StreamingClient $streaming): StreamedResponse
+    {
+        $this->abortIfUnconfigured();
+
+        if (($credits = $this->ensureCredits($request)) instanceof JsonResponse) {
+            // Cannot return JSON from a stream endpoint; surface as SSE error event.
+            return $this->sseError($credits->getData(true)['error'] ?? 'No credits', 402);
+        }
+
+        $data = $request->validate([
+            'user_id' => ['required', 'string', 'max:255'],
+            'message' => ['required', 'string', 'max:2000'],
+            'lead_id' => ['nullable', 'integer'],
+        ]);
+
+        $lead = $this->resolveLead($request, $data['lead_id'] ?? null);
+        $conversation = $this->safelyResolve($request, $data['user_id'], $lead?->id);
+        if ($conversation) {
+            $this->safelyRecord($conversation, 'user', $data['message']);
+        }
+        $this->broadcastMessage($request, $lead, 'user', $data['message']);
+
+        $userId = $data['user_id'];
+        $message = $data['message'];
+
+        // Capture team primitives BEFORE the closure — PHPStan can't infer through
+        // request()->user() inside the StreamedResponse callback.
+        $team = $request->user()->currentTeam;
+        $currentAgentId = $team->current_agent_id ?? null;
+
+        return new StreamedResponse(function () use ($streaming, $userId, $message, $request, $lead, $conversation, $team, $currentAgentId): void {
+            $traces = [];
+
+            try {
+                foreach ($streaming->streamInteract($userId, ['type' => 'text', 'payload' => $message]) as $event) {
+                    // Re-emit each event as SSE.
+                    echo 'event: '.$event['event']."\n";
+                    echo 'data: '.json_encode($event['data'])."\n\n";
+                    if (function_exists('ob_flush')) {
+                        @ob_flush();
+                    }
+                    flush();
+
+                    // Accumulate trace-style events for post-processing.
+                    if ($event['event'] === 'trace') {
+                        $traces[] = $event['data'];
+                    }
+                }
+            } catch (\Throwable $e) {
+                report($e);
+                echo 'event: error'."\n";
+                echo 'data: '.json_encode(['error' => 'Upstream stream failed'])."\n\n";
+                flush();
+
+                return;
+            }
+
+            // Post-processing: parse, record agent messages, broadcast, debit credits,
+            // capture lead. Mirrors the JsonResponse `respond()` flow but emits a
+            // single "summary" frame instead of returning a JSON body.
+            $parsed = $this->voiceflow->parseTraces($traces);
+            $messagesBilled = 1 + count($parsed['messages']);
+
+            if ($team instanceof Team) {
+                try {
+                    $this->credits->consume(
+                        team: $team,
+                        amount: $messagesBilled,
+                        agentId: $currentAgentId,
+                        meta: ['conversation_id' => $conversation?->id, 'user_id' => $userId, 'streaming' => true],
+                    );
+                } catch (OutOfCredits) {
+                    // Post-call concurrency edge — user already paid implicitly via the
+                    // stream. Log so ops sees the race; do not propagate (the stream
+                    // already returned content to the client).
+                    report(new \RuntimeException('Credit debit raced past zero for team '.$team->id.' (streaming path)'));
+                }
+            }
+
+            foreach ($parsed['messages'] as $text) {
+                if ($text === '') {
+                    continue;
+                }
+                if ($conversation) {
+                    $this->safelyRecord($conversation, 'agent', $text);
+                }
+                $this->broadcastMessage($request, $lead, 'agent', $text);
+            }
+
+            // Optionally capture lead fields if the stream produced them.
+            try {
+                $variables = $this->voiceflow->getVariables($userId);
+                $captured = $this->voiceflow->extractLeadFields($variables);
+                if ($captured !== []) {
+                    $lead = $this->upsertLead($request, $lead, $userId, $captured);
+                }
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            echo 'event: summary'."\n";
+            echo 'data: '.json_encode([
+                'messages_billed' => $messagesBilled,
+                'lead_id' => $lead?->id,
+                'ended' => $parsed['ended'],
+                'buttons' => $parsed['buttons'],
+            ])."\n\n";
+            flush();
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache, no-transform',
+            'X-Accel-Buffering' => 'no',
+            'Connection' => 'keep-alive',
+        ]);
+    }
+
+    protected function sseError(string $message, int $status): StreamedResponse
+    {
+        return new StreamedResponse(function () use ($message, $status): void {
+            echo 'event: error'."\n";
+            echo 'data: '.json_encode(['error' => $message, 'status' => $status])."\n\n";
+            flush();
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache, no-transform',
+            'X-Accel-Buffering' => 'no',
+        ]);
     }
 
     /**

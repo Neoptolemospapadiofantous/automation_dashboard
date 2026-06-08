@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Models\Agent;
+use App\Services\Voiceflow\Client\AnalyticsClient;
+use App\Services\Voiceflow\Client\RealtimeClient;
+use App\Services\Voiceflow\Client\VoiceflowHttpClient;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -33,7 +36,6 @@ class VoiceflowService
         protected ?string $environment = null,
         protected ?string $projectId = null,
         protected ?string $runtimeUrl = null,
-        protected ?string $apiUrl = null,
         protected ?string $analyticsUrl = null,
         protected ?string $realtimeUrl = null,
         protected ?string $workspaceApiKey = null,
@@ -48,13 +50,39 @@ class VoiceflowService
         $this->environment ??= $config['environment'] ?? 'main';
         $this->projectId ??= $config['project_id'] ?? null;
         $this->runtimeUrl ??= rtrim($config['runtime_url'] ?? 'https://general-runtime.voiceflow.com', '/');
-        $this->apiUrl ??= rtrim($config['api_url'] ?? 'https://api.voiceflow.com', '/');
         $this->analyticsUrl ??= rtrim($config['analytics_url'] ?? 'https://analytics-api.voiceflow.com', '/');
         $this->realtimeUrl ??= rtrim($config['realtime_url'] ?? 'https://realtime-api.voiceflow.com', '/');
         // Workspace key is used by transcripts (analytics-api) + KB CRUD
         // (realtime-api) + KB query. Falls back to the DM key for backwards
         // compatibility, but most workspace surfaces will 401 without it.
         $this->workspaceApiKey ??= $config['workspace_api_key'] ?? null;
+    }
+
+    /**
+     * Build an AnalyticsClient from this service's current credentials.
+     * Used internally to delegate the transcript surface to the typed client.
+     */
+    protected function typedAnalytics(): AnalyticsClient
+    {
+        return new AnalyticsClient(
+            http: app(VoiceflowHttpClient::class),
+            baseUrl: (string) $this->analyticsUrl,
+            workspaceApiKey: (string) ($this->workspaceKey() ?? ''),
+            projectId: (string) ($this->projectId ?? ''),
+        );
+    }
+
+    /**
+     * Build a RealtimeClient from this service's current credentials.
+     * Used internally to delegate the KB surface to the typed client.
+     */
+    protected function typedRealtime(): RealtimeClient
+    {
+        return new RealtimeClient(
+            http: app(VoiceflowHttpClient::class),
+            baseUrl: (string) $this->realtimeUrl,
+            workspaceApiKey: (string) ($this->workspaceKey() ?? ''),
+        );
     }
 
     /**
@@ -174,6 +202,16 @@ class VoiceflowService
             throw new RuntimeException('Voiceflow is not configured.');
         }
 
+        // Cache the variables map per-(project, user) for 30 seconds. Eliminates
+        // the per-turn duplicate round-trip the chat controller did against this
+        // endpoint when it only needed the captured-lead fields. Invalidated on
+        // session reset via forgetSession() — see launch().
+        $cacheKey = sprintf('vf_vars:%s:%s', $this->projectId, $userId);
+        $cached = Cache::get($cacheKey);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
         // Per docs/voiceflow/conversations/get-conversation-state.md the
         // canonical endpoint is GET /state/user/{userID} on the runtime host,
         // authenticated with the DM key AND a separate projectID header (no
@@ -197,8 +235,11 @@ class VoiceflowService
         // only care about global variables here; the stack-scoped vars are
         // intentionally ignored (those are flow-internal, not lead fields).
         $vars = $json['variables'] ?? [];
+        $vars = is_array($vars) ? $vars : [];
 
-        return is_array($vars) ? $vars : [];
+        Cache::put($cacheKey, $vars, now()->addSeconds(30));
+
+        return $vars;
     }
 
     /**
@@ -326,14 +367,7 @@ class VoiceflowService
      */
     public function searchTranscripts(int $take = 25, int $skip = 0, array $body = []): array
     {
-        $response = $this->analyticsClient()
-            ->post("/v1/transcript/project/{$this->encode($this->projectId)}?take={$take}&skip={$skip}&order=DESC", $body ?: (object) []);
-
-        $response->throw();
-
-        $transcripts = $response->json('transcripts');
-
-        return is_array($transcripts) ? $transcripts : [];
+        return $this->typedAnalytics()->searchTranscripts($take, $skip, $body);
     }
 
     /**
@@ -344,12 +378,69 @@ class VoiceflowService
      */
     public function getTranscript(string $transcriptId): ?array
     {
-        $response = $this->analyticsClient()
-            ->get("/v1/transcript/{$this->encode($transcriptId)}?filterConversation=true");
+        return $this->typedAnalytics()->getTranscript($transcriptId);
+    }
 
-        $response->throw();
+    /**
+     * Mark a Voiceflow transcript ended. Used to force-close a stuck session
+     * server-side without ending it locally.
+     */
+    public function endTranscript(string $transcriptId): void
+    {
+        $this->typedAnalytics()->endTranscript($transcriptId);
+    }
 
-        return $response->json('transcript');
+    /**
+     * Delete a Voiceflow transcript (GDPR / sensitive-data scrubbing). The
+     * caller is responsible for any local cascading delete on Conversation.
+     */
+    public function deleteTranscript(string $transcriptId): void
+    {
+        $this->typedAnalytics()->deleteTranscript($transcriptId);
+    }
+
+    /**
+     * Aggregate analytics via the workspace usage query.
+     *
+     * @param  array<string,mixed>  $body  See docs/voiceflow/usage/query-usage.md.
+     * @return array<string,mixed>
+     */
+    public function queryUsage(array $body): array
+    {
+        return $this->typedAnalytics()->queryUsage($body);
+    }
+
+    /**
+     * Convenience: fetch interactions/messages-handled count for a metric over a window.
+     *
+     * @return int 0 on any failure (caller falls back to local-store count).
+     */
+    public function safeUsageCount(string $metric, ?string $startDate = null, ?string $endDate = null): int
+    {
+        try {
+            $body = [
+                'data' => ['name' => $metric],
+                'limit' => 1,
+            ];
+            if ($startDate !== null) {
+                $body['startDate'] = $startDate;
+            }
+            if ($endDate !== null) {
+                $body['endDate'] = $endDate;
+            }
+
+            $result = $this->queryUsage($body);
+            $count = $result['data']['count']
+                ?? $result['data']['total']
+                ?? $result['total']
+                ?? null;
+
+            return is_numeric($count) ? (int) $count : 0;
+        } catch (\Throwable $e) {
+            report($e);
+
+            return 0;
+        }
     }
 
     /**
@@ -397,7 +488,7 @@ class VoiceflowService
      * List knowledge base documents (most recently updated first).
      *
      * @param  string|null  $documentType  Filter to a single Voiceflow type:
-     *   url, pdf, text, docx, md, csv, xlsx, table.
+     *                                     url, pdf, text, docx, md, csv, xlsx, table.
      * @return array{total: int, data: array<int, array<string, mixed>>}
      */
     public function listKbDocuments(int $page = 1, int $limit = 20, ?string $documentType = null): array
@@ -456,16 +547,63 @@ class VoiceflowService
      */
     public function createKbFileDocument(string $filePath, string $name): array
     {
-        $response = $this->realtimeClient()
-            ->asMultipart()
-            ->attach('file', file_get_contents($filePath), $name)
-            ->post('/v1alpha1/public/knowledge-base/document', array_filter([
-                'projectEnvironmentIDOrAlias' => $this->environment,
-            ], fn ($v) => $v !== null && $v !== ''));
+        // Delegates to RealtimeClient::createFileDocument which uses a fopen
+        // stream + 10 MB cap, replacing the prior file_get_contents path that
+        // pulled the entire upload into memory and never errored on read.
+        return $this->typedRealtime()->createFileDocument($filePath, $name);
+    }
 
-        $response->throw();
+    /**
+     * Create a text-paste KB document (raw string, no file upload).
+     *
+     * @return array<string, mixed> The created document payload.
+     */
+    public function createKbTextDocument(string $text, string $name): array
+    {
+        return $this->typedRealtime()->createTextDocument($text, $name);
+    }
 
-        return $response->json('data') ?? [];
+    /**
+     * Upload a structured tabular KB document.
+     *
+     * @return array<string, mixed> The created document payload.
+     */
+    public function uploadKbTable(string $filePath, string $name): array
+    {
+        return $this->typedRealtime()->uploadTableDocument($filePath, $name);
+    }
+
+    /**
+     * Replace a KB document's content (PUT).
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function replaceKbDocument(string $documentID, array $data): array
+    {
+        return $this->typedRealtime()->replaceDocument($documentID, $data);
+    }
+
+    /**
+     * Patch a KB document's metadata (tags, name, custom fields).
+     *
+     * @param  array<string, mixed>  $metadata
+     * @return array<string, mixed>
+     */
+    public function patchKbDocument(string $documentID, array $metadata): array
+    {
+        return $this->typedRealtime()->patchDocument($documentID, $metadata);
+    }
+
+    /**
+     * Patch metadata on a single KB chunk.
+     *
+     * @param  array<string, mixed>  $metadata
+     * @return array<string, mixed>
+     */
+    public function patchKbChunk(string $documentID, string $chunkID, array $metadata): array
+    {
+        return $this->typedRealtime()->patchChunk($documentID, $chunkID, $metadata);
     }
 
     /**
@@ -587,27 +725,6 @@ class VoiceflowService
     /**
      * HTTP client for the Analytics/Transcript API (separate host).
      *
-     * Workspace-key surface (transcripts, transcript properties, evaluations,
-     * usage). The DM key will 401 here for most tenants. Falls back to the
-     * DM key but the tenant should configure voiceflow_workspace_api_key.
-     */
-    protected function analyticsClient(): PendingRequest
-    {
-        if (! $this->isConfigured()) {
-            throw new RuntimeException('Voiceflow is not configured.');
-        }
-
-        return Http::baseUrl($this->analyticsUrl)
-            ->withHeaders([
-                'authorization' => $this->workspaceKey(),
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ])
-            ->connectTimeout(5)
-            ->timeout(20);
-    }
-
-    /**
      * Get a cached session key for a user, starting a new session if needed.
      */
     protected function sessionKey(string $userId): string
@@ -666,35 +783,6 @@ class VoiceflowService
     protected function sessionCacheKey(string $userId): string
     {
         return 'vf_session:'.$this->projectId.':'.$this->environment.':'.$userId;
-    }
-
-    /**
-     * Client authed with the raw API key (for state/variables endpoints).
-     */
-    protected function apiClient(): PendingRequest
-    {
-        if (! $this->isConfigured()) {
-            throw new RuntimeException('Voiceflow is not configured.');
-        }
-
-        return Http::baseUrl($this->runtimeUrl)
-            ->withHeaders([
-                'authorization' => $this->apiKey,
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ])
-            ->connectTimeout(5)
-            ->timeout(15);
-    }
-
-    protected function statePath(string $userId): string
-    {
-        return sprintf(
-            '/v4/project/%s/environment/%s/user/%s/state',
-            $this->encode($this->projectId),
-            $this->encode($this->environment),
-            $this->encode($userId),
-        );
     }
 
     protected function sessionFailureReason(int $status): string

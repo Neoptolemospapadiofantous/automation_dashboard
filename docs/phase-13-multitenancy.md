@@ -10,6 +10,14 @@ team-scoping already covers data isolation.
 
 ## End-to-end onboarding flow
 
+> **Note (auto-synced 2026-06-08):** The 3-step BYOK wizard below was the
+> Phase E design. BYOK was dropped in `0ede0da` and Phase K (project pool)
+> replaced env-clone provisioning — managed signups now land active
+> atomically. See the Phase E auto-sync note + the Phase K section for the
+> current `Intro → POST /onboarding/start → Done` flow. The `/agent/health`
+> probe node refers to a route that was renamed to `/chat/health` in
+> Phase 14.
+
 ```mermaid
 flowchart TD
     A[User signs up] --> B{Has an active agent\non current team?}
@@ -32,6 +40,11 @@ active agent on a different team they belong to.
 ## Request flow once configured
 
 How a single agent-chat round trip flows through the system after onboarding:
+
+> **Note (auto-synced 2026-06-08):** The Mermaid uses the historical
+> `/agent/interact` URL. The route was renamed to `/chat/interact` in
+> Phase 14 (see `docs/phase-14-public-stats.md#routes-also-renamed-in-this-phase`).
+> The flow is otherwise unchanged.
 
 ```mermaid
 sequenceDiagram
@@ -163,8 +176,8 @@ and `switchAgent(Agent)` that rejects cross-team switches.
 Tests added in `VoiceflowServiceResolutionTest` (5 cases):
 - Service resolved through the container uses the current agent's credentials
 - Falls back to `.env` config when no agent is current
-- End-to-end through `/agent/health`: tenant sees their `project_id`
-- End-to-end through `/agent/health`: no-agent user sees the env fallback
+- End-to-end through `/chat/health` (was `/agent/health` before the Phase 14 rename): tenant sees their `project_id`
+- End-to-end through `/chat/health` (was `/agent/health` before the Phase 14 rename): no-agent user sees the env fallback
 - `forAgent()` factory tested directly
 
 ## Phase C — Per-agent webhook (shipped)
@@ -234,6 +247,15 @@ current-agent fallback, rotate-secret flash, switch-current rejects
 foreign agents, settings page surfaces webhook URL + secret correctly.
 
 ## Phase E — Onboarding wizard (shipped)
+
+> **Note (auto-synced 2026-06-05):** The Connect step described below
+> was removed in `0ede0da` when BYOK was dropped from the product
+> surface. The wizard is now a single managed-only flow
+> (`Intro` → POST `/onboarding/start` → `Done`); `Pages/Onboarding/Connect.vue`
+> is gone and `OnboardingState` collapsed to three cases (`NeedsTeam`,
+> `NeedsAgent`, `Complete`). `OnboardingController::credentialRules()`
+> stays for ops use via tinker. See `OnboardingController` for the
+> current shape.
 
 Three Inertia pages, all under `/onboarding`:
 
@@ -336,7 +358,7 @@ fixtures with `agent_id`, reflecting the new SaaS model.
 - **OAuth with Voiceflow.** They don't offer it for this use case.
 - **Managed Voiceflow workspace.** We don't host Voiceflow on the user's
   behalf — pure BYOK keeps usage costs off our books.
-- **Per-agent KB.** Phase 12's KB controller already targets a single project;
+- **Per-agent KB.** [[phase-12-knowledge-base|Phase 12's KB controller already targets a single project]];
   in Phase G it'll switch on `current_agent_id` automatically.
 
 ## Lifecycle architecture
@@ -427,14 +449,17 @@ The guard on `draft → active` is enforced in two places:
 
 ### Onboarding state diagram
 
+> **Note (auto-synced 2026-06-05):** `NeedsCredentials` and
+> `NeedsHealthCheck` were removed in `0ede0da` (BYOK drop). The current
+> state machine has three cases — `NeedsTeam`, `NeedsAgent`, `Complete`
+> — because managed signups land ACTIVE atomically. See
+> `app/Lifecycle/OnboardingState.php`.
+
 ```mermaid
 stateDiagram-v2
     [*] --> NeedsTeam : new user
     NeedsTeam --> NeedsAgent : team created (Jetstream)
-    NeedsAgent --> NeedsCredentials : CreateAgent action
-    NeedsCredentials --> NeedsHealthCheck : creds pasted
-    NeedsHealthCheck --> Complete : UpdateAgentCredentials + green probe
-    NeedsHealthCheck --> NeedsCredentials : probe failed, retry
+    NeedsAgent --> Complete : CreateAgent (pool allocate + activate)
     Complete --> [*]
 ```
 
@@ -694,12 +719,12 @@ When Phase K shipped, the obsolete Phase J pieces were removed:
 
 ## Adjacent work — chat-route rename
 
-Shipped alongside Phase 14. The chat-panel routes (`agent.*`,
+[[phase-14-public-stats|Shipped alongside Phase 14]]. The chat-panel routes (`agent.*`,
 `Pages/Agent/`) were renamed to `chat.*` / `Pages/Chat/` to remove the
 long-standing one-letter collision with the agents-CRUD routes
 (`agents.*`). Same controller logic, new URLs + route names. See
 [phase-14-public-stats.md](./phase-14-public-stats.md#routes-also-renamed-in-this-phase)
-for the full rename map. Phase 5 doc has been updated to match.
+for the full rename map. [[phase-5-voiceflow|Phase 5 doc has been updated to match]].
 
 ## See also
 

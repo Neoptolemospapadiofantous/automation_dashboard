@@ -1,8 +1,14 @@
 <?php
 
+use App\Billing\Exceptions\OutOfCredits;
+use App\Billing\Exceptions\PlanLimitExceeded;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Lifecycle\InvalidTransition;
+use App\Provisioning\PoolExhausted;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,8 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            HandleInertiaRequests::class,
+            AddLinkHeadersForPreloadedAssets::class,
         ]);
 
         //
@@ -24,7 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Out-of-credits is a billing/payment state, not an app error.
         // 402 Payment Required with a JSON payload the chat UI renders as
         // an upgrade prompt.
-        $exceptions->render(function (\App\Billing\Exceptions\OutOfCredits $e, $request) {
+        $exceptions->render(function (OutOfCredits $e, $request) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'error' => $e->getMessage(),
@@ -41,7 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // inline in AgentController::store only — any other caller (jobs,
         // API endpoints) would have leaked as 500. 403 Forbidden with
         // structured payload so the UI knows what limit was hit.
-        $exceptions->render(function (\App\Billing\Exceptions\PlanLimitExceeded $e, $request) {
+        $exceptions->render(function (PlanLimitExceeded $e, $request) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'error' => $e->getMessage(),
@@ -63,7 +69,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Voiceflow project pool empty — no available projects to allocate
         // for a managed-mode signup. 503 because it's a capacity issue
         // (operator needs to add more pool entries), not the user's fault.
-        $exceptions->render(function (\App\Provisioning\PoolExhausted $e, $request) {
+        $exceptions->render(function (PoolExhausted $e, $request) {
             $payload = [
                 'error' => 'We\'re at capacity right now. Please try again in a few minutes — we\'ve been notified.',
                 'detail' => $e->getMessage(),
@@ -79,12 +85,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // State machine refusal (illegal transition / guard fail). Maps
         // to 422 Unprocessable so the kanban / status-change UIs render
         // it as a validation-style error instead of a 500.
-        $exceptions->render(function (\App\Lifecycle\InvalidTransition $e, $request) {
+        $exceptions->render(function (InvalidTransition $e, $request) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'error' => $e->getMessage(),
-                    'from' => $e->from instanceof \BackedEnum ? $e->from->value : $e->from,
-                    'to' => $e->to instanceof \BackedEnum ? $e->to->value : $e->to,
+                    'from' => $e->from instanceof BackedEnum ? $e->from->value : $e->from,
+                    'to' => $e->to instanceof BackedEnum ? $e->to->value : $e->to,
                     'reason' => $e->reason,
                 ], 422);
             }

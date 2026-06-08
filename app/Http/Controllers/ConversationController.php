@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Conversation;
+use App\Models\Lead;
 use App\Models\Message;
+use App\Services\VoiceflowService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -23,7 +26,7 @@ class ConversationController extends Controller
         // current team + agent (no cross-tenant peek via URL guessing).
         $leadFilter = null;
         if ($request->filled('lead_id')) {
-            $leadFilter = \App\Models\Lead::query()
+            $leadFilter = Lead::query()
                 ->where('team_id', $team->id)
                 ->forAgent($team->current_agent_id)
                 ->find($request->integer('lead_id'));
@@ -75,6 +78,67 @@ class ConversationController extends Controller
             'conversation' => $conversation,
             'messages' => $messages,
         ]);
+    }
+
+    /**
+     * Force-end the upstream Voiceflow transcript (does NOT delete locally).
+     * Used to recover stuck sessions visible in the UI but apparently still
+     * "active" upstream. Returns a redirect back so the page reloads with
+     * an updated `ended_at`.
+     */
+    public function endUpstream(
+        Request $request,
+        Conversation $conversation,
+        VoiceflowService $voiceflow,
+    ): RedirectResponse {
+        $team = $request->user()->currentTeam;
+        abort_unless($conversation->team_id === $team->id, 403);
+        abort_unless($conversation->agent_id === $team->current_agent_id, 404);
+
+        if ($conversation->voiceflow_transcript_id === null) {
+            return back()->withErrors(['transcript' => 'This conversation has no upstream transcript yet.']);
+        }
+
+        try {
+            $voiceflow->endTranscript($conversation->voiceflow_transcript_id);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withErrors(['transcript' => 'Voiceflow rejected the end request — see logs.']);
+        }
+
+        $conversation->forceFill(['ended_at' => now(), 'status' => 'ended'])->save();
+
+        return back();
+    }
+
+    /**
+     * GDPR-grade delete: remove the upstream Voiceflow transcript AND drop
+     * the local conversation + messages. Irreversible.
+     */
+    public function deleteUpstream(
+        Request $request,
+        Conversation $conversation,
+        VoiceflowService $voiceflow,
+    ): RedirectResponse {
+        $team = $request->user()->currentTeam;
+        abort_unless($conversation->team_id === $team->id, 403);
+        abort_unless($conversation->agent_id === $team->current_agent_id, 404);
+
+        if ($conversation->voiceflow_transcript_id !== null) {
+            try {
+                $voiceflow->deleteTranscript($conversation->voiceflow_transcript_id);
+            } catch (\Throwable $e) {
+                report($e);
+
+                return back()->withErrors(['transcript' => 'Voiceflow rejected the delete request — see logs.']);
+            }
+        }
+
+        $conversation->messages()->delete();
+        $conversation->delete();
+
+        return redirect()->route('conversations.index');
     }
 
     /**

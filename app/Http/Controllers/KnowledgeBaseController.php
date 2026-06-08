@@ -135,6 +135,30 @@ class KnowledgeBaseController extends Controller
     }
 
     /**
+     * Paste raw text directly as a KB document (no file upload).
+     * Useful for short policy snippets, FAQ entries, etc.
+     */
+    public function storeText(Request $request): RedirectResponse
+    {
+        $this->abortIfUnconfigured();
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'text' => ['required', 'string', 'max:200000'],
+        ]);
+
+        try {
+            $this->voiceflow->createKbTextDocument($data['text'], $data['name']);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withErrors(['text' => 'Voiceflow rejected the text. Try shorter content.']);
+        }
+
+        return back();
+    }
+
+    /**
      * Inspect one document — chunks + metadata. Returned as JSON because
      * the UI renders it in a side panel without a full page navigation.
      */

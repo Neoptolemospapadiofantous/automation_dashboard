@@ -65,7 +65,6 @@ return [
         // Required for the V4 start-session endpoint. Found in agent settings.
         'project_id' => env('VOICEFLOW_PROJECT_ID'),
         'runtime_url' => env('VOICEFLOW_RUNTIME_URL', 'https://general-runtime.voiceflow.com'),
-        'api_url' => env('VOICEFLOW_API_URL', 'https://api.voiceflow.com'),
         // Analytics/Transcript API lives on a separate host.
         'analytics_url' => env('VOICEFLOW_ANALYTICS_URL', 'https://analytics-api.voiceflow.com'),
         // Knowledge Base document management lives on the realtime host.
@@ -74,6 +73,14 @@ return [
         'lead_variables' => ['name', 'email', 'phone', 'company'],
         // Webhook shared secret for the Voiceflow Custom Action capture endpoint.
         'webhook_secret' => env('VOICEFLOW_WEBHOOK_SECRET'),
+        // Platform-level shared secret for org-events webhooks (fallback when
+        // Svix is not configured).
+        'org_webhook_secret' => env('VOICEFLOW_ORG_WEBHOOK_SECRET'),
+        // Svix secret for verifying organization.* webhook signatures
+        // (whsec_<base64-key> form). Preferred over the shared secret above.
+        'svix_secret' => env('VOICEFLOW_SVIX_SECRET'),
+        // Log channel for VoiceflowHttpClient structured calls; falls back to stack.
+        'log_channel' => env('VOICEFLOW_LOG_CHANNEL', 'stack'),
     ],
 
 ];

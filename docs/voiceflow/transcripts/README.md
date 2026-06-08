@@ -34,6 +34,6 @@ All endpoints are hosted on `https://analytics-api.voiceflow.com` and authentica
 ## Transcript evaluations (LLM judges)
 
 The evaluation endpoints (`/v1/transcript-evaluation/*`) are filed under
-**[../evaluations/](../evaluations/README.md)** — they share a host with
+**[[docs/voiceflow/evaluations/README|[../evaluations/](../evaluations/README.md)]]** — they share a host with
 transcripts but are a distinct API surface (define an evaluation once,
 run it against many transcripts).

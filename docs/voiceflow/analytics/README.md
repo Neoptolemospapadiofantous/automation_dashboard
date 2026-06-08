@@ -11,7 +11,7 @@ The analytics surface bundles four groups on `https://analytics-api.voiceflow.co
 ## Endpoint groupings
 
 - **Usage queries** — see `../usage/query-usage.md` (`POST /v2/query/usage`).
-- **Transcript queries** (search/get/delete/end transcripts and properties/evaluations) — see `../transcripts/README.md`. These endpoints are part of the analytics API host but are filed under `transcripts/` to mirror Voiceflow's own product grouping.
+- **[[docs/voiceflow/transcripts/README|Transcript queries]]** (search/get/delete/end transcripts and properties/evaluations) — see `../transcripts/README.md`. These endpoints are part of the analytics API host but are filed under `transcripts/` to mirror Voiceflow's own product grouping.
 
 ## Notes / gaps
 

@@ -4,7 +4,7 @@ Where every product surface connects to every other, what's wired today,
 and what's still loose. Written 2026-06-04 as the "make everything
 interconnected" target, then maintained as we close gaps.
 
-> Phase docs (`phase-N-*.md`) cover *what shipped*. This doc covers *how
+> [[docs/README|Phase docs (`phase-N-*.md`)]] cover *what shipped*. This doc covers *how
 > the pieces talk to each other* — orthogonal lens, easier to scan when
 > deciding the next feature.
 
@@ -79,20 +79,29 @@ explicit hyperlinks the operator clicks.
 
 ## Voiceflow API coverage
 
+> **Note (auto-synced 2026-06-08):** Phase 15 (`docs/phase-15-voiceflow-wrapper.md`)
+> shipped typed subclients (`RuntimeClient`, `AnalyticsClient`,
+> `RealtimeClient`, `StreamingClient`) plus Evaluations + Environments UI
+> routes, a session-lifecycle inbound webhook, and an org-events inbound
+> webhook. The table + Tier 2/3/4 entries below were updated to reflect
+> the new shipped surface.
+
 | API group | Endpoints we ship | Surface |
 |---|---|---|
-| Dialog Manager (Conversations) | `launch`, `interact`, session, getVariables | `/chat/*`, webhook |
-| Knowledge Base | list (+ type filter), create-url, create-file, get-with-chunks, delete, query | `/knowledge` |
-| Transcripts | backfill (one-shot import) | `php artisan vf:transcripts:backfill` |
-| Webhooks (inbound) | per-agent lead-captured | `/api/voiceflow/lead-captured/{agent:slug}` |
+| [[docs/voiceflow/conversations/README|Dialog Manager (Conversations)]] | `launch`, `interact`, `interact/stream`, session, getVariables | `/chat/*`, webhook |
+| [[docs/voiceflow/knowledge-base/README|Knowledge Base]] | list (+ type filter), create-url, create-file, create-text, get-with-chunks, delete, query, replace/patch (wrapper-only) | `/knowledge` |
+| [[docs/voiceflow/transcripts/README|Transcripts]] | search (paginated stream), get, end, delete, backfill | `php artisan voiceflow:backfill`, `ConversationController::endUpstream`/`deleteUpstream` |
+| [[docs/voiceflow/webhooks/README|Webhooks (inbound)]] | per-agent lead-captured, per-agent session-lifecycle, platform-level org-events | `/api/voiceflow/lead-captured/{agent:slug}`, `/api/voiceflow/webhooks/session/{agent:slug}`, `/api/voiceflow/webhooks/org` |
+| **Project Environments** | list, get, clone, publish, delete, export, traffic split | `/agents/environments*` |
+| **Evaluations** | list, get, create, run, queue, delete | `/agents/evaluations*` |
+| **Usage** | `safeUsageCount()` helper on `VoiceflowService` | wrapper-only (no UI surface yet) |
+| **Analytics** | wrapper methods on `AnalyticsClient` | wrapper-only (no UI surface yet) |
 | **Projects** | nothing yet | – |
-| **Analytics** | nothing yet | – |
-| **Usage** | nothing yet | – |
-| **Evaluations** | nothing yet | – |
-| **Session/org webhooks** | nothing yet | – |
 
-The bottom five are the headroom — each is a wedge that adds a
-distinct dimension of value without duplicating what's already there.
+The remaining headroom is the Projects API (no public `POST /project` —
+see Phase K in [[phase-13-multitenancy|phase-13-multitenancy.md]] for why)
+plus dashboard surfaces for the Analytics + Usage wrappers that already
+ship as untyped helpers.
 
 ## Open interconnection gaps (ranked by leverage)
 
@@ -141,39 +150,46 @@ distinct dimension of value without duplicating what's already there.
 
 ### Tier 2 — agent quality + observability
 
-- **Analytics API → Dashboard.** Per-agent breakdowns of:
+- **[[docs/voiceflow/analytics/README|Analytics API]] → Dashboard.** Per-agent breakdowns of:
   `interactions`, `unique_users`, `top_intents`. Powers a richer
   Dashboard with "what users actually ask" — currently the only
-  observability is raw message count.
+  observability is raw message count. **Wrapper shipped in Phase 15
+  (`AnalyticsClient`); no dashboard surface consumes it yet.**
   Doc: `docs/voiceflow/analytics/overview.md`.
 
-- **Evaluations.** Rate transcripts via Voiceflow's LLM-judge
-  endpoint. UI: a "Run quality check" button on the Conversations
-  list runs evals across the last N transcripts. Becomes a value
-  prop on the Operator plan ("you didn't just deploy an agent, you
-  monitored it").
+- **Evaluations.** ✅ Shipped in Phase 15. `/agents/evaluations*`
+  pages + `EvaluationsController` + `AnalyticsClient` evaluation
+  methods (list / get / create / run / queue / delete).
   Doc: `docs/voiceflow/evaluations/README.md`.
 
 ### Tier 3 — environment / lifecycle controls
 
-- **Project Environments.** Voiceflow supports `main`, `development`,
-  `staging` per project. Currently we pin to `main` per pool entry.
-  Exposing the environment toggle on `/agents/{slug}` (and letting
-  the chat panel run on `development` while leads still use `main`)
-  would unlock A/B testing of flows.
+- **Project Environments.** ✅ Shipped in Phase 15. `/agents/environments*`
+  pages + `EnvironmentsController` + `RealtimeClient` environment methods
+  (list / get / clone / publish / delete / export / traffic split).
+  Operator can clone `main → staging`, publish, and export.
   Docs: `docs/voiceflow/projects/{list,get,publish,delete}-environment.md`.
 
-- **Org-events webhook** (Svix-signed). Subscribe to
-  `organization.project.created/deleted/published`. Use it to keep
-  the `voiceflow_project_pool` table in sync if an operator does
-  manual cleanup in Voiceflow's UI.
+- **Org-events webhook** (Svix-signed). ✅ Shipped in Phase 15 as
+  `POST /api/voiceflow/webhooks/org` (`OrgEventsController`).
+  Auth is the platform-level `services.voiceflow.org_webhook_secret`
+  via `hash_equals`; Svix HMAC verification is wired through
+  `SvixVerifier` but the `svix/svix` composer dep is still pending —
+  until then the shared secret is the trust boundary. Reactively
+  retires `voiceflow_project_pool` rows on `organization.project.deleted`.
   Doc: `docs/voiceflow/webhooks/org-events.md`.
 
 ### Tier 4 — channel expansion
 
 - **Session lifecycle webhook** (`runtime.call.start/end`,
-  `runtime.session.start/end`). Useful when we add a phone-call
-  channel — currently the dashboard assumes web-chat only.
+  `runtime.session.start/end`). ✅ Shipped in Phase 15 as
+  `POST /api/voiceflow/webhooks/session/{agent:slug}`
+  (`SessionLifecycleController`). Per-agent `X-Webhook-Secret`,
+  persists every event to `voiceflow_webhook_events` with idempotency
+  on `(agent_id, event_id)`, reactively updates
+  `Conversation.{started_at, ended_at, status, voiceflow_transcript_id}`.
+  Useful for a future phone-call channel — currently the dashboard
+  assumes web-chat only.
   Doc: `docs/voiceflow/webhooks/session-lifecycle.md`.
 
 ## Operating principle

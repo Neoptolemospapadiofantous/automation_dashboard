@@ -8,26 +8,27 @@ write a new phase doc that supersedes the prior one).
 
 ## Reading order for newcomers
 
-1. [phase-1-foundation.md](./phase-1-foundation.md) — Laravel + Jetstream + Inertia base
-2. [phase-13-multitenancy.md](./phase-13-multitenancy.md) — current tenancy model + lifecycle (read this if you're touching anything customer-facing)
+1. [phase-1-foundation.md](./phase-1-foundation.md) — [[phase-1-foundation|Laravel + Jetstream + Inertia base]]
+2. [phase-13-multitenancy.md](./phase-13-multitenancy.md) — [[phase-13-multitenancy|current tenancy model + lifecycle]] (read this if you're touching anything customer-facing)
 3. [public-surface.md](./public-surface.md) — the public API contract consumed by the marketing site
 4. The phase doc for whatever you're working on
 
 ## Index by topic
 
 ### Tenancy + lifecycle
-- [phase-13-multitenancy.md](./phase-13-multitenancy.md) — per-team agents, modes (BYOK vs managed), state machine, project-pool provisioning, onboarding wizard
+- [phase-13-multitenancy.md](./phase-13-multitenancy.md) — per-team agents, state machine, project-pool provisioning, onboarding wizard (BYOK was removed from the product surface in Phase 14; the `mode` column remains for ops-only Custom-tier use)
 
 ### Voiceflow integration
-- [phase-5-voiceflow.md](./phase-5-voiceflow.md) — Dialog Manager proxy, lead capture, chat panel
-- [phase-6-conversation-storage.md](./phase-6-conversation-storage.md) — conversations + messages persistence
-- [phase-11-transcript-backfill.md](./phase-11-transcript-backfill.md) — Voiceflow Transcripts API import
+- [phase-5-voiceflow.md](./phase-5-voiceflow.md) — [[phase-5-voiceflow|Dialog Manager proxy, lead capture, chat panel]]
+- [phase-6-conversation-storage.md](./phase-6-conversation-storage.md) — [[phase-6-conversation-storage|conversations + messages persistence]]
+- [phase-11-transcript-backfill.md](./phase-11-transcript-backfill.md) — [[phase-11-transcript-backfill|Voiceflow Transcripts API import]]
 - [phase-12-knowledge-base.md](./phase-12-knowledge-base.md) — Voiceflow KB API
+- [phase-15-voiceflow-wrapper.md](./phase-15-voiceflow-wrapper.md) — full wrapper (typed subclients, evaluations, environments, session + org webhooks); supersedes Phase 5's ad-hoc client
 - [voiceflow/README.md](./voiceflow/README.md) — Voiceflow API reference dump (vendor docs, frozen)
 
 ### Pipeline + UX
-- [phase-3-leads.md](./phase-3-leads.md) — kanban board, live updates
-- [phase-7-delegation.md](./phase-7-delegation.md) — round-robin + manual lead assignment
+- [phase-3-leads.md](./phase-3-leads.md) — [[phase-3-leads|kanban board, live updates]]
+- [phase-7-delegation.md](./phase-7-delegation.md) — [[phase-7-delegation|round-robin + manual lead assignment]]
 
 ### Public surface
 - [public-surface.md](./public-surface.md) — `/api/public/stats` contract, safety doctrine, bucketing
@@ -36,9 +37,13 @@ write a new phase doc that supersedes the prior one).
 - [architecture/landing-sse-pipeline.md](./architecture/landing-sse-pipeline.md) — landing-side SSE pipeline (Mermaid)
 
 ### Infra + ops
-- [phase-2-realtime.md](./phase-2-realtime.md) — broadcasting backbone (Pusher / Echo)
+- [phase-2-realtime.md](./phase-2-realtime.md) — [[phase-2-realtime|broadcasting backbone (Pusher / Echo)]]
 - [phase-4-deploy.md](./phase-4-deploy.md) — Forge deploy command
 - [typesense-setup.md](./typesense-setup.md) — conversation search backend
+
+### Hermes — CI + agent audits
+- [hermes/README.md](./hermes/README.md) — [[hermes/README|operational doc, commands, billing context]]
+- [hermes/index.md](./hermes/index.md) — [[hermes/index|chronological index of agent session notes]]
 
 ## Conventions
 

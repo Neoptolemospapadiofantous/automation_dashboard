@@ -9,14 +9,14 @@ diff-able reference that doesn't shift under us mid-implementation.
 
 | Surface | Folder | Files | Host | Auth |
 |---|---|---|---|---|
-| **Conversations** (V4) | [conversations/](./conversations/) | 16 | `general-runtime.voiceflow.com` | sessionKey (per-conv) + DM key (to start) |
-| **Knowledge Base** | [knowledge-base/](./knowledge-base/) | 11 | `realtime-api.voiceflow.com` + `general-runtime.voiceflow.com` (query) | Workspace key |
-| **Transcripts** | [transcripts/](./transcripts/) | 13 | `analytics-api.voiceflow.com` | Workspace key |
-| **Evaluations** (LLM judges over transcripts) | [evaluations/](./evaluations/) | 9 | `analytics-api.voiceflow.com` | Workspace key |
+| **[[docs/voiceflow/conversations/README|Conversations** (V4)]] | [conversations/](./conversations/) | 16 | `general-runtime.voiceflow.com` | sessionKey (per-conv) + DM key (to start) |
+| **[[docs/voiceflow/knowledge-base/README|Knowledge Base**]] | [knowledge-base/](./knowledge-base/) | 11 | `realtime-api.voiceflow.com` + `general-runtime.voiceflow.com` (query) | Workspace key |
+| **[[docs/voiceflow/transcripts/README|Transcripts**]] | [transcripts/](./transcripts/) | 13 | `analytics-api.voiceflow.com` | Workspace key |
+| **[[docs/voiceflow/evaluations/README|Evaluations** (LLM judges over transcripts)]] | [evaluations/](./evaluations/) | 9 | `analytics-api.voiceflow.com` | Workspace key |
 | **Analytics** | [analytics/](./analytics/) | 2 | `analytics-api.voiceflow.com` | Workspace key |
 | **Usage** | [usage/](./usage/) | 2 | `analytics-api.voiceflow.com` | Workspace key |
-| **Project / Environments** | [projects/](./projects/) | 10 | `api.voiceflow.com` | Workspace key |
-| **Webhooks** (inbound from Voiceflow) | [webhooks/](./webhooks/) | 3 | (configured per subscription) | HMAC signature |
+| **[[docs/voiceflow/projects/README|Project / Environments**]] | [projects/](./projects/) | 10 | `api.voiceflow.com` | Workspace key |
+| **[[docs/voiceflow/webhooks/README|Webhooks** (inbound from Voiceflow)]] | [webhooks/](./webhooks/) | 3 | (configured per subscription) | HMAC signature |
 
 74 files total. Each endpoint page has frontmatter (`title`, `method`,
 `path`, `auth`, `summary`, `source`) so they're greppable and the source
@@ -30,11 +30,11 @@ URL is one click away.
 | Knowledge Base (list/create/query) | ✅ in use | `app/Http/Controllers/KnowledgeBaseController.php` |
 | Transcripts (search + get) | ✅ in use | `voiceflow:backfill` artisan command |
 | Per-agent webhook (us → us) | ✅ in use | `app/Http/Controllers/VoiceflowWebhookController.php` (this is OUR webhook for Voiceflow Custom Actions; not the inbound ones below) |
-| Conversations streaming (SSE) | ❌ not used | candidate for token-by-token chat UX |
-| Project / Environments | ❌ not used | see "managed-tier" note below |
-| Evaluations | ❌ not used | candidate for "is the agent regressing?" panel |
-| Usage API | ❌ not used | candidate for the stats page |
-| Inbound webhooks (session-lifecycle, org-events) | ❌ not used | candidate for replacing some polling |
+| Conversations streaming (SSE) | ✅ in use | `StreamingClient` + `VoiceflowController::interactStream` (Phase 15); `Chat/Index.vue` uses fetch+ReadableStream with non-stream fallback |
+| Project / Environments | ✅ in use | `RealtimeClient::{list,get,clone,delete,publish,exportEnvironmentJson,getTrafficSplit,setTrafficSplit}Environment(s)`; UI at `Pages/Agents/Environments.vue`. Still no public `POST /project` — see "managed-tier" note below |
+| Evaluations | ✅ in use | `AnalyticsClient::{create,list,get,update,delete,run,queueBatch,estimate}Evaluation`; UI at `Pages/Agents/Evaluations.vue` |
+| [[docs/voiceflow/usage/README|Usage API]] | ✅ in use | `AnalyticsClient::queryUsage` + `VoiceflowService::safeUsageCount` (per-agent stats panel still pending — wrapper ready) |
+| Inbound webhooks (session-lifecycle, org-events) | ✅ in use | `Voiceflow\SessionLifecycleController` (per-agent secret) + `Voiceflow\OrgEventsController` (Svix HMAC, falls back to platform shared secret); persists to `voiceflow_webhook_events` |
 
 ## Critical finding: managed-tier provisioning
 
@@ -54,7 +54,7 @@ Implication for the SaaS direction:
     split (weaker isolation, shared rate limits)
   - Manual project creation as part of onboarding
 
-This was discussed in the parent multi-tenancy doc — see
+This was discussed in the [[phase-13-multitenancy|parent multi-tenancy doc]] — see
 [`../phase-13-multitenancy.md`](../phase-13-multitenancy.md).
 
 ## Refreshing the mirror

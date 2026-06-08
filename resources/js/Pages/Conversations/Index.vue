@@ -86,6 +86,7 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
                 </div>
 
                 <!-- Pagination -->
+                <!-- @hermes-keep: Laravel paginator labels are server-controlled HTML entities (&laquo; / &raquo;), not user input. See .hermes/suppressions.yaml -->
                 <div v-if="conversations.links?.length > 3" class="mt-4 flex flex-wrap gap-1">
                     <Link
                         v-for="link in conversations.links"
