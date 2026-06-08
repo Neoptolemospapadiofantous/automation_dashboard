@@ -82,6 +82,10 @@ class Agent extends Model
         return [
             'voiceflow_api_key' => 'encrypted',
             'voiceflow_workspace_api_key' => 'encrypted',
+            // webhook_secret authenticates inbound Voiceflow webhooks; storing
+            // cleartext while sibling Voiceflow keys are encrypted is asymmetric
+            // blast-radius. Encrypt at rest; reads are transparent via the cast.
+            'webhook_secret' => 'encrypted',
             'last_health_check_at' => 'datetime',
             'last_health_ok' => 'boolean',
         ];

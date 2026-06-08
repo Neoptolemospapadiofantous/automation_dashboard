@@ -49,6 +49,15 @@ function uploadFile() {
     });
 }
 
+// --- Text-paste form --------------------------------------------------------
+const textForm = useForm({ name: '', text: '' });
+function addText() {
+    textForm.post(route('knowledge.text'), {
+        preserveScroll: true,
+        onSuccess: () => textForm.reset(),
+    });
+}
+
 // --- Type filter ------------------------------------------------------------
 function changeFilter(type) {
     router.get(route('knowledge.index'), { type: type || undefined }, {
@@ -177,8 +186,8 @@ const description = computed(() => {
                             </div>
                         </div>
 
-                        <!-- Add forms (two side-by-side) -->
-                        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                        <!-- Add forms (three: URL / file / text-paste) -->
+                        <div class="mt-4 grid gap-4 sm:grid-cols-3">
                             <form class="space-y-2 rounded-lg border border-dashed border-gray-200 p-3" @submit.prevent="addUrl">
                                 <InputLabel for="url" value="Add a URL" />
                                 <TextInput
@@ -219,6 +228,32 @@ const description = computed(() => {
                                 <p class="text-[11px] text-gray-400">PDF, DOCX, TXT, MD, CSV, XLSX · max 10 MB.</p>
                                 <PrimaryButton :disabled="fileForm.processing || !configured || !fileForm.file">
                                     {{ fileForm.processing ? 'Uploading…' : 'Upload file' }}
+                                </PrimaryButton>
+                            </form>
+
+                            <form class="space-y-2 rounded-lg border border-dashed border-gray-200 p-3" @submit.prevent="addText">
+                                <InputLabel for="text-name" value="Paste text" />
+                                <TextInput
+                                    id="text-name"
+                                    v-model="textForm.name"
+                                    type="text"
+                                    class="block w-full"
+                                    placeholder="Name (e.g. House rules)"
+                                    :disabled="!configured || textForm.processing"
+                                />
+                                <InputError :message="textForm.errors.name" />
+                                <textarea
+                                    id="text-body"
+                                    v-model="textForm.text"
+                                    rows="3"
+                                    class="block w-full rounded-md border-gray-200 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    placeholder="Policy snippet, FAQ entry, short answer…"
+                                    :disabled="!configured || textForm.processing"
+                                />
+                                <InputError :message="textForm.errors.text" />
+                                <p class="text-[11px] text-gray-400">Plain text · max 200k chars.</p>
+                                <PrimaryButton :disabled="textForm.processing || !configured || !textForm.name || !textForm.text">
+                                    {{ textForm.processing ? 'Saving…' : 'Add text' }}
                                 </PrimaryButton>
                             </form>
                         </div>

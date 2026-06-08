@@ -20,7 +20,7 @@ Voiceflow/
 │   ├── VoiceflowHttpClient.php   Central PendingRequest factory + ensureOk() → typed exceptions + structured logging
 │   ├── RuntimeClient.php         8 public methods — session, interact, state, KB query, 401 auto-recovery
 │   ├── AnalyticsClient.php       14 public methods — transcripts (search/get/end/delete/stream), evaluations (8), usage
-│   ├── RealtimeClient.php        20 public methods — KB CRUD (list/create/replace/patch/upload-table/delete/stream),
+│   ├── RealtimeClient.php        19 public methods — KB CRUD (list/create/replace/patch/upload-table/delete/stream),
 │   │                              environments (list/get/clone/delete/publish/export/traffic split)
 │   └── StreamingClient.php       SSE wrapper for /v4/interact/stream
 ├── Dto/
@@ -112,12 +112,19 @@ All 49 prior Voiceflow tests still pass — no breaking changes.
 | `searchTranscripts` / `listKbDocuments` truncate at one page | `transcriptStream()` / `kbDocumentStream()` generators paginate to completion |
 | No structured logging | `Log::channel('voiceflow').{debug|warning|error}` on every call |
 
-## Known follow-ups (Phase G+)
+## Shipped in Phase G + H (originally listed as follow-ups)
 
-- **Frontend streaming integration** — wrapper backend is ready; `Chat/Index.vue` needs `fetch + ReadableStream` swap to consume `/chat/interact/stream` (designed for next phase)
-- **Svix HMAC for org-events webhooks** — requires adding `svix/svix` composer dep; `SessionLifecycleController` pattern is the template
-- **Evaluations + Environments UI pages** — wrappers ready; `Pages/Agents/Evaluations.vue` and `Pages/Agents/Environments.vue` to follow
-- **Webhook subscriptions** — Voiceflow has no public API for subscription management; must be configured in their dashboard
+- ✅ **Frontend streaming integration** — `Chat/Index.vue` now uses `fetch + ReadableStream` against `/chat/interact/stream`, with capability detection and axios fallback (Phase G).
+- ✅ **Svix HMAC for org-events webhooks** — implemented in-house via `app/Services/Voiceflow/Webhooks/SvixVerifier.php` without taking the `svix/svix` composer dep; 5-min replay window + multi-signature header support for key rotation. See [[hermes/decisions/2026-06-08-no-svix-composer-dep|the decision note]] (Phase H).
+- ✅ **Evaluations + Environments UI pages** — `Pages/Agents/Evaluations.vue` + `Pages/Agents/Environments.vue` shipped (Phase H).
+
+## Still pending
+
+- **Per-agent stats panel** — `VoiceflowService::safeUsageCount` is wired; no UI widget consumes it yet. Right scope is a tile on `Agents/Show.vue` + `Dashboard.vue`.
+- **Webhook subscriptions** — Voiceflow has no public API for subscription management; must be configured in their dashboard.
+- **Webhook event admin surface** — `voiceflow_webhook_events` table fills up; no UI to inspect failed/unprocessed rows.
+- **Bulk evaluations + cost estimate UX** — `queueBatchEvaluation` + `estimateEvaluation` wrappers exist; UI exposes only single-transcript runs.
+- **Editable traffic split** — `setTrafficSplit` wrapper exists; UI shows read-only table.
 
 ## Why this design
 

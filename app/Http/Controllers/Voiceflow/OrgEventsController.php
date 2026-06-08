@@ -67,10 +67,19 @@ class OrgEventsController extends Controller
             );
 
             if ($eventType === 'organization.project.deleted' && $projectId !== null) {
-                VoiceflowProjectPoolEntry::query()
+                // Driver-agnostic: per-row update so the notes-append works the same
+                // on SQLite / MySQL / Postgres. The pool is small and project-delete
+                // events are rare; the N+1 here is acceptable.
+                $now = now()->toDateTimeString();
+                $rows = VoiceflowProjectPoolEntry::query()
                     ->where('voiceflow_project_id', $projectId)
                     ->whereIn('status', ['available', 'assigned'])
-                    ->update(['status' => 'retired', 'notes' => DB::raw("COALESCE(notes,'') || '\nUpstream deleted '||CURRENT_TIMESTAMP")]);
+                    ->get();
+                foreach ($rows as $row) {
+                    $row->status = 'retired';
+                    $row->notes = ($row->notes !== null && $row->notes !== '' ? $row->notes."\n" : '')."Upstream deleted {$now}";
+                    $row->save();
+                }
             }
 
             $event->forceFill(['processed_at' => now()])->save();
