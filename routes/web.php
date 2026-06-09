@@ -9,6 +9,7 @@ use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\SystemArchitectureController;
 use App\Http\Controllers\Voiceflow\EnvironmentsController;
 use App\Http\Controllers\Voiceflow\EvaluationsController;
 use App\Http\Controllers\VoiceflowController;
@@ -180,6 +181,10 @@ Route::middleware([
     Route::post('/notifications/read', [NotificationController::class, 'readAll'])
         ->middleware('throttle:60,1')
         ->name('notifications.read');
+
+    // In-app API & data-flow documentation page (Mermaid-rendered).
+    Route::get('/system/architecture', [SystemArchitectureController::class, 'index'])
+        ->name('system.architecture');
 
     // Phase 12 Knowledge Base (Voiceflow KB API).
     Route::get('/knowledge', [KnowledgeBaseController::class, 'index'])->name('knowledge.index');
