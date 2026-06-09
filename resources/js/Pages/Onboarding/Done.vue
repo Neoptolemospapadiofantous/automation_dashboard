@@ -1,8 +1,9 @@
 <script setup>
+import { computed, ref } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 
-defineProps({
+const props = defineProps({
     agent: { type: Object, required: true },
 });
 
@@ -30,6 +31,28 @@ const nextSteps = [
         href: 'leads.index',
     },
 ];
+
+// Install snippet for the agent the wizard just provisioned. We highlight
+// this prominently because shipping the widget onto the customer's website
+// is the single highest-value action they can take right now.
+const widgetUrl = computed(() =>
+    props.agent?.slug ? `${window.location.origin}/widget/${props.agent.slug}.js` : null,
+);
+const snippet = computed(() =>
+    widgetUrl.value ? `<script src="${widgetUrl.value}" defer><\/script>` : '',
+);
+
+const copyState = ref('idle');
+async function copy() {
+    if (!snippet.value) return;
+    try {
+        await navigator.clipboard.writeText(snippet.value);
+        copyState.value = 'copied';
+        setTimeout(() => (copyState.value = 'idle'), 2000);
+    } catch (e) {
+        copyState.value = 'idle';
+    }
+}
 </script>
 
 <template>
@@ -60,6 +83,38 @@ const nextSteps = [
                         <PrimaryButton>Start chatting</PrimaryButton>
                     </Link>
                     <Link :href="route('dashboard')" class="text-sm text-gray-500 hover:text-gray-700">Go to dashboard →</Link>
+                </div>
+            </div>
+
+            <!-- One-line install snippet. Featured prominently because this
+                 is the single highest-value action — once the script is on
+                 the customer's website, conversations + leads start flowing. -->
+            <div v-if="snippet" class="mt-8 overflow-hidden rounded-2xl border border-indigo-200 bg-indigo-50/40 p-6">
+                <div class="flex items-start gap-4">
+                    <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white">
+                        ➜
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Final step</p>
+                        <h2 class="mt-1 text-lg font-semibold text-gray-900">Drop this on your website</h2>
+                        <p class="mt-1 text-sm text-gray-600">
+                            One line of HTML. Anywhere before <code class="rounded bg-white px-1 py-0.5 text-[11px]">&lt;/body&gt;</code>.
+                            A floating chat button appears bottom-right; clicking it opens your agent.
+                        </p>
+
+                        <div class="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white p-3 font-mono text-[12px] leading-relaxed text-gray-700">
+                            <pre class="whitespace-pre-wrap break-all">{{ snippet }}</pre>
+                        </div>
+
+                        <div class="mt-3 flex flex-wrap items-center gap-2">
+                            <PrimaryButton type="button" @click="copy">
+                                {{ copyState === 'copied' ? '✓ Copied' : 'Copy snippet' }}
+                            </PrimaryButton>
+                            <Link :href="route('install.index')" class="text-sm text-indigo-700 hover:text-indigo-900">
+                                Full install guide →
+                            </Link>
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardTickController;
 use App\Http\Controllers\EmbedController;
+use App\Http\Controllers\InstallController;
 use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\NotificationController;
@@ -202,6 +203,12 @@ Route::middleware([
     // In-app API & data-flow documentation page (Mermaid-rendered).
     Route::get('/system/architecture', [SystemArchitectureController::class, 'index'])
         ->name('system.architecture');
+
+    // "Install on your website" — embed snippet + instructions for the
+    // current team's current agent. Sidebar nav reaches it; onboarding's
+    // Done page links to it as the final activation step.
+    Route::get('/install', [InstallController::class, 'index'])
+        ->name('install.index');
 
     // Phase 12 Knowledge Base (Voiceflow KB API).
     Route::get('/knowledge', [KnowledgeBaseController::class, 'index'])->name('knowledge.index');
