@@ -51,6 +51,47 @@ Route::middleware([
     Route::post('/agents', [AgentController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('agents.store');
+
+    // Specific /agents/{evaluations,environments} routes MUST come before the
+    // wildcard /agents/{agent} below — Laravel matches by registration order
+    // and the wildcard's slug binding would otherwise swallow these and 404
+    // (no agent has slug 'evaluations' or 'environments').
+    Route::get('/agents/evaluations', [EvaluationsController::class, 'index'])
+        ->name('agents.evaluations.index');
+    Route::post('/agents/evaluations', [EvaluationsController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('agents.evaluations.store');
+    Route::get('/agents/evaluations/{evaluationId}', [EvaluationsController::class, 'show'])
+        ->where('evaluationId', '[A-Za-z0-9_-]+')
+        ->name('agents.evaluations.show');
+    Route::post('/agents/evaluations/{evaluationId}/run', [EvaluationsController::class, 'run'])
+        ->where('evaluationId', '[A-Za-z0-9_-]+')
+        ->middleware('throttle:30,1')
+        ->name('agents.evaluations.run');
+    Route::delete('/agents/evaluations/{evaluationId}', [EvaluationsController::class, 'destroy'])
+        ->where('evaluationId', '[A-Za-z0-9_-]+')
+        ->middleware('throttle:30,1')
+        ->name('agents.evaluations.destroy');
+
+    Route::get('/agents/environments', [EnvironmentsController::class, 'index'])
+        ->name('agents.environments.index');
+    Route::post('/agents/environments/clone', [EnvironmentsController::class, 'clone'])
+        ->middleware('throttle:10,1')
+        ->name('agents.environments.clone');
+    Route::post('/agents/environments/{idOrAlias}/publish', [EnvironmentsController::class, 'publish'])
+        ->where('idOrAlias', '[A-Za-z0-9_-]+')
+        ->middleware('throttle:10,1')
+        ->name('agents.environments.publish');
+    Route::delete('/agents/environments/{environmentId}', [EnvironmentsController::class, 'destroy'])
+        ->where('environmentId', '[A-Za-z0-9_-]+')
+        ->middleware('throttle:10,1')
+        ->name('agents.environments.destroy');
+    Route::get('/agents/environments/{alias}/export', [EnvironmentsController::class, 'export'])
+        ->where('alias', '[A-Za-z0-9_-]+')
+        ->name('agents.environments.export');
+    Route::get('/agents/environments/traffic.json', [EnvironmentsController::class, 'traffic'])
+        ->name('agents.environments.traffic');
+
     Route::get('/agents/{agent}', [AgentController::class, 'show'])->name('agents.show');
     Route::put('/agents/{agent}', [AgentController::class, 'update'])
         ->middleware('throttle:30,1')
@@ -128,44 +169,6 @@ Route::middleware([
     Route::get('/conversations', [ConversationController::class, 'index'])->name('conversations.index');
     Route::get('/conversations/search', [ConversationController::class, 'search'])->name('conversations.search');
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
-    // Voiceflow Evaluations panel (Phase 15 wrapper UI).
-    Route::get('/agents/evaluations', [EvaluationsController::class, 'index'])
-        ->name('agents.evaluations.index');
-    Route::post('/agents/evaluations', [EvaluationsController::class, 'store'])
-        ->middleware('throttle:30,1')
-        ->name('agents.evaluations.store');
-    Route::get('/agents/evaluations/{evaluationId}', [EvaluationsController::class, 'show'])
-        ->where('evaluationId', '[A-Za-z0-9_-]+')
-        ->name('agents.evaluations.show');
-    Route::post('/agents/evaluations/{evaluationId}/run', [EvaluationsController::class, 'run'])
-        ->where('evaluationId', '[A-Za-z0-9_-]+')
-        ->middleware('throttle:30,1')
-        ->name('agents.evaluations.run');
-    Route::delete('/agents/evaluations/{evaluationId}', [EvaluationsController::class, 'destroy'])
-        ->where('evaluationId', '[A-Za-z0-9_-]+')
-        ->middleware('throttle:30,1')
-        ->name('agents.evaluations.destroy');
-
-    // Voiceflow Environments management (Phase 15 wrapper UI).
-    Route::get('/agents/environments', [EnvironmentsController::class, 'index'])
-        ->name('agents.environments.index');
-    Route::post('/agents/environments/clone', [EnvironmentsController::class, 'clone'])
-        ->middleware('throttle:10,1')
-        ->name('agents.environments.clone');
-    Route::post('/agents/environments/{idOrAlias}/publish', [EnvironmentsController::class, 'publish'])
-        ->where('idOrAlias', '[A-Za-z0-9_-]+')
-        ->middleware('throttle:10,1')
-        ->name('agents.environments.publish');
-    Route::delete('/agents/environments/{environmentId}', [EnvironmentsController::class, 'destroy'])
-        ->where('environmentId', '[A-Za-z0-9_-]+')
-        ->middleware('throttle:10,1')
-        ->name('agents.environments.destroy');
-    Route::get('/agents/environments/{alias}/export', [EnvironmentsController::class, 'export'])
-        ->where('alias', '[A-Za-z0-9_-]+')
-        ->name('agents.environments.export');
-    Route::get('/agents/environments/traffic.json', [EnvironmentsController::class, 'traffic'])
-        ->name('agents.environments.traffic');
-
     Route::post('/conversations/{conversation}/end-upstream', [ConversationController::class, 'endUpstream'])
         ->middleware('throttle:30,1')
         ->name('conversations.end-upstream');
