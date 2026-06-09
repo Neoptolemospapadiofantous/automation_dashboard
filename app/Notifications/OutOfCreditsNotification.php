@@ -34,12 +34,12 @@ class OutOfCreditsNotification extends Notification
     {
         return (new MailMessage)
             ->error()
-            ->subject("Your agent is paused — out of credits")
+            ->subject('Your agent is paused — out of credits')
             ->greeting("Hi {$notifiable->name},")
             ->line("Your team **{$this->team->name}** has run out of credits for this billing period.")
             ->line("Your agent is currently refusing new conversation turns. Customers see a generic 'temporarily unavailable' message until credits are restored.")
             ->action('Top up credits now', url('/billing'))
-            ->line("Credits reset at the start of each billing period, or you can top up to continue immediately.");
+            ->line('Credits reset at the start of each billing period, or you can top up to continue immediately.');
     }
 
     /**

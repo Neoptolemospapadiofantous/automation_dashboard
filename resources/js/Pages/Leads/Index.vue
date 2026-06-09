@@ -1,9 +1,10 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
-import { router, useForm, usePage } from '@inertiajs/vue3';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import LeadCard from '@/Components/LeadCard.vue';
+import LeadDetailDrawer from '@/Components/LeadDetailDrawer.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DialogModal from '@/Components/DialogModal.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -94,6 +95,17 @@ async function destroy(lead) {
 }
 
 // --- Create form ------------------------------------------------------------
+// Lead detail drawer — opens when a card is clicked (body-area only).
+// The lead reference is the same reactive object from `leads` so notes
+// edits propagate back without a re-fetch.
+const drawerLead = ref(null);
+function openDetail(lead) {
+    drawerLead.value = lead;
+}
+function closeDetail() {
+    drawerLead.value = null;
+}
+
 const showCreate = ref(false);
 const form = useForm({
     name: '',
@@ -145,6 +157,37 @@ function submit() {
 
         <div class="py-8">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <!-- Team-level empty state: never had a lead. Surfaced
+                     above the kanban (which would otherwise just show 6
+                     empty columns "Drop leads here" with no CTA). -->
+                <div
+                    v-if="leads.size === 0"
+                    class="mb-6 rounded-xl border border-dashed border-gray-200 bg-white/60 p-8 text-center"
+                >
+                    <svg class="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                    </svg>
+                    <h3 class="mt-3 text-sm font-medium text-gray-700">No leads yet</h3>
+                    <p class="mt-1 text-xs text-gray-500">
+                        Leads appear here automatically when your agent captures
+                        contact info. You can also create one manually.
+                    </p>
+                    <div class="mt-4 flex justify-center gap-2">
+                        <Link
+                            :href="route('chat.index')"
+                            class="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                        >
+                            Try the chat panel
+                        </Link>
+                        <button
+                            type="button"
+                            class="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                            @click="showCreate = true"
+                        >
+                            Create one manually
+                        </button>
+                    </div>
+                </div>
                 <div class="flex gap-4 overflow-x-auto pb-4">
                     <div
                         v-for="col in columns"
@@ -168,6 +211,7 @@ function submit() {
                                 :members="members"
                                 @delete="destroy"
                                 @assign="assign"
+                                @open="openDetail"
                             />
                             <p
                                 v-if="!col.leads.length"
@@ -230,5 +274,10 @@ function submit() {
                 </PrimaryButton>
             </template>
         </DialogModal>
+
+        <!-- Right-side detail drawer. Opens on card click. Notes auto-save
+             with 800ms debounce; conversation cross-link and captured
+             fields are inline. -->
+        <LeadDetailDrawer :lead="drawerLead" @close="closeDetail" />
     </AppLayout>
 </template>

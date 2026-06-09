@@ -9,6 +9,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Inertia\Inertia;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -96,5 +97,32 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return back()->withErrors(['status' => $e->getMessage()]);
+        });
+
+        // Branded Inertia error pages instead of the stock Symfony
+        // whoops / blank 500. Covers 404 / 403 / 419 / 429 / 503 / 500
+        // with copy that matches the rest of the dashboard. JSON
+        // requests still get a JSON error so APIs aren't affected.
+        $exceptions->respond(function ($response, $exception, $request) {
+            if ($request->expectsJson()) {
+                return $response;
+            }
+            // Only intercept the "page" statuses; everything else falls
+            // through to Laravel's default behavior (validation
+            // redirects with errors, etc.).
+            $intercepted = [403, 404, 419, 429, 500, 503];
+            $status = (int) $response->getStatusCode();
+            if (! in_array($status, $intercepted, true)) {
+                return $response;
+            }
+            // Skip if we're already on the framework's debug screen
+            // (APP_DEBUG=true). Operators need the raw trace there.
+            if (config('app.debug') && $status >= 500) {
+                return $response;
+            }
+
+            return Inertia::render('Errors/Error', ['status' => $status])
+                ->toResponse($request)
+                ->setStatusCode($status);
         });
     })->create();

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
 import AppConfirmDialog from '@/Components/AppConfirmDialog.vue';
+import SiteFooter from '@/Components/SiteFooter.vue';
 import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
@@ -439,6 +440,11 @@ const handleMobileNavClick = (event) => {
                 </div>
             </div>
         </div>
+
+        <!-- Bottom-of-page footer with legal/support links. Lives
+             OUTSIDE the main flex column so it sits at the very bottom
+             regardless of slot height. -->
+        <SiteFooter />
 
         <!-- App-wide confirmation modal. Pages call confirm({...}) from
              useConfirm; the promise resolves true/false. Single mount

@@ -8,6 +8,7 @@ use App\Events\LeadDeleted;
 use App\Events\LeadSaved;
 use App\Models\Lead;
 use App\Services\LeadDelegator;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -151,6 +152,23 @@ class LeadController extends Controller
             'assigned_to' => ['nullable', 'integer', Rule::in($this->memberIds($request))],
             'notes' => ['nullable', 'string'],
         ]);
+    }
+
+    /**
+     * Update the freeform notes on a lead. Used by the side-drawer detail
+     * view — operators jot follow-up context here.
+     */
+    public function updateNotes(Request $request, Lead $lead): JsonResponse
+    {
+        $this->authorizeLead($request, $lead);
+
+        $data = $request->validate([
+            'notes' => ['nullable', 'string', 'max:10000'],
+        ]);
+
+        $lead->forceFill(['notes' => $data['notes'] ?? null])->save();
+
+        return response()->json(['ok' => true, 'notes' => $lead->notes]);
     }
 
     /**

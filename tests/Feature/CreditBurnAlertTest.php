@@ -4,12 +4,12 @@ namespace Tests\Feature;
 
 use App\Billing\CreditMeter;
 use App\Billing\EvaluateCreditAlerts;
+use App\Billing\Exceptions\OutOfCredits;
 use App\Billing\Plan;
 use App\Models\Team;
 use App\Models\User;
 use App\Notifications\CreditBurnAlertNotification;
 use App\Notifications\OutOfCreditsNotification;
-use App\Billing\Exceptions\OutOfCredits;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;

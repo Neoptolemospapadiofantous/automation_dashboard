@@ -137,6 +137,9 @@ Route::middleware([
     Route::patch('/leads/{lead}/status', [LeadController::class, 'updateStatus'])
         ->middleware('throttle:120,1')
         ->name('leads.status');
+    Route::patch('/leads/{lead}/notes', [LeadController::class, 'updateNotes'])
+        ->middleware('throttle:120,1')
+        ->name('leads.notes');
     Route::post('/leads/{lead}/assign', [LeadController::class, 'assign'])
         ->middleware('throttle:30,1')
         ->name('leads.assign');

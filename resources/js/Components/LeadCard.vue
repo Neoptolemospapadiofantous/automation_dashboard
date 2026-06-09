@@ -6,7 +6,7 @@ const props = defineProps({
     members: { type: Array, default: () => [] },
 });
 
-const emit = defineEmits(['delete', 'assign']);
+const emit = defineEmits(['delete', 'assign', 'open']);
 
 // Map the status color token to concrete classes (Tailwind needs them literal).
 const scoreColor = (score) => {
@@ -33,9 +33,16 @@ function onAssignChange(e) {
         draggable="true"
         @dragstart="$event.dataTransfer.setData('text/lead-id', String(lead.id))"
     >
-        <div class="flex items-start justify-between gap-2">
+        <div
+            class="flex cursor-pointer items-start justify-between gap-2"
+            role="button"
+            tabindex="0"
+            :aria-label="`Open lead ${lead.name}`"
+            @click="$emit('open', lead)"
+            @keydown.enter="$emit('open', lead)"
+        >
             <div class="min-w-0">
-                <p class="truncate font-medium text-gray-900">{{ lead.name }}</p>
+                <p class="truncate font-medium text-gray-900 hover:text-indigo-700">{{ lead.name }}</p>
                 <p v-if="lead.company" class="truncate text-xs text-gray-500">{{ lead.company }}</p>
             </div>
             <span class="rounded px-1.5 py-0.5 text-xs font-semibold" :class="scoreColor(lead.score)">

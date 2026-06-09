@@ -149,8 +149,40 @@ const runNow = async () => {
                         <TextInput id="transcript_id" v-model="runTranscriptId" type="text" class="mt-1 block w-full" placeholder="t-…" />
                         <InputError :message="runError" />
 
-                        <div v-if="runResult" class="mt-4 rounded-md bg-gray-50 p-3 text-xs">
-                            <pre class="whitespace-pre-wrap">{{ JSON.stringify(runResult, null, 2) }}</pre>
+                        <div v-if="runResult" class="mt-4 space-y-2 rounded-md border border-gray-100 bg-gray-50 p-3 text-xs">
+                            <!-- Pretty-render the eval result instead of dumping JSON.
+                                 Voiceflow returns either a `pass`/`fail` verdict + score, OR
+                                 a freeform `value`/`reasoning` shape for prompt evals.
+                                 Both render here; the raw payload stays available in a
+                                 collapsible <details> for power users. -->
+                            <div v-if="runResult.pass !== undefined || runResult.passed !== undefined" class="flex items-center gap-2">
+                                <span
+                                    class="inline-flex items-center rounded-full px-2 py-0.5 font-semibold uppercase tracking-wide"
+                                    :class="(runResult.pass ?? runResult.passed) ? 'bg-green-100 text-green-700' : 'bg-rose-100 text-rose-700'"
+                                >
+                                    {{ (runResult.pass ?? runResult.passed) ? '✓ Pass' : '✗ Fail' }}
+                                </span>
+                                <span v-if="runResult.score !== undefined" class="text-gray-700">
+                                    Score: <strong>{{ runResult.score }}</strong>
+                                </span>
+                            </div>
+
+                            <div v-if="runResult.value !== undefined" class="rounded bg-white p-2">
+                                <p class="font-mono text-[10px] uppercase tracking-wide text-gray-400">Value</p>
+                                <p class="mt-1 text-gray-700">{{ runResult.value }}</p>
+                            </div>
+
+                            <div v-if="runResult.reasoning" class="rounded bg-white p-2">
+                                <p class="font-mono text-[10px] uppercase tracking-wide text-gray-400">Reasoning</p>
+                                <p class="mt-1 italic text-gray-600">{{ runResult.reasoning }}</p>
+                            </div>
+
+                            <details class="mt-2">
+                                <summary class="cursor-pointer text-[11px] text-gray-400 hover:text-gray-600">
+                                    Raw response
+                                </summary>
+                                <pre class="mt-1 whitespace-pre-wrap rounded bg-white p-2 text-[11px] text-gray-600">{{ JSON.stringify(runResult, null, 2) }}</pre>
+                            </details>
                         </div>
 
                         <div class="mt-4 flex justify-end gap-2">

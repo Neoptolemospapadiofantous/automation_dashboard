@@ -235,24 +235,6 @@ parameters:
 			path: app/Events/Domain/AgentCreated.php
 
 		-
-			message: '#^Property App\\Events\\Domain\\AgentHealthChecked\:\:\$agent is never read$#'
-			identifier: shipmonk.deadProperty.neverRead
-			count: 1
-			path: app/Events/Domain/AgentHealthChecked.php
-
-		-
-			message: '#^Property App\\Events\\Domain\\AgentHealthChecked\:\:\$ok is never read$#'
-			identifier: shipmonk.deadProperty.neverRead
-			count: 1
-			path: app/Events/Domain/AgentHealthChecked.php
-
-		-
-			message: '#^Property App\\Events\\Domain\\AgentHealthChecked\:\:\$result is never read$#'
-			identifier: shipmonk.deadProperty.neverRead
-			count: 1
-			path: app/Events/Domain/AgentHealthChecked.php
-
-		-
 			message: '#^Property App\\Events\\Domain\\ConversationStarted\:\:\$conversation is never read$#'
 			identifier: shipmonk.deadProperty.neverRead
 			count: 1

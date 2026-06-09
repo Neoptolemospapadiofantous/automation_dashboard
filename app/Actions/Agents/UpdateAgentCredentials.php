@@ -24,6 +24,11 @@ class UpdateAgentCredentials
      */
     public function execute(Agent $agent, array $credentials): array
     {
+        // Capture the pre-probe health state so the listener can detect
+        // healthy → unhealthy transitions (and not spam-notify on every
+        // failed probe of an already-broken agent).
+        $wasOk = $agent->last_health_ok;
+
         $agent->fill(array_filter([
             'voiceflow_api_key' => $credentials['voiceflow_api_key'] ?? null,
             'voiceflow_project_id' => $credentials['voiceflow_project_id'] ?? null,
@@ -40,7 +45,15 @@ class UpdateAgentCredentials
             'last_health_ok' => (bool) ($health['ok'] ?? false),
         ])->save();
 
-        event(new AgentHealthChecked($agent, (bool) ($health['ok'] ?? false), $health));
+        event(new AgentHealthChecked(
+            agent: $agent,
+            ok: (bool) ($health['ok'] ?? false),
+            result: $health,
+            // bool cast yields false for null, but our event accepts ?bool
+            // so pass through as bool — null only matters when the model
+            // hasn't been probed at all (first save in CreateAgent flow).
+            wasOk: (bool) $wasOk,
+        ));
 
         // Transition draft → active when the health check passes. The state
         // machine refuses if the agent isn't isConfigured(), which double-
