@@ -16,25 +16,35 @@ class CreditBurnAlertTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function team(int $balance = 1000, Plan $plan = Plan::Free): Team
+    /**
+     * Create a team at full grant for the given plan. Balance scales with
+     * Plan->monthlyCredits() so future repricing doesn't break these tests.
+     */
+    private function team(Plan $plan = Plan::Free): Team
     {
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
         $team->forceFill([
             'plan' => $plan,
-            'credit_balance' => $balance,
+            'credit_balance' => $plan->monthlyCredits(),
             'alert_thresholds_fired' => [],
         ])->save();
 
         return $team->fresh();
     }
 
+    /** Convert a percent-of-grant to a concrete consume amount. */
+    private function consumeOf(int $percent, Plan $plan = Plan::Free): int
+    {
+        return (int) floor(($plan->monthlyCredits() * $percent) / 100);
+    }
+
     public function test_no_alert_below_first_threshold(): void
     {
         Notification::fake();
 
-        $team = $this->team(1000);  // Free: 1000/mo grant. 100% balance => 0% used.
-        (new CreditMeter)->consume($team, 400);  // 600 left = 40% used.
+        $team = $this->team();
+        (new CreditMeter)->consume($team, $this->consumeOf(40)); // 40% used, below 50%
 
         Notification::assertNothingSent();
         $this->assertSame([], $team->fresh()->alert_thresholds_fired);
@@ -44,8 +54,8 @@ class CreditBurnAlertTest extends TestCase
     {
         Notification::fake();
 
-        $team = $this->team(1000);
-        (new CreditMeter)->consume($team, 600);  // 400 left = 60% used (crosses 50).
+        $team = $this->team();
+        (new CreditMeter)->consume($team, $this->consumeOf(60)); // 60% used, crosses 50
 
         Notification::assertSentTimes(CreditBurnAlertNotification::class, 1);
         $this->assertSame(['50'], $team->fresh()->alert_thresholds_fired);
@@ -55,8 +65,8 @@ class CreditBurnAlertTest extends TestCase
     {
         Notification::fake();
 
-        $team = $this->team(1000);
-        (new CreditMeter)->consume($team, 850);  // 150 left = 85% used (crosses 50 and 80).
+        $team = $this->team();
+        (new CreditMeter)->consume($team, $this->consumeOf(85)); // 85% used, crosses 50 + 80
 
         Notification::assertSentTimes(CreditBurnAlertNotification::class, 2);
         $this->assertSame(['50', '80'], $team->fresh()->alert_thresholds_fired);
@@ -66,9 +76,9 @@ class CreditBurnAlertTest extends TestCase
     {
         Notification::fake();
 
-        $team = $this->team(1000);
-        (new CreditMeter)->consume($team, 600);  // crosses 50
-        (new CreditMeter)->consume($team, 100);  // still in 50-80 zone, no new threshold
+        $team = $this->team();
+        (new CreditMeter)->consume($team, $this->consumeOf(60)); // crosses 50
+        (new CreditMeter)->consume($team, $this->consumeOf(10)); // still in 50–80 zone
 
         Notification::assertSentTimes(CreditBurnAlertNotification::class, 1);
         $this->assertSame(['50'], $team->fresh()->alert_thresholds_fired);
@@ -78,18 +88,17 @@ class CreditBurnAlertTest extends TestCase
     {
         Notification::fake();
 
-        // Free plan grant = 1000.
-        $team = $this->team(1000);
-        (new CreditMeter)->consume($team, 600);  // balance=400, 60% used, fires 50, fired=['50']
+        $team = $this->team();
+        (new CreditMeter)->consume($team, $this->consumeOf(60)); // crosses 50, fired=['50']
         Notification::assertSentTimes(CreditBurnAlertNotification::class, 1);
 
-        // Top-up 500 → balance=900, 10% used → no thresholds crossed, fired=[]
-        (new CreditMeter)->grantTopUp($team->fresh(), 500);
+        // Top-up enough to lift balance to ~90% remaining → no thresholds crossed
+        (new CreditMeter)->grantTopUp($team->fresh(), $this->consumeOf(50));
         $this->assertSame([], $team->fresh()->alert_thresholds_fired);
 
-        // Drop back below 50% remaining (balance ≤ 500) → 50% threshold refires
+        // Drop back below 50% remaining → 50% threshold refires
         Notification::fake();  // reset counter for second-stage assertion
-        (new CreditMeter)->consume($team->fresh(), 500);  // balance=400, 60% used
+        (new CreditMeter)->consume($team->fresh(), $this->consumeOf(50));
         Notification::assertSentTimes(CreditBurnAlertNotification::class, 1);
         $this->assertSame(['50'], $team->fresh()->alert_thresholds_fired);
     }
@@ -98,14 +107,14 @@ class CreditBurnAlertTest extends TestCase
     {
         Notification::fake();
 
-        $team = $this->team(100);   // 90% used already → would fire 50 and 80 if a consume happened
-        (new CreditMeter)->consume($team, 50);  // 50 left = 95% used → fires all 3
+        $team = $this->team();
+        (new CreditMeter)->consume($team, $this->consumeOf(96)); // 96% used → all 3 fire
         $this->assertSame(['50', '80', '95'], $team->fresh()->alert_thresholds_fired);
 
         // Renewal resets balance + clears fired
         (new CreditMeter)->grantMonthlyRenewal($team->fresh());
         $fresh = $team->fresh();
-        $this->assertSame(1000, $fresh->credit_balance);
+        $this->assertSame(Plan::Free->monthlyCredits(), $fresh->credit_balance);
         $this->assertSame([], $fresh->alert_thresholds_fired);
     }
 
@@ -115,7 +124,7 @@ class CreditBurnAlertTest extends TestCase
 
         // Business plan has monthlyCredits=0 (negotiated). Even at 1 credit
         // we must not emit alerts — no denominator to make percentage meaningful.
-        $team = $this->team(1, Plan::Business);
+        $team = $this->team(Plan::Business);
         $team->forceFill(['credit_balance' => 1])->save();
 
         (new EvaluateCreditAlerts)->evaluate($team->fresh());
@@ -126,16 +135,20 @@ class CreditBurnAlertTest extends TestCase
     {
         Notification::fake();
 
-        $team = $this->team(1000);
-        (new CreditMeter)->consume($team, 600);
+        $grant = Plan::Free->monthlyCredits();
+        $consumed = $this->consumeOf(60);
+        $remaining = $grant - $consumed;
+
+        $team = $this->team();
+        (new CreditMeter)->consume($team, $consumed);
 
         Notification::assertSentTo(
             $team->owner,
             CreditBurnAlertNotification::class,
-            function (CreditBurnAlertNotification $n) use ($team): bool {
+            function (CreditBurnAlertNotification $n) use ($team, $grant, $remaining): bool {
                 return $n->thresholdPercent === 50
-                    && $n->creditsRemaining === 400
-                    && $n->monthlyGrant === 1000
+                    && $n->creditsRemaining === $remaining
+                    && $n->monthlyGrant === $grant
                     && $n->team->is($team);
             },
         );

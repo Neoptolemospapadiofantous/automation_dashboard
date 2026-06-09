@@ -24,11 +24,12 @@ class BillingDisplayMathTest extends TestCase
 
     public function test_credits_total_includes_topups_granted_this_period(): void
     {
+        $grant = Plan::Free->monthlyCredits();
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
         $team->forceFill([
             'plan' => Plan::Free->value,
-            'credit_balance' => 1_000,
+            'credit_balance' => $grant,
             'credits_renewed_at' => now()->subDays(3),
         ])->save();
 
@@ -41,27 +42,29 @@ class BillingDisplayMathTest extends TestCase
             'created_at' => now()->subDay(),
             'updated_at' => now()->subDay(),
         ]);
-        $team->forceFill(['credit_balance' => 1_100])->save();
+        $team->forceFill(['credit_balance' => $grant + 100])->save();
 
         $this->actingAs($user->fresh())
             ->get(route('billing.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                // credits_total snaps to 1,100 (monthly 1k + 100 top-up).
-                ->where('billing.credits_total', 1_100)
+                // credits_total snaps to grant + 100 top-up.
+                ->where('billing.credits_total', $grant + 100)
                 // credits_used stays at 0 — nothing consumed yet.
                 ->where('billing.credits_used', 0)
-                ->where('billing.credits_remaining', 1_100)
+                ->where('billing.credits_remaining', $grant + 100)
             );
     }
 
     public function test_credits_used_reflects_consumption_after_topup(): void
     {
+        $grant = Plan::Free->monthlyCredits();
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
         $team->forceFill([
             'plan' => Plan::Free->value,
-            'credit_balance' => 250, // started at 1,100 (after top-up), consumed 850
+            // started at grant + 100 (after top-up), consumed 850
+            'credit_balance' => $grant + 100 - 850,
             'credits_renewed_at' => now()->subDays(3),
         ])->save();
 
@@ -78,19 +81,20 @@ class BillingDisplayMathTest extends TestCase
             ->get(route('billing.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('billing.credits_total', 1_100)
+                ->where('billing.credits_total', $grant + 100)
                 ->where('billing.credits_used', 850)
-                ->where('billing.credits_remaining', 250)
+                ->where('billing.credits_remaining', $grant + 100 - 850)
             );
     }
 
     public function test_topups_from_previous_periods_are_not_counted(): void
     {
+        $grant = Plan::Free->monthlyCredits();
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
         $team->forceFill([
             'plan' => Plan::Free->value,
-            'credit_balance' => 1_000,
+            'credit_balance' => $grant,
             'credits_renewed_at' => now()->subDays(2), // renewal was 2 days ago
         ])->save();
 
@@ -111,7 +115,7 @@ class BillingDisplayMathTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 // Just the plan's monthly — old top-up correctly excluded.
-                ->where('billing.credits_total', 1_000)
+                ->where('billing.credits_total', $grant)
                 ->where('billing.credits_used', 0)
             );
     }
@@ -143,11 +147,13 @@ class BillingDisplayMathTest extends TestCase
         // End-to-end: hit the topup endpoint, then check the share. The
         // grant lands in credit_transactions and credits_total reflects it
         // without any further glue.
+        $grant = Plan::Pro->monthlyCredits();
+        $medium = TopUpPack::Medium->credits();
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
         $team->forceFill([
             'plan' => Plan::Pro->value,
-            'credit_balance' => 10_000,
+            'credit_balance' => $grant,
             'credits_renewed_at' => now()->subDays(1),
         ])->save();
 
@@ -159,8 +165,8 @@ class BillingDisplayMathTest extends TestCase
             ->get(route('billing.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('billing.credits_total', 15_000) // 10k monthly + 5k topup
-                ->where('billing.credits_remaining', 15_000)
+                ->where('billing.credits_total', $grant + $medium)
+                ->where('billing.credits_remaining', $grant + $medium)
                 ->where('billing.credits_used', 0)
             );
     }
@@ -174,10 +180,10 @@ class BillingDisplayMathTest extends TestCase
 
     public function test_zero_balance_no_topups_pins_bar_at_100_percent(): void
     {
-        // Pure monthly allotment, fully consumed. The bar shows 1,000 /
-        // 1,000 used · 0 remaining — credits_used equals credits_total so
-        // the front-end's `usedPercent` lands at 100% (rose-500 in the
-        // CreditMeter tone map).
+        // Pure monthly allotment, fully consumed. credits_used equals
+        // credits_total so the front-end's `usedPercent` lands at 100%
+        // (rose-500 in the CreditMeter tone map).
+        $grant = Plan::Free->monthlyCredits();
         $user = User::factory()->withPersonalTeam()->create();
         $user->currentTeam->forceFill([
             'plan' => Plan::Free->value,
@@ -189,18 +195,20 @@ class BillingDisplayMathTest extends TestCase
             ->get(route('billing.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('billing.credits_total', 1_000)
-                ->where('billing.credits_used', 1_000)
+                ->where('billing.credits_total', $grant)
+                ->where('billing.credits_used', $grant)
                 ->where('billing.credits_remaining', 0)
             );
     }
 
     public function test_zero_balance_with_topups_keeps_full_period_denominator(): void
     {
-        // 1k monthly + 1k top-up earlier in the period → all 2k consumed.
-        // Critical assertion: credits_total stays at 2,000 (not 1,000) so
-        // the user can see they burned through both the monthly AND the
-        // top-up. Pattern A: the denominator never shrinks within a period.
+        // Monthly + one Small top-up earlier in the period → all consumed.
+        // Critical assertion: credits_total stays at grant + Small so the
+        // user can see they burned through both. Pattern A: the
+        // denominator never shrinks within a period.
+        $grant = Plan::Free->monthlyCredits();
+        $small = TopUpPack::Small->credits();
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
         $team->forceFill([
@@ -211,7 +219,7 @@ class BillingDisplayMathTest extends TestCase
 
         \DB::table('credit_transactions')->insert([
             'team_id' => $team->id,
-            'amount' => 1_000,
+            'amount' => $small,
             'reason' => CreditTransaction::REASON_GRANT_TOPUP,
             'meta' => json_encode(['pack' => 'small']),
             'created_at' => now()->subDays(3),
@@ -222,19 +230,21 @@ class BillingDisplayMathTest extends TestCase
             ->get(route('billing.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('billing.credits_total', 2_000) // monthly + topup
-                ->where('billing.credits_used', 2_000) // everything spent
+                ->where('billing.credits_total', $grant + $small)
+                ->where('billing.credits_used', $grant + $small)
                 ->where('billing.credits_remaining', 0)
             );
     }
 
     public function test_topup_at_zero_drops_bar_proportionally(): void
     {
-        // User hits zero after consuming 2k (monthly + topup). They buy a
-        // SECOND top-up to keep going. The denominator should now include
-        // BOTH top-ups (3k total): bar reads "2,000 / 3,000 used · 1,000
-        // remaining" — they regain headroom without losing the audit of
-        // what they already spent.
+        // User hits zero after consuming (monthly + first topup). They
+        // buy a SECOND top-up to keep going. The denominator should now
+        // include BOTH top-ups — they regain headroom without losing the
+        // audit of what they already spent.
+        $grant = Plan::Free->monthlyCredits();
+        $small = TopUpPack::Small->credits();
+        $consumed = $grant + $small; // burned through monthly + first topup
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
         $team->forceFill([
@@ -246,7 +256,7 @@ class BillingDisplayMathTest extends TestCase
         // First top-up — already consumed.
         \DB::table('credit_transactions')->insert([
             'team_id' => $team->id,
-            'amount' => 1_000,
+            'amount' => $small,
             'reason' => CreditTransaction::REASON_GRANT_TOPUP,
             'meta' => json_encode(['pack' => 'small']),
             'created_at' => now()->subDays(3),
@@ -262,23 +272,25 @@ class BillingDisplayMathTest extends TestCase
             ->get(route('billing.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('billing.credits_total', 3_000) // 1k monthly + 2k topups
-                ->where('billing.credits_used', 2_000) // first 2k still counted
-                ->where('billing.credits_remaining', 1_000)
+                ->where('billing.credits_total', $grant + $small + $small) // monthly + both topups
+                ->where('billing.credits_used', $consumed) // first burn-through stays counted
+                ->where('billing.credits_remaining', $small) // new topup is the available balance
             );
     }
 
     public function test_monthly_renewal_resets_denominator_and_drops_prior_topups(): void
     {
         // The calendar period rolled over. grantMonthlyRenewal bumps
-        // credits_renewed_at and hard-resets balance to the plan's monthly
-        // allotment. Past-period top-ups (now BEFORE credits_renewed_at)
-        // should drop out of the sum entirely — fresh "0 / 1,000" display.
+        // credits_renewed_at and hard-resets balance to the plan's
+        // monthly allotment. Past-period top-ups (now BEFORE
+        // credits_renewed_at) should drop out of the sum entirely —
+        // fresh "0 / grant" display.
+        $grant = Plan::Free->monthlyCredits();
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
         $team->forceFill([
             'plan' => Plan::Free->value,
-            'credit_balance' => 1_000,
+            'credit_balance' => $grant,
             // Renewal JUST happened (boundary is now).
             'credits_renewed_at' => now(),
         ])->save();
@@ -298,9 +310,9 @@ class BillingDisplayMathTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 // Just the plan monthly — prior-period top-ups excluded.
-                ->where('billing.credits_total', 1_000)
+                ->where('billing.credits_total', $grant)
                 ->where('billing.credits_used', 0)
-                ->where('billing.credits_remaining', 1_000)
+                ->where('billing.credits_remaining', $grant)
             );
     }
 

@@ -22,10 +22,13 @@ namespace App\Billing;
  * Custom direction (see priceUsd() + label() + features); future Phase H
  * Stripe wiring can introduce new case names + migration as needed.
  *
- * Offer tiers (current):
- *   - Starter  ($19/mo)  — 1 agent, 1k credits, "try out the product"
- *   - Operator ($79/mo)  — up to 5 agents, 10k credits, top-ups enabled
- *   - Custom   (from $6k project) — bespoke agents + n8n ops + integrations
+ * Offer tiers (aligned with flowstack.com/pricing as of 2026-06-09):
+ *   - Starter  ($99/mo)  — 1 agent, 2,500 credits, "try the product"
+ *   - Operator ($399/mo) — up to 5 agents, 25,000 credits, top-ups enabled
+ *   - Custom   (scoped 4-6 week project) — bespoke flows, custom integrations
+ *
+ * Credits are sized so a typical team comfortably stays inside its
+ * monthly allotment at normal usage; top-up packs cover the spike weeks.
  */
 enum Plan: string
 {
@@ -44,8 +47,8 @@ enum Plan: string
     public function monthlyCredits(): int
     {
         return match ($this) {
-            self::Free => 1_000,
-            self::Pro => 10_000,
+            self::Free => 2_500,
+            self::Pro => 25_000,
             self::Business => 0,
         };
     }
@@ -65,13 +68,13 @@ enum Plan: string
     /**
      * Monthly recurring price in USD. Returned as int so display code
      * can format consistently. Null on Custom — that tier is project-based
-     * (from $6k fixed-scope) rather than recurring SaaS.
+     * (scoped 4-6 week build) rather than recurring SaaS.
      */
     public function priceUsd(): ?int
     {
         return match ($this) {
-            self::Free => 19,
-            self::Pro => 79,
+            self::Free => 99,
+            self::Pro => 399,
             self::Business => null,
         };
     }
