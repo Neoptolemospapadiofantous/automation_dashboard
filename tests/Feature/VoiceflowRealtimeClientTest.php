@@ -13,13 +13,14 @@ class VoiceflowRealtimeClientTest extends TestCase
 {
     public function test_misconfigured_when_workspace_key_empty(): void
     {
-        $this->expectException(MisconfiguredException::class);
-
-        new RealtimeClient(
+        $client = new RealtimeClient(
             http: new VoiceflowHttpClient,
             baseUrl: 'https://realtime.voiceflow.test',
             workspaceApiKey: '',
         );
+
+        $this->expectException(MisconfiguredException::class);
+        $client->listKbDocuments();
     }
 
     public function test_kb_document_stream_paginates(): void

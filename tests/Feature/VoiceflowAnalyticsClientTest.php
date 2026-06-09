@@ -12,14 +12,17 @@ class VoiceflowAnalyticsClientTest extends TestCase
 {
     public function test_misconfigured_when_workspace_key_empty(): void
     {
-        $this->expectException(MisconfiguredException::class);
-
-        new AnalyticsClient(
+        // Construction is tolerant — exception fires when a method that
+        // needs the key is actually called.
+        $client = new AnalyticsClient(
             http: new VoiceflowHttpClient,
             baseUrl: 'https://analytics.voiceflow.test',
             workspaceApiKey: '',
             projectId: 'proj-1',
         );
+
+        $this->expectException(MisconfiguredException::class);
+        $client->listEvaluations();
     }
 
     public function test_transcript_stream_paginates_across_full_pages(): void

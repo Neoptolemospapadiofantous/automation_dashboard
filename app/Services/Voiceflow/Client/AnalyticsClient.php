@@ -4,6 +4,7 @@ namespace App\Services\Voiceflow\Client;
 
 use App\Services\Voiceflow\Exceptions\MisconfiguredException;
 use Generator;
+use Illuminate\Http\Client\PendingRequest;
 
 /**
  * Wraps the Voiceflow `analytics-api` host:
@@ -24,12 +25,34 @@ class AnalyticsClient
         protected string $workspaceApiKey,
         protected string $projectId,
     ) {
-        if ($workspaceApiKey === '') {
+        // Construction is intentionally tolerant — workspace key may be empty
+        // when a tenant has a draft / unconfigured agent. Validation happens
+        // per-method via assertConfigured() so controllers that defer the
+        // call (via isConfigured() guard) can render a graceful empty state
+        // without the DI container exploding first.
+    }
+
+    protected function assertConfigured(string $endpoint): void
+    {
+        if ($this->workspaceApiKey === '') {
             throw new MisconfiguredException(
                 'Voiceflow Analytics requires a workspace API key',
-                endpoint: 'analytics',
+                endpoint: $endpoint,
             );
         }
+    }
+
+    /**
+     * Build a workspace-authed client AFTER asserting the key is set.
+     * Use this instead of $this->http->client(...) directly so a
+     * draft / unconfigured agent surfaces a typed exception only when
+     * an analytics call is actually attempted.
+     */
+    protected function workspaceClient(string $endpoint, int $timeout): PendingRequest
+    {
+        $this->assertConfigured($endpoint);
+
+        return $this->http->client($this->baseUrl, $this->workspaceApiKey, timeout: $timeout);
     }
 
     /**
@@ -50,8 +73,7 @@ class AnalyticsClient
             $skip,
         );
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 20)
+        $response = $this->workspaceClient('analytics.transcripts.search', timeout: 20)
             ->post($endpoint, $body);
 
         $response = $this->http->ensureOk($response, 'analytics.transcripts.search', [
@@ -108,8 +130,7 @@ class AnalyticsClient
     {
         $endpoint = sprintf('/v1/transcript/%s?filterConversation=true', rawurlencode($transcriptId));
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 20)
+        $response = $this->workspaceClient('analytics.transcripts.get', timeout: 20)
             ->get($endpoint);
 
         if ($response->status() === 404) {
@@ -142,8 +163,7 @@ class AnalyticsClient
             rawurlencode($this->projectId),
         );
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 15)
+        $response = $this->workspaceClient('analytics.transcripts.end', timeout: 15)
             ->post($endpoint);
 
         $this->http->ensureOk($response, 'analytics.transcripts.end', [
@@ -158,8 +178,7 @@ class AnalyticsClient
     {
         $endpoint = sprintf('/v1/transcript/%s', rawurlencode($transcriptId));
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 15)
+        $response = $this->workspaceClient('analytics.transcripts.delete', timeout: 15)
             ->delete($endpoint);
 
         $this->http->ensureOk($response, 'analytics.transcripts.delete', [
@@ -177,8 +196,7 @@ class AnalyticsClient
      */
     public function createEvaluation(array $body): array
     {
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 20)
+        $response = $this->workspaceClient('analytics.evaluations.create', timeout: 20)
             ->post('/v1/transcript-evaluation', $body);
 
         $response = $this->http->ensureOk($response, 'analytics.evaluations.create', [
@@ -199,8 +217,7 @@ class AnalyticsClient
     {
         $endpoint = sprintf('/v1/transcript-evaluation/project/%s', rawurlencode($this->projectId));
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 20)
+        $response = $this->workspaceClient('analytics.evaluations.list', timeout: 20)
             ->get($endpoint);
 
         $response = $this->http->ensureOk($response, 'analytics.evaluations.list', [
@@ -221,8 +238,7 @@ class AnalyticsClient
     {
         $endpoint = sprintf('/v1/transcript-evaluation/%s', rawurlencode($evaluationId));
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 20)
+        $response = $this->workspaceClient('analytics.evaluations.get', timeout: 20)
             ->get($endpoint);
 
         if ($response->status() === 404) {
@@ -248,8 +264,7 @@ class AnalyticsClient
     {
         $endpoint = sprintf('/v1/transcript-evaluation/%s', rawurlencode($evaluationId));
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 20)
+        $response = $this->workspaceClient('analytics.evaluations.update', timeout: 20)
             ->patch($endpoint, $body);
 
         $response = $this->http->ensureOk($response, 'analytics.evaluations.update', [
@@ -268,8 +283,7 @@ class AnalyticsClient
     {
         $endpoint = sprintf('/v1/transcript-evaluation/%s', rawurlencode($evaluationId));
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 15)
+        $response = $this->workspaceClient('analytics.evaluations.delete', timeout: 15)
             ->delete($endpoint);
 
         $this->http->ensureOk($response, 'analytics.evaluations.delete', [
@@ -290,8 +304,7 @@ class AnalyticsClient
             rawurlencode($transcriptId),
         );
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 60)
+        $response = $this->workspaceClient('analytics.evaluations.run', timeout: 60)
             ->post($endpoint);
 
         $response = $this->http->ensureOk($response, 'analytics.evaluations.run', [
@@ -313,8 +326,7 @@ class AnalyticsClient
      */
     public function queueBatchEvaluation(array $body): array
     {
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 30)
+        $response = $this->workspaceClient('analytics.evaluations.queue', timeout: 30)
             ->post('/v1/transcript-evaluation/queue', $body);
 
         $response = $this->http->ensureOk($response, 'analytics.evaluations.queue', []);
@@ -332,8 +344,7 @@ class AnalyticsClient
      */
     public function estimateEvaluation(array $body): array
     {
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 20)
+        $response = $this->workspaceClient('analytics.evaluations.estimate', timeout: 20)
             ->post('/v1/transcript-evaluation/estimate', $body);
 
         $response = $this->http->ensureOk($response, 'analytics.evaluations.estimate', []);
@@ -351,8 +362,7 @@ class AnalyticsClient
      */
     public function queryUsage(array $body): array
     {
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 20)
+        $response = $this->workspaceClient('analytics.usage.query', timeout: 20)
             ->post('/v2/query/usage', $body);
 
         $response = $this->http->ensureOk($response, 'analytics.usage.query', [

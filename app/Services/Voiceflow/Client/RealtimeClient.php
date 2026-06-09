@@ -5,6 +5,7 @@ namespace App\Services\Voiceflow\Client;
 use App\Services\Voiceflow\Exceptions\KbUploadException;
 use App\Services\Voiceflow\Exceptions\MisconfiguredException;
 use Generator;
+use Illuminate\Http\Client\PendingRequest;
 
 /**
  * Wraps the Voiceflow `realtime-api` host:
@@ -26,12 +27,20 @@ class RealtimeClient
         protected string $baseUrl,
         protected string $workspaceApiKey,
     ) {
-        if ($workspaceApiKey === '') {
+        // Tolerant construction — see AnalyticsClient::__construct for rationale.
+        // Per-call guard lives in workspaceClient().
+    }
+
+    protected function workspaceClient(string $endpoint, int $timeout): PendingRequest
+    {
+        if ($this->workspaceApiKey === '') {
             throw new MisconfiguredException(
                 'Voiceflow Realtime requires a workspace API key',
-                endpoint: 'realtime',
+                endpoint: $endpoint,
             );
         }
+
+        return $this->http->client($this->baseUrl, $this->workspaceApiKey, timeout: $timeout);
     }
 
     /**
@@ -51,8 +60,7 @@ class RealtimeClient
 
         $endpoint = '/v1alpha1/public/knowledge-base/document?'.http_build_query($params);
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 20)
+        $response = $this->workspaceClient('realtime.kb.list', timeout: 20)
             ->get($endpoint);
 
         $response = $this->http->ensureOk($response, 'realtime.kb.list', [
@@ -113,8 +121,7 @@ class RealtimeClient
             $body['data']['name'] = $name;
         }
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 30)
+        $response = $this->workspaceClient('realtime.kb.create.url', timeout: 30)
             ->post('/v1alpha1/public/knowledge-base/document', $body);
 
         $response = $this->http->ensureOk($response, 'realtime.kb.create.url', [
@@ -156,8 +163,7 @@ class RealtimeClient
         }
 
         try {
-            $response = $this->http
-                ->client($this->baseUrl, $this->workspaceApiKey, timeout: 60)
+            $response = $this->workspaceClient('realtime.kb.create.file', timeout: 60)
                 ->attach('file', $stream, basename($name))
                 ->post('/v1alpha1/public/knowledge-base/document');
         } finally {
@@ -185,8 +191,7 @@ class RealtimeClient
     {
         $endpoint = sprintf('/v1alpha1/public/knowledge-base/document/%s', rawurlencode($documentId));
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 20)
+        $response = $this->workspaceClient('realtime.kb.get', timeout: 20)
             ->get($endpoint);
 
         $response = $this->http->ensureOk($response, 'realtime.kb.get', [
@@ -205,8 +210,7 @@ class RealtimeClient
     {
         $endpoint = sprintf('/v1alpha1/public/knowledge-base/document/%s', rawurlencode($documentId));
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 15)
+        $response = $this->workspaceClient('realtime.kb.delete', timeout: 15)
             ->delete($endpoint);
 
         $this->http->ensureOk($response, 'realtime.kb.delete', [
@@ -229,8 +233,7 @@ class RealtimeClient
             ],
         ];
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 30)
+        $response = $this->workspaceClient('realtime.kb.create.text', timeout: 30)
             ->post('/v1alpha1/public/knowledge-base/document', $body);
 
         $response = $this->http->ensureOk($response, 'realtime.kb.create.text', [
@@ -253,8 +256,7 @@ class RealtimeClient
     {
         $endpoint = sprintf('/v1alpha1/public/knowledge-base/document/%s', rawurlencode($documentId));
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 30)
+        $response = $this->workspaceClient('realtime.kb.replace', timeout: 30)
             ->put($endpoint, ['data' => $data]);
 
         $response = $this->http->ensureOk($response, 'realtime.kb.replace', [
@@ -276,8 +278,7 @@ class RealtimeClient
     {
         $endpoint = sprintf('/v1alpha1/public/knowledge-base/document/%s', rawurlencode($documentId));
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 15)
+        $response = $this->workspaceClient('realtime.kb.patch', timeout: 15)
             ->patch($endpoint, ['data' => $metadata]);
 
         $response = $this->http->ensureOk($response, 'realtime.kb.patch', [
@@ -303,8 +304,7 @@ class RealtimeClient
             rawurlencode($chunkId),
         );
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 15)
+        $response = $this->workspaceClient('realtime.kb.chunk.patch', timeout: 15)
             ->patch($endpoint, ['data' => $metadata]);
 
         $response = $this->http->ensureOk($response, 'realtime.kb.chunk.patch', [
@@ -328,8 +328,7 @@ class RealtimeClient
     {
         $endpoint = sprintf('/v1alpha1/project/%s/environments', rawurlencode($projectId));
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 20)
+        $response = $this->workspaceClient('realtime.environments.list', timeout: 20)
             ->get($endpoint);
 
         $response = $this->http->ensureOk($response, 'realtime.environments.list', [
@@ -354,8 +353,7 @@ class RealtimeClient
             rawurlencode($idOrAlias),
         );
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 20)
+        $response = $this->workspaceClient('realtime.environments.get', timeout: 20)
             ->get($endpoint);
 
         if ($response->status() === 404) {
@@ -381,8 +379,7 @@ class RealtimeClient
     {
         $endpoint = sprintf('/v1alpha1/project/%s/environment', rawurlencode($projectId));
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 30)
+        $response = $this->workspaceClient('realtime.environments.clone', timeout: 30)
             ->post($endpoint, [
                 'cloneFromEnvironmentID' => $sourceEnvironmentId,
                 'alias' => $alias,
@@ -409,8 +406,7 @@ class RealtimeClient
             rawurlencode($environmentId),
         );
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 15)
+        $response = $this->workspaceClient('realtime.environments.delete', timeout: 15)
             ->delete($endpoint);
 
         $this->http->ensureOk($response, 'realtime.environments.delete', [
@@ -432,8 +428,7 @@ class RealtimeClient
             rawurlencode($idOrAlias),
         );
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 60)
+        $response = $this->workspaceClient('realtime.environments.publish', timeout: 60)
             ->post($endpoint);
 
         $response = $this->http->ensureOk($response, 'realtime.environments.publish', [
@@ -460,8 +455,7 @@ class RealtimeClient
             rawurlencode($version),
         );
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 60)
+        $response = $this->workspaceClient('realtime.environments.export', timeout: 60)
             ->get($endpoint);
 
         $response = $this->http->ensureOk($response, 'realtime.environments.export', [
@@ -484,8 +478,7 @@ class RealtimeClient
     {
         $endpoint = sprintf('/v1alpha1/project/%s/environment/traffic', rawurlencode($projectId));
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 20)
+        $response = $this->workspaceClient('realtime.environments.traffic.get', timeout: 20)
             ->get($endpoint);
 
         $response = $this->http->ensureOk($response, 'realtime.environments.traffic.get', [
@@ -507,8 +500,7 @@ class RealtimeClient
     {
         $endpoint = sprintf('/v1alpha1/project/%s/environment/traffic', rawurlencode($projectId));
 
-        $response = $this->http
-            ->client($this->baseUrl, $this->workspaceApiKey, timeout: 20)
+        $response = $this->workspaceClient('realtime.environments.traffic.set', timeout: 20)
             ->patch($endpoint, $body);
 
         $response = $this->http->ensureOk($response, 'realtime.environments.traffic.set', [
@@ -549,8 +541,7 @@ class RealtimeClient
         }
 
         try {
-            $response = $this->http
-                ->client($this->baseUrl, $this->workspaceApiKey, timeout: 60)
+            $response = $this->workspaceClient('realtime.kb.upload.table', timeout: 60)
                 ->attach('file', $stream, basename($name))
                 ->post('/v1alpha1/public/knowledge-base/document/upload/table');
         } finally {
