@@ -29,6 +29,7 @@ class Team extends JetstreamTeam
         'plan',
         'credit_balance',
         'credits_renewed_at',
+        'alert_thresholds_fired',
     ];
 
     public function agents(): HasMany
@@ -79,6 +80,10 @@ class Team extends JetstreamTeam
             'plan' => Plan::class,
             'credit_balance' => 'integer',
             'credits_renewed_at' => 'datetime',
+            // List of stringified percent thresholds already fired this
+            // billing period — e.g. ["50","80"]. CreditBurnAlerts uses
+            // this for idempotency.
+            'alert_thresholds_fired' => 'array',
         ];
     }
 

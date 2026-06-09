@@ -5,7 +5,9 @@ namespace App\Billing;
 use App\Billing\Exceptions\OutOfCredits;
 use App\Models\CreditTransaction;
 use App\Models\Team;
+use App\Notifications\CreditBurnAlertNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 /**
  * The single entry point for credit grants and consumption. Every mutation
@@ -51,10 +53,51 @@ class CreditMeter
                 'meta' => $meta,
             ]);
 
+            $this->evaluateAndDispatchAlerts($fresh);
+
             // Refresh the in-memory model passed in by the caller so they
             // see the new balance without re-fetching.
             $team->refresh();
         });
+    }
+
+    /**
+     * Evaluate which credit-burn thresholds (50/80/95% used) the team has
+     * just crossed, persist the new fired-state, and dispatch one
+     * CreditBurnAlertNotification per newly-crossed threshold to the team owner.
+     *
+     * Idempotent — `alert_thresholds_fired` ensures we never warn twice for
+     * the same crossing in a billing period. Top-ups remove thresholds that
+     * the new balance has climbed back above, so a drop-then-top-then-drop
+     * cycle correctly re-fires.
+     */
+    protected function evaluateAndDispatchAlerts(Team $team): void
+    {
+        $result = (new EvaluateCreditAlerts)->evaluate($team);
+
+        $needsPersist = $result['fired'] !== ($team->alert_thresholds_fired ?? []);
+        if ($needsPersist) {
+            $team->forceFill(['alert_thresholds_fired' => $result['fired']])->save();
+        }
+
+        if ($result['newlyCrossed'] === []) {
+            return;
+        }
+
+        $owner = $team->owner;
+        if ($owner === null) {
+            return;
+        }
+
+        $grant = $team->planObject()->monthlyCredits();
+        foreach ($result['newlyCrossed'] as $threshold) {
+            Notification::send($owner, new CreditBurnAlertNotification(
+                team: $team,
+                thresholdPercent: $threshold,
+                creditsRemaining: (int) $team->credit_balance,
+                monthlyGrant: $grant,
+            ));
+        }
     }
 
     /**
@@ -72,6 +115,10 @@ class CreditMeter
                 // Hard reset, not additive — "no rollover" semantics.
                 'credit_balance' => $amount,
                 'credits_renewed_at' => now(),
+                // Wipe fired thresholds: new billing period means even if
+                // they immediately burn down again, they should see the
+                // alerts as fresh events.
+                'alert_thresholds_fired' => (new EvaluateCreditAlerts)->reset(),
             ])->save();
 
             CreditTransaction::create([
@@ -108,6 +155,14 @@ class CreditMeter
                 'reason' => CreditTransaction::REASON_GRANT_TOPUP,
                 'meta' => $meta,
             ]);
+
+            // Top-up may have lifted balance back above one or more thresholds —
+            // recompute and persist (the array shrinks). No notifications
+            // fire on top-up; that direction is good news, not an alert.
+            $result = (new EvaluateCreditAlerts)->evaluate($team);
+            if ($result['fired'] !== ($team->alert_thresholds_fired ?? [])) {
+                $team->forceFill(['alert_thresholds_fired' => $result['fired']])->save();
+            }
         });
     }
 }
