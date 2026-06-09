@@ -17,6 +17,7 @@ use App\Http\Controllers\SubscribeController;
 use App\Http\Controllers\Voiceflow\EnvironmentsController;
 use App\Http\Controllers\Voiceflow\EvaluationsController;
 use App\Http\Controllers\VoiceflowController;
+use App\Http\Controllers\WebhookEventsController;
 use App\Http\Middleware\RequireAgent;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -219,6 +220,11 @@ Route::middleware([
     // Done page links to it as the final activation step.
     Route::get('/install', [InstallController::class, 'index'])
         ->name('install.index');
+
+    // Webhook event admin viewer — last 100 inbound Voiceflow webhook
+    // events for this team. Read-only; filter by event type + state.
+    Route::get('/system/webhooks', [WebhookEventsController::class, 'index'])
+        ->name('system.webhooks.index');
 
     // Phase 12 Knowledge Base (Voiceflow KB API).
     Route::get('/knowledge', [KnowledgeBaseController::class, 'index'])->name('knowledge.index');
