@@ -13,7 +13,6 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SubscribeController;
-use App\Http\Controllers\SystemArchitectureController;
 use App\Http\Controllers\Voiceflow\EnvironmentsController;
 use App\Http\Controllers\Voiceflow\EvaluationsController;
 use App\Http\Controllers\VoiceflowController;
@@ -199,10 +198,6 @@ Route::middleware([
     Route::post('/notifications/read', [NotificationController::class, 'readAll'])
         ->middleware('throttle:60,1')
         ->name('notifications.read');
-
-    // In-app API & data-flow documentation page (Mermaid-rendered).
-    Route::get('/system/architecture', [SystemArchitectureController::class, 'index'])
-        ->name('system.architecture');
 
     // "Install on your website" — embed snippet + instructions for the
     // current team's current agent. Sidebar nav reaches it; onboarding's
