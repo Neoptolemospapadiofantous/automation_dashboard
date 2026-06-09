@@ -57,6 +57,16 @@ function buy(pack) {
         },
     });
 }
+
+// --- Subscription ----------------------------------------------------------
+// POSTs to /subscribe/{plan} which creates a Stripe Checkout session on the
+// server and redirects the browser away. We use a form-style post so CSRF
+// is handled automatically; Inertia gets the away-redirect and follows.
+const subscribeForm = useForm({});
+function subscribe(planKey) {
+    if (billing.value?.plan_label?.toLowerCase() === planKey) return; // already on it
+    subscribeForm.post(`/subscribe/${planKey}`);
+}
 </script>
 
 <template>
@@ -83,6 +93,46 @@ function buy(pack) {
                         <div class="mt-1 text-xs text-gray-500">
                             <span v-if="billing?.max_agents >= 9999">Unlimited agents</span>
                             <span v-else>{{ billing?.agents_count }} / {{ billing?.max_agents }} agents</span>
+                        </div>
+                    </div>
+
+                    <!-- Plan upgrade strip: Starter / Operator subscribe buttons.
+                         Shows on every plan that's not already maxed out so the
+                         customer can see what they could move to. Each button
+                         POSTs to /subscribe/{plan} which redirects to Stripe Checkout. -->
+                    <div class="rounded-xl bg-white p-5 shadow ring-1 ring-black/5 sm:col-span-2 lg:col-span-2">
+                        <div class="text-xs uppercase tracking-wide text-gray-400">Subscription tiers</div>
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                            <button
+                                type="button"
+                                class="flex flex-col items-start rounded-lg border p-3 text-left transition hover:border-indigo-300 hover:bg-indigo-50"
+                                :class="billing?.plan_label === 'Starter' ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-white'"
+                                @click="subscribe('starter')"
+                            >
+                                <div class="text-sm font-semibold text-gray-900">Starter — $99/mo</div>
+                                <div class="mt-1 text-[11px] text-gray-500">1 agent · 2,500 credits / month</div>
+                                <div class="mt-2 text-[11px] font-medium text-indigo-600" v-if="billing?.plan_label !== 'Starter'">
+                                    Subscribe →
+                                </div>
+                                <div class="mt-2 text-[11px] font-medium text-gray-400" v-else>
+                                    Current plan
+                                </div>
+                            </button>
+                            <button
+                                type="button"
+                                class="flex flex-col items-start rounded-lg border p-3 text-left transition hover:border-indigo-300 hover:bg-indigo-50"
+                                :class="billing?.plan_label === 'Operator' ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-white'"
+                                @click="subscribe('operator')"
+                            >
+                                <div class="text-sm font-semibold text-gray-900">Operator — $399/mo</div>
+                                <div class="mt-1 text-[11px] text-gray-500">5 agents · 25,000 credits / month</div>
+                                <div class="mt-2 text-[11px] font-medium text-indigo-600" v-if="billing?.plan_label !== 'Operator'">
+                                    Subscribe →
+                                </div>
+                                <div class="mt-2 text-[11px] font-medium text-gray-400" v-else>
+                                    Current plan
+                                </div>
+                            </button>
                         </div>
                     </div>
 

@@ -144,9 +144,11 @@ class BillingDisplayMathTest extends TestCase
 
     public function test_real_topup_purchase_keeps_math_consistent(): void
     {
-        // End-to-end: hit the topup endpoint, then check the share. The
-        // grant lands in credit_transactions and credits_total reflects it
-        // without any further glue.
+        // Webhook-shipped: simulate the post-payment grant the same way
+        // StripeWebhookController::handleCheckoutCompleted does — call
+        // CreditMeter::grantTopUp with the pack's credits. The math is
+        // identical regardless of whether the grant came from dev-mode
+        // or from Stripe.
         $grant = Plan::Pro->monthlyCredits();
         $medium = TopUpPack::Medium->credits();
         $user = User::factory()->withPersonalTeam()->create();
@@ -157,9 +159,11 @@ class BillingDisplayMathTest extends TestCase
             'credits_renewed_at' => now()->subDays(1),
         ])->save();
 
-        $this->actingAs($user->fresh())
-            ->post(route('billing.topup'), ['pack' => TopUpPack::Medium->value])
-            ->assertRedirect();
+        (new CreditMeter)->grantTopUp(
+            team: $team->fresh(),
+            amount: $medium,
+            meta: ['pack' => 'medium', 'stripe_session_id' => 'cs_test_fake', 'source' => 'stripe'],
+        );
 
         $this->actingAs($user->fresh())
             ->get(route('billing.index'))
@@ -263,10 +267,13 @@ class BillingDisplayMathTest extends TestCase
             'updated_at' => now()->subDays(3),
         ]);
 
-        // Buy a second top-up via the real endpoint.
-        $this->actingAs($user->fresh())
-            ->post(route('billing.topup'), ['pack' => TopUpPack::Small->value])
-            ->assertRedirect();
+        // Simulate the post-Stripe-payment grant: same path as the webhook
+        // handler runs after checkout.session.completed.
+        (new CreditMeter)->grantTopUp(
+            team: $team->fresh(),
+            amount: TopUpPack::Small->credits(),
+            meta: ['pack' => 'small', 'stripe_session_id' => 'cs_test_second', 'source' => 'stripe'],
+        );
 
         $this->actingAs($user->fresh())
             ->get(route('billing.index'))

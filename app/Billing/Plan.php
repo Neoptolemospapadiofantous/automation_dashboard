@@ -101,11 +101,13 @@ enum Plan: string
      */
     public function stripePriceId(): ?string
     {
-        return match ($this) {
+        $value = match ($this) {
             self::Free => config('billing.stripe_price.starter'),
             self::Pro => config('billing.stripe_price.operator'),
             self::Business => null, // Custom is project-based, not Stripe-priced
         };
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 
     public function label(): string

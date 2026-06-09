@@ -9,6 +9,8 @@ use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\SubscribeController;
 use App\Http\Controllers\SystemArchitectureController;
 use App\Http\Controllers\Voiceflow\EnvironmentsController;
 use App\Http\Controllers\Voiceflow\EvaluationsController;
@@ -114,6 +116,17 @@ Route::middleware([
     // Top-up flow is DEV-MODE (instant grant) until Phase H wires Stripe
     // Checkout. See BillingController::topup for the swap-over plan.
     Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
+
+    // Stripe subscription checkout. Plan key is one of 'starter' | 'operator'.
+    Route::post('/subscribe/{plan}', [SubscribeController::class, 'start'])
+        ->where('plan', 'starter|operator')
+        ->middleware('throttle:10,1')
+        ->name('subscribe.start');
+    Route::get('/subscribe/success', [SubscribeController::class, 'success'])
+        ->name('subscribe.success');
+    Route::get('/subscribe/cancel', [SubscribeController::class, 'cancel'])
+        ->name('subscribe.cancel');
+
     Route::post('/billing/topup', [BillingController::class, 'topup'])
         ->middleware('throttle:10,1')
         ->name('billing.topup');
@@ -211,3 +224,9 @@ Route::middleware([
         ->middleware('throttle:30,1')
         ->name('knowledge.destroy');
 });
+
+// Stripe webhook — public, no auth, no CSRF, signature-verified inside the
+// controller. Lives outside the auth group because Stripe doesn't send
+// session cookies or a CSRF token; it signs the body with the webhook secret.
+Route::post('/webhooks/stripe', StripeWebhookController::class)
+    ->name('webhooks.stripe');

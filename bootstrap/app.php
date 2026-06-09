@@ -25,7 +25,12 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        // Stripe webhooks sign the body with a shared secret — no CSRF token
+        // is sent. Verification happens inside StripeWebhookController via
+        // Webhook::constructEvent(), which is the documented Stripe contract.
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/stripe',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Out-of-credits is a billing/payment state, not an app error.

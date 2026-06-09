@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Billing\CreditMeter;
 use App\Billing\Plan;
 use App\Billing\TopUpPack;
+use App\Models\Team;
+use App\Services\Billing\StripeClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -50,44 +51,44 @@ class BillingController extends Controller
     }
 
     /**
-     * Buy a credit pack. DEV-MODE: instant-grant with audit flag.
-     * Phase H will swap the grant for Stripe Checkout.
+     * Buy a credit pack via Stripe Checkout. The actual grant happens in
+     * StripeWebhookController when checkout.session.completed fires —
+     * this controller just orchestrates the redirect to Stripe.
      */
-    public function topup(Request $request, CreditMeter $meter): RedirectResponse
+    public function topup(Request $request, StripeClient $stripe): RedirectResponse
     {
         $data = $request->validate([
             'pack' => ['required', 'string', 'in:'.implode(',', array_map(fn ($p) => $p->value, TopUpPack::cases()))],
         ]);
 
         $team = $request->user()->currentTeam;
+        if (! $team instanceof Team) {
+            abort(403, 'Sign in to a team first.');
+        }
         $plan = $team->planObject();
 
-        // CreditMeter::grantTopUp also enforces this, but failing early
-        // here means we never hit the meter on a Custom-plan attempt and
-        // the user gets a clean validation message.
         abort_unless($plan->allowsTopUps(), 403, "Top-ups aren't available on the {$plan->label()} plan.");
 
         $pack = TopUpPack::from($data['pack']);
+        $priceId = $pack->stripePriceId();
+        if ($priceId === null) {
+            return back()->withErrors([
+                'pack' => 'This top-up pack is not yet available for purchase.',
+            ]);
+        }
 
-        // DEV-MODE grant. Audit meta records the pack + price so a future
-        // reconciliation pass can identify simulated rows when Stripe ships.
-        // TODO Phase H: replace this block with a Stripe Checkout session
-        // redirect; move the grant call into the invoice.paid webhook.
-        $meter->grantTopUp(
+        $session = $stripe->createOneOffCheckout(
             team: $team,
-            amount: $pack->credits(),
-            meta: [
+            priceId: $priceId,
+            successUrl: route('billing.index').'?topup=success',
+            cancelUrl: route('billing.index').'?topup=canceled',
+            metadata: [
                 'pack' => $pack->value,
-                'price_usd' => $pack->priceUsd(),
-                'simulated_payment' => true,
+                'credits' => (string) $pack->credits(),
             ],
         );
 
-        return back()->with('flash.topup', [
-            'pack' => $pack->value,
-            'credits' => $pack->credits(),
-            'price_usd' => $pack->priceUsd(),
-            'message' => "Added {$pack->credits()} credits to your balance.",
-        ]);
+        // Inertia POST → away-redirect to Stripe. The frontend follows.
+        return redirect()->away($session->url);
     }
 }

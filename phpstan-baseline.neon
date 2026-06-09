@@ -133,12 +133,6 @@ parameters:
 			path: app/Billing/CreditMeter.php
 
 		-
-			message: '#^Unused App\\Billing\\CreditMeter\:\:grantMonthlyRenewal$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Billing/CreditMeter.php
-
-		-
 			message: '#^Property App\\Billing\\Exceptions\\OutOfCredits\:\:\$plan is never read$#'
 			identifier: shipmonk.deadProperty.neverRead
 			count: 1
@@ -173,12 +167,6 @@ parameters:
 			identifier: shipmonk.deadMethod
 			count: 1
 			path: app/Billing/Plan.php
-
-		-
-			message: '#^Unused App\\Billing\\TopUpPack\:\:stripePriceId$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Billing/TopUpPack.php
 
 		-
 			message: '#^Cannot call method diffForHumans\(\) on string\.$#'
@@ -315,12 +303,6 @@ parameters:
 		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:planObject\(\)\.$#'
 			identifier: method.notFound
-			count: 2
-			path: app/Http/Controllers/BillingController.php
-
-		-
-			message: '#^Parameter \$team of method App\\Billing\\CreditMeter\:\:grantTopUp\(\) expects App\\Models\\Team, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
 			count: 1
 			path: app/Http/Controllers/BillingController.php
 

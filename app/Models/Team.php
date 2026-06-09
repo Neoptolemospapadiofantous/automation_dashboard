@@ -30,6 +30,10 @@ class Team extends JetstreamTeam
         'credit_balance',
         'credits_renewed_at',
         'alert_thresholds_fired',
+        'stripe_customer_id',
+        'stripe_subscription_id',
+        'stripe_subscription_status',
+        'stripe_current_period_end',
     ];
 
     public function agents(): HasMany
@@ -84,6 +88,7 @@ class Team extends JetstreamTeam
             // billing period — e.g. ["50","80"]. CreditBurnAlerts uses
             // this for idempotency.
             'alert_thresholds_fired' => 'array',
+            'stripe_current_period_end' => 'datetime',
         ];
     }
 

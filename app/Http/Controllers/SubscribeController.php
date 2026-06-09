@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Billing\Plan;
+use App\Models\Team;
+use App\Services\Billing\StripeClient;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+/**
+ * Handles the subscription Checkout flow:
+ *   POST /subscribe/{plan}  → creates Stripe Checkout session, redirects browser
+ *   GET  /subscribe/success → success landing page (subscription activates via webhook)
+ *   GET  /subscribe/cancel  → cancel landing page
+ *
+ * The actual subscription activation (set Team->plan, grant credits) happens
+ * in StripeWebhookController when checkout.session.completed fires. This
+ * controller just orchestrates the redirect to Stripe's hosted Checkout.
+ */
+class SubscribeController extends Controller
+{
+    public function __construct(protected StripeClient $stripe) {}
+
+    /**
+     * Create a Checkout session for the chosen plan + redirect the browser.
+     */
+    public function start(Request $request, string $planKey): RedirectResponse
+    {
+        $plan = match ($planKey) {
+            'starter' => Plan::Free,    // case Free has label "Starter" + $99 price
+            'operator' => Plan::Pro,    // case Pro has label "Operator" + $399 price
+            default => abort(404, 'Unknown plan'),
+        };
+
+        $priceId = $plan->stripePriceId();
+        if ($priceId === null) {
+            // Stripe price not configured for this plan — surface a friendly
+            // error rather than 500. Will happen if STRIPE_PRICE_STARTER /
+            // STRIPE_PRICE_OPERATOR isn't set in .env.
+            return back()->withErrors([
+                'plan' => "Plan {$plan->label()} is not yet available for self-serve checkout.",
+            ]);
+        }
+
+        $team = $request->user()->currentTeam;
+        if (! $team instanceof Team) {
+            abort(403, 'Sign in to a team first.');
+        }
+
+        $session = $this->stripe->createSubscriptionCheckout(
+            team: $team,
+            priceId: $priceId,
+            successUrl: route('subscribe.success').'?session_id={CHECKOUT_SESSION_ID}',
+            cancelUrl: route('subscribe.cancel'),
+            metadata: [
+                'plan_key' => $planKey,
+                'plan_value' => $plan->value,
+            ],
+        );
+
+        return redirect()->away($session->url);
+    }
+
+    /**
+     * Landing page after Stripe redirects back successfully. The subscription
+     * is NOT necessarily active yet — that depends on the webhook firing.
+     * We show a "your subscription is processing" page; the dashboard polls
+     * or the user refreshes once the webhook lands.
+     */
+    public function success(Request $request): Response
+    {
+        return Inertia::render('Billing/SubscriptionSuccess', [
+            'session_id' => $request->query('session_id'),
+        ]);
+    }
+
+    public function cancel(): Response
+    {
+        return Inertia::render('Billing/SubscriptionCancel');
+    }
+}
