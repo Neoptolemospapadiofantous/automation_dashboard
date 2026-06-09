@@ -5,6 +5,7 @@ namespace App\Services\Billing;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use Stripe\BillingPortal\Session as BillingPortalSession;
 use Stripe\Checkout\Session as CheckoutSession;
 use Stripe\Customer;
 use Stripe\Event;
@@ -120,6 +121,30 @@ class StripeClient
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
             'metadata' => array_merge(['team_id' => (string) $team->id], $metadata),
+        ]);
+    }
+
+    /**
+     * Create a Stripe Customer Portal session — a hosted page where the
+     * customer manages their subscription (cancel, update card, download
+     * invoices). The portal must be configured at
+     * dashboard.stripe.com/test/settings/billing/portal first; the SDK call
+     * will throw with a clear "configuration not active" error otherwise.
+     *
+     * Returns the portal session URL. Caller redirects the browser.
+     */
+    public function createBillingPortalSession(Team $team, string $returnUrl): BillingPortalSession
+    {
+        $customerId = (string) $team->stripe_customer_id;
+        if ($customerId === '') {
+            throw new \InvalidArgumentException(
+                'Team has no Stripe customer — they have never subscribed or topped up.'
+            );
+        }
+
+        return $this->sdk()->billingPortal->sessions->create([
+            'customer' => $customerId,
+            'return_url' => $returnUrl,
         ]);
     }
 

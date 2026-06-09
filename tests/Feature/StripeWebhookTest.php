@@ -83,6 +83,21 @@ class StripeWebhookTest extends TestCase
         $this->assertSame(1, CreditTransaction::query()->where('reason', 'grant_topup')->count());
     }
 
+    public function test_invoice_payment_failed_marks_team_past_due(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $team = $user->currentTeam;
+        $team->forceFill([
+            'plan' => Plan::Free->value,
+            'stripe_subscription_id' => 'sub_test_failing',
+            'stripe_subscription_status' => 'active',
+        ])->save();
+
+        $this->fakeWebhook($this->invoicePaymentFailedEvent('sub_test_failing'));
+
+        $this->assertSame('past_due', $team->fresh()->stripe_subscription_status);
+    }
+
     public function test_subscription_deleted_downgrades_to_free(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
@@ -147,6 +162,20 @@ class StripeWebhookTest extends TestCase
                         'pack' => 'medium',
                         'credits' => (string) $credits,
                     ],
+                ],
+            ],
+        ]);
+    }
+
+    private function invoicePaymentFailedEvent(string $subscriptionId): Event
+    {
+        return Event::constructFrom([
+            'id' => 'evt_'.uniqid(),
+            'type' => 'invoice.payment_failed',
+            'data' => [
+                'object' => [
+                    'id' => 'in_'.uniqid(),
+                    'subscription' => $subscriptionId,
                 ],
             ],
         ]);

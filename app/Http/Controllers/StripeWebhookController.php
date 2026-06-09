@@ -58,6 +58,7 @@ class StripeWebhookController extends Controller
         match ($event->type) {
             'checkout.session.completed' => $this->handleCheckoutCompleted($event),
             'invoice.paid' => $this->handleInvoicePaid($event),
+            'invoice.payment_failed' => $this->handleInvoicePaymentFailed($event),
             'customer.subscription.updated' => $this->handleSubscriptionUpdated($event),
             'customer.subscription.deleted' => $this->handleSubscriptionDeleted($event),
             default => null, // ignore — Stripe gets a 200 so it doesn't retry
@@ -205,6 +206,29 @@ class StripeWebhookController extends Controller
                 'stripe_current_period_end' => CarbonImmutable::createFromTimestamp((int) $periodEnd),
             ])->save();
         }
+    }
+
+    /**
+     * Invoice payment failed — Stripe will retry per the dunning settings,
+     * but we should immediately mark the subscription as past_due so the
+     * dashboard surfaces the banner. The customer.subscription.updated
+     * event also fires; we set the status here as a redundant safety net.
+     */
+    protected function handleInvoicePaymentFailed(Event $event): void
+    {
+        /** @var array<string, mixed> $invoice */
+        $invoice = $event->data->object->toArray();
+        $subscriptionId = (string) ($invoice['subscription'] ?? '');
+        if ($subscriptionId === '') {
+            return;
+        }
+
+        $team = Team::where('stripe_subscription_id', $subscriptionId)->first();
+        if ($team === null) {
+            return;
+        }
+
+        $team->forceFill(['stripe_subscription_status' => 'past_due'])->save();
     }
 
     /**

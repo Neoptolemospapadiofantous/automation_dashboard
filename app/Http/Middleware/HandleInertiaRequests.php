@@ -90,6 +90,13 @@ class HandleInertiaRequests extends Middleware
                     $plan = $team->planObject();
                     $isCustom = $plan === Plan::Business;
 
+                    // has_stripe_customer is true once the team has subscribed
+                    // OR purchased a topup. That's the precondition for the
+                    // Customer Portal session to work (Stripe needs a cus_*).
+                    $stripeCustomerId = $team->getAttribute('stripe_customer_id');
+                    $hasStripeCustomer = $stripeCustomerId !== null && $stripeCustomerId !== '';
+                    $subscriptionStatus = $team->getAttribute('stripe_subscription_status');
+
                     if ($isCustom) {
                         return [
                             'plan' => $plan->value,
@@ -101,6 +108,8 @@ class HandleInertiaRequests extends Middleware
                             'max_agents' => $plan->maxAgents(),
                             'agents_count' => $team->agents()->count(),
                             'allows_topups' => $plan->allowsTopUps(),
+                            'has_stripe_customer' => $hasStripeCustomer,
+                            'subscription_status' => $subscriptionStatus,
                         ];
                     }
 
@@ -126,6 +135,8 @@ class HandleInertiaRequests extends Middleware
                         'max_agents' => $plan->maxAgents(),
                         'agents_count' => $team->agents()->count(),
                         'allows_topups' => $plan->allowsTopUps(),
+                        'has_stripe_customer' => $hasStripeCustomer,
+                        'subscription_status' => $subscriptionStatus,
                     ];
                 })()
                 : null,

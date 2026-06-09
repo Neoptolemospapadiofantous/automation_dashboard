@@ -67,6 +67,16 @@ function subscribe(planKey) {
     if (billing.value?.plan_label?.toLowerCase() === planKey) return; // already on it
     subscribeForm.post(`/subscribe/${planKey}`);
 }
+
+// --- Customer Portal ------------------------------------------------------
+// POSTs to /billing/portal → server creates a Stripe Customer Portal
+// session and redirects the browser away. Customer cancels/updates card
+// over there; comes back to /billing when done. Cancellation fires
+// customer.subscription.deleted which downgrades us via webhook.
+const portalForm = useForm({});
+function openPortal() {
+    portalForm.post(route('billing.portal'));
+}
 </script>
 
 <template>
@@ -83,6 +93,20 @@ function subscribe(planKey) {
                     {{ topupFlash.message }}
                 </div>
 
+                <!-- Past-due / canceled subscription banner -->
+                <div
+                    v-if="billing?.subscription_status === 'past_due'"
+                    class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+                >
+                    <strong>Payment failed.</strong> Your last invoice didn't clear. Update your card in the customer portal to keep your subscription active.
+                </div>
+                <div
+                    v-else-if="billing?.subscription_status === 'canceled'"
+                    class="rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-700"
+                >
+                    Your subscription was canceled. You're back on the free tier; subscribe again below to reactivate.
+                </div>
+
                 <!-- Current plan + usage -->
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <div class="rounded-xl bg-white p-5 shadow ring-1 ring-black/5">
@@ -94,6 +118,16 @@ function subscribe(planKey) {
                             <span v-if="billing?.max_agents >= 9999">Unlimited agents</span>
                             <span v-else>{{ billing?.agents_count }} / {{ billing?.max_agents }} agents</span>
                         </div>
+                        <!-- Manage subscription — opens Stripe-hosted Customer Portal
+                             where the user can cancel, update card, download invoices. -->
+                        <button
+                            v-if="billing?.has_stripe_customer"
+                            type="button"
+                            class="mt-3 inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                            @click="openPortal"
+                        >
+                            ⚙ Manage subscription
+                        </button>
                     </div>
 
                     <!-- Plan upgrade strip: Starter / Operator subscribe buttons.

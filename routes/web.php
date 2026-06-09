@@ -139,6 +139,14 @@ Route::middleware([
         ->middleware('throttle:10,1')
         ->name('billing.topup');
 
+    // Customer Portal — Stripe-hosted page for cancel, update card, view
+    // invoices. Requires the team to have a stripe_customer_id (so at least
+    // one subscribe or topup has happened). Cancellations come back via
+    // the customer.subscription.deleted webhook.
+    Route::post('/billing/portal', [BillingController::class, 'portal'])
+        ->middleware('throttle:10,1')
+        ->name('billing.portal');
+
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     // Phase 2 live-tick demo: fires a broadcast every connected browser receives.

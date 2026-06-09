@@ -8,6 +8,7 @@ use App\Models\Team;
 use App\Services\Billing\StripeClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -89,6 +90,47 @@ class BillingController extends Controller
         );
 
         // Inertia POST → away-redirect to Stripe. The frontend follows.
+        return redirect()->away($session->url);
+    }
+
+    /**
+     * Redirect the customer to Stripe's hosted Customer Portal where they
+     * can cancel their subscription, update payment method, download
+     * invoices, and update billing info. Stripe handles the entire UX;
+     * we just create the session + redirect.
+     *
+     * Cancellations come back through customer.subscription.deleted in
+     * StripeWebhookController which downgrades the team to Free.
+     */
+    public function portal(Request $request, StripeClient $stripe): RedirectResponse
+    {
+        $team = $request->user()->currentTeam;
+        if (! $team instanceof Team) {
+            abort(403, 'Sign in to a team first.');
+        }
+
+        if ($team->stripe_customer_id === null || $team->stripe_customer_id === '') {
+            return back()->withErrors([
+                'portal' => 'You need an active subscription before managing billing. Subscribe first.',
+            ]);
+        }
+
+        try {
+            $session = $stripe->createBillingPortalSession(
+                team: $team,
+                returnUrl: route('billing.index'),
+            );
+        } catch (\Throwable $e) {
+            Log::error('Stripe billing portal session failed', [
+                'team_id' => $team->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->withErrors([
+                'portal' => 'Billing portal is temporarily unavailable. Please try again in a moment.',
+            ]);
+        }
+
         return redirect()->away($session->url);
     }
 }
