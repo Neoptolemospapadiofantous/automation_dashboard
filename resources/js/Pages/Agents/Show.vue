@@ -8,6 +8,7 @@ import DangerButton from '@/Components/DangerButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
+import { confirm } from '@/Composables/useConfirm';
 
 const props = defineProps({
     agent: { type: Object, required: true },
@@ -40,8 +41,14 @@ function save() {
     form.put(route('agents.update', props.agent.slug), { preserveScroll: true });
 }
 
-function destroy() {
-    if (!confirm(`Delete agent "${props.agent.name}"? Conversations and leads stay, but lose their agent link.`)) return;
+async function destroy() {
+    const ok = await confirm({
+        title: 'Delete agent',
+        message: `Delete agent "${props.agent.name}"? Conversations and leads stay, but lose their agent link.`,
+        buttonText: 'Delete',
+        dangerous: true,
+    });
+    if (!ok) return;
     router.delete(route('agents.destroy', props.agent.slug));
 }
 </script>

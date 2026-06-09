@@ -8,6 +8,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
+import { confirm } from '@/Composables/useConfirm';
 
 const props = defineProps({
     configured: { type: Boolean, default: false },
@@ -67,8 +68,14 @@ function changeFilter(type) {
 }
 
 // --- Delete -----------------------------------------------------------------
-function destroy(documentID, name) {
-    if (!confirm(`Delete "${name ?? documentID}"? The agent will lose access to this content immediately.`)) return;
+async function destroy(documentID, name) {
+    const ok = await confirm({
+        title: 'Delete document',
+        message: `Delete "${name ?? documentID}"? The agent will lose access to this content immediately.`,
+        buttonText: 'Delete',
+        dangerous: true,
+    });
+    if (!ok) return;
     router.delete(route('knowledge.destroy', documentID), { preserveScroll: true });
 }
 

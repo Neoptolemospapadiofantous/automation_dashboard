@@ -6,6 +6,7 @@ use App\Billing\Exceptions\OutOfCredits;
 use App\Models\CreditTransaction;
 use App\Models\Team;
 use App\Notifications\CreditBurnAlertNotification;
+use App\Notifications\OutOfCreditsNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
@@ -33,32 +34,40 @@ class CreditMeter
             return;
         }
 
-        DB::transaction(function () use ($team, $amount, $agentId, $meta) {
-            // Re-read with lock so the check + decrement is atomic.
-            $fresh = Team::lockForUpdate()->find($team->id);
+        try {
+            DB::transaction(function () use ($team, $amount, $agentId, $meta) {
+                // Re-read with lock so the check + decrement is atomic.
+                $fresh = Team::lockForUpdate()->find($team->id);
 
-            if (! $fresh->hasCredits($amount)) {
-                throw new OutOfCredits($fresh->planObject());
-            }
+                if (! $fresh->hasCredits($amount)) {
+                    throw new OutOfCredits($fresh->planObject());
+                }
 
-            $fresh->forceFill([
-                'credit_balance' => $fresh->credit_balance - $amount,
-            ])->save();
+                $fresh->forceFill([
+                    'credit_balance' => $fresh->credit_balance - $amount,
+                ])->save();
 
-            CreditTransaction::create([
-                'team_id' => $fresh->id,
-                'agent_id' => $agentId,
-                'amount' => -$amount,
-                'reason' => CreditTransaction::REASON_CONSUME_MESSAGE,
-                'meta' => $meta,
-            ]);
+                CreditTransaction::create([
+                    'team_id' => $fresh->id,
+                    'agent_id' => $agentId,
+                    'amount' => -$amount,
+                    'reason' => CreditTransaction::REASON_CONSUME_MESSAGE,
+                    'meta' => $meta,
+                ]);
 
-            $this->evaluateAndDispatchAlerts($fresh);
+                $this->evaluateAndDispatchAlerts($fresh);
 
-            // Refresh the in-memory model passed in by the caller so they
-            // see the new balance without re-fetching.
-            $team->refresh();
-        });
+                // Refresh the in-memory model passed in by the caller so they
+                // see the new balance without re-fetching.
+                $team->refresh();
+            });
+        } catch (OutOfCredits $e) {
+            // Notification AFTER the transaction commits its rollback so the
+            // alert_thresholds_fired update actually persists. Without this
+            // ordering the save would be wiped along with the failed debit.
+            $this->notifyOutOfCreditsOnce($team->fresh());
+            throw $e;
+        }
     }
 
     /**
@@ -159,10 +168,36 @@ class CreditMeter
             // Top-up may have lifted balance back above one or more thresholds —
             // recompute and persist (the array shrinks). No notifications
             // fire on top-up; that direction is good news, not an alert.
+            // Also clear any '100' (out-of-credits) flag — they're back in business.
             $result = (new EvaluateCreditAlerts)->evaluate($team);
-            if ($result['fired'] !== ($team->alert_thresholds_fired ?? [])) {
-                $team->forceFill(['alert_thresholds_fired' => $result['fired']])->save();
+            $fired = $result['fired'];
+            if ($fired !== ($team->alert_thresholds_fired ?? [])) {
+                $team->forceFill(['alert_thresholds_fired' => $fired])->save();
             }
         });
+    }
+
+    /**
+     * Notify the team owner the first time a turn is refused for lack of
+     * credits this period. Idempotent via Team.alert_thresholds_fired —
+     * we tack on '100' once dispatched; renewal/top-up clears it through
+     * EvaluateCreditAlerts.
+     */
+    protected function notifyOutOfCreditsOnce(Team $team): void
+    {
+        $fired = $team->alert_thresholds_fired ?? [];
+        if (in_array('100', $fired, true)) {
+            return;
+        }
+
+        $owner = $team->owner;
+        if ($owner === null) {
+            return;
+        }
+
+        Notification::send($owner, new OutOfCreditsNotification(team: $team));
+
+        $fired[] = '100';
+        $team->forceFill(['alert_thresholds_fired' => $fired])->save();
     }
 }

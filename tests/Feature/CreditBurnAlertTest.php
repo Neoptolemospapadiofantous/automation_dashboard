@@ -8,6 +8,8 @@ use App\Billing\Plan;
 use App\Models\Team;
 use App\Models\User;
 use App\Notifications\CreditBurnAlertNotification;
+use App\Notifications\OutOfCreditsNotification;
+use App\Billing\Exceptions\OutOfCredits;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -152,5 +154,46 @@ class CreditBurnAlertTest extends TestCase
                     && $n->team->is($team);
             },
         );
+    }
+
+    public function test_out_of_credits_notification_fires_once_then_idempotent(): void
+    {
+        Notification::fake();
+
+        $team = $this->team();
+        $team->forceFill(['credit_balance' => 0])->save();
+
+        // First failed consume → out-of-credits notification fires.
+        try {
+            (new CreditMeter)->consume($team->fresh(), 100);
+        } catch (OutOfCredits) {
+            // expected
+        }
+        Notification::assertSentTimes(OutOfCreditsNotification::class, 1);
+        $this->assertContains('100', $team->fresh()->alert_thresholds_fired);
+
+        // Second failed consume → already-fired, no second notification.
+        Notification::fake();
+        try {
+            (new CreditMeter)->consume($team->fresh(), 100);
+        } catch (OutOfCredits) {
+            // expected
+        }
+        Notification::assertNothingSent();
+    }
+
+    public function test_topup_clears_out_of_credits_flag(): void
+    {
+        Notification::fake();
+
+        $team = $this->team();
+        $team->forceFill(['credit_balance' => 0, 'alert_thresholds_fired' => ['50', '80', '95', '100']])->save();
+
+        (new CreditMeter)->grantTopUp($team->fresh(), 500);
+
+        // grantTopUp re-evaluates and removes thresholds no longer crossed.
+        // With balance=500 and grant=2500, used=80% → '50' + '80' stay, '95' + '100' clear.
+        $fired = $team->fresh()->alert_thresholds_fired;
+        $this->assertNotContains('100', $fired);
     }
 }

@@ -7,6 +7,7 @@ import PageHeader from '@/Components/PageHeader.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
+import { confirm } from '@/Composables/useConfirm';
 import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
@@ -35,8 +36,14 @@ const submit = () => {
     });
 };
 
-const destroy = (id) => {
-    if (!confirm('Delete this evaluation? Its results are also removed.')) return;
+const destroy = async (id) => {
+    const ok = await confirm({
+        title: 'Delete evaluation',
+        message: 'Delete this evaluation? Its results are also removed.',
+        buttonText: 'Delete',
+        dangerous: true,
+    });
+    if (!ok) return;
     useForm({}).delete(route('agents.evaluations.destroy', id), { preserveScroll: true });
 };
 

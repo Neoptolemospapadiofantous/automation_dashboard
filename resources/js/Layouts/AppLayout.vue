@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
+import AppConfirmDialog from '@/Components/AppConfirmDialog.vue';
 import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
@@ -438,5 +439,10 @@ const handleMobileNavClick = (event) => {
                 </div>
             </div>
         </div>
+
+        <!-- App-wide confirmation modal. Pages call confirm({...}) from
+             useConfirm; the promise resolves true/false. Single mount
+             point keeps modal styling consistent across the app. -->
+        <AppConfirmDialog />
     </div>
 </template>

@@ -10,6 +10,7 @@ import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import EmptyState from '@/Components/EmptyState.vue';
+import { confirm } from '@/Composables/useConfirm';
 
 const props = defineProps({
     configured: { type: Boolean, default: false },
@@ -34,13 +35,24 @@ const submitClone = () => {
     });
 };
 
-const publish = (idOrAlias) => {
-    if (!confirm(`Publish "${idOrAlias}" as a release?`)) return;
+const publish = async (idOrAlias) => {
+    const ok = await confirm({
+        title: 'Publish release',
+        message: `Publish "${idOrAlias}" as a release? Live traffic will pick up the new version.`,
+        buttonText: 'Publish',
+    });
+    if (!ok) return;
     useForm({}).post(route('agents.environments.publish', idOrAlias), { preserveScroll: true });
 };
 
-const destroy = (envId) => {
-    if (!confirm(`Delete environment "${envId}"? This is irreversible.`)) return;
+const destroy = async (envId) => {
+    const ok = await confirm({
+        title: 'Delete environment',
+        message: `Delete environment "${envId}"? This is irreversible.`,
+        buttonText: 'Delete',
+        dangerous: true,
+    });
+    if (!ok) return;
     useForm({}).delete(route('agents.environments.destroy', envId), { preserveScroll: true });
 };
 

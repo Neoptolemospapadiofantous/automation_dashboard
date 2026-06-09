@@ -9,6 +9,7 @@ import DialogModal from '@/Components/DialogModal.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
+import { confirm } from '@/Composables/useConfirm';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { useEcho } from '@/composables/useEcho';
 
@@ -80,8 +81,14 @@ function onDrop(event, status) {
     });
 }
 
-function destroy(lead) {
-    if (!confirm(`Delete lead "${lead.name}"?`)) return;
+async function destroy(lead) {
+    const ok = await confirm({
+        title: 'Delete lead',
+        message: `Delete lead "${lead.name}"? This is irreversible.`,
+        buttonText: 'Delete',
+        dangerous: true,
+    });
+    if (!ok) return;
     leads.delete(lead.id);
     router.delete(route('leads.destroy', lead.id), { preserveScroll: true, preserveState: true, only: [] });
 }

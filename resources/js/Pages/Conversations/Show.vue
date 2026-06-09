@@ -5,6 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
+import { confirm } from '@/Composables/useConfirm';
 
 const props = defineProps({
     conversation: { type: Object, required: true },
@@ -16,16 +17,27 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '');
 const hasTranscript = computed(() => !!props.conversation.voiceflow_transcript_id);
 const isEnded = computed(() => !!props.conversation.ended_at);
 
-const endUpstream = () => {
+const endUpstream = async () => {
     if (!hasTranscript.value || isEnded.value) return;
-    if (!confirm('Force-end this session upstream at Voiceflow? The local conversation is preserved.')) return;
+    const ok = await confirm({
+        title: 'End upstream session',
+        message: 'Force-end this session upstream at Voiceflow? The local conversation is preserved.',
+        buttonText: 'End upstream',
+    });
+    if (!ok) return;
     useForm({}).post(route('conversations.end-upstream', props.conversation.id), {
         preserveScroll: true,
     });
 };
 
-const deleteUpstream = () => {
-    if (!confirm(`Delete this conversation and ${hasTranscript.value ? 'its Voiceflow transcript' : 'its local record'}? This is irreversible.`)) return;
+const deleteUpstream = async () => {
+    const ok = await confirm({
+        title: 'Delete conversation',
+        message: `Delete this conversation and ${hasTranscript.value ? 'its Voiceflow transcript' : 'its local record'}? This is irreversible.`,
+        buttonText: 'Delete',
+        dangerous: true,
+    });
+    if (!ok) return;
     useForm({}).delete(route('conversations.delete-upstream', props.conversation.id));
 };
 </script>

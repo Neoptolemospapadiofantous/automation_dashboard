@@ -43,7 +43,30 @@ function onAssignChange(e) {
             </span>
         </div>
 
-        <p v-if="lead.email" class="mt-1 truncate text-xs text-gray-500">{{ lead.email }}</p>
+        <div v-if="lead.email || lead.phone" class="mt-1 flex flex-col gap-0.5 text-xs">
+            <a
+                v-if="lead.email"
+                :href="`mailto:${lead.email}`"
+                class="truncate text-gray-500 hover:text-indigo-600 hover:underline"
+                :title="`Email ${lead.email}`"
+                @click.stop
+                @mousedown.stop
+                @dragstart.prevent
+            >
+                ✉ {{ lead.email }}
+            </a>
+            <a
+                v-if="lead.phone"
+                :href="`tel:${lead.phone}`"
+                class="truncate text-gray-500 hover:text-indigo-600 hover:underline"
+                :title="`Call ${lead.phone}`"
+                @click.stop
+                @mousedown.stop
+                @dragstart.prevent
+            >
+                ☎ {{ lead.phone }}
+            </a>
+        </div>
 
         <div class="mt-2 flex items-center justify-between">
             <div class="flex items-center gap-1.5">
