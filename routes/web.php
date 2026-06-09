@@ -5,6 +5,7 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardTickController;
+use App\Http\Controllers\EmbedController;
 use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\NotificationController;
@@ -230,3 +231,19 @@ Route::middleware([
 // session cookies or a CSRF token; it signs the body with the webhook secret.
 Route::post('/webhooks/stripe', StripeWebhookController::class)
     ->name('webhooks.stripe');
+
+// Public chat embed — runs on the customer's website via a <script> tag.
+// All four endpoints are unauthenticated; per-agent-slug authorization
+// is inside the controller (refuses non-active agents). Throttled per IP.
+Route::get('/widget/{slug}.js', [EmbedController::class, 'widget'])
+    ->middleware('throttle:120,1')
+    ->name('embed.widget');
+Route::get('/embed/{slug}', [EmbedController::class, 'chat'])
+    ->middleware('throttle:120,1')
+    ->name('embed.chat');
+Route::post('/embed/{slug}/launch', [EmbedController::class, 'launch'])
+    ->middleware('throttle:60,1')
+    ->name('embed.launch');
+Route::post('/embed/{slug}/interact', [EmbedController::class, 'interact'])
+    ->middleware('throttle:120,1')
+    ->name('embed.interact');

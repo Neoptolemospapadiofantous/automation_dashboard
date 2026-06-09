@@ -28,8 +28,16 @@ return Application::configure(basePath: dirname(__DIR__))
         // Stripe webhooks sign the body with a shared secret — no CSRF token
         // is sent. Verification happens inside StripeWebhookController via
         // Webhook::constructEvent(), which is the documented Stripe contract.
+        //
+        // Embed endpoints are loaded from third-party domains (the customer's
+        // website) so they can't share our session/CSRF token. Auth is by
+        // agent slug + rate limit; the embed iframe has its own per-request
+        // token but our chat endpoints accept it from <meta name="csrf-token">
+        // generated inside the iframe (same-origin to us).
         $middleware->validateCsrfTokens(except: [
             'webhooks/stripe',
+            'embed/*/launch',
+            'embed/*/interact',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
@@ -39,6 +39,22 @@ const form = useForm({ name: props.agent.name });
 
 function save() {
     form.put(route('agents.update', props.agent.slug), { preserveScroll: true });
+}
+
+// --- Embed snippet --------------------------------------------------------
+const widgetUrl = computed(() => `${window.location.origin}/widget/${props.agent.slug}.js`);
+const embedPreviewUrl = computed(() => `${window.location.origin}/embed/${props.agent.slug}`);
+const embedSnippet = computed(() => `<script src="${widgetUrl.value}" defer><\/script>`);
+
+const copyState = ref('idle');
+async function copyEmbedSnippet() {
+    try {
+        await navigator.clipboard.writeText(embedSnippet.value);
+        copyState.value = 'copied';
+        setTimeout(() => (copyState.value = 'idle'), 2000);
+    } catch (e) {
+        copyState.value = 'idle';
+    }
 }
 
 async function destroy() {
@@ -143,6 +159,62 @@ async function destroy() {
                         </svg>
                         <div>
                             The Voiceflow project, API keys, environment, and webhook are all provisioned and managed on your behalf. If something goes wrong, contact support — there's nothing here for you to tweak.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Embed snippet — the HTML the customer pastes into their own
+                     website's <head> or before </body>. Renders the floating
+                     chat widget that opens an iframe to /embed/{slug}. -->
+                <div class="rounded-xl bg-white p-6 shadow ring-1 ring-black/5">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900">Embed on your website</h3>
+                            <p class="mt-1 text-sm text-gray-500">
+                                Paste this snippet into your website's HTML — anywhere before <code class="rounded bg-gray-100 px-1 py-0.5 text-[11px]">&lt;/body&gt;</code> works. A floating chat
+                                button appears bottom-right; clicking it opens this agent's chat in an iframe.
+                            </p>
+                        </div>
+                        <a
+                            :href="embedPreviewUrl"
+                            target="_blank"
+                            rel="noopener"
+                            class="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                            Preview ↗
+                        </a>
+                    </div>
+
+                    <div class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3 font-mono text-[12px] leading-relaxed text-gray-700">
+                        <pre class="whitespace-pre-wrap break-all">{{ embedSnippet }}</pre>
+                    </div>
+
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                        <PrimaryButton type="button" @click="copyEmbedSnippet">
+                            {{ copyState === 'copied' ? '✓ Copied' : 'Copy snippet' }}
+                        </PrimaryButton>
+                        <a
+                            :href="widgetUrl"
+                            target="_blank"
+                            rel="noopener"
+                            class="text-xs text-indigo-600 hover:text-indigo-800"
+                        >
+                            View raw widget.js
+                        </a>
+                    </div>
+
+                    <div class="mt-4 grid gap-3 sm:grid-cols-3 text-xs text-gray-500">
+                        <div>
+                            <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-400">Mobile</p>
+                            <p class="mt-1">Full-screen takeover under 480px wide.</p>
+                        </div>
+                        <div>
+                            <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-400">Sessions</p>
+                            <p class="mt-1">Visitor cookies are 30-day, scoped to the agent — return visitors continue their thread.</p>
+                        </div>
+                        <div>
+                            <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-400">Billing</p>
+                            <p class="mt-1">Embedded conversations debit credits from this team, same as dashboard chats.</p>
                         </div>
                     </div>
                 </div>
