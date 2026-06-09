@@ -367,6 +367,10 @@ If anything's broken, fix it. Welcome to launch week.
 | **Total fixed monthly** | **~$71 / mo** |
 | Break-even | Customer #1 ($99 > $71) |
 
+For the full math through Stages 1-3 (Pro → Business → Enterprise),
+including capacity ceilings, margin analysis at each customer count,
+and the upgrade triggers, see [[economics]].
+
 ## What's deferred to "later"
 
 These are real gaps but don't block first revenue:
