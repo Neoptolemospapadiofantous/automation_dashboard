@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AgentAnalyticsController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\ConversationController;
@@ -95,6 +96,12 @@ Route::middleware([
         ->name('agents.environments.export');
     Route::get('/agents/environments/traffic.json', [EnvironmentsController::class, 'traffic'])
         ->name('agents.environments.traffic');
+
+    // Per-agent analytics. Slug-bound. Lives at /agents/{slug}/analytics so it
+    // sits naturally alongside agents.show; must come BEFORE the wildcard
+    // agents.show below for the same reasons as evaluations/environments.
+    Route::get('/agents/{agent}/analytics', [AgentAnalyticsController::class, 'show'])
+        ->name('agents.analytics');
 
     Route::get('/agents/{agent}', [AgentController::class, 'show'])->name('agents.show');
     Route::put('/agents/{agent}', [AgentController::class, 'update'])

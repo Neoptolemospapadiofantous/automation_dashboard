@@ -127,6 +127,20 @@ async function destroy() {
                     </div>
                 </div>
 
+                <!-- Analytics deep-link. Shows charts, funnel, sources, hourly. -->
+                <Link
+                    :href="route('agents.analytics', agent.slug)"
+                    class="flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 transition hover:bg-indigo-50"
+                >
+                    <div>
+                        <p class="text-sm font-semibold text-gray-900">📊 Analytics for this agent</p>
+                        <p class="mt-0.5 text-xs text-gray-600">
+                            7/30/90-day trends · funnel · top sources · hourly activity heatmap
+                        </p>
+                    </div>
+                    <span class="text-sm text-indigo-700">View →</span>
+                </Link>
+
                 <form class="rounded-xl bg-white p-6 shadow ring-1 ring-black/5" @submit.prevent="save">
                     <h3 class="text-base font-semibold text-gray-800">Agent details</h3>
                     <p class="mt-1 text-sm text-gray-500">

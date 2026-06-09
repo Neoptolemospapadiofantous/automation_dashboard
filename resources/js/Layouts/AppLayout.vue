@@ -433,6 +433,9 @@ const handleMobileNavClick = (event) => {
                             <div class="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Workspace</div>
                             <div class="space-y-0.5">
                                 <SidebarLink :href="route('agents.index')" :active-pattern="['agents.index', 'agents.show']">Agents</SidebarLink>
+                                <SidebarLink :href="route('agents.evaluations.index')" active-pattern="agents.evaluations.*">Evaluations</SidebarLink>
+                                <SidebarLink :href="route('agents.environments.index')" active-pattern="agents.environments.*">Environments</SidebarLink>
+                                <SidebarLink :href="route('install.index')" active-pattern="install.*">Install</SidebarLink>
                                 <SidebarLink :href="route('billing.index')" active-pattern="billing.*">Billing</SidebarLink>
                             </div>
                         </div>

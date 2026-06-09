@@ -76,7 +76,14 @@ class OnboardingController extends Controller
         $agent = $request->user()->currentTeam->currentAgent;
 
         return Inertia::render('Onboarding/Done', [
-            'agent' => ['id' => $agent->id, 'name' => $agent->name],
+            'agent' => [
+                'id' => $agent->id,
+                'name' => $agent->name,
+                // slug powers the featured install snippet block on the Done
+                // page. Without it the snippet computed property is empty and
+                // the whole "Drop this on your website" callout silently hides.
+                'slug' => $agent->slug,
+            ],
         ]);
     }
 
