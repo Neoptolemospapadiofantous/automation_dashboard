@@ -71,14 +71,16 @@ DB_CONNECTION=pgsql
 # DATABASE_URL set by Railway PostgreSQL plugin
 
 # Voiceflow — your account + the workspace key from Day 0
-VOICEFLOW_API_KEY=VF.DM.6a1fc1c355d749825f0a3f30.5wyqrWqmyokxfDTA
-VOICEFLOW_PROJECT_ID=6a1fc195b75674b68ba713aa
+# NEVER commit real keys to the repo. Paste your real values directly
+# into Railway's Variables panel; this runbook keeps placeholders only.
+VOICEFLOW_API_KEY=VF.DM.<your-dm-key>
+VOICEFLOW_PROJECT_ID=<your-24-hex-project-id>
 VOICEFLOW_WORKSPACE_API_KEY=<paste-the-new-workspace-key>
 VOICEFLOW_ENVIRONMENT=main
 
 # Mail (filled in Day 2)
 MAIL_MAILER=resend
-RESEND_KEY=                 # Day 2
+RESEND_API_KEY=                 # Day 2  (note: RESEND_API_KEY, not RESEND_KEY)
 MAIL_FROM_ADDRESS=hello@flowstack.com
 MAIL_FROM_NAME=Flowstack
 
@@ -158,7 +160,7 @@ After SSL is live:
 ### Step 2.3 — Sign up for Resend (transactional email)
 
 - https://resend.com → free 100 emails/day, $20/mo for 50k
-- Create API key → paste into Railway env as `RESEND_KEY`
+- Create API key → paste into Railway env as `RESEND_API_KEY` (the variable the Laravel config actually reads — see `config/services.php` `'resend' => ['key' => env('RESEND_API_KEY')]`)
 - Add domain: `flowstack.com`
 - Resend shows DNS records: add to Cloudflare:
   - SPF: `TXT @ "v=spf1 include:_spf.resend.com ~all"`
