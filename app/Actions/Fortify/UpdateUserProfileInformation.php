@@ -27,8 +27,10 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             $user->updateProfilePhoto($input['photo']);
         }
 
-        if ($input['email'] !== $user->email &&
-            $user instanceof MustVerifyEmail) {
+        // User now always implements MustVerifyEmail (verification is enabled
+        // app-wide in config/fortify.php), so we always re-trigger the
+        // verification flow when the email actually changes.
+        if ($input['email'] !== $user->email) {
             $this->updateVerifiedUser($user, $input);
         } else {
             $user->forceFill([

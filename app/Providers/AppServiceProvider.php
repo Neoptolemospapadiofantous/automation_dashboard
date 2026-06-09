@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Services\VoiceflowService;
+use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -36,6 +38,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Branded verification email. Replaces Laravel's default
+        // "Whoops" generic template with Flowstack copy + tone, while
+        // keeping the signed URL Fortify generates.
+        VerifyEmail::toMailUsing(function (object $notifiable, string $url): MailMessage {
+            $name = (string) ($notifiable->name ?? 'there');
+
+            return (new MailMessage)
+                ->subject('Verify your email to activate Flowstack')
+                ->greeting("Hi {$name},")
+                ->line('Welcome to Flowstack. One quick step before you can use the dashboard: confirm this is your email.')
+                ->action('Verify email', $url)
+                ->line("If you didn't sign up, you can safely ignore this email — the verification link will expire automatically.");
+        });
     }
 }
