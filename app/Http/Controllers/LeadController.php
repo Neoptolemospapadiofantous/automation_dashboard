@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Authorization\Role;
 use App\Enums\AssignmentStrategy;
 use App\Enums\LeadStatus;
 use App\Events\LeadDeleted;
 use App\Events\LeadSaved;
+use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Lead;
 use App\Services\LeadDelegator;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +19,8 @@ use Inertia\Response;
 
 class LeadController extends Controller
 {
+    use AuthorizesByTeamRole;
+
     public function __construct(protected LeadDelegator $delegator) {}
 
     /**
@@ -80,6 +84,8 @@ class LeadController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $this->requireCapability($request, fn (Role $r) => $r->canManageLeads(), 'create leads');
+
         $data = $this->validateLead($request);
 
         // Stamp agent_id from the current team so Phase G's agent-scoped
@@ -126,6 +132,7 @@ class LeadController extends Controller
     public function destroy(Request $request, Lead $lead): RedirectResponse
     {
         $this->authorizeLead($request, $lead);
+        $this->requireCapability($request, fn (Role $r) => $r->canDeleteLead(), 'delete leads');
 
         $teamId = $lead->team_id;
         $id = $lead->id;

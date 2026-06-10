@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Authorization\Role;
+use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Services\VoiceflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -28,6 +30,8 @@ use Inertia\Response;
  */
 class KnowledgeBaseController extends Controller
 {
+    use AuthorizesByTeamRole;
+
     /** Voiceflow's documented per-file upload ceiling. */
     private const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
@@ -81,6 +85,7 @@ class KnowledgeBaseController extends Controller
 
     public function storeUrl(Request $request): RedirectResponse
     {
+        $this->requireCapability($request, fn (Role $r) => $r->canAddKnowledge(), 'add knowledge documents');
         $this->abortIfUnconfigured();
 
         $data = $request->validate([
@@ -106,6 +111,7 @@ class KnowledgeBaseController extends Controller
      */
     public function storeFile(Request $request): RedirectResponse
     {
+        $this->requireCapability($request, fn (Role $r) => $r->canAddKnowledge(), 'upload knowledge files');
         $this->abortIfUnconfigured();
 
         $data = $request->validate([
@@ -140,6 +146,7 @@ class KnowledgeBaseController extends Controller
      */
     public function storeText(Request $request): RedirectResponse
     {
+        $this->requireCapability($request, fn (Role $r) => $r->canAddKnowledge(), 'paste knowledge text');
         $this->abortIfUnconfigured();
 
         $data = $request->validate([
@@ -177,8 +184,9 @@ class KnowledgeBaseController extends Controller
         return response()->json($doc);
     }
 
-    public function destroy(string $documentID): RedirectResponse
+    public function destroy(Request $request, string $documentID): RedirectResponse
     {
+        $this->requireCapability($request, fn (Role $r) => $r->canDeleteKnowledge(), 'delete knowledge documents');
         $this->abortIfUnconfigured();
 
         try {

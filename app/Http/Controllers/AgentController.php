@@ -7,6 +7,8 @@ use App\Actions\Agents\DeleteAgent;
 use App\Actions\Agents\RotateWebhookSecret;
 use App\Actions\Agents\SwitchAgent;
 use App\Actions\Agents\UpdateAgentCredentials;
+use App\Authorization\Role;
+use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Agent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +24,8 @@ use Inertia\Response;
  */
 class AgentController extends Controller
 {
+    use AuthorizesByTeamRole;
+
     public function index(Request $request): Response
     {
         $team = $request->user()->currentTeam;
@@ -73,6 +77,8 @@ class AgentController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $this->requireCapability($request, fn (Role $r) => $r->canCreateAgent(), 'create a new agent');
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
         ]);
@@ -100,6 +106,7 @@ class AgentController extends Controller
     public function update(Request $request, Agent $agent): RedirectResponse
     {
         $this->authorize($request, $agent);
+        $this->requireCapability($request, fn (Role $r) => $r->canUpdateAgent(), 'update an agent');
 
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -115,6 +122,7 @@ class AgentController extends Controller
     public function destroy(Request $request, Agent $agent): RedirectResponse
     {
         $this->authorize($request, $agent);
+        $this->requireCapability($request, fn (Role $r) => $r->canDeleteAgent(), 'delete an agent');
 
         (new DeleteAgent)->execute($agent);
 
@@ -129,6 +137,10 @@ class AgentController extends Controller
     public function rotateSecret(Request $request, Agent $agent): RedirectResponse
     {
         $this->authorize($request, $agent);
+        // Webhook-secret rotation is destructive in practice — any Custom
+        // Action still using the old secret will start 401-ing immediately.
+        // Owner-only to match the same risk profile as agent deletion.
+        $this->requireCapability($request, fn (Role $r) => $r->canDeleteAgent(), 'rotate the webhook secret');
 
         $rotated = (new RotateWebhookSecret)->execute($agent);
 

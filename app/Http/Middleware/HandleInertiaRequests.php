@@ -97,6 +97,14 @@ class HandleInertiaRequests extends Middleware
                     $hasStripeCustomer = $stripeCustomerId !== null && $stripeCustomerId !== '';
                     $subscriptionStatus = $team->getAttribute('stripe_subscription_status');
 
+                    // is_owner gates the Manage subscription / Subscribe /
+                    // Top up buttons. Server-side enforcement is in the
+                    // controllers (AuthorizesByTeamRole::requireOwner); this
+                    // just keeps the UI honest so non-owners don't see
+                    // buttons that 403. The outer closure already guards
+                    // on $request->user() before reaching here.
+                    $isOwner = (int) $team->getAttribute('user_id') === (int) $request->user()->id;
+
                     if ($isCustom) {
                         return [
                             'plan' => $plan->value,
@@ -110,6 +118,7 @@ class HandleInertiaRequests extends Middleware
                             'allows_topups' => $plan->allowsTopUps(),
                             'has_stripe_customer' => $hasStripeCustomer,
                             'subscription_status' => $subscriptionStatus,
+                            'is_owner' => $isOwner,
                         ];
                     }
 
@@ -137,6 +146,7 @@ class HandleInertiaRequests extends Middleware
                         'allows_topups' => $plan->allowsTopUps(),
                         'has_stripe_customer' => $hasStripeCustomer,
                         'subscription_status' => $subscriptionStatus,
+                        'is_owner' => $isOwner,
                     ];
                 })()
                 : null,

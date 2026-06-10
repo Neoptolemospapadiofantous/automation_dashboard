@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Billing\Plan;
+use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Team;
 use App\Services\Billing\StripeClient;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +23,8 @@ use Inertia\Response;
  */
 class SubscribeController extends Controller
 {
+    use AuthorizesByTeamRole;
+
     public function __construct(protected StripeClient $stripe) {}
 
     /**
@@ -29,6 +32,8 @@ class SubscribeController extends Controller
      */
     public function start(Request $request, string $planKey): RedirectResponse
     {
+        $this->requireOwner($request, 'subscribe to a plan');
+
         $plan = match ($planKey) {
             'starter' => Plan::Free,    // case Free has label "Starter" + $99 price
             'operator' => Plan::Pro,    // case Pro has label "Operator" + $399 price

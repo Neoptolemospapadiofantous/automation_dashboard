@@ -29,6 +29,10 @@ namespace App\Billing;
  *
  * Credits are sized so a typical team comfortably stays inside its
  * monthly allotment at normal usage; top-up packs cover the spike weeks.
+ *
+ * No free trial — product decision 2026-06-09. The $99 Starter tier IS
+ * the entry point; cancel anytime via the Stripe Billing Portal. Do
+ * not add Stripe Checkout `trial_period_days` to subscription sessions.
  */
 enum Plan: string
 {

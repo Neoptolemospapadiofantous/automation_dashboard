@@ -40,6 +40,7 @@ const topupForm = useForm({ pack: null });
 
 function openTopup() {
     if (!billing.value?.allows_topups) return;
+    if (!billing.value?.is_owner) return; // owner-only; server enforces too
     selectedPack.value = null;
     topupForm.reset();
     showTopup.value = true;
@@ -65,6 +66,7 @@ function buy(pack) {
 const subscribeForm = useForm({});
 function subscribe(planKey) {
     if (billing.value?.plan_label?.toLowerCase() === planKey) return; // already on it
+    if (! billing.value?.is_owner) return; // server enforces; UI matches
     subscribeForm.post(`/subscribe/${planKey}`);
 }
 
@@ -119,15 +121,19 @@ function openPortal() {
                             <span v-else>{{ billing?.agents_count }} / {{ billing?.max_agents }} agents</span>
                         </div>
                         <!-- Manage subscription — opens Stripe-hosted Customer Portal
-                             where the user can cancel, update card, download invoices. -->
+                             where the user can cancel, update card, download invoices.
+                             Owner-only — RBAC blocks non-owners server-side too. -->
                         <button
-                            v-if="billing?.has_stripe_customer"
+                            v-if="billing?.has_stripe_customer && billing?.is_owner"
                             type="button"
                             class="mt-3 inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
                             @click="openPortal"
                         >
                             ⚙ Manage subscription
                         </button>
+                        <p v-else-if="!billing?.is_owner" class="mt-3 text-xs text-gray-400">
+                            Only the team owner can change billing.
+                        </p>
                     </div>
 
                     <!-- Plan upgrade strip: Starter / Operator subscribe buttons.

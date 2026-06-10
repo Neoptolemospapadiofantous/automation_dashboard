@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Billing\Plan;
 use App\Billing\TopUpPack;
+use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Team;
 use App\Services\Billing\StripeClient;
 use Illuminate\Http\RedirectResponse;
@@ -28,6 +29,8 @@ use Inertia\Response;
  */
 class BillingController extends Controller
 {
+    use AuthorizesByTeamRole;
+
     public function index(Request $request): Response
     {
         $team = $request->user()->currentTeam;
@@ -58,6 +61,8 @@ class BillingController extends Controller
      */
     public function topup(Request $request, StripeClient $stripe): RedirectResponse
     {
+        $this->requireOwner($request, 'buy credit top-ups');
+
         $data = $request->validate([
             'pack' => ['required', 'string', 'in:'.implode(',', array_map(fn ($p) => $p->value, TopUpPack::cases()))],
         ]);
@@ -104,6 +109,8 @@ class BillingController extends Controller
      */
     public function portal(Request $request, StripeClient $stripe): RedirectResponse
     {
+        $this->requireOwner($request, 'manage the subscription');
+
         $team = $request->user()->currentTeam;
         if (! $team instanceof Team) {
             abort(403, 'Sign in to a team first.');
