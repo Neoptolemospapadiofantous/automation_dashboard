@@ -153,15 +153,24 @@ const capturedRows = computed(() => {
                 </dl>
             </section>
 
-            <!-- Conversations cross-link -->
-            <section v-if="lead.conversations_count" class="border-b border-gray-100 px-5 py-4">
-                <h3 class="font-mono text-[10px] uppercase tracking-[0.2em] text-gray-400">Conversations</h3>
-                <Link
-                    :href="route('conversations.index', { lead_id: lead.id })"
-                    class="mt-2 inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline"
-                >
-                    💬 View {{ lead.conversations_count }} conversation<span v-if="lead.conversations_count > 1">s</span> →
-                </Link>
+            <!-- Conversations cross-link + open in full page -->
+            <section class="border-b border-gray-100 px-5 py-4">
+                <h3 class="font-mono text-[10px] uppercase tracking-[0.2em] text-gray-400">Open</h3>
+                <div class="mt-2 flex flex-col gap-1.5 text-sm">
+                    <Link
+                        :href="route('leads.show', lead.id)"
+                        class="inline-flex items-center gap-1 text-indigo-600 hover:underline"
+                    >
+                        📄 Open full lead page →
+                    </Link>
+                    <Link
+                        v-if="lead.conversations_count"
+                        :href="route('conversations.index', { lead_id: lead.id })"
+                        class="inline-flex items-center gap-1 text-indigo-600 hover:underline"
+                    >
+                        💬 View {{ lead.conversations_count }} conversation<span v-if="lead.conversations_count > 1">s</span> →
+                    </Link>
+                </div>
             </section>
 
             <!-- Notes — debounced auto-save -->

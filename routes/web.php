@@ -157,6 +157,7 @@ Route::middleware([
 
     // Phase 3 lead pipeline (kanban board with live updates).
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
+    Route::get('/leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
     Route::post('/leads', [LeadController::class, 'store'])
         ->middleware('throttle:30,1')
         ->name('leads.store');

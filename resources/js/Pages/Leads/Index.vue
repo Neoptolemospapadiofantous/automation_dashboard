@@ -18,7 +18,8 @@ const props = defineProps({
     leads: { type: Array, required: true },
     statuses: { type: Array, required: true },
     members: { type: Array, required: true },
-    filters: { type: Object, default: () => ({ mine: false }) },
+    sources: { type: Array, default: () => [] },
+    filters: { type: Object, default: () => ({ mine: false, q: '', status: null, source: null, assignee: null, min_score: null, since_key: null }) },
 });
 
 const page = usePage();
@@ -27,10 +28,55 @@ const currentUserId = computed(() => page.props.auth.user.id);
 
 // "My leads" filter toggle (server-side scope).
 function toggleMine() {
-    router.get(route('leads.index'), { mine: props.filters.mine ? undefined : 1 }, {
-        preserveScroll: true,
-    });
+    applyFilters({ mine: props.filters.mine ? undefined : 1 });
 }
+
+// Generic filter setter — merges the patch onto current URL-bound
+// filters and navigates. URL params are explicitly whitelisted so
+// server-derived fields (since_key, etc.) don't round-trip.
+const URL_KEYS = ['mine', 'q', 'status', 'source', 'assignee', 'min_score', 'since'];
+function applyFilters(patch) {
+    const current = {
+        mine: props.filters.mine,
+        q: props.filters.q,
+        status: props.filters.status,
+        source: props.filters.source,
+        assignee: props.filters.assignee,
+        min_score: props.filters.min_score,
+        since: props.filters.since_key, // server parses 'since' → exposes 'since_key'
+    };
+    const next = { ...current, ...patch };
+    // Drop empties so the URL stays clean.
+    URL_KEYS.forEach((k) => {
+        if (next[k] === '' || next[k] === null || next[k] === undefined || next[k] === false) {
+            delete next[k];
+        }
+    });
+    router.get(route('leads.index'), next, { preserveScroll: true, preserveState: true });
+}
+
+const search = ref(props.filters.q ?? '');
+let searchTimer = null;
+function onSearchInput() {
+    if (searchTimer) clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => applyFilters({ q: search.value }), 350);
+}
+
+function clearFilters() {
+    router.get(route('leads.index'), {}, { preserveScroll: true, preserveState: true });
+    search.value = '';
+}
+
+const activeFilterCount = computed(() => {
+    let n = 0;
+    if (props.filters.q) n++;
+    if (props.filters.status) n++;
+    if (props.filters.source) n++;
+    if (props.filters.assignee) n++;
+    if (props.filters.min_score) n++;
+    if (props.filters.since_key) n++;
+    return n;
+});
 
 // Assign a single lead (manual to a member, or a strategy like round_robin).
 function assign(lead, { strategy = 'manual', assigned_to = null } = {}) {
@@ -157,6 +203,90 @@ function submit() {
 
         <div class="py-8">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+                <!-- Filter bar. All filters are server-side (URL-bound) so
+                     state survives reload + can be shared. The text search
+                     debounces by 350ms. -->
+                <div class="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-white p-3 shadow ring-1 ring-black/5">
+                    <div class="relative flex-1 min-w-[180px]">
+                        <input
+                            v-model="search"
+                            type="search"
+                            placeholder="Search name, email, company, phone…"
+                            class="w-full rounded border-gray-200 pl-8 text-sm focus:border-indigo-400 focus:ring-indigo-400"
+                            @input="onSearchInput"
+                        />
+                        <svg class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                    </div>
+
+                    <select
+                        :value="filters.status ?? ''"
+                        class="rounded border-gray-200 py-1.5 text-xs text-gray-600"
+                        @change="applyFilters({ status: $event.target.value || null })"
+                    >
+                        <option value="">All statuses</option>
+                        <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
+                    </select>
+
+                    <select
+                        v-if="sources.length"
+                        :value="filters.source ?? ''"
+                        class="rounded border-gray-200 py-1.5 text-xs text-gray-600"
+                        @change="applyFilters({ source: $event.target.value || null })"
+                    >
+                        <option value="">All sources</option>
+                        <option v-for="s in sources" :key="s" :value="s">{{ s }}</option>
+                    </select>
+
+                    <select
+                        :value="filters.assignee ?? ''"
+                        class="rounded border-gray-200 py-1.5 text-xs text-gray-600"
+                        @change="applyFilters({ assignee: $event.target.value ? Number($event.target.value) : null })"
+                    >
+                        <option value="">Anyone assigned</option>
+                        <option v-for="m in members" :key="m.id" :value="m.id">{{ m.name }}</option>
+                    </select>
+
+                    <select
+                        :value="filters.min_score ?? ''"
+                        class="rounded border-gray-200 py-1.5 text-xs text-gray-600"
+                        @change="applyFilters({ min_score: $event.target.value ? Number($event.target.value) : null })"
+                    >
+                        <option value="">Any score</option>
+                        <option :value="50">50+</option>
+                        <option :value="70">70+</option>
+                        <option :value="90">90+</option>
+                    </select>
+
+                    <div class="flex items-center gap-1">
+                        <button
+                            v-for="k in ['7d', '30d', '90d']"
+                            :key="k"
+                            type="button"
+                            class="rounded-full border px-2.5 py-0.5 text-xs font-medium transition"
+                            :class="filters.since_key === k ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
+                            @click="applyFilters({ since: filters.since_key === k ? null : k })"
+                        >
+                            {{ k }}
+                        </button>
+                    </div>
+
+                    <button
+                        v-if="activeFilterCount > 0"
+                        type="button"
+                        class="text-xs text-gray-500 hover:text-gray-800 underline"
+                        @click="clearFilters"
+                    >
+                        Clear ({{ activeFilterCount }})
+                    </button>
+
+                    <div class="ml-auto text-xs text-gray-400">
+                        {{ leads.size ?? leads.length ?? 0 }} {{ (leads.size ?? leads.length ?? 0) === 1 ? 'lead' : 'leads' }}
+                    </div>
+                </div>
+
                 <!-- Team-level empty state: never had a lead. Surfaced
                      above the kanban (which would otherwise just show 6
                      empty columns "Drop leads here" with no CTA). -->
