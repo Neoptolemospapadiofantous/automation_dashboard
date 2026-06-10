@@ -113,10 +113,18 @@ class VoiceflowService
     }
 
     /**
-     * The credential to use for workspace surfaces (transcripts, KB CRUD,
-     * KB query). Falls back to the DM key — some Voiceflow accounts let the
-     * DM key talk to these surfaces too, so this keeps existing flows working
-     * even when the workspace key isn't configured.
+     * Credential for the analytics + KB + project-management surfaces.
+     *
+     * Voiceflow confirmed (2026-06-10 via support) that there is only ONE
+     * type of API key — a per-project Dialog Manager key (VF.DM.*). There
+     * is no separate "workspace" key. The DM key is authoritative for
+     * every endpoint scoped to its project: Runtime, KB CRUD + query,
+     * Analytics (usage + transcripts), Environments / Project API.
+     *
+     * The workspaceApiKey field (and the agents.voiceflow_workspace_api_key
+     * column) are vestigial — defensive coding from before we confirmed
+     * the auth model. Always falling back to the DM key is correct.
+     * Future cleanup: drop the field + column entirely.
      */
     protected function workspaceKey(): ?string
     {
