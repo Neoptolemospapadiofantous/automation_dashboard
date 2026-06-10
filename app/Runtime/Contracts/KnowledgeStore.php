@@ -31,10 +31,12 @@ interface KnowledgeStore
      * Retrieve the top-k chunks most relevant to a natural-language
      * question, scoped to this agent's documents.
      *
-     * Each result has the chunk text, the document title for citation,
-     * and the similarity score (1.0 = identical, 0.0 = unrelated).
+     * Each result has the chunk text, the parent document title (for
+     * citation rendering), document_id + chunk_id (for dedup across
+     * same-doc chunks and click-through to source), and the similarity
+     * score (1.0 = identical, 0.0 = unrelated).
      *
-     * @return list<array{chunk: string, document_title: string, score: float, metadata: array<string, mixed>}>
+     * @return list<array{chunk: string, chunk_id: int, document_id: int, document_title: string, score: float, metadata: array<string, mixed>}>
      */
     public function search(int $agentId, string $question, int $topK = 5): array;
 

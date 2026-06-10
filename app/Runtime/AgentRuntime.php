@@ -4,6 +4,7 @@ namespace App\Runtime;
 
 use App\Models\Agent;
 use App\Runtime\Contracts\Runtime;
+use App\Runtime\Exceptions\NotReady;
 use Generator;
 
 /**
@@ -17,7 +18,7 @@ use Generator;
  *
  * THIS IS A PHASE-1 STUB. The actual flow execution + LLM dispatch +
  * tool calling + RAG lands across Phases 2-7. The methods here throw
- * RuntimeNotReady until each piece is wired in. The intentional
+ * NotReady until each piece is wired in. The intentional
  * sequencing lets us land the migrations + contracts + Agent model
  * column in production with zero behavioural risk — no agent has
  * runtime_mode='native' yet, so the dispatcher never picks this class.
@@ -26,12 +27,12 @@ class AgentRuntime implements Runtime
 {
     public function launch(Agent $agent, string $visitorId): array
     {
-        throw new RuntimeNotReady('NativeRuntime::launch — implemented in Phase 4 (Flow).');
+        throw new NotReady('NativeRuntime::launch — implemented in Phase 4 (Flow).');
     }
 
     public function sendText(Agent $agent, string $visitorId, string $text): array
     {
-        throw new RuntimeNotReady('NativeRuntime::sendText — implemented in Phase 4 (Flow).');
+        throw new NotReady('NativeRuntime::sendText — implemented in Phase 4 (Flow).');
     }
 
     public function streamText(Agent $agent, string $visitorId, string $text): Generator
@@ -50,7 +51,7 @@ class AgentRuntime implements Runtime
 
     public function endSession(Agent $agent, string $visitorId): void
     {
-        throw new RuntimeNotReady('NativeRuntime::endSession — implemented in Phase 6 (Session).');
+        throw new NotReady('NativeRuntime::endSession — implemented in Phase 6 (Session).');
     }
 
     public function health(Agent $agent): array
@@ -58,7 +59,7 @@ class AgentRuntime implements Runtime
         // Health is the one method that's safe to answer in Phase 1 — it
         // just checks the agent's runtime_mode and reports what the engine
         // would do, without actually doing it.
-        if ($agent->getAttribute('runtime_mode') !== 'native') {
+        if ($agent->getAttribute('runtime_mode') !== Agent::RUNTIME_NATIVE) {
             return [
                 'ok' => false,
                 'configured' => false,

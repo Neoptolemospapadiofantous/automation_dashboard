@@ -25,11 +25,19 @@ return new class extends Migration
     {
         Schema::table('agents', function (Blueprint $table): void {
             $table->string('runtime_mode', 32)->default('voiceflow')->after('mode');
+            // Indexed so the eventual "list all native agents" ops query
+            // (used by the migration runbook + native-runtime health
+            // dashboard) doesn't sequential-scan all agents.
+            $table->index('runtime_mode');
         });
     }
 
     public function down(): void
     {
+        // Drop the column — the index is removed automatically when the
+        // column goes. Explicit dropIndex is omitted because some test
+        // environments may not have the index yet (if up() ran from an
+        // older revision of this migration without the indexed line).
         Schema::table('agents', function (Blueprint $table): void {
             $table->dropColumn('runtime_mode');
         });

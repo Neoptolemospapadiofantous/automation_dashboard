@@ -22,6 +22,17 @@ use Generator;
  */
 class RuntimeDispatcher implements Runtime
 {
+    /**
+     * Memoised engines keyed by "{$agent_id}:{$runtime_mode}". Built lazily
+     * so a request that talks to one agent only constructs one engine,
+     * and successive turns within that request reuse it. The VoiceflowService
+     * inside the adapter does its own per-session-key caching; reusing the
+     * adapter preserves that cache across turns.
+     *
+     * @var array<string, Runtime>
+     */
+    protected array $engines = [];
+
     public function __construct(
         protected AgentRuntime $native,
     ) {}
@@ -59,9 +70,13 @@ class RuntimeDispatcher implements Runtime
     protected function engineFor(Agent $agent): Runtime
     {
         $mode = (string) $agent->getAttribute('runtime_mode');
+        $key = $agent->getKey().':'.$mode;
 
-        return match ($mode) {
-            'native' => $this->native,
+        return $this->engines[$key] ??= match ($mode) {
+            Agent::RUNTIME_NATIVE => $this->native,
+            // default covers 'voiceflow' (the column default) plus null /
+            // empty string / unknown values, so a flag set by a partial
+            // migration safely degrades to Voiceflow.
             default => new VoiceflowAdapter(VoiceflowService::forAgent($agent)),
         };
     }

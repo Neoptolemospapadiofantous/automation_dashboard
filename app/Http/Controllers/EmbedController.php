@@ -7,7 +7,7 @@ use App\Billing\Exceptions\OutOfCredits;
 use App\Models\Agent;
 use App\Models\Team;
 use App\Runtime\Contracts\Runtime;
-use App\Services\Voiceflow\Exceptions\VoiceflowException;
+use App\Runtime\Exceptions\RuntimeException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -117,7 +117,7 @@ class EmbedController extends Controller
         // new engine answers here.
         try {
             $traces = $this->runtime->launch($agent, $visitorId);
-        } catch (VoiceflowException $e) {
+        } catch (RuntimeException $e) {
             return response()->json([
                 'error' => 'The agent is temporarily unavailable.',
             ], 503);
@@ -167,7 +167,7 @@ class EmbedController extends Controller
 
         try {
             $traces = $this->runtime->sendText($agent, $data['visitor_id'], $data['message']);
-        } catch (VoiceflowException $e) {
+        } catch (RuntimeException $e) {
             return response()->json([
                 'error' => 'The agent is temporarily unavailable.',
             ], 503);

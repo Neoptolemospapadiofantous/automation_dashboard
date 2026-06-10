@@ -5,15 +5,15 @@ namespace Tests\Feature\Runtime;
 use App\Models\Agent;
 use App\Models\User;
 use App\Runtime\Contracts\Runtime;
+use App\Runtime\Exceptions\NotReady;
 use App\Runtime\RuntimeDispatcher;
-use App\Runtime\RuntimeNotReady;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
  * Verifies the dispatcher routes to the right engine based on
  * agents.runtime_mode. Phase 1 lands: native mode throws
- * RuntimeNotReady on the stubbed methods (correct), voiceflow mode
+ * NotReady on the stubbed methods (correct), voiceflow mode
  * delegates to the legacy VoiceflowService (already tested elsewhere).
  */
 class DispatcherTest extends TestCase
@@ -37,9 +37,9 @@ class DispatcherTest extends TestCase
         $dispatcher = app(RuntimeDispatcher::class);
 
         // Native runtime is still a Phase 1 stub for these methods,
-        // so the call lands on RuntimeNotReady — proving the routing
+        // so the call lands on NotReady — proving the routing
         // worked (and the legacy Voiceflow path wasn't picked).
-        $this->expectException(RuntimeNotReady::class);
+        $this->expectException(NotReady::class);
         $dispatcher->launch($agent, 'visitor-1');
     }
 

@@ -16,7 +16,8 @@ use App\Runtime\Models\RuntimeSession;
  * Phase 1 lands the DTO so the Tool contract's signature compiles;
  * Phase 3 (Tools) wires the registry that builds and passes it.
  *
- * @api
+ * @api  Public DTO consumed by every Tool implementation; the readonly
+ *       fields are read by tool authors (third-party + first-party).
  */
 class ConversationContext
 {

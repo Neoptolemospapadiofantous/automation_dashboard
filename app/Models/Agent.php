@@ -49,6 +49,17 @@ class Agent extends Model
 
     public const MODE_MANAGED = 'managed';
 
+    /**
+     * runtime_mode — which conversational engine answers for this agent.
+     * Default 'voiceflow' (legacy adapter; the DB default + the
+     * dispatcher's match-default both encode it, so no constant is
+     * needed for it). Flip to 'native' once a tester has validated the
+     * Flowstack-owned runtime end-to-end for the agent — anything that
+     * isn't RUNTIME_NATIVE routes to the Voiceflow adapter (defensive
+     * fallback for unknown values, see RuntimeDispatcher::engineFor).
+     */
+    public const RUNTIME_NATIVE = 'native';
+
     public function stateMachine(): StateMachine
     {
         return new AgentStateMachine($this);

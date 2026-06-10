@@ -5,8 +5,13 @@ namespace App\Runtime;
 use App\Models\Agent;
 use App\Providers\VoiceflowServiceProvider;
 use App\Runtime\Contracts\Runtime;
+use App\Runtime\Exceptions\UpstreamUnavailable;
+use App\Services\Voiceflow\Exceptions\VoiceflowException;
 use App\Services\VoiceflowService;
 use Generator;
+use Illuminate\Http\Client\RequestException;
+use RuntimeException as BaseRuntimeException;
+use Throwable;
 
 /**
  * Adapter so the legacy VoiceflowService satisfies the Runtime contract.
@@ -25,18 +30,30 @@ class VoiceflowAdapter implements Runtime
 
     public function launch(Agent $agent, string $visitorId): array
     {
-        return $this->voiceflow->launch($visitorId);
+        try {
+            return $this->voiceflow->launch($visitorId);
+        } catch (Throwable $e) {
+            throw $this->normalize($e, 'launch');
+        }
     }
 
     public function sendText(Agent $agent, string $visitorId, string $text): array
     {
-        return $this->voiceflow->sendText($visitorId, $text);
+        try {
+            return $this->voiceflow->sendText($visitorId, $text);
+        } catch (Throwable $e) {
+            throw $this->normalize($e, 'sendText');
+        }
     }
 
     public function streamText(Agent $agent, string $visitorId, string $text): Generator
     {
         $streaming = VoiceflowServiceProvider::streamingFor($agent);
-        yield from $streaming->streamInteract($visitorId, ['type' => 'text', 'payload' => $text]);
+        try {
+            yield from $streaming->streamInteract($visitorId, ['type' => 'text', 'payload' => $text]);
+        } catch (Throwable $e) {
+            throw $this->normalize($e, 'streamText');
+        }
     }
 
     public function endSession(Agent $agent, string $visitorId): void
@@ -53,5 +70,23 @@ class VoiceflowAdapter implements Runtime
         $h['engine'] = 'voiceflow';
 
         return $h;
+    }
+
+    /**
+     * Convert Voiceflow-side errors into the Runtime contract's umbrella
+     * exception so callers catch one type (RuntimeException).
+     *
+     * VoiceflowService's public path actually throws RequestException +
+     * RuntimeException via Http::throw(); the Voiceflow sub-clients
+     * (StreamingClient/RuntimeClient) throw VoiceflowException subclasses.
+     * Any of those normalize to UpstreamUnavailable here.
+     */
+    protected function normalize(Throwable $e, string $endpoint): UpstreamUnavailable
+    {
+        if ($e instanceof VoiceflowException || $e instanceof RequestException || $e instanceof BaseRuntimeException) {
+            return new UpstreamUnavailable("Voiceflow {$endpoint} failed: ".$e->getMessage(), 0, $e);
+        }
+
+        return new UpstreamUnavailable("Voiceflow {$endpoint} unexpected error: ".$e->getMessage(), 0, $e);
     }
 }

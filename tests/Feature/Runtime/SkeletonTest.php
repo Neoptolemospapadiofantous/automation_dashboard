@@ -8,10 +8,10 @@ use App\Runtime\AgentRuntime;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\Contracts\Runtime;
 use App\Runtime\Contracts\Tool;
+use App\Runtime\Exceptions\NotReady;
 use App\Runtime\Models\KbChunk;
 use App\Runtime\Models\KbDocument;
 use App\Runtime\Models\RuntimeSession;
-use App\Runtime\RuntimeNotReady;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -144,6 +144,31 @@ class SkeletonTest extends TestCase
         $this->assertSame('native', $h['engine']);
     }
 
+    public function test_stream_text_yields_a_not_ready_event_until_phase_7_ships(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $agent = Agent::factory()->for($user->currentTeam)->create();
+
+        $runtime = new AgentRuntime;
+
+        $events = [];
+        foreach ($runtime->streamText($agent, 'v1', 'hello') as $e) {
+            $events[] = $e;
+        }
+
+        $this->assertCount(1, $events);
+        $this->assertSame('not_ready', $events[0]['event']);
+        $this->assertArrayHasKey('reason', $events[0]['data']);
+        $this->assertStringContainsString('Phase 7', $events[0]['data']['reason']);
+    }
+
+    public function test_agent_constants_match_persisted_runtime_mode_values(): void
+    {
+        // 'voiceflow' is the implicit default (DB default + dispatcher
+        // match-default), so only the native constant exists.
+        $this->assertSame('native', Agent::RUNTIME_NATIVE);
+    }
+
     public function test_stub_methods_throw_runtime_not_ready_until_their_phase_ships(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
@@ -151,19 +176,19 @@ class SkeletonTest extends TestCase
 
         $runtime = new AgentRuntime;
 
-        $this->assertThrowsRuntimeNotReady(fn () => $runtime->launch($agent, 'v1'));
-        $this->assertThrowsRuntimeNotReady(fn () => $runtime->sendText($agent, 'v1', 'hi'));
-        $this->assertThrowsRuntimeNotReady(fn () => $runtime->endSession($agent, 'v1'));
+        $this->assertThrowsNotReady(fn () => $runtime->launch($agent, 'v1'));
+        $this->assertThrowsNotReady(fn () => $runtime->sendText($agent, 'v1', 'hi'));
+        $this->assertThrowsNotReady(fn () => $runtime->endSession($agent, 'v1'));
     }
 
     /** @param  callable():mixed  $callable */
-    private function assertThrowsRuntimeNotReady(callable $callable): void
+    private function assertThrowsNotReady(callable $callable): void
     {
         try {
             $callable();
-            $this->fail('Expected RuntimeNotReady but nothing was thrown.');
+            $this->fail('Expected NotReady but nothing was thrown.');
         } catch (\Throwable $e) {
-            $this->assertInstanceOf(RuntimeNotReady::class, $e);
+            $this->assertInstanceOf(NotReady::class, $e);
         }
     }
 }

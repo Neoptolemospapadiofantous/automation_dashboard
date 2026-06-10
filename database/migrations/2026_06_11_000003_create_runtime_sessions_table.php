@@ -30,7 +30,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('agent_id')->constrained('agents')->cascadeOnDelete();
             $table->string('visitor_id', 64);
-            $table->string('flow_state', 64)->default('greeting');
+            // Width allows hierarchical state IDs like 'flow.subflow.node_xyz'
+            // for Phase 4's nested flow design.
+            $table->string('flow_state', 128)->default('greeting');
             $table->json('variables')->nullable();
             $table->timestamp('last_activity_at')->nullable();
             $table->timestamps();

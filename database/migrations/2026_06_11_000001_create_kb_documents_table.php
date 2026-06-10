@@ -24,7 +24,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('agent_id')->constrained('agents')->cascadeOnDelete();
             $table->string('title');
-            $table->string('source', 16); // 'url' | 'file' | 'text'
+            // Widened to 64 so future ingestion sources (notion_page,
+            // gdrive, gmail_thread, confluence_doc, etc.) fit without
+            // a follow-up migration.
+            $table->string('source', 64); // 'url' | 'file' | 'text' (today)
             $table->string('source_url')->nullable();
             $table->longText('raw_content');
             $table->json('metadata')->nullable();
@@ -32,6 +35,10 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['agent_id', 'created_at']);
+            // The Knowledge page already ships a type filter (commit 00c83fd);
+            // index the (agent_id, source) composite so filtered listings
+            // don't sequential-scan per agent.
+            $table->index(['agent_id', 'source']);
         });
     }
 

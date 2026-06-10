@@ -1,0 +1,26 @@
+<?php
+
+namespace App\Runtime\Exceptions;
+
+use RuntimeException as BaseRuntimeException;
+
+/**
+ * Umbrella exception type for the Runtime contract.
+ *
+ * Every engine (VoiceflowAdapter, AgentRuntime, future partner runtimes)
+ * normalises its upstream errors into a subclass of this so controllers
+ * can catch one type:
+ *
+ *   try {
+ *       $traces = $runtime->launch($agent, $visitor);
+ *   } catch (RuntimeException $e) {
+ *       return response()->json(['error' => '...'], 503);
+ *   }
+ *
+ * Subclasses:
+ *   - NotReady         — runtime not yet implemented for this agent
+ *   - UpstreamUnavailable — LLM provider / Voiceflow API failed
+ *
+ * @api
+ */
+class RuntimeException extends BaseRuntimeException {}
