@@ -6,8 +6,8 @@ use App\Billing\CreditMeter;
 use App\Billing\Exceptions\OutOfCredits;
 use App\Models\Agent;
 use App\Models\Team;
+use App\Runtime\Contracts\Runtime;
 use App\Services\Voiceflow\Exceptions\VoiceflowException;
-use App\Services\VoiceflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -31,7 +31,10 @@ use Illuminate\Support\Str;
  */
 class EmbedController extends Controller
 {
-    public function __construct(protected CreditMeter $credits) {}
+    public function __construct(
+        protected CreditMeter $credits,
+        protected Runtime $runtime,
+    ) {}
 
     /**
      * GET /widget/{slug}.js
@@ -107,10 +110,13 @@ class EmbedController extends Controller
             $visitorId = 'embed-'.Str::random(28);
         }
 
-        $voiceflow = $this->voiceflowFor($agent);
-
+        // Routed through the Runtime contract — the binding (AppServiceProvider)
+        // returns RuntimeDispatcher, which picks Voiceflow or native engine
+        // based on agent.runtime_mode. Today every agent is on 'voiceflow',
+        // so behaviour is identical; once we flip an agent to 'native', the
+        // new engine answers here.
         try {
-            $traces = $voiceflow->launch($visitorId);
+            $traces = $this->runtime->launch($agent, $visitorId);
         } catch (VoiceflowException $e) {
             return response()->json([
                 'error' => 'The agent is temporarily unavailable.',
@@ -159,10 +165,8 @@ class EmbedController extends Controller
             ], 402);
         }
 
-        $voiceflow = $this->voiceflowFor($agent);
-
         try {
-            $traces = $voiceflow->sendText($data['visitor_id'], $data['message']);
+            $traces = $this->runtime->sendText($agent, $data['visitor_id'], $data['message']);
         } catch (VoiceflowException $e) {
             return response()->json([
                 'error' => 'The agent is temporarily unavailable.',
@@ -172,16 +176,6 @@ class EmbedController extends Controller
         return response()->json([
             'traces' => $traces,
         ]);
-    }
-
-    protected function voiceflowFor(Agent $agent): VoiceflowService
-    {
-        return new VoiceflowService(
-            apiKey: (string) $agent->voiceflow_api_key,
-            environment: (string) ($agent->voiceflow_environment ?: 'main'),
-            projectId: (string) $agent->voiceflow_project_id,
-            workspaceApiKey: $agent->voiceflow_workspace_api_key,
-        );
     }
 
     protected function resolveAgent(string $slug): Agent

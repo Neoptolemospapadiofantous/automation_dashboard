@@ -32,7 +32,7 @@ class StreamingClient
      * Stream one turn. Yields events as `['event' => 'trace'|'state'|'end',
      * 'data' => array<string,mixed>]`.
      *
-     * @param  array{type:non-empty-string, payload?: array<string,mixed>}  $action
+     * @param  array{type:non-empty-string, payload?: string|array<string,mixed>}  $action  Voiceflow accepts both shapes; text actions use a string payload, structured actions use an array.
      * @param  array<string,mixed>  $variables
      * @param  Closure|null  $reader  Override the network reader (for testing).
      *                                Signature: function (string $url, array $headers, string $body): iterable<string>

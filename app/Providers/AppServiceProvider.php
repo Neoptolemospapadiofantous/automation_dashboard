@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Runtime\Contracts\Runtime;
+use App\Runtime\RuntimeDispatcher;
 use App\Services\VoiceflowService;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -31,6 +33,14 @@ class AppServiceProvider extends ServiceProvider
                 ? VoiceflowService::forAgent($agent)
                 : new VoiceflowService;
         });
+
+        // Runtime contract → RuntimeDispatcher. Controllers + the embed
+        // flow depend on the Runtime interface (Phase 8 wires that in);
+        // the dispatcher picks the right engine per agent based on
+        // agents.runtime_mode. Defaults to Voiceflow for backward
+        // compatibility — only agents explicitly flipped to 'native'
+        // touch the new code path.
+        $this->app->bind(Runtime::class, RuntimeDispatcher::class);
     }
 
     /**

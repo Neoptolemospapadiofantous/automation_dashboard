@@ -65,6 +65,7 @@ class Agent extends Model
         'webhook_secret',
         'status',
         'mode',
+        'runtime_mode',
         'last_health_check_at',
         'last_health_ok',
     ];
