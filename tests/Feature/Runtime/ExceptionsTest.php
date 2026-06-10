@@ -5,7 +5,7 @@ namespace Tests\Feature\Runtime;
 use App\Models\Agent;
 use App\Models\User;
 use App\Runtime\AgentRuntime;
-use App\Runtime\Exceptions\NotReady;
+use App\Runtime\Exceptions\Misconfigured;
 use App\Runtime\Exceptions\RuntimeException;
 use App\Runtime\Exceptions\UpstreamUnavailable;
 use App\Runtime\RuntimeDispatcher;
@@ -16,7 +16,7 @@ use Mockery\MockInterface;
 use Tests\TestCase;
 
 /**
- * Verifies the umbrella RuntimeException + NotReady + UpstreamUnavailable
+ * Verifies the umbrella RuntimeException + Misconfigured + UpstreamUnavailable
  * hierarchy is wired correctly. Controllers catch RuntimeException once
  * and get a clean 503 for any engine failure.
  */
@@ -24,12 +24,11 @@ class ExceptionsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_not_ready_extends_runtime_exception(): void
+    public function test_misconfigured_extends_runtime_exception(): void
     {
-        $e = new NotReady('phase 4 not shipped');
+        $e = new Misconfigured('no key');
 
         $this->assertInstanceOf(RuntimeException::class, $e);
-        $this->assertSame('phase 4 not shipped', $e->getMessage());
     }
 
     public function test_upstream_unavailable_extends_runtime_exception(): void
@@ -39,25 +38,21 @@ class ExceptionsTest extends TestCase
         $this->assertInstanceOf(RuntimeException::class, $e);
     }
 
-    public function test_agent_runtime_throws_not_ready_for_stubbed_methods(): void
+    public function test_native_runtime_without_llm_key_throws_misconfigured(): void
     {
+        config(['runtime.llm.anthropic.api_key' => '']);
+
         $user = User::factory()->withPersonalTeam()->create();
-        $agent = Agent::factory()->for($user->currentTeam)->create();
-
-        $runtime = new AgentRuntime;
-
-        try {
-            $runtime->launch($agent, 'v1');
-            $this->fail('Expected NotReady from launch');
-        } catch (RuntimeException $e) {
-            $this->assertInstanceOf(NotReady::class, $e);
-        }
+        $agent = Agent::factory()->for($user->currentTeam)->create([
+            'runtime_mode' => 'native',
+        ]);
 
         try {
-            $runtime->sendText($agent, 'v1', 'hi');
-            $this->fail('Expected NotReady from sendText');
+            app(AgentRuntime::class)->launch($agent, 'v1');
+            $this->fail('Expected Misconfigured');
         } catch (RuntimeException $e) {
-            $this->assertInstanceOf(NotReady::class, $e);
+            $this->assertInstanceOf(Misconfigured::class, $e);
+            $this->assertStringContainsString('ANTHROPIC_API_KEY', $e->getMessage());
         }
     }
 
@@ -106,9 +101,6 @@ class ExceptionsTest extends TestCase
 
         $dispatcher = app(RuntimeDispatcher::class);
 
-        // Calling engineFor (via the public health surface) twice should
-        // return the same underlying engine — we assert via reflection
-        // that the memoised array has exactly one entry afterward.
         config(['runtime.llm.anthropic.api_key' => 'sk', 'runtime.embeddings.openai_api_key' => 'sk']);
         $dispatcher->health($agent);
         $dispatcher->health($agent);

@@ -8,7 +8,6 @@ use App\Runtime\AgentRuntime;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\Contracts\Runtime;
 use App\Runtime\Contracts\Tool;
-use App\Runtime\Exceptions\NotReady;
 use App\Runtime\Models\KbChunk;
 use App\Runtime\Models\KbDocument;
 use App\Runtime\Models\RuntimeSession;
@@ -17,10 +16,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Phase 1 — runtime skeleton.
- *
- * Verifies the contracts, models, migrations, and stub facade are wired
- * correctly so subsequent phases can flesh them out without surprises.
+ * Runtime foundation: contracts, models, migrations, health reporting.
+ * The conversational behavior itself is covered in AgentRuntimeTest.
  */
 class SkeletonTest extends TestCase
 {
@@ -28,7 +25,7 @@ class SkeletonTest extends TestCase
 
     public function test_runtime_contract_is_implemented_by_facade(): void
     {
-        $this->assertInstanceOf(Runtime::class, new AgentRuntime);
+        $this->assertInstanceOf(Runtime::class, app(AgentRuntime::class));
     }
 
     public function test_tool_and_knowledge_store_contracts_exist(): void
@@ -56,7 +53,7 @@ class SkeletonTest extends TestCase
             'agent_id' => $agent->id,
             'position' => 0,
             'content' => 'We charge $99/month.',
-            'embedding' => array_fill(0, 4, 0.1), // shape only — Phase 5 wires real embeddings
+            'embedding' => array_fill(0, 4, 0.1),
             'embedding_model' => 'text-embedding-3-small',
         ]);
 
@@ -66,7 +63,7 @@ class SkeletonTest extends TestCase
         $this->assertSame('Pricing FAQ', $chunk->document->title);
     }
 
-    public function test_runtime_session_model_persists(): void
+    public function test_runtime_session_model_persists_with_history(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create();
@@ -76,12 +73,14 @@ class SkeletonTest extends TestCase
             'visitor_id' => 'embed-test-1',
             'flow_state' => 'discovery',
             'variables' => ['name' => 'Alice', 'score' => 80],
+            'history' => [['role' => 'user', 'content' => 'hi']],
             'last_activity_at' => now(),
         ]);
 
         $fresh = $session->fresh();
         $this->assertSame('discovery', $fresh->flow_state);
         $this->assertSame(80, $fresh->variables['score']);
+        $this->assertSame('hi', $fresh->history[0]['content']);
     }
 
     public function test_runtime_session_unique_per_agent_visitor(): void
@@ -112,12 +111,19 @@ class SkeletonTest extends TestCase
         $this->assertSame('voiceflow', $agent->fresh()->runtime_mode);
     }
 
+    public function test_agent_constants_match_persisted_runtime_mode_values(): void
+    {
+        // 'voiceflow' is the implicit default (DB default + dispatcher
+        // match-default), so only the native constant exists.
+        $this->assertSame('native', Agent::RUNTIME_NATIVE);
+    }
+
     public function test_native_runtime_health_reports_misconfiguration_clearly(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create();
 
-        $runtime = new AgentRuntime;
+        $runtime = app(AgentRuntime::class);
 
         // Agent still on voiceflow mode — health should explain why native won't run.
         $h = $runtime->health($agent->fresh());
@@ -142,53 +148,5 @@ class SkeletonTest extends TestCase
         $h = $runtime->health($agent->fresh());
         $this->assertTrue($h['ok']);
         $this->assertSame('native', $h['engine']);
-    }
-
-    public function test_stream_text_yields_a_not_ready_event_until_phase_7_ships(): void
-    {
-        $user = User::factory()->withPersonalTeam()->create();
-        $agent = Agent::factory()->for($user->currentTeam)->create();
-
-        $runtime = new AgentRuntime;
-
-        $events = [];
-        foreach ($runtime->streamText($agent, 'v1', 'hello') as $e) {
-            $events[] = $e;
-        }
-
-        $this->assertCount(1, $events);
-        $this->assertSame('not_ready', $events[0]['event']);
-        $this->assertArrayHasKey('reason', $events[0]['data']);
-        $this->assertStringContainsString('Phase 7', $events[0]['data']['reason']);
-    }
-
-    public function test_agent_constants_match_persisted_runtime_mode_values(): void
-    {
-        // 'voiceflow' is the implicit default (DB default + dispatcher
-        // match-default), so only the native constant exists.
-        $this->assertSame('native', Agent::RUNTIME_NATIVE);
-    }
-
-    public function test_stub_methods_throw_runtime_not_ready_until_their_phase_ships(): void
-    {
-        $user = User::factory()->withPersonalTeam()->create();
-        $agent = Agent::factory()->for($user->currentTeam)->create();
-
-        $runtime = new AgentRuntime;
-
-        $this->assertThrowsNotReady(fn () => $runtime->launch($agent, 'v1'));
-        $this->assertThrowsNotReady(fn () => $runtime->sendText($agent, 'v1', 'hi'));
-        $this->assertThrowsNotReady(fn () => $runtime->endSession($agent, 'v1'));
-    }
-
-    /** @param  callable():mixed  $callable */
-    private function assertThrowsNotReady(callable $callable): void
-    {
-        try {
-            $callable();
-            $this->fail('Expected NotReady but nothing was thrown.');
-        } catch (\Throwable $e) {
-            $this->assertInstanceOf(NotReady::class, $e);
-        }
     }
 }

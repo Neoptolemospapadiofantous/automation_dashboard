@@ -4,61 +4,81 @@ namespace App\Runtime;
 
 use App\Models\Agent;
 use App\Runtime\Contracts\Runtime;
-use App\Runtime\Exceptions\NotReady;
+use App\Runtime\Flow\FlowExecutor;
+use App\Runtime\Flow\LeadCaptureFlow;
+use App\Runtime\Flow\TurnResult;
+use App\Runtime\Session\ConversationContext;
+use App\Runtime\Session\SessionManager;
 use Generator;
 
 /**
- * The native runtime facade — Flowstack's own conversational engine.
+ * Flowstack's native conversational engine — the Voiceflow replacement.
  *
- * Slots behind the Runtime contract alongside the legacy Voiceflow path.
- * Which runtime serves a given agent is selected by
- * agents.runtime_mode ('voiceflow' | 'native'), resolved in the service
- * container — controllers and the embed flow ask for the Runtime
- * contract and never know which engine answered.
+ * Composition: SessionManager owns per-visitor state, FlowExecutor runs
+ * the LLM/tool loop against the agent's Flow (LeadCaptureFlow for every
+ * agent today; per-agent flow selection is a column away when templates
+ * land). Credits are charged by the CONTROLLERS around these calls —
+ * this class knows nothing about billing.
  *
- * THIS IS A PHASE-1 STUB. The actual flow execution + LLM dispatch +
- * tool calling + RAG lands across Phases 2-7. The methods here throw
- * NotReady until each piece is wired in. The intentional
- * sequencing lets us land the migrations + contracts + Agent model
- * column in production with zero behavioural risk — no agent has
- * runtime_mode='native' yet, so the dispatcher never picks this class.
+ * Selected per-agent by RuntimeDispatcher when runtime_mode='native'.
  */
 class AgentRuntime implements Runtime
 {
+    public function __construct(
+        protected FlowExecutor $executor,
+        protected SessionManager $sessions,
+        protected LeadCaptureFlow $flow,
+    ) {}
+
+    /**
+     * Reset-and-greet, matching Voiceflow's launch semantics (the embed
+     * iframe calls launch on every open; the greeting replays).
+     */
     public function launch(Agent $agent, string $visitorId): array
     {
-        throw new NotReady('NativeRuntime::launch — implemented in Phase 4 (Flow).');
+        $session = $this->sessions->reset($agent, $visitorId, $this->flow->initial());
+
+        $result = $this->executor->execute(
+            new ConversationContext($agent, $session, FlowExecutor::OPENING_MESSAGE),
+            $this->flow,
+        );
+
+        return $result->traces;
     }
 
     public function sendText(Agent $agent, string $visitorId, string $text): array
     {
-        throw new NotReady('NativeRuntime::sendText — implemented in Phase 4 (Flow).');
+        return $this->turn($agent, $visitorId, $text)->traces;
     }
 
+    /**
+     * Stage-level streaming: the turn runs to completion, then events are
+     * yielded in order (tool events → message → done). Token-level SSE
+     * pass-through from Anthropic is a planned refinement; the embed UI
+     * consumes whole messages today so this shape is already sufficient.
+     */
     public function streamText(Agent $agent, string $visitorId, string $text): Generator
     {
-        // Phase 1 stub: yield a single "not_ready" event so the SSE
-        // pipeline downstream has something to forward without throwing.
-        // Phase 7 replaces this with the real streaming loop (token
-        // events from the LLM + tool events from the registry).
-        yield [
-            'event' => 'not_ready',
-            'data' => [
-                'reason' => 'NativeRuntime::streamText — implemented in Phase 7 (Streaming).',
-            ],
-        ];
+        $result = $this->turn($agent, $visitorId, $text);
+
+        foreach ($result->toolEvents as $event) {
+            yield ['event' => 'tool', 'data' => $event];
+        }
+
+        foreach ($result->traces as $trace) {
+            yield ['event' => 'message', 'data' => $trace['payload'] ?? []];
+        }
+
+        yield ['event' => 'done', 'data' => ['state' => $result->finalState]];
     }
 
     public function endSession(Agent $agent, string $visitorId): void
     {
-        throw new NotReady('NativeRuntime::endSession — implemented in Phase 6 (Session).');
+        $this->sessions->end($agent, $visitorId);
     }
 
     public function health(Agent $agent): array
     {
-        // Health is the one method that's safe to answer in Phase 1 — it
-        // just checks the agent's runtime_mode and reports what the engine
-        // would do, without actually doing it.
         if ($agent->getAttribute('runtime_mode') !== Agent::RUNTIME_NATIVE) {
             return [
                 'ok' => false,
@@ -84,5 +104,27 @@ class AgentRuntime implements Runtime
             'llm_model' => (string) config('runtime.llm.anthropic.model_default'),
             'embedding_model' => (string) config('runtime.embeddings.model'),
         ];
+    }
+
+    protected function turn(Agent $agent, string $visitorId, string $text): TurnResult
+    {
+        $session = $this->sessions->findOrCreate($agent, $visitorId, $this->flow->initial());
+
+        // Safety cap: a session can't run forever (cost protection).
+        $maxTurns = max(1, (int) config('runtime.safety.max_turns_per_session'));
+        if ($this->sessions->userTurnCount($session) >= $maxTurns) {
+            return new TurnResult(
+                traces: [['type' => 'text', 'payload' => [
+                    'message' => 'This conversation has reached its limit — a teammate will pick it up from here. Thanks for your patience!',
+                ]]],
+                finalState: $session->flow_state,
+                toolEvents: [],
+            );
+        }
+
+        return $this->executor->execute(
+            new ConversationContext($agent, $session, $text),
+            $this->flow,
+        );
     }
 }

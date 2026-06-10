@@ -2,8 +2,16 @@
 
 namespace App\Providers;
 
+use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\Contracts\Runtime;
+use App\Runtime\Knowledge\KnowledgeBase;
 use App\Runtime\RuntimeDispatcher;
+use App\Runtime\Tools\CaptureLeadTool;
+use App\Runtime\Tools\EndSessionTool;
+use App\Runtime\Tools\QueryKnowledgeTool;
+use App\Runtime\Tools\RequestHandoffTool;
+use App\Runtime\Tools\SetVariableTool;
+use App\Runtime\Tools\ToolRegistry;
 use App\Services\VoiceflowService;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -41,6 +49,22 @@ class AppServiceProvider extends ServiceProvider
         // compatibility — only agents explicitly flipped to 'native'
         // touch the new code path.
         $this->app->bind(Runtime::class, RuntimeDispatcher::class);
+
+        // Native runtime wiring: the RAG store and the tool registry with
+        // every built-in tool registered. Both singletons — stateless
+        // (the registry holds tool instances, the store holds clients).
+        $this->app->singleton(KnowledgeStore::class, KnowledgeBase::class);
+
+        $this->app->singleton(ToolRegistry::class, function ($app): ToolRegistry {
+            $registry = new ToolRegistry;
+            $registry->register(new CaptureLeadTool);
+            $registry->register($app->make(QueryKnowledgeTool::class));
+            $registry->register(new EndSessionTool);
+            $registry->register(new SetVariableTool);
+            $registry->register(new RequestHandoffTool);
+
+            return $registry;
+        });
     }
 
     /**

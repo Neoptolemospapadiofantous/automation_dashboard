@@ -28,6 +28,7 @@ return [
 
         'anthropic' => [
             'api_key' => env('ANTHROPIC_API_KEY'),
+            'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),
             'model_default' => env('ANTHROPIC_MODEL_DEFAULT', 'claude-haiku-4-5-20251001'),
             'model_complex' => env('ANTHROPIC_MODEL_COMPLEX', 'claude-sonnet-4-6'),
             'max_tokens' => (int) env('ANTHROPIC_MAX_TOKENS', 1024),
@@ -49,6 +50,7 @@ return [
         'model' => env('RUNTIME_EMBEDDINGS_MODEL', 'text-embedding-3-small'),
         'dimensions' => (int) env('RUNTIME_EMBEDDINGS_DIMENSIONS', 1536),
         'openai_api_key' => env('OPENAI_API_KEY'),
+        'openai_base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com'),
     ],
 
     'rag' => [
@@ -78,6 +80,25 @@ return [
     'safety' => [
         'max_tool_calls_per_turn' => (int) env('RUNTIME_MAX_TOOL_CALLS', 10),
         'max_turns_per_session' => (int) env('RUNTIME_MAX_TURNS', 100),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session management
+    |--------------------------------------------------------------------------
+    |
+    | history_limit: max LLM-format history entries kept per session. Old
+    |   entries are trimmed from the FRONT (keeping the most recent context).
+    |   Each turn produces 2-6 entries (user msg, assistant blocks, tool
+    |   results), so 60 entries ≈ the last 10-20 turns.
+    |
+    | prune_days: sessions idle longer than this are deleted by the
+    |   runtime:prune-sessions command (scheduled daily). Matches the
+    |   30-day embed visitor cookie TTL.
+    */
+    'session' => [
+        'history_limit' => (int) env('RUNTIME_HISTORY_LIMIT', 60),
+        'prune_days' => (int) env('RUNTIME_SESSION_PRUNE_DAYS', 30),
     ],
 
 ];

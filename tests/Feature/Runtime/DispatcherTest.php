@@ -5,16 +5,15 @@ namespace Tests\Feature\Runtime;
 use App\Models\Agent;
 use App\Models\User;
 use App\Runtime\Contracts\Runtime;
-use App\Runtime\Exceptions\NotReady;
 use App\Runtime\RuntimeDispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
  * Verifies the dispatcher routes to the right engine based on
- * agents.runtime_mode. Phase 1 lands: native mode throws
- * NotReady on the stubbed methods (correct), voiceflow mode
- * delegates to the legacy VoiceflowService (already tested elsewhere).
+ * agents.runtime_mode: native agents reach the native engine (proven by
+ * a faked Anthropic round-trip), everything else stays on Voiceflow.
  */
 class DispatcherTest extends TestCase
 {
@@ -29,18 +28,26 @@ class DispatcherTest extends TestCase
 
     public function test_native_agent_routes_to_native_runtime(): void
     {
+        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
+        Http::fake([
+            'api.anthropic.com/*' => Http::response([
+                'content' => [['type' => 'text', 'text' => 'Hi there! What brings you here today?']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 10, 'output_tokens' => 9],
+            ]),
+        ]);
+
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create([
             'runtime_mode' => 'native',
         ]);
 
-        $dispatcher = app(RuntimeDispatcher::class);
+        $traces = app(RuntimeDispatcher::class)->launch($agent, 'visitor-1');
 
-        // Native runtime is still a Phase 1 stub for these methods,
-        // so the call lands on NotReady — proving the routing
-        // worked (and the legacy Voiceflow path wasn't picked).
-        $this->expectException(NotReady::class);
-        $dispatcher->launch($agent, 'visitor-1');
+        $this->assertSame('text', $traces[0]['type']);
+        $this->assertStringContainsString('What brings you here', $traces[0]['payload']['message']);
+        // And nothing went anywhere near Voiceflow.
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'voiceflow.com'));
     }
 
     public function test_native_agent_health_reports_engine_native(): void

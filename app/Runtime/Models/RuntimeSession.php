@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property string $visitor_id
  * @property string $flow_state
  * @property array<string, mixed>|null $variables
+ * @property list<array<string, mixed>>|null $history
  * @property Carbon|null $last_activity_at
  */
 class RuntimeSession extends Model
@@ -28,11 +29,14 @@ class RuntimeSession extends Model
         'visitor_id',
         'flow_state',
         'variables',
+        'history',
         'last_activity_at',
     ];
 
     protected $casts = [
         'variables' => 'array',
+        // LLM-format message history (Anthropic content blocks included).
+        'history' => 'array',
         'last_activity_at' => 'datetime',
     ];
 

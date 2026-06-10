@@ -18,7 +18,7 @@ use RuntimeException as BaseRuntimeException;
  *   }
  *
  * Subclasses:
- *   - NotReady         — runtime not yet implemented for this agent
+ *   - Misconfigured       — our config is incomplete (missing API key, ...)
  *   - UpstreamUnavailable — LLM provider / Voiceflow API failed
  *
  * @api
