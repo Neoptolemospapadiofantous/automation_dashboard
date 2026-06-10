@@ -38,8 +38,15 @@ return [
     */
 
     'stripe_price' => [
+        // Monthly recurring prices.
         'starter' => env('STRIPE_PRICE_STARTER'),
         'operator' => env('STRIPE_PRICE_OPERATOR'),
+
+        // Annual recurring prices — same Stripe Product, different Price ID
+        // with interval=year. Leaving null disables the annual toggle for
+        // that plan; the UI hides it gracefully. Set both to enable.
+        'starter_annual' => env('STRIPE_PRICE_STARTER_ANNUAL'),
+        'operator_annual' => env('STRIPE_PRICE_OPERATOR_ANNUAL'),
 
         'topup_small' => env('STRIPE_PRICE_TOPUP_SMALL'),
         'topup_medium' => env('STRIPE_PRICE_TOPUP_MEDIUM'),

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Billing\BillingCycle;
 use App\Billing\Plan;
 use App\Billing\TopUpPack;
 use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
@@ -51,7 +52,36 @@ class BillingController extends Controller
             'topup_packs' => $team->planObject()->allowsTopUps()
                 ? TopUpPack::catalog()
                 : [],
+            // Plan catalog — surfaces price, max agents, monthly credit
+            // grant, AND whether annual is available so the UI can show
+            // the monthly/annual toggle and the savings %.
+            'plan_catalog' => [
+                'starter' => $this->planSummary(Plan::Free, 'starter'),
+                'operator' => $this->planSummary(Plan::Pro, 'operator'),
+            ],
         ]);
+    }
+
+    /**
+     * @return array{
+     *   key: string, value: string, label: string, monthly_usd: int,
+     *   annual_equivalent_monthly_usd: ?int, annual_savings_pct: int,
+     *   annual_available: bool, max_agents: int, monthly_credits: int
+     * }
+     */
+    protected function planSummary(Plan $plan, string $key): array
+    {
+        return [
+            'key' => $key,
+            'value' => $plan->value,
+            'label' => $plan->label(),
+            'monthly_usd' => (int) $plan->priceUsd(),
+            'annual_equivalent_monthly_usd' => $plan->annualEquivalentMonthlyUsd(),
+            'annual_savings_pct' => $plan->annualSavingsPct(),
+            'annual_available' => $plan->stripePriceId(BillingCycle::Annual) !== null,
+            'max_agents' => $plan->maxAgents(),
+            'monthly_credits' => $plan->monthlyCredits(),
+        ];
     }
 
     /**

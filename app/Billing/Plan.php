@@ -99,19 +99,48 @@ enum Plan: string
     }
 
     /**
-     * Stripe price id used to identify the plan in Cashier webhooks. Set
-     * via env so test/staging/prod each map to their own Stripe products
-     * without code changes.
+     * Stripe price id for the given billing cycle. Set via env so
+     * test/staging/prod each map to their own Stripe products without
+     * code changes. Annual returns null when not configured — UI hides
+     * the annual toggle in that case.
      */
-    public function stripePriceId(): ?string
+    public function stripePriceId(BillingCycle $cycle = BillingCycle::Monthly): ?string
     {
-        $value = match ($this) {
-            self::Free => config('billing.stripe_price.starter'),
-            self::Pro => config('billing.stripe_price.operator'),
-            self::Business => null, // Custom is project-based, not Stripe-priced
+        $value = match ([$this, $cycle]) {
+            [self::Free, BillingCycle::Monthly] => config('billing.stripe_price.starter'),
+            [self::Free, BillingCycle::Annual] => config('billing.stripe_price.starter_annual'),
+            [self::Pro, BillingCycle::Monthly] => config('billing.stripe_price.operator'),
+            [self::Pro, BillingCycle::Annual] => config('billing.stripe_price.operator_annual'),
+            default => null, // Custom is project-based, not Stripe-priced
         };
 
         return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
+     * Annual price discount — the 12-month payment compared to 12×
+     * monthly. Currently a hard-coded 17% ("get 2 months free"). When
+     * Stripe products are configured with different ratios, read this
+     * from the Stripe price object instead.
+     */
+    public function annualSavingsPct(): int
+    {
+        return 17;
+    }
+
+    /**
+     * The "equivalent monthly" price when paying annually. UI shows this
+     * alongside the actual monthly for the side-by-side comparison.
+     * Null when no monthly price (Custom).
+     */
+    public function annualEquivalentMonthlyUsd(): ?int
+    {
+        $monthly = $this->priceUsd();
+        if ($monthly === null) {
+            return null;
+        }
+
+        return (int) round($monthly * (1 - $this->annualSavingsPct() / 100));
     }
 
     public function label(): string
@@ -125,14 +154,17 @@ enum Plan: string
 
     /**
      * Reverse lookup for Stripe webhook handlers — given a Stripe price
-     * id, which plan does it belong to? Returns null if no match (Stripe
-     * sent us a price we don't recognize → log + ignore).
+     * id, which plan does it belong to? Checks both monthly + annual
+     * cycles. Returns null if no match (Stripe sent us a price we don't
+     * recognize → log + ignore).
      */
     public static function fromStripePriceId(string $priceId): ?self
     {
         foreach (self::cases() as $plan) {
-            if ($plan->stripePriceId() === $priceId) {
-                return $plan;
+            foreach (BillingCycle::cases() as $cycle) {
+                if ($plan->stripePriceId($cycle) === $priceId) {
+                    return $plan;
+                }
             }
         }
 

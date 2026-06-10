@@ -106,6 +106,29 @@ function relativeTime(iso) {
                     <div>{{ planLimitFlash.message }}</div>
                 </div>
 
+                <!-- Inline upgrade CTA when at plan limit. Shows even before
+                     the user tries to click "New agent" so the next move is
+                     obvious. Routes to the Billing page where the upgrade
+                     happens; matches the same Stripe Checkout flow as a
+                     direct subscribe click. -->
+                <div
+                    v-if="atPlanLimit && billing?.plan_label !== 'Custom'"
+                    class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 text-sm"
+                >
+                    <div>
+                        <p class="font-semibold text-gray-900">
+                            You've hit your plan's agent limit
+                        </p>
+                        <p class="mt-0.5 text-xs text-gray-600">
+                            The <span class="font-medium">{{ billing.plan_label }}</span> plan allows {{ billing.max_agents }} agent{{ billing.max_agents === 1 ? '' : 's' }}.
+                            Upgrade to {{ billing.plan_label === 'Starter' ? 'Operator (5 agents)' : 'Custom (unlimited)' }} to add more.
+                        </p>
+                    </div>
+                    <Link :href="route('billing.index')" class="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700">
+                        Upgrade plan →
+                    </Link>
+                </div>
+
                 <div class="overflow-hidden rounded-xl bg-white shadow ring-1 ring-black/5">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50">

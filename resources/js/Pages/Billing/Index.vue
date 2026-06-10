@@ -8,9 +8,10 @@ import DialogModal from '@/Components/DialogModal.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 
-defineProps({
+const props = defineProps({
     transactions: { type: Array, required: true },
     topup_packs: { type: Array, default: () => [] },
+    plan_catalog: { type: Object, default: () => ({}) },
 });
 
 const page = usePage();
@@ -64,11 +65,21 @@ function buy(pack) {
 // server and redirects the browser away. We use a form-style post so CSRF
 // is handled automatically; Inertia gets the away-redirect and follows.
 const subscribeForm = useForm({});
+// Annual toggle — when true, all subscribe CTAs append ?cycle=annual.
+// Defaults to monthly. Server falls back to monthly if the env price ID
+// for the annual cycle isn't set (UI is also gated by plan.annual_available).
+const cycle = ref('monthly');
+
 function subscribe(planKey) {
     if (billing.value?.plan_label?.toLowerCase() === planKey) return; // already on it
     if (! billing.value?.is_owner) return; // server enforces; UI matches
-    subscribeForm.post(`/subscribe/${planKey}`);
+    const query = cycle.value === 'annual' ? '?cycle=annual' : '';
+    subscribeForm.post(`/subscribe/${planKey}${query}`);
 }
+
+const anyAnnualAvailable = computed(
+    () => Object.values(props.plan_catalog ?? {}).some((p) => p?.annual_available),
+);
 
 // --- Customer Portal ------------------------------------------------------
 // POSTs to /billing/portal → server creates a Stripe Customer Portal
@@ -139,34 +150,78 @@ function openPortal() {
                     <!-- Plan upgrade strip: Starter / Operator subscribe buttons.
                          Shows on every plan that's not already maxed out so the
                          customer can see what they could move to. Each button
-                         POSTs to /subscribe/{plan} which redirects to Stripe Checkout. -->
+                         POSTs to /subscribe/{plan} which redirects to Stripe Checkout.
+                         When annual is available, the monthly/annual toggle controls
+                         which Stripe Price ID the redirect uses. -->
                     <div class="rounded-xl bg-white p-5 shadow ring-1 ring-black/5 sm:col-span-2 lg:col-span-2">
-                        <div class="text-xs uppercase tracking-wide text-gray-400">Subscription tiers</div>
+                        <div class="flex flex-wrap items-baseline justify-between gap-2">
+                            <div class="text-xs uppercase tracking-wide text-gray-400">Subscription tiers</div>
+
+                            <!-- Monthly / Annual cycle toggle. Only renders when
+                                 at least one tier has annual pricing configured. -->
+                            <div v-if="anyAnnualAvailable" class="flex items-center gap-1 rounded-lg bg-gray-100 p-0.5">
+                                <button
+                                    type="button"
+                                    class="rounded-md px-3 py-1 text-xs font-medium transition"
+                                    :class="cycle === 'monthly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'"
+                                    @click="cycle = 'monthly'"
+                                >
+                                    Monthly
+                                </button>
+                                <button
+                                    type="button"
+                                    class="flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition"
+                                    :class="cycle === 'annual' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'"
+                                    @click="cycle = 'annual'"
+                                >
+                                    Annual
+                                    <span class="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                        Save {{ Object.values(plan_catalog)[0]?.annual_savings_pct ?? 17 }}%
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="mt-3 grid gap-3 sm:grid-cols-2">
                             <button
+                                v-for="p in plan_catalog"
+                                :key="p.key"
                                 type="button"
                                 class="flex flex-col items-start rounded-lg border p-3 text-left transition hover:border-indigo-300 hover:bg-indigo-50"
-                                :class="billing?.plan_label === 'Starter' ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-white'"
-                                @click="subscribe('starter')"
+                                :class="billing?.plan_label === p.label ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-white'"
+                                :disabled="!billing?.is_owner"
+                                @click="subscribe(p.key)"
                             >
-                                <div class="text-sm font-semibold text-gray-900">Starter — $99/mo</div>
-                                <div class="mt-1 text-[11px] text-gray-500">1 agent · 2,500 credits / month</div>
-                                <div class="mt-2 text-[11px] font-medium text-indigo-600" v-if="billing?.plan_label !== 'Starter'">
-                                    Subscribe →
+                                <div class="flex items-baseline gap-2">
+                                    <span class="text-sm font-semibold text-gray-900">{{ p.label }}</span>
+                                    <span
+                                        v-if="cycle === 'annual' && p.annual_available"
+                                        class="text-sm font-semibold text-gray-900"
+                                    >
+                                        — ${{ p.annual_equivalent_monthly_usd }}/mo
+                                    </span>
+                                    <span v-else class="text-sm font-semibold text-gray-900">
+                                        — ${{ p.monthly_usd }}/mo
+                                    </span>
                                 </div>
-                                <div class="mt-2 text-[11px] font-medium text-gray-400" v-else>
-                                    Current plan
+                                <div class="mt-1 text-[11px] text-gray-500">
+                                    {{ p.max_agents >= 9999 ? 'Unlimited agents' : `${p.max_agents} agent${p.max_agents === 1 ? '' : 's'}` }}
+                                    · {{ p.monthly_credits.toLocaleString() }} credits / month
                                 </div>
-                            </button>
-                            <button
-                                type="button"
-                                class="flex flex-col items-start rounded-lg border p-3 text-left transition hover:border-indigo-300 hover:bg-indigo-50"
-                                :class="billing?.plan_label === 'Operator' ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-white'"
-                                @click="subscribe('operator')"
-                            >
-                                <div class="text-sm font-semibold text-gray-900">Operator — $399/mo</div>
-                                <div class="mt-1 text-[11px] text-gray-500">5 agents · 25,000 credits / month</div>
-                                <div class="mt-2 text-[11px] font-medium text-indigo-600" v-if="billing?.plan_label !== 'Operator'">
+                                <div
+                                    v-if="cycle === 'annual' && p.annual_available"
+                                    class="mt-1 text-[10px] text-emerald-700"
+                                >
+                                    Billed yearly · ${{ (p.annual_equivalent_monthly_usd * 12).toLocaleString() }} / yr
+                                </div>
+                                <div
+                                    v-else-if="cycle === 'annual' && !p.annual_available"
+                                    class="mt-1 text-[10px] text-amber-700"
+                                >
+                                    Annual not yet available — billed monthly.
+                                </div>
+
+                                <div class="mt-2 text-[11px] font-medium text-indigo-600" v-if="billing?.plan_label !== p.label">
                                     Subscribe →
                                 </div>
                                 <div class="mt-2 text-[11px] font-medium text-gray-400" v-else>

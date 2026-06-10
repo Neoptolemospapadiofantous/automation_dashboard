@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Billing\BillingCycle;
 use App\Billing\Plan;
 use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Team;
@@ -40,13 +41,18 @@ class SubscribeController extends Controller
             default => abort(404, 'Unknown plan'),
         };
 
-        $priceId = $plan->stripePriceId();
+        // Billing cycle — monthly (default) or annual. Annual gets a
+        // discount via a separate Stripe Price ID with interval=year.
+        $cycleRaw = (string) $request->query('cycle', 'monthly');
+        $cycle = BillingCycle::tryFrom($cycleRaw) ?? BillingCycle::Monthly;
+
+        $priceId = $plan->stripePriceId($cycle);
         if ($priceId === null) {
-            // Stripe price not configured for this plan — surface a friendly
-            // error rather than 500. Will happen if STRIPE_PRICE_STARTER /
-            // STRIPE_PRICE_OPERATOR isn't set in .env.
+            // Stripe price not configured for this plan + cycle combo. The
+            // annual price for either tier may be absent during setup —
+            // friendly error rather than 500.
             return back()->withErrors([
-                'plan' => "Plan {$plan->label()} is not yet available for self-serve checkout.",
+                'plan' => "Plan {$plan->label()} ({$cycle->label()}) is not yet available for self-serve checkout.",
             ]);
         }
 
@@ -63,6 +69,7 @@ class SubscribeController extends Controller
             metadata: [
                 'plan_key' => $planKey,
                 'plan_value' => $plan->value,
+                'cycle' => $cycle->value,
             ],
         );
 
