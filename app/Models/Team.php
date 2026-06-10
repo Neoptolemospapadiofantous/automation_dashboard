@@ -34,6 +34,7 @@ class Team extends JetstreamTeam
         'stripe_subscription_id',
         'stripe_subscription_status',
         'stripe_current_period_end',
+        'profile',
     ];
 
     public function agents(): HasMany
@@ -89,6 +90,10 @@ class Team extends JetstreamTeam
             // this for idempotency.
             'alert_thresholds_fired' => 'array',
             'stripe_current_period_end' => 'datetime',
+            // Onboarding profile (industry/use_case/team_size/etc.)
+            // captured at signup. Free-form JSON; the wizard validates
+            // the shape on the way in. See OnboardingController::startAgent.
+            'profile' => 'array',
         ];
     }
 

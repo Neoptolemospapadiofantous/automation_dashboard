@@ -46,9 +46,30 @@ class OnboardingController extends Controller
     {
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
+            // Onboarding profile capture — segments customers for
+            // marketing + lets us tailor in-app prompts. All optional;
+            // unanswered questions stay null in team.profile.
+            'industry' => ['nullable', 'string', 'in:saas,ecommerce,agency,services,real_estate,healthcare,education,other'],
+            'use_case' => ['nullable', 'string', 'in:lead_capture,customer_support,scheduling,qualification,faq,other'],
+            'team_size' => ['nullable', 'string', 'in:solo,2-5,6-20,21-100,100+'],
+            'website' => ['nullable', 'url', 'max:255'],
         ]);
 
         $team = $request->user()->currentTeam;
+
+        // Save profile alongside provisioning. Skip when all fields are
+        // empty (returning user re-clicking start) so we don't overwrite
+        // an already-saved profile with nulls.
+        $profile = [];
+        foreach (['industry', 'use_case', 'team_size', 'website'] as $field) {
+            if (isset($data[$field]) && $data[$field] !== '') {
+                $profile[$field] = $data[$field];
+            }
+        }
+        if ($profile !== []) {
+            $existing = is_array($team->getAttribute('profile')) ? $team->getAttribute('profile') : [];
+            $team->forceFill(['profile' => array_merge($existing, $profile)])->save();
+        }
 
         // Re-click protection. If the user double-submits, pick up the
         // already-created agent rather than burning another pool slot.
