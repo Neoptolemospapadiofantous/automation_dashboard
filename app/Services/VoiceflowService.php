@@ -303,11 +303,19 @@ class VoiceflowService
     public function health(): array
     {
         if (empty($this->apiKey)) {
-            return ['ok' => false, 'configured' => false, 'reason' => 'VOICEFLOW_API_KEY is not set.'];
+            return [
+                'ok' => false,
+                'configured' => false,
+                'reason' => 'No Voiceflow API key — agent has no voiceflow_api_key (pool not allocated?) and no VOICEFLOW_API_KEY fallback set.',
+            ];
         }
 
         if (empty($this->projectId)) {
-            return ['ok' => false, 'configured' => false, 'reason' => 'VOICEFLOW_PROJECT_ID is not set (required for the V4 API).'];
+            return [
+                'ok' => false,
+                'configured' => false,
+                'reason' => 'No Voiceflow project ID — agent has no voiceflow_project_id and no VOICEFLOW_PROJECT_ID fallback set.',
+            ];
         }
 
         $base = [
@@ -756,7 +764,7 @@ class VoiceflowService
     protected function startSessionResponse(string $userId): Response
     {
         if (! $this->isConfigured()) {
-            throw new RuntimeException('Voiceflow is not configured: set VOICEFLOW_API_KEY and VOICEFLOW_PROJECT_ID.');
+            throw new RuntimeException('Voiceflow is not configured: this agent has no voiceflow_api_key + voiceflow_project_id (check pool allocation), and no ops-only env fallback is set.');
         }
 
         return Http::baseUrl($this->runtimeUrl)
@@ -788,8 +796,8 @@ class VoiceflowService
     protected function sessionFailureReason(int $status): string
     {
         return match (true) {
-            in_array($status, [401, 403], true) => 'Key rejected — check VOICEFLOW_API_KEY is a VF.DM.* key for THIS project.',
-            $status === 404 => 'Project or environment not found — check VOICEFLOW_PROJECT_ID and VOICEFLOW_ENVIRONMENT (alias, e.g. "main").',
+            in_array($status, [401, 403], true) => 'Key rejected — the agent voiceflow_api_key must be a VF.DM.* key for the same project as voiceflow_project_id.',
+            $status === 404 => "Project or environment not found — check the agent's voiceflow_project_id + voiceflow_environment (alias, e.g. \"main\").",
             default => 'Start-session failed (HTTP '.$status.').',
         };
     }

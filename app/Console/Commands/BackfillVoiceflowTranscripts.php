@@ -29,7 +29,7 @@ class BackfillVoiceflowTranscripts extends Command
     public function handle(VoiceflowService $voiceflow, ConversationRecorder $recorder): int
     {
         if (! $voiceflow->isConfigured()) {
-            $this->error('Voiceflow is not configured (set VOICEFLOW_API_KEY and VOICEFLOW_PROJECT_ID).');
+            $this->error('Voiceflow is not configured for this team — the resolved current agent has no voiceflow_api_key + voiceflow_project_id. Re-run with --team=<slug> pointing at a team whose agent is fully provisioned, or set VOICEFLOW_API_KEY + VOICEFLOW_PROJECT_ID as a one-off ops override.');
 
             return self::FAILURE;
         }
