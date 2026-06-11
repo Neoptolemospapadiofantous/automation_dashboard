@@ -1,24 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Method App\\Actions\\Agents\\CreateAgent\:\:createByok\(\) should return App\\Models\\Agent but returns Illuminate\\Database\\Eloquent\\Model\.$#'
-			identifier: return.type
-			count: 1
-			path: app/Actions/Agents/CreateAgent.php
-
-		-
-			message: '#^Method App\\Actions\\Agents\\CreateAgent\:\:createManaged\(\) should return App\\Models\\Agent but returns Illuminate\\Database\\Eloquent\\Model\.$#'
-			identifier: return.type
-			count: 1
-			path: app/Actions/Agents/CreateAgent.php
-
-		-
-			message: '#^Parameter \#1 \$agent of method App\\Provisioning\\PoolAllocator\:\:allocate\(\) expects App\\Models\\Agent, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Actions/Agents/CreateAgent.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$current_agent_id\.$#'
 			identifier: property.notFound
 			count: 2
@@ -179,24 +161,6 @@ parameters:
 			identifier: method.unresolvableReturnType
 			count: 1
 			path: app/Console/Commands/PlatformSet.php
-
-		-
-			message: '#^Cannot call method format\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Console/Commands/VoiceflowPoolList.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\VoiceflowProjectPoolEntry\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Console/Commands/VoiceflowPoolList.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\VoiceflowProjectPoolEntry\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: app/Console/Commands/VoiceflowPoolList.php
 
 		-
 			message: '#^Method App\\Enums\\LeadStatus\:\:board\(\) return type has no value type specified in iterable type array\.$#'
@@ -379,12 +343,6 @@ parameters:
 			path: app/Http/Controllers/DashboardController.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$currentAgent\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/KnowledgeBaseController.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$current_agent_id\.$#'
 			identifier: property.notFound
 			count: 1
@@ -439,18 +397,6 @@ parameters:
 			path: app/Http/Controllers/OnboardingController.php
 
 		-
-			message: '#^Unused App\\Http\\Controllers\\OnboardingController\:\:credentialMessages$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Http/Controllers/OnboardingController.php
-
-		-
-			message: '#^Unused App\\Http\\Controllers\\OnboardingController\:\:credentialRules$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Http/Controllers/OnboardingController.php
-
-		-
 			message: '#^Method App\\Http\\Controllers\\PublicStatsController\:\:compute\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -461,102 +407,6 @@ parameters:
 			identifier: shipmonk.deadMethod
 			count: 1
 			path: app/Http/Controllers/PublicStatsController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>voiceflow_project_id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
-			path: app/Http/Controllers/Voiceflow/EnvironmentsController.php
-
-		-
-			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 4
-			path: app/Http/Controllers/Voiceflow/OrgEventsController.php
-
-		-
-			message: '#^Result of \|\| is always false\.$#'
-			identifier: booleanOr.alwaysFalse
-			count: 2
-			path: app/Http/Controllers/Voiceflow/OrgEventsController.php
-
-		-
-			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 1
-			path: app/Http/Controllers/Voiceflow/SessionLifecycleController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Lead\:\:\$agent_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/VoiceflowController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$current_agent_id\.$#'
-			identifier: property.notFound
-			count: 4
-			path: app/Http/Controllers/VoiceflowController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 6
-			path: app/Http/Controllers/VoiceflowController.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:hasCredits\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Http/Controllers/VoiceflowController.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:planObject\(\)\.$#'
-			identifier: method.notFound
-			count: 3
-			path: app/Http/Controllers/VoiceflowController.php
-
-		-
-			message: '#^Method App\\Http\\Controllers\\VoiceflowController\:\:respond\(\) has parameter \$traces with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Controllers/VoiceflowController.php
-
-		-
-			message: '#^Parameter \$team of method App\\Billing\\CreditMeter\:\:consume\(\) expects App\\Models\\Team, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/VoiceflowController.php
-
-		-
-			message: '#^Property App\\Models\\Lead\:\:\$captured \(string\|null\) does not accept array\<mixed, mixed\>\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: app/Http/Controllers/VoiceflowController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Lead\:\:\$agent_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/VoiceflowWebhookController.php
-
-		-
-			message: '#^Property App\\Models\\Lead\:\:\$captured \(string\|null\) does not accept array\<mixed, mixed\>\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: app/Http/Controllers/VoiceflowWebhookController.php
-
-		-
-			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\LeadStatus\:\:Engaging\|App\\Enums\\LeadStatus\:\:Qualified will always evaluate to true\.$#'
-			identifier: notIdentical.alwaysTrue
-			count: 1
-			path: app/Http/Controllers/VoiceflowWebhookController.php
-
-		-
-			message: '#^Unused App\\Http\\Controllers\\VoiceflowWebhookController\:\:leadCaptured$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Http/Controllers/VoiceflowWebhookController.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$credit_balance\.$#'
@@ -675,12 +525,6 @@ parameters:
 		-
 			message: '#^Method App\\Models\\Agent\:\:transitionTo\(\) has parameter \$context with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: app/Models/Agent.php
-
-		-
-			message: '#^Unused App\\Models\\Agent\:\:hasWorkspaceApi$#'
-			identifier: shipmonk.deadMethod
 			count: 1
 			path: app/Models/Agent.php
 
@@ -913,12 +757,6 @@ parameters:
 			path: app/Models/User.php
 
 		-
-			message: '#^Method App\\Models\\VoiceflowProjectPoolEntry\:\:agent\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/VoiceflowProjectPoolEntry.php
-
-		-
 			message: '#^Unused App\\Policies\\TeamPolicy\:\:addTeamMember$#'
 			identifier: shipmonk.deadMethod
 			count: 1
@@ -979,204 +817,6 @@ parameters:
 			path: app/Services/LeadDelegator.php
 
 		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\AnalyticsClient\:\:estimateEvaluation$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/AnalyticsClient.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\AnalyticsClient\:\:queueBatchEvaluation$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/AnalyticsClient.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\AnalyticsClient\:\:transcriptStream$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/AnalyticsClient.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\AnalyticsClient\:\:updateEvaluation$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/AnalyticsClient.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\RealtimeClient\:\:createUrlDocument$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/RealtimeClient.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\RealtimeClient\:\:deleteDocument$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/RealtimeClient.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\RealtimeClient\:\:getDocument$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/RealtimeClient.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\RealtimeClient\:\:getEnvironment$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/RealtimeClient.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\RealtimeClient\:\:kbDocumentStream$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/RealtimeClient.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\RealtimeClient\:\:setTrafficSplit$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/RealtimeClient.php
-
-		-
-			message: '#^Offset ''type'' on array\{type\: non\-empty\-string, payload\?\: array\<string, mixed\>\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Services/Voiceflow/Client/RuntimeClient.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\RuntimeClient\:\:getVariables$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/RuntimeClient.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\RuntimeClient\:\:interact$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/RuntimeClient.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\RuntimeClient\:\:probe$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/RuntimeClient.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\RuntimeClient\:\:queryKnowledgeBase$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/RuntimeClient.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Client\\RuntimeClient\:\:rawSessionResponse$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Client/RuntimeClient.php
-
-		-
-			message: '#^Property App\\Services\\Voiceflow\\Client\\StreamingClient\:\:\$environment is never read$#'
-			identifier: shipmonk.deadProperty.neverRead
-			count: 1
-			path: app/Services/Voiceflow/Client/StreamingClient.php
-
-		-
-			message: '#^Property App\\Services\\Voiceflow\\Client\\StreamingClient\:\:\$projectId is never read$#'
-			identifier: shipmonk.deadProperty.neverRead
-			count: 1
-			path: app/Services/Voiceflow/Client/StreamingClient.php
-
-		-
-			message: '#^Strict comparison using \=\=\= between non\-empty\-string and '''' will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
-			count: 1
-			path: app/Services/Voiceflow/Client/StreamingClient.php
-
-		-
-			message: '#^Strict comparison using \=\=\= between non\-empty\-string and '''' will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
-			count: 1
-			path: app/Services/Voiceflow/Client/VoiceflowHttpClient.php
-
-		-
-			message: '#^Method App\\Services\\Voiceflow\\Exceptions\\RateLimitedException\:\:__construct\(\) has parameter \$context with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Services/Voiceflow/Exceptions/RateLimitedException.php
-
-		-
-			message: '#^Property App\\Services\\Voiceflow\\Exceptions\\RateLimitedException\:\:\$retryAfterSeconds is never read$#'
-			identifier: shipmonk.deadProperty.neverRead
-			count: 1
-			path: app/Services/Voiceflow/Exceptions/RateLimitedException.php
-
-		-
-			message: '#^Method App\\Services\\Voiceflow\\Exceptions\\VoiceflowException\:\:__construct\(\) has parameter \$context with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Services/Voiceflow/Exceptions/VoiceflowException.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Exceptions\\VoiceflowException\:\:toLogContext$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Exceptions/VoiceflowException.php
-
-		-
-			message: '#^Call to function is_array\(\) with array\<int, array\<string, mixed\>\> will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 1
-			path: app/Services/VoiceflowService.php
-
-		-
-			message: '#^Unused App\\Services\\VoiceflowService\:\:patchKbChunk$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/VoiceflowService.php
-
-		-
-			message: '#^Unused App\\Services\\VoiceflowService\:\:patchKbDocument$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/VoiceflowService.php
-
-		-
-			message: '#^Unused App\\Services\\VoiceflowService\:\:replaceKbDocument$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/VoiceflowService.php
-
-		-
-			message: '#^Unused App\\Services\\VoiceflowService\:\:safeUsageCount$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/VoiceflowService.php
-
-		-
-			message: '#^Unused App\\Services\\VoiceflowService\:\:uploadKbTable$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/VoiceflowService.php
-
-		-
-			message: '#^Unused Database\\Factories\\AgentFactory\:\:disabled$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: database/factories/AgentFactory.php
-
-		-
-			message: '#^Unused Database\\Factories\\AgentFactory\:\:draft$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: database/factories/AgentFactory.php
-
-		-
-			message: '#^Unused Database\\Factories\\AgentFactory\:\:unconfigured$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: database/factories/AgentFactory.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\Lead\|Illuminate\\Database\\Eloquent\\Collection\<int, App\\Models\\Lead\>\:\:\$agent_id\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1229,18 +869,6 @@ parameters:
 			identifier: shipmonk.deadMethod
 			count: 1
 			path: database/factories/UserFactory.php
-
-		-
-			message: '#^Unused Database\\Factories\\VoiceflowProjectPoolEntryFactory\:\:assigned$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: database/factories/VoiceflowProjectPoolEntryFactory.php
-
-		-
-			message: '#^Unused Database\\Factories\\VoiceflowProjectPoolEntryFactory\:\:retired$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: database/factories/VoiceflowProjectPoolEntryFactory.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'

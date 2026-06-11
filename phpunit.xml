@@ -23,11 +23,6 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <!-- The suite's baseline is the legacy Voiceflow path; native-runtime
-             tests opt in via config(['runtime.default_mode' => 'native']).
-             Keeps the local .env's RUNTIME_DEFAULT_MODE=native from leaking
-             into legacy provisioning tests. -->
-        <env name="RUNTIME_DEFAULT_MODE" value="voiceflow"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>

@@ -32,7 +32,7 @@ class OnboardingStateTest extends TestCase
         // Provisioning issues surface as banners on the dashboard, not as
         // redirect loops through a paste-keys form.
         $user = User::factory()->withPersonalTeam()->create();
-        Agent::factory()->unconfigured()->for($user->currentTeam)->create();
+        Agent::factory()->draft()->for($user->currentTeam)->create();
 
         $this->assertSame(OnboardingState::Complete, OnboardingState::for($user));
     }
@@ -42,8 +42,6 @@ class OnboardingStateTest extends TestCase
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create([
             'status' => Agent::STATUS_ACTIVE,
-            'voiceflow_api_key' => 'VF.DM.k',
-            'voiceflow_project_id' => 'p',
             'last_health_ok' => true,
         ]);
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
@@ -62,8 +60,6 @@ class OnboardingStateTest extends TestCase
         $user = User::factory()->withPersonalTeam()->create();
         Agent::factory()->for($user->currentTeam)->create([
             'status' => Agent::STATUS_ACTIVE,
-            'voiceflow_api_key' => 'VF.DM.k',
-            'voiceflow_project_id' => 'p',
         ]);
 
         $this->assertSame(OnboardingState::Complete, OnboardingState::for($user));
@@ -87,11 +83,8 @@ class OnboardingStateTest extends TestCase
         $agent = Agent::factory()->for($user->currentTeam)->create([
             'mode' => Agent::MODE_MANAGED,
             'status' => Agent::STATUS_ACTIVE,
-            'voiceflow_environment' => 'env-xyz',
             // Intentionally null — simulates the broken state we used to
             // bounce through onboarding.connect. Now: status=active wins.
-            'voiceflow_api_key' => null,
-            'voiceflow_project_id' => null,
         ]);
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
 
@@ -107,9 +100,6 @@ class OnboardingStateTest extends TestCase
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->draft()->for($user->currentTeam)->create([
             'mode' => Agent::MODE_MANAGED,
-            'voiceflow_environment' => 'env-broken',
-            'voiceflow_api_key' => null,
-            'voiceflow_project_id' => null,
         ]);
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
 

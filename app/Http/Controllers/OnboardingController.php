@@ -13,17 +13,9 @@ use Inertia\Response;
 /**
  * The (now single-step) onboarding wizard.
  *
- * Phase 14 collapsed the wizard from 3 steps (intro → connect → done)
- * to 2 (intro → done) when BYOK was removed from the product surface.
- * The wizard is now always managed: user clicks "Set up my agent",
- * CreateAgent allocates from the Voiceflow project pool, marks the
- * agent active, redirects to Done.
- *
- * The dormant pieces (credentialRules, credentialMessages,
- * UpdateAgentCredentials action) stay because ops uses them via
- * tinker for one-off Custom-tier BYOK setups. They're not reachable
- * via any user-facing route — the Connect + saveCredentials methods
- * were deleted in Phase 14.
+ * Two-step wizard (intro → done): the user clicks "Set up my agent",
+ * CreateAgent provisions a native-runtime agent instantly (nothing
+ * external to allocate), redirects to Done.
  */
 class OnboardingController extends Controller
 {
@@ -106,42 +98,6 @@ class OnboardingController extends Controller
                 'slug' => $agent->slug,
             ],
         ]);
-    }
-
-    /**
-     * Voiceflow credential validation, shared with AgentController so the
-     * (now ops-only) BYOK path enforces identical formats. Strict regexes
-     * catch the "I pasted my email by accident" class of error before we
-     * even round-trip Voiceflow.
-     *
-     * Kept public + static even though the only call site is the dormant
-     * BYOK update path — ops calls it from tinker.
-     *
-     * @return array<string, array<int, string>>
-     */
-    public static function credentialRules(bool $required): array
-    {
-        $base = $required ? ['required'] : ['nullable'];
-
-        return [
-            'voiceflow_api_key' => array_merge($base, ['string', 'max:255', 'regex:/^VF\.DM\.[A-Za-z0-9]+\.[A-Za-z0-9]+$/']),
-            'voiceflow_project_id' => array_merge($base, ['string', 'max:255', 'regex:/^[a-f0-9]{24}$/i']),
-            'voiceflow_environment' => ['nullable', 'string', 'max:64', 'regex:/^[A-Za-z0-9_\-]{2,32}$/'],
-            'voiceflow_workspace_api_key' => ['nullable', 'string', 'max:255', 'regex:/^VF\..+/'],
-        ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public static function credentialMessages(): array
-    {
-        return [
-            'voiceflow_api_key.regex' => 'API key should look like VF.DM.xxxxxxxx.yyyy (Voiceflow Dialog Manager key).',
-            'voiceflow_project_id.regex' => 'Project ID should be a 24-character hex string from your Voiceflow URL (e.g. 64f8a1b2c3d4e5f6a7b8c9d0).',
-            'voiceflow_environment.regex' => 'Environment should be a short alphanumeric label (e.g. main, development).',
-            'voiceflow_workspace_api_key.regex' => 'Workspace key should start with VF. (it is the broader workspace token, not the DM key).',
-        ];
     }
 
     /**

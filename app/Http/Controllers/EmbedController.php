@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
 /**
  * Public chat embed: a JS snippet customers paste into their own website
  * → a floating button → an iframe that opens the chat → back to our
- * backend via the same agent's Voiceflow project.
+ * backend through the native runtime.
  *
  * Endpoints are unauthenticated (the JS runs on someone else's site).
  * Authorization is per-agent-slug: anyone with the slug can embed,
@@ -27,7 +27,7 @@ use Illuminate\Support\Str;
  *
  * Visitor identity: a 30-day cookie scoped to the embed flow. The
  * visitor doesn't have a Flowstack account; the cookie is just a
- * stable user_id for Voiceflow so the conversation has continuity.
+ * stable user_id so the conversation has continuity.
  */
 class EmbedController extends Controller
 {
@@ -90,7 +90,7 @@ class EmbedController extends Controller
     /**
      * POST /embed/{slug}/launch
      *
-     * Starts a Voiceflow session for the embedded visitor. Returns the
+     * Starts an engine session for the embedded visitor. Returns the
      * welcome traces from the agent. Visitor ID lives in a cookie so
      * subsequent interact() calls thread the same session.
      */
@@ -110,10 +110,8 @@ class EmbedController extends Controller
             $visitorId = 'embed-'.Str::random(28);
         }
 
-        // Routed through the Runtime contract — the binding (AppServiceProvider)
-        // returns RuntimeDispatcher, which picks Voiceflow or native engine
-        // based on agent.runtime_mode (native is the default for new agents;
-        // legacy agents stay on the Voiceflow adapter until migrated).
+        // Routed through the Runtime contract (AppServiceProvider binds
+        // the native engine).
         try {
             $traces = $this->runtime->launch($agent, $visitorId);
         } catch (RuntimeException $e) {
@@ -139,7 +137,7 @@ class EmbedController extends Controller
     /**
      * POST /embed/{slug}/interact
      *
-     * Sends a visitor message to Voiceflow + returns the agent's traces.
+     * Sends a visitor message to the engine + returns the agent's traces.
      * Consumes credits from the agent's team.
      */
     public function interact(string $slug, Request $request): JsonResponse

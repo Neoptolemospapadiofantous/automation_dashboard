@@ -18,10 +18,8 @@ class ConversationTest extends TestCase
     {
         parent::setUp();
 
-        config()->set('services.voiceflow.api_key', 'VF.DM.test-key');
-        config()->set('services.voiceflow.environment', 'main');
-        config()->set('services.voiceflow.project_id', 'proj-123');
         config()->set('scout.driver', null); // don't hit a real search engine in tests
+        config()->set('runtime.llm.anthropic.api_key', 'sk-test');
     }
 
     private function user(): User
@@ -60,14 +58,17 @@ class ConversationTest extends TestCase
     public function test_interact_persists_user_and_agent_messages(): void
     {
         Http::fake([
-            'general-runtime.voiceflow.com/v4/project/*/session' => Http::response(['sessionKey' => 'sess-abc']),
-            'general-runtime.voiceflow.com/v4/interact' => Http::response(['traces' => [
-                ['type' => 'text', 'payload' => ['message' => 'Nice to meet you!']],
-            ]]),
-            'general-runtime.voiceflow.com/v4/project/*/state' => Http::response(['variables' => []]),
+            'api.anthropic.com/*' => Http::response([
+                'content' => [['type' => 'text', 'text' => 'Nice to meet you!']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 5, 'output_tokens' => 5],
+            ]),
         ]);
 
         $user = $this->user();
+        $agent = Agent::factory()->for($user->currentTeam)->create();
+        $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
+        $user = $user->fresh();
 
         $response = $this->actingAs($user)->postJson(route('chat.interact'), [
             'user_id' => 'web-42',

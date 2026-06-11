@@ -1,16 +1,15 @@
 # Native runtime — the Flowstack-owned conversational engine
 
-> Status: **default engine for new agents** since branch `runtime-native-l1`
-> (`RUNTIME_DEFAULT_MODE=native`). Voiceflow remains as a legacy adapter for
-> existing `runtime_mode='voiceflow'` agents only.
+> Status: **the only engine.** The entire Voiceflow surface (services,
+> adapter, pool, webhooks, Environments/Evaluations pages, env vars,
+> schema) was deleted — git history keeps it recoverable.
 
 ## Architecture
 
 ```
 Controller (chat / embed)                    bills credits AROUND the engine
    └─ Runtime contract  ←──────────────  app(Runtime::class)
-        └─ RuntimeDispatcher             routes by agents.runtime_mode
-             ├─ AgentRuntime  (native)   launch / sendText / streamText / endSession / health
+        └─ AgentRuntime (bound singleton) launch / sendText / streamText / endSession / health
              │    ├─ SessionManager      runtime_sessions: state + variables + LLM history
              │    ├─ FlowExecutor        the loop: state → system prompt (+auto-RAG) →
              │    │                      Anthropic complete → tool dispatch → transition
@@ -19,7 +18,6 @@ Controller (chat / embed)                    bills credits AROUND the engine
              │    │    │                    request_handoff · end_session
              │    │    └─ KnowledgeBase     chunk → embed (OpenAI) → cosine top-k
              │    └─ LeadCaptureFlow     greeting → discovery → wrapup → ended
-             └─ VoiceflowAdapter (legacy) wraps VoiceflowService; delete after migration
 ```
 
 Key invariants:

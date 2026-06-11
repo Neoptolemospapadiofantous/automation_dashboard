@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Conversation;
 use App\Models\Lead;
 use App\Models\Message;
-use App\Services\VoiceflowService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -81,31 +80,17 @@ class ConversationController extends Controller
     }
 
     /**
-     * Force-end the upstream Voiceflow transcript (does NOT delete locally).
-     * Used to recover stuck sessions visible in the UI but apparently still
-     * "active" upstream. Returns a redirect back so the page reloads with
-     * an updated `ended_at`.
+     * Force-end a conversation (marks it ended locally; for native-runtime
+     * sessions the engine's flow_state is the source of truth and the next
+     * launch resets it anyway).
      */
     public function endUpstream(
         Request $request,
         Conversation $conversation,
-        VoiceflowService $voiceflow,
     ): RedirectResponse {
         $team = $request->user()->currentTeam;
         abort_unless($conversation->team_id === $team->id, 403);
         abort_unless($conversation->agent_id === $team->current_agent_id, 404);
-
-        if ($conversation->voiceflow_transcript_id === null) {
-            return back()->withErrors(['transcript' => 'This conversation has no upstream transcript yet.']);
-        }
-
-        try {
-            $voiceflow->endTranscript($conversation->voiceflow_transcript_id);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return back()->withErrors(['transcript' => 'Voiceflow rejected the end request — see logs.']);
-        }
 
         $conversation->forceFill(['ended_at' => now(), 'status' => 'ended'])->save();
 
@@ -113,27 +98,15 @@ class ConversationController extends Controller
     }
 
     /**
-     * GDPR-grade delete: remove the upstream Voiceflow transcript AND drop
-     * the local conversation + messages. Irreversible.
+     * GDPR-grade delete: drop the conversation + its messages. Irreversible.
      */
     public function deleteUpstream(
         Request $request,
         Conversation $conversation,
-        VoiceflowService $voiceflow,
     ): RedirectResponse {
         $team = $request->user()->currentTeam;
         abort_unless($conversation->team_id === $team->id, 403);
         abort_unless($conversation->agent_id === $team->current_agent_id, 404);
-
-        if ($conversation->voiceflow_transcript_id !== null) {
-            try {
-                $voiceflow->deleteTranscript($conversation->voiceflow_transcript_id);
-            } catch (\Throwable $e) {
-                report($e);
-
-                return back()->withErrors(['transcript' => 'Voiceflow rejected the delete request — see logs.']);
-            }
-        }
 
         $conversation->messages()->delete();
         $conversation->delete();

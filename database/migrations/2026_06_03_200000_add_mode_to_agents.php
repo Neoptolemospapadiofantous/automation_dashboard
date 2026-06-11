@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Agent;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -23,7 +22,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('agents', function (Blueprint $table) {
-            $table->string('mode')->default(Agent::MODE_BYOK)->after('status');
+            // Historical default frozen as a literal — migrations must never
+            // depend on model constants (the constant was removed when BYOK
+            // left the codebase).
+            $table->string('mode')->default('byok')->after('status');
         });
     }
 

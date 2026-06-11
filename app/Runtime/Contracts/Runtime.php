@@ -9,21 +9,10 @@ use Generator;
  * The agent runtime contract — what a "conversational engine" must do to
  * power a Flowstack agent.
  *
- * Two implementations live behind this:
- *
- *   1. VoiceflowRuntime (adapter) — wraps the existing VoiceflowService so
- *      Voiceflow-backed agents can continue to work unchanged while the
- *      native runtime is rolled out behind a per-agent feature flag.
- *
- *   2. NativeRuntime — our own implementation (AgentRuntime + Flow + LLM +
- *      Tools + KB). Built in Phases 2-7. Switched on per-agent via
- *      agents.runtime_mode='native'.
- *
- * Method signatures mirror what VoiceflowService already exposes so that
- * controllers + the embed flow can be swapped to depend on this contract
- * instead of the concrete VoiceflowService class. Once that's done, the
- * "which engine" decision moves entirely into a service provider binding
- * based on the agent's runtime_mode column.
+ * AgentRuntime (the native engine) is the only implementation today.
+ * The contract is kept as the seam for any future engine — bind a
+ * dispatcher again the day a second engine exists; controllers + the
+ * embed flow only ever see this interface.
  *
  * @api
  */

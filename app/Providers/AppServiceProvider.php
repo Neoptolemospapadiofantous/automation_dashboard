@@ -2,17 +2,16 @@
 
 namespace App\Providers;
 
+use App\Runtime\AgentRuntime;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\Contracts\Runtime;
 use App\Runtime\Knowledge\KnowledgeBase;
-use App\Runtime\RuntimeDispatcher;
 use App\Runtime\Tools\CaptureLeadTool;
 use App\Runtime\Tools\EndSessionTool;
 use App\Runtime\Tools\QueryKnowledgeTool;
 use App\Runtime\Tools\RequestHandoffTool;
 use App\Runtime\Tools\SetVariableTool;
 use App\Runtime\Tools\ToolRegistry;
-use App\Services\VoiceflowService;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\ServiceProvider;
@@ -24,31 +23,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Resolve VoiceflowService per-request, scoped to the current team's
-        // active Agent. Anything that asks for a VoiceflowService through DI
-        // (controllers, recorders, etc.) automatically gets the right tenant's
-        // credentials with no per-callsite plumbing.
-        //
-        // Fallback path: when there's no authenticated user OR the user's team
-        // has no current agent (background jobs, artisan commands run pre-
-        // onboarding), construct from .env config so the service stays usable.
-        // Tests that need a specific tenant create an Agent fixture and the
-        // binding picks it up automatically.
-        $this->app->scoped(VoiceflowService::class, function ($app) {
-            $agent = $app['auth']->user()?->currentTeam?->currentAgent;
-
-            return $agent
-                ? VoiceflowService::forAgent($agent)
-                : new VoiceflowService;
-        });
-
-        // Runtime contract → RuntimeDispatcher. Controllers + the embed
-        // flow depend on the Runtime interface (Phase 8 wires that in);
-        // the dispatcher picks the right engine per agent based on
-        // agents.runtime_mode. Defaults to Voiceflow for backward
-        // compatibility — only agents explicitly flipped to 'native'
-        // touch the new code path.
-        $this->app->bind(Runtime::class, RuntimeDispatcher::class);
+        // Runtime contract → the native engine. AgentRuntime is the only
+        // engine since the Voiceflow surface was deleted; the contract
+        // stays as the seam for any future engine (bind a dispatcher
+        // again the day a second engine exists).
+        $this->app->singleton(Runtime::class, AgentRuntime::class);
 
         // Native runtime wiring: the RAG store and the tool registry with
         // every built-in tool registered. Both singletons — stateless

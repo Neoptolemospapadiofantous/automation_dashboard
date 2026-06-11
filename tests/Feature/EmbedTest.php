@@ -55,11 +55,13 @@ class EmbedTest extends TestCase
     {
         $agent = $this->makeAgent('active');
 
-        // Fake Voiceflow's HTTP responses at the network layer.
+        // Fake the LLM at the network layer.
+        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
         Http::fake([
-            'general-runtime.voiceflow.com/*/session*' => Http::response(['sessionKey' => 'sk_test'], 200),
-            'general-runtime.voiceflow.com/v4/interact' => Http::response([
-                ['type' => 'text', 'payload' => ['message' => 'Welcome!']],
+            'api.anthropic.com/*' => Http::response([
+                'content' => [['type' => 'text', 'text' => 'Welcome!']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 5, 'output_tokens' => 5],
             ], 200),
         ]);
 
@@ -102,10 +104,12 @@ class EmbedTest extends TestCase
         $agent = $this->makeAgent('active');
         $agent->team->forceFill(['credit_balance' => 100])->save();
 
+        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
         Http::fake([
-            'general-runtime.voiceflow.com/*/session*' => Http::response(['sessionKey' => 'sk_test'], 200),
-            'general-runtime.voiceflow.com/v4/interact' => Http::response([
-                ['type' => 'text', 'payload' => ['message' => 'Got it!']],
+            'api.anthropic.com/*' => Http::response([
+                'content' => [['type' => 'text', 'text' => 'Got it!']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 5, 'output_tokens' => 5],
             ], 200),
         ]);
 
@@ -126,9 +130,6 @@ class EmbedTest extends TestCase
 
         return Agent::factory()->for($team)->create([
             'status' => $status,
-            'voiceflow_api_key' => 'VF.DM.test',
-            'voiceflow_project_id' => 'proj-test',
-            'voiceflow_environment' => 'main',
         ]);
     }
 }

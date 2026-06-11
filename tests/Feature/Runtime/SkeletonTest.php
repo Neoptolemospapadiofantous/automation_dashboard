@@ -103,18 +103,18 @@ class SkeletonTest extends TestCase
         ]);
     }
 
-    public function test_agent_defaults_to_voiceflow_runtime_mode(): void
+    public function test_agent_defaults_to_native_runtime_mode(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create();
 
-        $this->assertSame('voiceflow', $agent->fresh()->runtime_mode);
+        $this->assertSame('native', $agent->fresh()->runtime_mode);
     }
 
     public function test_agent_constants_match_persisted_runtime_mode_values(): void
     {
-        // 'voiceflow' is the implicit default (DB default + dispatcher
-        // match-default), so only the native constant exists.
+        // 'native' is the only engine; the constant exists for call-site
+        // readability.
         $this->assertSame('native', Agent::RUNTIME_NATIVE);
     }
 
@@ -125,13 +125,7 @@ class SkeletonTest extends TestCase
 
         $runtime = app(AgentRuntime::class);
 
-        // Agent still on voiceflow mode — health should explain why native won't run.
-        $h = $runtime->health($agent->fresh());
-        $this->assertFalse($h['ok']);
-        $this->assertStringContainsString('voiceflow', $h['reason']);
-
-        // Flip to native, no LLM key configured.
-        $agent->forceFill(['runtime_mode' => 'native'])->save();
+        // No LLM key configured.
         config(['runtime.llm.anthropic.api_key' => '', 'runtime.embeddings.openai_api_key' => '']);
         $h = $runtime->health($agent->fresh());
         $this->assertFalse($h['ok']);

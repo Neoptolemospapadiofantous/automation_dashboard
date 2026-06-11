@@ -18,10 +18,6 @@ const page = usePage();
 const notifications = computed(() => page.props.notifications ?? []);
 const currentAgent = computed(() => page.props.currentAgent ?? null);
 const teamAgents = computed(() => page.props.teamAgents ?? []);
-// Voiceflow-only surfaces (Evaluations / Environments / Webhooks) are
-// hidden when the current agent runs on the native engine — they call
-// Voiceflow APIs a native agent does not have.
-const showVoiceflowSurfaces = computed(() => page.props.engine !== "native");
 const showMobileNav = ref(false);
 
 const markNotificationsRead = () => {
@@ -178,29 +174,11 @@ const handleMobileNavClick = (event) => {
                                 </template>
                                 Agents
                             </SidebarLink>
-                            <SidebarLink v-if="showVoiceflowSurfaces" :href="route('agents.evaluations.index')" active-pattern="agents.evaluations.*">
-                                <template #icon>
-                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                </template>
-                                Evaluations
-                            </SidebarLink>
-                            <SidebarLink v-if="showVoiceflowSurfaces" :href="route('agents.environments.index')" active-pattern="agents.environments.*">
-                                <template #icon>
-                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"/></svg>
-                                </template>
-                                Environments
-                            </SidebarLink>
                             <SidebarLink :href="route('install.index')" active-pattern="install.*">
                                 <template #icon>
                                     <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
                                 </template>
                                 Install
-                            </SidebarLink>
-                            <SidebarLink v-if="showVoiceflowSurfaces" :href="route('system.webhooks.index')" active-pattern="system.webhooks.*">
-                                <template #icon>
-                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v2.25A2.25 2.25 0 006 10.5zm0 9.75h2.25A2.25 2.25 0 0010.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25V18A2.25 2.25 0 006 20.25zm9.75-9.75H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6v2.25a2.25 2.25 0 002.25 2.25z"/></svg>
-                                </template>
-                                Webhooks
                             </SidebarLink>
                             <SidebarLink :href="route('billing.index')" active-pattern="billing.*">
                                 <template #icon>
@@ -443,8 +421,6 @@ const handleMobileNavClick = (event) => {
                             <div class="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Workspace</div>
                             <div class="space-y-0.5">
                                 <SidebarLink :href="route('agents.index')" :active-pattern="['agents.index', 'agents.show']">Agents</SidebarLink>
-                                <SidebarLink v-if="showVoiceflowSurfaces" :href="route('agents.evaluations.index')" active-pattern="agents.evaluations.*">Evaluations</SidebarLink>
-                                <SidebarLink v-if="showVoiceflowSurfaces" :href="route('agents.environments.index')" active-pattern="agents.environments.*">Environments</SidebarLink>
                                 <SidebarLink :href="route('install.index')" active-pattern="install.*">Install</SidebarLink>
                                 <SidebarLink :href="route('billing.index')" active-pattern="billing.*">Billing</SidebarLink>
                             </div>

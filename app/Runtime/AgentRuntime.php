@@ -12,7 +12,7 @@ use App\Runtime\Session\SessionManager;
 use Generator;
 
 /**
- * Flowstack's native conversational engine — the Voiceflow replacement.
+ * Flowstack's native conversational engine.
  *
  * Composition: SessionManager owns per-visitor state, FlowExecutor runs
  * the LLM/tool loop against the agent's Flow (LeadCaptureFlow for every
@@ -20,7 +20,7 @@ use Generator;
  * land). Credits are charged by the CONTROLLERS around these calls —
  * this class knows nothing about billing.
  *
- * Selected per-agent by RuntimeDispatcher when runtime_mode='native'.
+ * Bound to the Runtime contract in AppServiceProvider — the only engine.
  */
 class AgentRuntime implements Runtime
 {
@@ -31,8 +31,8 @@ class AgentRuntime implements Runtime
     ) {}
 
     /**
-     * Reset-and-greet, matching Voiceflow's launch semantics (the embed
-     * iframe calls launch on every open; the greeting replays).
+     * Reset-and-greet (the embed iframe calls launch on every open; the
+     * greeting replays from a fresh session).
      */
     public function launch(Agent $agent, string $visitorId): array
     {
@@ -79,14 +79,6 @@ class AgentRuntime implements Runtime
 
     public function health(Agent $agent): array
     {
-        if ($agent->getAttribute('runtime_mode') !== Agent::RUNTIME_NATIVE) {
-            return [
-                'ok' => false,
-                'configured' => false,
-                'reason' => "Agent is on runtime_mode='".(string) $agent->getAttribute('runtime_mode')."'; native runtime won't be invoked.",
-            ];
-        }
-
         $hasLlmKey = (string) config('runtime.llm.anthropic.api_key') !== '';
         $hasEmbeddingKey = (string) config('runtime.embeddings.openai_api_key') !== '';
 

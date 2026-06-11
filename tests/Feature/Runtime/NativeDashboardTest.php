@@ -5,7 +5,6 @@ namespace Tests\Feature\Runtime;
 use App\Actions\Agents\CreateAgent;
 use App\Models\Agent;
 use App\Models\User;
-use App\Models\VoiceflowProjectPoolEntry;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\Models\KbDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -181,10 +180,8 @@ class NativeDashboardTest extends TestCase
 
     // ── Signup provisioning ─────────────────────────────────────────────────
 
-    public function test_create_agent_defaults_to_native_when_configured(): void
+    public function test_create_agent_is_always_native(): void
     {
-        config(['runtime.default_mode' => 'native']);
-
         $user = User::factory()->withPersonalTeam()->create();
 
         $agent = (new CreateAgent)->execute($user->currentTeam, 'My native agent');
@@ -192,20 +189,6 @@ class NativeDashboardTest extends TestCase
         $this->assertSame(Agent::RUNTIME_NATIVE, $agent->runtime_mode);
         $this->assertSame(Agent::STATUS_ACTIVE, $agent->status);
         $this->assertSame(Agent::MODE_MANAGED, $agent->mode);
-        $this->assertNull($agent->voiceflow_project_id);
-        // No pool involvement whatsoever.
-        $this->assertSame(0, VoiceflowProjectPoolEntry::count());
-    }
-
-    public function test_create_agent_keeps_voiceflow_path_when_mode_voiceflow(): void
-    {
-        config(['runtime.default_mode' => 'voiceflow', 'services.voiceflow.managed.enabled' => false]);
-
-        $user = User::factory()->withPersonalTeam()->create();
-        $agent = (new CreateAgent)->execute($user->currentTeam, 'Legacy agent');
-
-        $this->assertSame('voiceflow', $agent->runtime_mode);
-        $this->assertSame(Agent::STATUS_DRAFT, $agent->status); // BYOK draft path
     }
 
     // ── fixtures ─────────────────────────────────────────────────────────────

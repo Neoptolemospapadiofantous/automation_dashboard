@@ -86,20 +86,6 @@ class HandleInertiaRequests extends Middleware
             //
             // Custom plan exposes is_custom: true + credits_total: null.
             // Credits are negotiated per engagement, no fixed period grant.
-            // Which conversational engine serves the current agent. The
-            // sidebar uses this to hide Voiceflow-only surfaces
-            // (Evaluations / Environments / Webhooks) for native agents —
-            // those pages call Voiceflow APIs that native agents don't have.
-            'engine' => function () use ($request) {
-                $team = $request->user()?->currentTeam;
-                if (! $team instanceof Team) {
-                    return null;
-                }
-                $agent = $team->currentAgent;
-
-                return $agent instanceof Agent ? $agent->getAttribute('runtime_mode') : null;
-            },
-
             'billing' => fn () => $request->user()?->currentTeam
                 ? (function () use ($request) {
                     $team = $request->user()->currentTeam;

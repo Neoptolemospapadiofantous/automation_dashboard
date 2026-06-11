@@ -20,14 +20,15 @@ class BillingCreditMeterTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function fakeV4(): void
+    private function fakeLlm(): void
     {
+        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
         Http::fake([
-            'general-runtime.voiceflow.com/v4/project/*/session' => Http::response(['sessionKey' => 's'], 200),
-            'general-runtime.voiceflow.com/v4/interact' => Http::response(['traces' => [
-                ['type' => 'text', 'payload' => ['message' => 'Hi!']],
-            ]], 200),
-            'general-runtime.voiceflow.com/state/user/*' => Http::response(['variables' => []], 200),
+            'api.anthropic.com/*' => Http::response([
+                'content' => [['type' => 'text', 'text' => 'Hi!']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 5, 'output_tokens' => 5],
+            ], 200),
         ]);
     }
 
@@ -57,11 +58,9 @@ class BillingCreditMeterTest extends TestCase
 
     public function test_interact_endpoint_returns_402_when_team_is_dry(): void
     {
-        $this->fakeV4();
+        $this->fakeLlm();
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create([
-            'voiceflow_api_key' => 'VF.DM.k',
-            'voiceflow_project_id' => 'p',
         ]);
         $user->currentTeam->forceFill([
             'current_agent_id' => $agent->id,
@@ -76,11 +75,9 @@ class BillingCreditMeterTest extends TestCase
 
     public function test_interact_decrements_credits_per_message(): void
     {
-        $this->fakeV4();
+        $this->fakeLlm();
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create([
-            'voiceflow_api_key' => 'VF.DM.k',
-            'voiceflow_project_id' => 'p',
         ]);
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
         $start = $user->currentTeam->credit_balance;

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AgentAnalyticsController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardTickController;
@@ -14,10 +15,6 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SubscribeController;
-use App\Http\Controllers\Voiceflow\EnvironmentsController;
-use App\Http\Controllers\Voiceflow\EvaluationsController;
-use App\Http\Controllers\VoiceflowController;
-use App\Http\Controllers\WebhookEventsController;
 use App\Http\Middleware\RequireAgent;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -38,15 +35,11 @@ Route::middleware([
     'verified',
     RequireAgent::class,
 ])->group(function () {
-    // Phase 13 — Agent CRUD + onboarding wizard. Both bypass RequireAgent
-    // (the middleware whitelists their route name prefixes) so the user can
-    // reach them even when no active agent exists yet.
-    //
-    // Phase 14: BYOK was removed from the product surface — the wizard is
-    // now a single managed-only flow (intro → start → done). The Connect
-    // step (paste keys / saveCredentials) is gone. The controller still
-    // ships the credential-validation rules + UpdateAgentCredentials action
-    // because ops uses them via tinker for one-off Custom-tier BYOK setups.
+    // Agent CRUD + onboarding wizard. Both bypass RequireAgent (the
+    // middleware whitelists their route name prefixes) so the user can
+    // reach them even when no active agent exists yet. The wizard is a
+    // single managed flow (intro → start → done) — agents provision on
+    // the native runtime instantly, nothing to paste.
     Route::get('/onboarding', [OnboardingController::class, 'intro'])->name('onboarding.intro');
     Route::post('/onboarding/start', [OnboardingController::class, 'startAgent'])
         ->middleware('throttle:5,1')
@@ -57,46 +50,6 @@ Route::middleware([
     Route::post('/agents', [AgentController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('agents.store');
-
-    // Specific /agents/{evaluations,environments} routes MUST come before the
-    // wildcard /agents/{agent} below — Laravel matches by registration order
-    // and the wildcard's slug binding would otherwise swallow these and 404
-    // (no agent has slug 'evaluations' or 'environments').
-    Route::get('/agents/evaluations', [EvaluationsController::class, 'index'])
-        ->name('agents.evaluations.index');
-    Route::post('/agents/evaluations', [EvaluationsController::class, 'store'])
-        ->middleware('throttle:30,1')
-        ->name('agents.evaluations.store');
-    Route::get('/agents/evaluations/{evaluationId}', [EvaluationsController::class, 'show'])
-        ->where('evaluationId', '[A-Za-z0-9_-]+')
-        ->name('agents.evaluations.show');
-    Route::post('/agents/evaluations/{evaluationId}/run', [EvaluationsController::class, 'run'])
-        ->where('evaluationId', '[A-Za-z0-9_-]+')
-        ->middleware('throttle:30,1')
-        ->name('agents.evaluations.run');
-    Route::delete('/agents/evaluations/{evaluationId}', [EvaluationsController::class, 'destroy'])
-        ->where('evaluationId', '[A-Za-z0-9_-]+')
-        ->middleware('throttle:30,1')
-        ->name('agents.evaluations.destroy');
-
-    Route::get('/agents/environments', [EnvironmentsController::class, 'index'])
-        ->name('agents.environments.index');
-    Route::post('/agents/environments/clone', [EnvironmentsController::class, 'clone'])
-        ->middleware('throttle:10,1')
-        ->name('agents.environments.clone');
-    Route::post('/agents/environments/{idOrAlias}/publish', [EnvironmentsController::class, 'publish'])
-        ->where('idOrAlias', '[A-Za-z0-9_-]+')
-        ->middleware('throttle:10,1')
-        ->name('agents.environments.publish');
-    Route::delete('/agents/environments/{environmentId}', [EnvironmentsController::class, 'destroy'])
-        ->where('environmentId', '[A-Za-z0-9_-]+')
-        ->middleware('throttle:10,1')
-        ->name('agents.environments.destroy');
-    Route::get('/agents/environments/{alias}/export', [EnvironmentsController::class, 'export'])
-        ->where('alias', '[A-Za-z0-9_-]+')
-        ->name('agents.environments.export');
-    Route::get('/agents/environments/traffic.json', [EnvironmentsController::class, 'traffic'])
-        ->name('agents.environments.traffic');
 
     // Per-agent analytics. Slug-bound. Lives at /agents/{slug}/analytics so it
     // sits naturally alongside agents.show; must come BEFORE the wildcard
@@ -111,9 +64,6 @@ Route::middleware([
     Route::delete('/agents/{agent}', [AgentController::class, 'destroy'])
         ->middleware('throttle:10,1')
         ->name('agents.destroy');
-    Route::post('/agents/{agent}/rotate-secret', [AgentController::class, 'rotateSecret'])
-        ->middleware('throttle:5,1')
-        ->name('agents.rotate-secret');
     Route::post('/agents/{agent}/health', [AgentController::class, 'health'])
         ->middleware('throttle:30,1')
         ->name('agents.health');
@@ -178,27 +128,23 @@ Route::middleware([
         ->middleware('throttle:30,1')
         ->name('leads.destroy');
 
-    // Phase 5 chat panel (server-proxied Voiceflow Dialog Manager API).
-    // Multi-tenant: `configured` reflects THIS user's current agent, not the
-    // app-wide .env fallback. A SaaS user whose own agent is healthy sees the
-    // chat panel even if the deployment has no global VOICEFLOW_API_KEY.
-    //
+    // Chat panel (server-proxied native runtime).
     // Named `chat.*` (not `agent.*`) to avoid collision with the `agents.*`
     // CRUD routes — the one-letter difference between `agent.index` and
     // `agents.index` was a constant footgun.
     Route::get('/chat', fn () => Inertia::render('Chat/Index', [
         'configured' => (bool) request()->user()?->currentTeam?->currentAgent?->isConfigured(),
     ]))->name('chat.index');
-    Route::post('/chat/launch', [VoiceflowController::class, 'launch'])
+    Route::post('/chat/launch', [ChatController::class, 'launch'])
         ->middleware('throttle:30,1')
         ->name('chat.launch');
-    Route::post('/chat/interact', [VoiceflowController::class, 'interact'])
+    Route::post('/chat/interact', [ChatController::class, 'interact'])
         ->middleware('throttle:60,1')
         ->name('chat.interact');
-    Route::post('/chat/interact/stream', [VoiceflowController::class, 'interactStream'])
+    Route::post('/chat/interact/stream', [ChatController::class, 'interactStream'])
         ->middleware('throttle:60,1')
         ->name('chat.interact-stream');
-    Route::get('/chat/health', [VoiceflowController::class, 'health'])->name('chat.health');
+    Route::get('/chat/health', [ChatController::class, 'health'])->name('chat.health');
 
     // Phase 6 conversation storage, history & search.
     Route::get('/conversations', [ConversationController::class, 'index'])->name('conversations.index');
@@ -222,12 +168,7 @@ Route::middleware([
     Route::get('/install', [InstallController::class, 'index'])
         ->name('install.index');
 
-    // Webhook event admin viewer — last 100 inbound Voiceflow webhook
-    // events for this team. Read-only; filter by event type + state.
-    Route::get('/system/webhooks', [WebhookEventsController::class, 'index'])
-        ->name('system.webhooks.index');
-
-    // Phase 12 Knowledge Base (Voiceflow KB API).
+    // Knowledge Base (native runtime RAG store).
     Route::get('/knowledge', [KnowledgeBaseController::class, 'index'])->name('knowledge.index');
     Route::post('/knowledge/url', [KnowledgeBaseController::class, 'storeUrl'])
         ->middleware('throttle:30,1')

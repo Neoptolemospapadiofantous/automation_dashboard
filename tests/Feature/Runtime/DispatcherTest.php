@@ -4,29 +4,27 @@ namespace Tests\Feature\Runtime;
 
 use App\Models\Agent;
 use App\Models\User;
+use App\Runtime\AgentRuntime;
 use App\Runtime\Contracts\Runtime;
-use App\Runtime\RuntimeDispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
- * Verifies the dispatcher routes to the right engine based on
- * agents.runtime_mode: native agents reach the native engine (proven by
- * a faked Anthropic round-trip), everything else stays on Voiceflow.
+ * The Runtime contract resolves to the native engine — the only engine
+ * since the Voiceflow surface was deleted. The contract stays as the
+ * seam for any future engine.
  */
 class DispatcherTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_runtime_contract_resolves_to_dispatcher(): void
+    public function test_runtime_contract_resolves_to_the_native_engine(): void
     {
-        $resolved = app(Runtime::class);
-
-        $this->assertInstanceOf(RuntimeDispatcher::class, $resolved);
+        $this->assertInstanceOf(AgentRuntime::class, app(Runtime::class));
     }
 
-    public function test_native_agent_routes_to_native_runtime(): void
+    public function test_contract_serves_a_conversation_end_to_end(): void
     {
         config(['runtime.llm.anthropic.api_key' => 'sk-test']);
         Http::fake([
@@ -38,19 +36,15 @@ class DispatcherTest extends TestCase
         ]);
 
         $user = User::factory()->withPersonalTeam()->create();
-        $agent = Agent::factory()->for($user->currentTeam)->create([
-            'runtime_mode' => 'native',
-        ]);
+        $agent = Agent::factory()->for($user->currentTeam)->create();
 
-        $traces = app(RuntimeDispatcher::class)->launch($agent, 'visitor-1');
+        $traces = app(Runtime::class)->launch($agent, 'visitor-1');
 
         $this->assertSame('text', $traces[0]['type']);
         $this->assertStringContainsString('What brings you here', $traces[0]['payload']['message']);
-        // And nothing went anywhere near Voiceflow.
-        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'voiceflow.com'));
     }
 
-    public function test_native_agent_health_reports_engine_native(): void
+    public function test_health_reports_engine_native(): void
     {
         config([
             'runtime.llm.anthropic.api_key' => 'sk-test',
@@ -58,27 +52,11 @@ class DispatcherTest extends TestCase
         ]);
 
         $user = User::factory()->withPersonalTeam()->create();
-        $agent = Agent::factory()->for($user->currentTeam)->create([
-            'runtime_mode' => 'native',
-        ]);
+        $agent = Agent::factory()->for($user->currentTeam)->create();
 
-        $h = app(RuntimeDispatcher::class)->health($agent);
+        $h = app(Runtime::class)->health($agent);
 
         $this->assertTrue($h['ok']);
         $this->assertSame('native', $h['engine']);
-    }
-
-    public function test_voiceflow_agent_health_reports_engine_voiceflow(): void
-    {
-        $user = User::factory()->withPersonalTeam()->create();
-        $agent = Agent::factory()->for($user->currentTeam)->create([
-            'runtime_mode' => 'voiceflow',
-            'voiceflow_api_key' => 'VF.DM.test',
-            'voiceflow_project_id' => 'proj-test',
-        ]);
-
-        $h = app(RuntimeDispatcher::class)->health($agent);
-
-        $this->assertSame('voiceflow', $h['engine']);
     }
 }

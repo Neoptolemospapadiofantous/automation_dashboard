@@ -7,7 +7,7 @@ use RuntimeException as BaseRuntimeException;
 /**
  * Umbrella exception type for the Runtime contract.
  *
- * Every engine (VoiceflowAdapter, AgentRuntime, future partner runtimes)
+ * Every engine (AgentRuntime today; any future engine)
  * normalises its upstream errors into a subclass of this so controllers
  * can catch one type:
  *
@@ -19,7 +19,7 @@ use RuntimeException as BaseRuntimeException;
  *
  * Subclasses:
  *   - Misconfigured       — our config is incomplete (missing API key, ...)
- *   - UpstreamUnavailable — LLM provider / Voiceflow API failed
+ *   - UpstreamUnavailable — an upstream provider call failed
  *
  * @api
  */

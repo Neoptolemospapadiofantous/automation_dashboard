@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Agent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class AgentCrudTest extends TestCase
@@ -37,33 +36,23 @@ class AgentCrudTest extends TestCase
         $this->assertDatabaseHas('agents', [
             'team_id' => $user->currentTeam->id,
             'name' => 'Support bot',
-            'status' => Agent::STATUS_DRAFT,
+            'status' => Agent::STATUS_ACTIVE,
         ]);
     }
 
-    public function test_update_only_accepts_name_and_drops_credential_fields(): void
+    public function test_update_only_accepts_name(): void
     {
-        // Phase 14: BYOK left the product surface. The update endpoint only
-        // touches `name`; any credential field in the payload is silently
-        // dropped so a clever curl can't sneak credential writes regardless
-        // of the agent's mode. Credential admin for ops-wired BYOK happens
-        // via tinker, not via HTTP.
         $user = User::factory()->withPersonalTeam()->create();
-        $agent = Agent::factory()->for($user->currentTeam)->create([
-            'voiceflow_api_key' => 'VF.DM.original.key',
-            'voiceflow_project_id' => 'aaaabbbbccccddddeeeeffff',
-        ]);
+        $agent = Agent::factory()->for($user->currentTeam)->create(['status' => 'active']);
 
         $this->actingAs($user)->put(route('agents.update', $agent), [
             'name' => 'Renamed',
-            'voiceflow_api_key' => 'VF.DM.attempted.injection',
-            'voiceflow_project_id' => '111111111111111111111111',
+            'status' => 'disabled', // not accepted — silently dropped
         ])->assertRedirect();
 
         $agent->refresh();
         $this->assertSame('Renamed', $agent->name);
-        $this->assertSame('VF.DM.original.key', $agent->voiceflow_api_key, 'credential injection must not overwrite the row');
-        $this->assertSame('aaaabbbbccccddddeeeeffff', $agent->voiceflow_project_id);
+        $this->assertSame('active', $agent->status, 'only name is writable via the endpoint');
     }
 
     public function test_destroy_removes_agent_and_falls_back_current(): void
@@ -77,20 +66,6 @@ class AgentCrudTest extends TestCase
 
         $this->assertDatabaseMissing('agents', ['id' => $a->id]);
         $this->assertSame($b->id, $user->currentTeam->fresh()->current_agent_id);
-    }
-
-    public function test_rotate_secret_replaces_value_and_flashes_new(): void
-    {
-        $user = User::factory()->withPersonalTeam()->create();
-        $agent = Agent::factory()->for($user->currentTeam)->create();
-        $before = $agent->webhook_secret;
-
-        $this->actingAs($user)
-            ->post(route('agents.rotate-secret', $agent))
-            ->assertRedirect()
-            ->assertSessionHas('flash.webhook_secret_rotated');
-
-        $this->assertNotSame($before, $agent->fresh()->webhook_secret);
     }
 
     public function test_switch_current_sets_team_current_agent(): void
@@ -126,9 +101,8 @@ class AgentCrudTest extends TestCase
 
     public function test_settings_page_hides_webhook_url_and_credentials_for_every_agent(): void
     {
-        // Phase 14: BYOK was removed from the product surface. The settings
-        // page no longer exposes credential fields OR the webhook URL/secret
-        // for any agent — credentials live entirely server-side now.
+        // The settings page exposes no credentials — none exist on the
+        // native runtime.
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create();
 

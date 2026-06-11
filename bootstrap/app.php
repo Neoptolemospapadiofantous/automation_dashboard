@@ -4,7 +4,6 @@ use App\Billing\Exceptions\OutOfCredits;
 use App\Billing\Exceptions\PlanLimitExceeded;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Lifecycle\InvalidTransition;
-use App\Provisioning\PoolExhausted;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -78,22 +77,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 'limit' => $e->limit,
                 'resource' => $e->resource,
             ]);
-        });
-
-        // Voiceflow project pool empty — no available projects to allocate
-        // for a managed-mode signup. 503 because it's a capacity issue
-        // (operator needs to add more pool entries), not the user's fault.
-        $exceptions->render(function (PoolExhausted $e, $request) {
-            $payload = [
-                'error' => 'We\'re at capacity right now. Please try again in a few minutes — we\'ve been notified.',
-                'detail' => $e->getMessage(),
-            ];
-
-            if ($request->expectsJson()) {
-                return response()->json($payload, 503);
-            }
-
-            return back()->withErrors(['provisioning' => $payload['error']]);
         });
 
         // State machine refusal (illegal transition / guard fail). Maps

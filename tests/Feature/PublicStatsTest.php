@@ -81,7 +81,7 @@ class PublicStatsTest extends TestCase
         Lead::factory()->for($team)->for($agent)->create(['status' => 'new']);
         Message::factory()->count(5)->for($agent->conversations()->create([
             'team_id' => $team->id,
-            'voiceflow_user_id' => 'u-1',
+            'voiceflow_user_id' => 'web-stats-test',
         ]))->create();
 
         $this->getJson(route('public.stats'))

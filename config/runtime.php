@@ -2,39 +2,22 @@
 
 /**
  * Native runtime configuration. Reads env so prod/staging/dev can swap
- * LLM providers, embedding models, and RAG defaults without code changes.
+ * models and RAG defaults without code changes.
  *
- * See app/Runtime/ for the implementation. The engine is selected per-agent via
- * agents.runtime_mode; new agents default to native (see default_mode).
+ * See app/Runtime/ for the implementation — the native engine is the only
+ * engine (Voiceflow was fully removed); agents.runtime_mode remains as the
+ * seam for any future engine.
  */
 
 return [
 
     /*
     |--------------------------------------------------------------------------
-    | Default engine for NEW agents
+    | LLM
     |--------------------------------------------------------------------------
-    |
-    | 'native'    — CreateAgent provisions agents on the Flowstack-owned
-    |               runtime: no Voiceflow pool, active immediately. This is
-    |               the production default once ANTHROPIC_API_KEY +
-    |               OPENAI_API_KEY are set.
-    | 'voiceflow' — legacy: pool-managed Voiceflow projects (or BYOK when
-    |               VOICEFLOW_MANAGED=false). Existing agents keep whatever
-    |               runtime_mode they have regardless of this setting.
-    */
-    'default_mode' => env('RUNTIME_DEFAULT_MODE', 'voiceflow'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | LLM provider
-    |--------------------------------------------------------------------------
-    |
-    | The primary LLM used for the conversational loop. Currently 'anthropic'
-    | (Claude) is the only implemented client; openai is a planned alternate.
     |
     | model_default — used for every turn (cheap + fast; raise to Sonnet
-    |                  via ANTHROPIC_MODEL_DEFAULT if quality demands it)
+    |                 via ANTHROPIC_MODEL_DEFAULT if quality demands it).
     */
     'llm' => [
         'anthropic' => [

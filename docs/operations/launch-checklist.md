@@ -34,27 +34,6 @@ Two provider keys power it:
 - [ ] `php artisan config:clear`
 - [ ] Verify: agent page → health button → `engine: native, ok: true`
 
-## 1b. Legacy Voiceflow pool (OPTIONAL — only for runtime_mode=voiceflow agents)
-
-**Only needed if** you keep RUNTIME_DEFAULT_MODE=voiceflow or have existing
-legacy agents. Skip symptom (legacy mode only): new signup → "We're at capacity".
-
-There is no programmatic project creation (confirmed by Voiceflow support
-2026-06-10). Projects are created by hand and registered into the pool.
-
-- [ ] creator.voiceflow.com → **New project** ×5 (name them `flowstack-pool-001` … `005`)
-- [ ] Per project: Settings → API keys → copy the `VF.DM.*` key
-- [ ] Per project: Settings → copy the Project ID (24-char hex)
-- [ ] Per project: `php artisan vf:pool:add` (interactive — paste key + ID)
-- [ ] Verify: `php artisan vf:pool:list` shows 5 available
-- [ ] If the old leaked DM key (`docs` git history, commit 6361338) belonged to a
-      real project: rotate it in Voiceflow and update any pool/agent row using it
-- [ ] Existing agents: open `/agents/{slug}` → run the health check — stale keys 401
-
-> No Voiceflow values are needed in `.env`. Per-agent DM keys live encrypted
-> on the `agents` rows. (`VOICEFLOW_MANAGED=true` and `VOICEFLOW_ENVIRONMENT=main`
-> are already set.)
-
 ---
 
 ## 2. Stripe TEST mode (15 min) — BLOCKING
@@ -160,4 +139,4 @@ Bonus checks:
 
 - Free trial (product decision: none — $99 Starter is the entry point)
 - Slack notifier, 2FA, audit log, CRM sync, transcript export (backlog)
-- Legacy Voiceflow agent migration to native (one tinker command per agent when ready)
+- Voiceflow: fully deleted (git history keeps it recoverable)

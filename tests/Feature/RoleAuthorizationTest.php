@@ -126,18 +126,6 @@ class RoleAuthorizationTest extends TestCase
         $this->assertSame('New name', $agent->fresh()->name);
     }
 
-    public function test_editor_cannot_rotate_webhook_secret(): void
-    {
-        [, $team] = $this->teamWithOwner();
-        $agent = Agent::factory()->for($team)->create();
-        $editor = $this->joinTeam($team, 'editor');
-        $editor->forceFill(['current_team_id' => $team->id])->save();
-
-        $this->actingAs($editor->fresh())
-            ->post(route('agents.rotate-secret', $agent->slug))
-            ->assertForbidden();
-    }
-
     // ── helpers ─────────────────────────────────────────────────────────────
 
     /** @return array{0: User, 1: Team} */

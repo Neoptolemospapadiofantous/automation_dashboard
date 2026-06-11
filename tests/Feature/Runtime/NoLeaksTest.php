@@ -11,7 +11,6 @@ use App\Runtime\LLM\ToolCall;
 use App\Runtime\Models\RuntimeSession;
 use App\Runtime\Session\ConversationContext;
 use App\Runtime\Tools\ToolRegistry;
-use App\Services\VoiceflowService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Facades\Http;
@@ -33,8 +32,6 @@ class NoLeaksTest extends TestCase
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create([
             'runtime_mode' => 'native',
-            'voiceflow_api_key' => null,
-            'voiceflow_project_id' => null,
         ]);
 
         $this->assertTrue($agent->isConfigured());
@@ -46,8 +43,6 @@ class NoLeaksTest extends TestCase
         $agent = Agent::factory()->for($user->currentTeam)->create([
             'runtime_mode' => 'native',
             'status' => 'active',
-            'voiceflow_api_key' => null,
-            'voiceflow_project_id' => null,
         ]);
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
 
@@ -55,30 +50,6 @@ class NoLeaksTest extends TestCase
             ->get(route('chat.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('configured', true));
-    }
-
-    public function test_for_agent_never_inherits_platform_env_credentials(): void
-    {
-        // LEAK 2 (cross-tenant): a credential-less agent must NOT fall back
-        // to the platform's global VOICEFLOW_API_KEY / PROJECT_ID.
-        config([
-            'services.voiceflow.api_key' => 'VF.DM.platform-global-key',
-            'services.voiceflow.project_id' => 'platform-global-project',
-        ]);
-
-        $user = User::factory()->withPersonalTeam()->create();
-        $agent = Agent::factory()->for($user->currentTeam)->create([
-            'runtime_mode' => 'native',
-            'voiceflow_api_key' => null,
-            'voiceflow_project_id' => null,
-        ]);
-
-        $service = VoiceflowService::forAgent($agent);
-
-        $this->assertFalse(
-            $service->isConfigured(),
-            'forAgent() inherited the platform env credentials for a credential-less agent — cross-tenant leak.',
-        );
     }
 
     public function test_request_handoff_actually_notifies_the_team_owner(): void
@@ -129,17 +100,16 @@ class NoLeaksTest extends TestCase
         $this->assertSame('+1', $merged['phone']);
     }
 
-    public function test_engine_prop_is_shared_and_voiceflow_strings_are_gone_from_agent_page(): void
+    public function test_agent_settings_page_renders_clean(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
-        $agent = Agent::factory()->for($user->currentTeam)->create(['runtime_mode' => 'native', 'status' => 'active']);
+        $agent = Agent::factory()->for($user->currentTeam)->create(['status' => 'active']);
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
 
-        // LEAK 5a: sidebar gating input — the engine prop must be shared.
         $this->actingAs($user->fresh())
             ->get(route('agents.show', $agent->slug))
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->where('engine', 'native'));
+            ->assertInertia(fn ($page) => $page->component('Agents/Show'));
     }
 
     public function test_no_customer_visible_voiceflow_strings_in_core_pages(): void
