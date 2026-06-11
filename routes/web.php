@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AgentAnalyticsController;
 use App\Http\Controllers\AgentController;
+use App\Http\Controllers\AgentVersionsController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ConversationController;
@@ -51,9 +52,29 @@ Route::middleware([
         ->middleware('throttle:10,1')
         ->name('agents.store');
 
+    // Versioned agent behavior (draft → publish → rollback). MUST be
+    // registered before the /agents/{agent} wildcard below — Laravel
+    // matches by registration order and the slug binding would swallow
+    // /agents/versions and 404 (no agent has slug 'versions').
+    Route::get('/agents/versions', [AgentVersionsController::class, 'index'])
+        ->name('agents.versions.index');
+    Route::post('/agents/versions/draft', [AgentVersionsController::class, 'saveDraft'])
+        ->middleware('throttle:60,1')
+        ->name('agents.versions.draft');
+    Route::post('/agents/versions/publish', [AgentVersionsController::class, 'publish'])
+        ->middleware('throttle:30,1')
+        ->name('agents.versions.publish');
+    Route::post('/agents/versions/{version}/restore', [AgentVersionsController::class, 'restore'])
+        ->whereNumber('version')
+        ->middleware('throttle:30,1')
+        ->name('agents.versions.restore');
+    Route::get('/agents/versions/{version}/export', [AgentVersionsController::class, 'export'])
+        ->whereNumber('version')
+        ->name('agents.versions.export');
+
     // Per-agent analytics. Slug-bound. Lives at /agents/{slug}/analytics so it
     // sits naturally alongside agents.show; must come BEFORE the wildcard
-    // agents.show below for the same reasons as evaluations/environments.
+    // agents.show below for the same reasons as versions above.
     Route::get('/agents/{agent}/analytics', [AgentAnalyticsController::class, 'show'])
         ->name('agents.analytics');
 
