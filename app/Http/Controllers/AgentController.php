@@ -10,6 +10,7 @@ use App\Actions\Agents\UpdateAgentCredentials;
 use App\Authorization\Role;
 use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Agent;
+use App\Runtime\Contracts\Runtime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -176,6 +177,12 @@ class AgentController extends Controller
     public function health(Request $request, Agent $agent): JsonResponse
     {
         $this->authorize($request, $agent);
+
+        // Native agents: health = "are the LLM/embedding keys present" —
+        // answered by the runtime dispatcher, no Voiceflow probe involved.
+        if ($agent->getAttribute('runtime_mode') === Agent::RUNTIME_NATIVE) {
+            return response()->json(app(Runtime::class)->health($agent));
+        }
 
         // Re-run the existing pipeline so activation rules (draft → active on
         // green) stay in exactly one place.

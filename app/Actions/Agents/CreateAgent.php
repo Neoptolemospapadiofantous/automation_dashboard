@@ -50,9 +50,15 @@ class CreateAgent
 
         $effectiveName = $name !== '' ? $name : $this->defaultName($team);
 
-        $agent = config('services.voiceflow.managed.enabled')
-            ? $this->createManaged($team, $effectiveName)
-            : $this->createByok($team, $effectiveName, $attributes);
+        // Engine selection. 'native' (the Flowstack-owned runtime) needs no
+        // external provisioning — no Voiceflow pool, no project: the agent
+        // is live the moment the row exists. Anything else falls into the
+        // legacy Voiceflow paths (pool-managed or BYOK).
+        $agent = match (true) {
+            config('runtime.default_mode') === 'native' => $this->createNative($team, $effectiveName),
+            (bool) config('services.voiceflow.managed.enabled') => $this->createManaged($team, $effectiveName),
+            default => $this->createByok($team, $effectiveName, $attributes),
+        };
 
         event(new AgentCreated($agent));
 
@@ -120,6 +126,27 @@ class CreateAgent
             'last_health_check_at' => now(),
             'last_health_ok' => true,
         ])->save();
+
+        return $agent;
+    }
+
+    /**
+     * Native path: the Flowstack runtime serves this agent directly —
+     * active immediately, zero external provisioning. Health depends only
+     * on ANTHROPIC_API_KEY / OPENAI_API_KEY being present (checked by
+     * AgentRuntime::health, surfaced on the agent page).
+     */
+    protected function createNative(Team $team, string $name): Agent
+    {
+        /** @var Agent $agent */
+        $agent = $team->agents()->create([
+            'name' => $name,
+            'mode' => Agent::MODE_MANAGED, // user never touches credentials
+            'runtime_mode' => Agent::RUNTIME_NATIVE,
+            'status' => Agent::STATUS_ACTIVE,
+            'last_health_check_at' => now(),
+            'last_health_ok' => true,
+        ]);
 
         return $agent;
     }

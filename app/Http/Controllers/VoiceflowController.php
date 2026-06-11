@@ -7,9 +7,13 @@ use App\Billing\Exceptions\OutOfCredits;
 use App\Enums\LeadStatus;
 use App\Events\LeadMessage;
 use App\Events\LeadSaved;
+use App\Models\Agent;
 use App\Models\Conversation;
 use App\Models\Lead;
 use App\Models\Team;
+use App\Runtime\Contracts\Runtime;
+use App\Runtime\Exceptions\RuntimeException;
+use App\Runtime\Models\RuntimeSession;
 use App\Services\ConversationRecorder;
 use App\Services\Voiceflow\Client\StreamingClient;
 use App\Services\VoiceflowService;
@@ -21,11 +25,17 @@ use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Server-side proxy for the Voiceflow Dialog Manager API.
+ * Server-side chat proxy for the dashboard's Chat page.
  *
- * The browser never talks to Voiceflow directly — it calls these endpoints,
- * the server adds the API key, advances the conversation, captures lead fields
- * from the agent's session variables, and broadcasts updates to the team.
+ * The browser never talks to the conversational engine directly — it calls
+ * these endpoints, the server advances the conversation, records the
+ * transcript, debits credits, and broadcasts updates to the team.
+ *
+ * Two engines live behind this controller:
+ *  - native (runtime_mode='native'): routed through the Runtime dispatcher;
+ *    lead capture happens INSIDE the engine via the capture_lead tool, so
+ *    the Voiceflow-specific variable extraction is skipped.
+ *  - voiceflow (default): the legacy Dialog Manager proxy, untouched.
  */
 class VoiceflowController extends Controller
 {
@@ -33,14 +43,19 @@ class VoiceflowController extends Controller
         protected VoiceflowService $voiceflow,
         protected ConversationRecorder $recorder,
         protected CreditMeter $credits,
+        protected Runtime $runtime,
     ) {}
 
     /**
-     * Diagnostic: reports whether Voiceflow is configured, reachable, and
-     * whether the key/version are accepted. Safe — exposes no secrets.
+     * Diagnostic: reports whether the current agent's engine is configured
+     * and reachable. Safe — exposes no secrets.
      */
-    public function health(): JsonResponse
+    public function health(Request $request): JsonResponse
     {
+        if ($agent = $this->nativeAgent($request)) {
+            return response()->json($this->runtime->health($agent));
+        }
+
         return response()->json($this->voiceflow->health());
     }
 
@@ -50,6 +65,10 @@ class VoiceflowController extends Controller
      */
     public function launch(Request $request): JsonResponse
     {
+        if ($agent = $this->nativeAgent($request)) {
+            return $this->nativeLaunch($request, $agent);
+        }
+
         $this->abortIfUnconfigured();
 
         if (($credits = $this->ensureCredits($request)) instanceof JsonResponse) {
@@ -93,6 +112,10 @@ class VoiceflowController extends Controller
      */
     public function interact(Request $request): JsonResponse
     {
+        if ($agent = $this->nativeAgent($request)) {
+            return $this->nativeInteract($request, $agent);
+        }
+
         $this->abortIfUnconfigured();
 
         if (($credits = $this->ensureCredits($request)) instanceof JsonResponse) {
@@ -131,6 +154,10 @@ class VoiceflowController extends Controller
      */
     public function interactStream(Request $request, StreamingClient $streaming): StreamedResponse
     {
+        if ($agent = $this->nativeAgent($request)) {
+            return $this->nativeInteractStream($request, $agent);
+        }
+
         $this->abortIfUnconfigured();
 
         if (($credits = $this->ensureCredits($request)) instanceof JsonResponse) {
@@ -456,6 +483,257 @@ class VoiceflowController extends Controller
     protected function abortIfUnconfigured(): void
     {
         abort_unless($this->voiceflow->isConfigured(), 503, 'Voiceflow is not configured.');
+    }
+
+    // ── Native runtime branch ───────────────────────────────────────────────
+
+    /**
+     * The current agent when it runs on the native engine, else null
+     * (→ legacy Voiceflow path).
+     */
+    protected function nativeAgent(Request $request): ?Agent
+    {
+        $team = $request->user()?->currentTeam;
+        if (! $team instanceof Team) {
+            return null;
+        }
+
+        $agent = $team->currentAgent;
+
+        return ($agent instanceof Agent && $agent->getAttribute('runtime_mode') === Agent::RUNTIME_NATIVE)
+            ? $agent
+            : null;
+    }
+
+    protected function nativeLaunch(Request $request, Agent $agent): JsonResponse
+    {
+        if (($credits = $this->ensureCredits($request)) instanceof JsonResponse) {
+            return $credits;
+        }
+
+        $data = $request->validate([
+            'lead_id' => ['nullable', 'integer'],
+            'variables' => ['nullable', 'array'], // accepted for API parity; native pre-fill TBD
+        ]);
+
+        $lead = $this->resolveLead($request, $data['lead_id'] ?? null);
+        $userId = $lead?->voiceflow_user_id ?: 'web-'.Str::uuid()->toString();
+
+        try {
+            $traces = $this->runtime->launch($agent, $userId);
+        } catch (RuntimeException $e) {
+            report($e);
+
+            return response()->json(['error' => 'The agent is temporarily unavailable.'], 503);
+        }
+
+        // Same continuity column as the legacy engine — it's just "the
+        // external chat user id" regardless of which engine serves it.
+        if ($lead && $lead->voiceflow_user_id !== $userId) {
+            $lead->update(['voiceflow_user_id' => $userId]);
+        }
+
+        return $this->nativeRespond($request, $agent, $userId, $lead, $traces);
+    }
+
+    protected function nativeInteract(Request $request, Agent $agent): JsonResponse
+    {
+        if (($credits = $this->ensureCredits($request)) instanceof JsonResponse) {
+            return $credits;
+        }
+
+        $data = $request->validate([
+            'user_id' => ['required', 'string', 'max:255'],
+            'message' => ['required', 'string', 'max:2000'],
+            'lead_id' => ['nullable', 'integer'],
+        ]);
+
+        $lead = $this->resolveLead($request, $data['lead_id'] ?? null);
+
+        $conversation = $this->safelyResolve($request, $data['user_id'], $lead?->id);
+        if ($conversation) {
+            $this->safelyRecord($conversation, 'user', $data['message']);
+        }
+        $this->broadcastMessage($request, $lead, 'user', $data['message']);
+
+        try {
+            $traces = $this->runtime->sendText($agent, $data['user_id'], $data['message']);
+        } catch (RuntimeException $e) {
+            report($e);
+
+            return response()->json(['error' => 'The agent is temporarily unavailable.'], 503);
+        }
+
+        return $this->nativeRespond($request, $agent, $data['user_id'], $lead, $traces, $conversation);
+    }
+
+    /**
+     * Streaming for native agents: stage-level events from the runtime
+     * mapped onto the same SSE protocol the Chat page already speaks
+     * (trace frames + a final summary frame).
+     */
+    protected function nativeInteractStream(Request $request, Agent $agent): StreamedResponse
+    {
+        if (($credits = $this->ensureCredits($request)) instanceof JsonResponse) {
+            return $this->sseError($credits->getData(true)['error'] ?? 'No credits', 402);
+        }
+
+        $data = $request->validate([
+            'user_id' => ['required', 'string', 'max:255'],
+            'message' => ['required', 'string', 'max:2000'],
+            'lead_id' => ['nullable', 'integer'],
+        ]);
+
+        $lead = $this->resolveLead($request, $data['lead_id'] ?? null);
+        $conversation = $this->safelyResolve($request, $data['user_id'], $lead?->id);
+        if ($conversation) {
+            $this->safelyRecord($conversation, 'user', $data['message']);
+        }
+        $this->broadcastMessage($request, $lead, 'user', $data['message']);
+
+        $team = $request->user()->currentTeam;
+
+        return new StreamedResponse(function () use ($request, $agent, $data, $lead, $conversation, $team): void {
+            $messages = [];
+            $ended = false;
+
+            try {
+                foreach ($this->runtime->streamText($agent, $data['user_id'], $data['message']) as $event) {
+                    if ($event['event'] === 'message') {
+                        $text = (string) ($event['data']['message'] ?? '');
+                        if ($text !== '') {
+                            $messages[] = $text;
+                        }
+                        // Frame shape the Chat page renders: {type:'text', payload:{message}}.
+                        echo 'event: trace'."\n";
+                        echo 'data: '.json_encode(['type' => 'text', 'payload' => ['message' => $text]])."\n\n";
+                    } elseif ($event['event'] === 'done') {
+                        $ended = ($event['data']['state'] ?? '') === 'ended';
+                    }
+                    // 'tool' events are internal; the page ignores unknown frames anyway.
+                    if (function_exists('ob_flush')) {
+                        @ob_flush();
+                    }
+                    flush();
+                }
+            } catch (\Throwable $e) {
+                report($e);
+                echo 'event: error'."\n";
+                echo 'data: '.json_encode(['error' => 'The agent is temporarily unavailable.'])."\n\n";
+                flush();
+
+                return;
+            }
+
+            $messagesBilled = 1 + count($messages);
+            if ($team instanceof Team) {
+                try {
+                    $this->credits->consume(
+                        team: $team,
+                        amount: $messagesBilled,
+                        agentId: $agent->id,
+                        meta: ['conversation_id' => $conversation?->id, 'user_id' => $data['user_id'], 'streaming' => true, 'engine' => 'native'],
+                    );
+                } catch (OutOfCredits) {
+                    report(new \RuntimeException('Credit debit raced past zero for team '.$team->id.' (native streaming path)'));
+                }
+            }
+
+            foreach ($messages as $text) {
+                if ($conversation) {
+                    $this->safelyRecord($conversation, 'agent', $text);
+                }
+                $this->broadcastMessage($request, $lead, 'agent', $text);
+            }
+
+            if ($conversation && $ended) {
+                try {
+                    $this->recorder->end($conversation);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
+            echo 'event: summary'."\n";
+            echo 'data: '.json_encode([
+                'messages_billed' => $messagesBilled,
+                'lead_id' => $lead?->id,
+                'ended' => $ended,
+                'buttons' => [],
+            ])."\n\n";
+            flush();
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache, no-transform',
+            'X-Accel-Buffering' => 'no',
+            'Connection' => 'keep-alive',
+        ]);
+    }
+
+    /**
+     * Native sibling of respond(): bill, record, broadcast, detect end —
+     * but NO Voiceflow variable extraction (the capture_lead tool inside
+     * the engine already wrote the lead + broadcast LeadSaved).
+     *
+     * @param  list<array<string, mixed>>  $traces
+     */
+    protected function nativeRespond(Request $request, Agent $agent, string $userId, ?Lead $lead, array $traces, ?Conversation $conversation = null): JsonResponse
+    {
+        $messages = [];
+        foreach ($traces as $trace) {
+            $text = (string) ($trace['payload']['message'] ?? '');
+            if ($text !== '') {
+                $messages[] = $text;
+            }
+        }
+
+        $conversation ??= $this->safelyResolve($request, $userId, $lead?->id);
+
+        $team = $request->user()->currentTeam;
+        $messagesBilled = 1 + count($messages);
+        if ($team instanceof Team) {
+            try {
+                $this->credits->consume(
+                    team: $team,
+                    amount: $messagesBilled,
+                    agentId: $agent->id,
+                    meta: ['conversation_id' => $conversation?->id, 'user_id' => $userId, 'engine' => 'native'],
+                );
+            } catch (OutOfCredits) {
+                report(new \RuntimeException('Credit debit raced past zero for team '.$team->id.' (native)'));
+            }
+        }
+
+        foreach ($messages as $message) {
+            if ($conversation) {
+                $this->safelyRecord($conversation, 'agent', $message);
+            }
+            $this->broadcastMessage($request, $lead, 'agent', $message);
+        }
+
+        // End detection: the runtime owns flow_state; 'ended' is terminal.
+        $ended = RuntimeSession::query()
+            ->where('agent_id', $agent->id)
+            ->where('visitor_id', $userId)
+            ->value('flow_state') === 'ended';
+
+        if ($conversation && $ended) {
+            try {
+                $this->recorder->end($conversation);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return response()->json([
+            'conversation_id' => $conversation?->id,
+            'user_id' => $userId,
+            'lead_id' => $lead?->id,
+            'messages' => $messages,
+            'buttons' => [],
+            'ended' => $ended,
+            'captured' => [], // native lead capture happens via the capture_lead tool
+        ]);
     }
 
     /**

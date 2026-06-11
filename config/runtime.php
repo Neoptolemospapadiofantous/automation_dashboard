@@ -13,6 +13,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Default engine for NEW agents
+    |--------------------------------------------------------------------------
+    |
+    | 'native'    — CreateAgent provisions agents on the Flowstack-owned
+    |               runtime: no Voiceflow pool, active immediately. This is
+    |               the production default once ANTHROPIC_API_KEY +
+    |               OPENAI_API_KEY are set.
+    | 'voiceflow' — legacy: pool-managed Voiceflow projects (or BYOK when
+    |               VOICEFLOW_MANAGED=false). Existing agents keep whatever
+    |               runtime_mode they have regardless of this setting.
+    */
+    'default_mode' => env('RUNTIME_DEFAULT_MODE', 'voiceflow'),
+
+    /*
+    |--------------------------------------------------------------------------
     | LLM provider
     |--------------------------------------------------------------------------
     |
