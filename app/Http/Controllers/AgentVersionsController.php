@@ -56,7 +56,17 @@ class AgentVersionsController extends Controller
             }
         }
 
+        $tiers = [];
+        foreach ((array) config('runtime.tiers') as $key => $tier) {
+            $tiers[] = [
+                'key' => $key,
+                'label' => (string) ($tier['label'] ?? ucfirst($key)),
+                'credits_per_message' => (int) ($tier['credits_per_message'] ?? 1),
+            ];
+        }
+
         return Inertia::render('Agents/Versions', [
+            'tiers' => $tiers,
             'versions' => $versions,
             'draft' => $draft, // null = no draft yet; editor starts from published or blank
             'agent' => $agent ? ['id' => $agent->id, 'name' => $agent->name, 'slug' => $agent->slug] : null,
@@ -204,18 +214,22 @@ class AgentVersionsController extends Controller
     // ── helpers ──────────────────────────────────────────────────────────────
 
     /**
-     * @return array{instructions: string, greeting: string}
+     * @return array{instructions: string, greeting: string, model_tier: string}
      */
     protected function validateConfig(Request $request): array
     {
+        $tierKeys = array_keys((array) config('runtime.tiers'));
+
         $data = $request->validate([
             'instructions' => ['nullable', 'string', 'max:4000'],
             'greeting' => ['nullable', 'string', 'max:500'],
+            'model_tier' => ['nullable', 'string', 'in:'.implode(',', $tierKeys)],
         ]);
 
         return [
             'instructions' => trim((string) ($data['instructions'] ?? '')),
             'greeting' => trim((string) ($data['greeting'] ?? '')),
+            'model_tier' => (string) ($data['model_tier'] ?? 'standard'),
         ];
     }
 

@@ -81,16 +81,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Provider pricing (USD per million tokens)
+    | Quality tiers — the user-facing model choice
     |--------------------------------------------------------------------------
     |
-    | Used ONLY by the runtime:costs margin report — never by billing
-    | (customers pay credits, not tokens). Defaults match Haiku 4.5.
-    | Update when switching ANTHROPIC_MODEL_DEFAULT.
+    | Customers pick a TIER per agent (Versions page), never a model name.
+    | Each tier couples a model to a credit price so margin survives by
+    | construction: smarter model ⇒ more credits per message.
+    |
+    | pricing_per_mtok feeds ONLY the runtime:costs margin report — never
+    | billing (customers pay credits, not tokens).
     */
-    'pricing' => [
-        'input_per_mtok' => (float) env('RUNTIME_PRICE_INPUT_MTOK', 1.00),
-        'output_per_mtok' => (float) env('RUNTIME_PRICE_OUTPUT_MTOK', 5.00),
+    'tiers' => [
+        'standard' => [
+            'label' => 'Standard',
+            'model' => env('RUNTIME_TIER_STANDARD_MODEL', 'claude-haiku-4-5-20251001'),
+            'credits_per_message' => (int) env('RUNTIME_TIER_STANDARD_CREDITS', 1),
+            'pricing_per_mtok' => ['in' => 1.00, 'out' => 5.00],
+        ],
+        'enhanced' => [
+            'label' => 'Enhanced',
+            'model' => env('RUNTIME_TIER_ENHANCED_MODEL', 'claude-sonnet-4-6'),
+            'credits_per_message' => (int) env('RUNTIME_TIER_ENHANCED_CREDITS', 3),
+            'pricing_per_mtok' => ['in' => 3.00, 'out' => 15.00],
+        ],
     ],
 
     /*

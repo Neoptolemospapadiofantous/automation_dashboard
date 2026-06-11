@@ -17,6 +17,8 @@ use Illuminate\Support\Carbon;
  * @property int $turns
  * @property int $tokens_in
  * @property int $tokens_out
+ * @property int $tokens_in_enhanced
+ * @property int $tokens_out_enhanced
  */
 class RuntimeUsage extends Model
 {
@@ -29,6 +31,8 @@ class RuntimeUsage extends Model
         'turns',
         'tokens_in',
         'tokens_out',
+        'tokens_in_enhanced',
+        'tokens_out_enhanced',
     ];
 
     protected $casts = [
@@ -36,10 +40,12 @@ class RuntimeUsage extends Model
     ];
 
     /**
-     * Increment today's rollup for an agent's team. 2-3 cheap queries —
+     * Increment today's rollup for an agent's team. Tokens land in the
+     * bucket for the tier that served the turn (tiers price differently,
+     * so the margin report needs them separated). 2-3 cheap queries —
      * negligible next to the multi-second LLM call in the same turn.
      */
-    public static function record(Agent $agent, int $tokensIn, int $tokensOut): void
+    public static function record(Agent $agent, int $tokensIn, int $tokensOut, string $tier = 'standard'): void
     {
         // startOfDay() Carbon on BOTH lookup and insert so the value passes
         // through the date cast identically — a raw string here fails to
@@ -51,12 +57,15 @@ class RuntimeUsage extends Model
             'date' => now()->startOfDay(),
         ]);
 
+        $inCol = $tier === 'enhanced' ? 'tokens_in_enhanced' : 'tokens_in';
+        $outCol = $tier === 'enhanced' ? 'tokens_out_enhanced' : 'tokens_out';
+
         $row->increment('turns');
         if ($tokensIn > 0) {
-            $row->increment('tokens_in', $tokensIn);
+            $row->increment($inCol, $tokensIn);
         }
         if ($tokensOut > 0) {
-            $row->increment('tokens_out', $tokensOut);
+            $row->increment($outCol, $tokensOut);
         }
     }
 }

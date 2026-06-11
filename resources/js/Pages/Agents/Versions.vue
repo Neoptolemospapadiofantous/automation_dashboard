@@ -10,6 +10,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import EmptyState from '@/Components/EmptyState.vue';
 
 const props = defineProps({
+    tiers: { type: Array, default: () => [] },
     versions: { type: Array, default: () => [] },
     draft: { type: Object, default: null }, // null = no draft row yet
     agent: { type: Object, default: null },
@@ -23,7 +24,11 @@ const seed = props.draft ?? published.value?.config ?? { instructions: '', greet
 const form = useForm({
     instructions: seed.instructions ?? '',
     greeting: seed.greeting ?? '',
+    model_tier: seed.model_tier ?? 'standard',
 });
+
+const tierLabel = (key) => props.tiers.find((t) => t.key === key)?.label ?? key;
+const tierCost = (key) => props.tiers.find((t) => t.key === key)?.credits_per_message ?? 1;
 
 const saveDraft = () => form.post(route('agents.versions.draft'), { preserveScroll: true });
 
@@ -107,6 +112,31 @@ const dirty = computed(() => form.isDirty);
                         <InputError :message="form.errors.greeting" class="mt-1" />
                     </div>
 
+                    <div>
+                        <InputLabel for="model_tier" value="Response quality" />
+                        <p class="mt-0.5 text-xs text-gray-400">
+                            Smarter answers cost more credits per message. Applies to this agent only, from the moment you publish.
+                        </p>
+                        <div class="mt-2 flex gap-3">
+                            <label
+                                v-for="t in tiers"
+                                :key="t.key"
+                                class="flex flex-1 cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition"
+                                :class="form.model_tier === t.key ? 'border-indigo-400 bg-indigo-50/50 ring-1 ring-indigo-300' : 'border-gray-200 hover:border-gray-300'"
+                            >
+                                <input v-model="form.model_tier" type="radio" :value="t.key" class="mt-0.5 text-indigo-600 focus:ring-indigo-400" />
+                                <span>
+                                    <span class="font-medium text-gray-900">{{ t.label }}</span>
+                                    <span class="block text-xs text-gray-500">
+                                        {{ t.credits_per_message }} credit{{ t.credits_per_message > 1 ? 's' : '' }} / message
+                                        {{ t.key === 'enhanced' ? '· deeper reasoning for complex products' : '· fast, great for lead capture' }}
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+                        <InputError :message="form.errors.model_tier" class="mt-1" />
+                    </div>
+
                     <InputError :message="form.errors.publish" class="mt-1" />
 
                     <div class="flex items-center gap-3">
@@ -138,6 +168,9 @@ const dirty = computed(() => form.isDirty);
                                 <span class="font-mono text-sm font-semibold text-gray-900">v{{ v.version }}</span>
                                 <span class="rounded-full px-2 py-0.5 text-[10px] font-medium" :class="statusTone(v.status)">
                                     {{ v.status }}
+                                </span>
+                                <span class="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700">
+                                    {{ tierLabel(v.config?.model_tier ?? 'standard') }} · {{ tierCost(v.config?.model_tier ?? 'standard') }}cr/msg
                                 </span>
                             </div>
                             <p class="mt-0.5 truncate text-xs text-gray-500">

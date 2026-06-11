@@ -56,6 +56,20 @@ php artisan tinker --execute="\App\Models\Agent::where('slug','SLUG')->first()->
 php artisan runtime:prune-sessions
 ```
 
+## Quality tiers (per-agent model choice)
+
+Customers pick a TIER per agent on the Versions page — never a raw model
+name. Tier couples model to credit price so margin survives by design:
+
+| Tier | Model (env-overridable) | Credits/msg | Provider $/MTok in/out |
+|---|---|---|---|
+| Standard | claude-haiku-4-5 | 1 | $1 / $5 |
+| Enhanced | claude-sonnet-4-6 | 3 | $3 / $15 |
+
+The tier rides the published config (draft → publish → rollback like any
+behavior change). Unknown/absent tiers degrade to Standard. runtime_usage
+keeps per-tier token buckets so `runtime:costs` prices each correctly.
+
 Per-session token usage accumulates in `runtime_sessions.variables`
 (`_tokens_in` / `_tokens_out`) for cost observability.
 

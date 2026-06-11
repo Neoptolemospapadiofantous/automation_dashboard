@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Billing\CreditMeter;
 use App\Billing\Exceptions\OutOfCredits;
 use App\Models\Agent;
+use App\Models\AgentConfigVersion;
 use App\Models\Team;
 use App\Runtime\Contracts\Runtime;
 use App\Runtime\Exceptions\RuntimeException;
@@ -130,7 +131,7 @@ class EmbedController extends Controller
         }
         if ($greetings > $cap) {
             try {
-                $this->credits->consume(team: $team, amount: 1, agentId: $agent->id, meta: ['embed' => true, 'greeting_over_cap' => true]);
+                $this->credits->consume(team: $team, amount: AgentConfigVersion::creditsPerMessage($agent->id), agentId: $agent->id, meta: ['embed' => true, 'greeting_over_cap' => true]);
             } catch (OutOfCredits) {
                 return response()->json([
                     'error' => "This agent isn't available right now. Please try again later.",
@@ -183,7 +184,14 @@ class EmbedController extends Controller
         }
 
         try {
-            $this->credits->consume(team: $team, amount: 1, agentId: $agent->id, meta: ['embed' => true]);
+            // 1 flat per visitor message × the agent's quality-tier
+            // multiplier (Enhanced = smarter model = more credits).
+            $this->credits->consume(
+                team: $team,
+                amount: AgentConfigVersion::creditsPerMessage($agent->id),
+                agentId: $agent->id,
+                meta: ['embed' => true],
+            );
         } catch (OutOfCredits) {
             return response()->json([
                 'error' => "This agent isn't available right now. Please try again later.",

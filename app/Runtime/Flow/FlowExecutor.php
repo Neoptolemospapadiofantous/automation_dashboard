@@ -49,6 +49,11 @@ class FlowExecutor
         $system = $this->systemPrompt($context->agent, $state, $context);
         $specs = $this->tools->specs($state->tools);
 
+        // Quality tier (Versions page): resolves the model for every LLM
+        // call this turn. Unknown/absent tiers degrade to standard.
+        $tier = AgentConfigVersion::publishedTier($context->agent->id);
+        $model = AgentConfigVersion::modelForTier($tier);
+
         $userEntry = ['role' => 'user', 'content' => $context->userMessage];
         $messages = array_merge((array) ($session->history ?? []), [$userEntry]);
         $newEntries = [$userEntry];
@@ -63,7 +68,7 @@ class FlowExecutor
         $tokensOut = 0;
 
         while (true) {
-            $result = $this->llm->complete($system, $messages, $specs);
+            $result = $this->llm->complete($system, $messages, $specs, $model);
             $tokensIn += $result->inputTokens;
             $tokensOut += $result->outputTokens;
 
@@ -127,7 +132,7 @@ class FlowExecutor
 
         // Durable cost rollup (runtime_usage) — sessions are ephemeral, this
         // survives resets/pruning. Best-effort: never fail the visitor's turn.
-        rescue(fn () => RuntimeUsage::record($context->agent, $tokensIn, $tokensOut), report: true);
+        rescue(fn () => RuntimeUsage::record($context->agent, $tokensIn, $tokensOut, $tier), report: true);
 
         if (trim($finalText) === '') {
             $finalText = 'Thanks — a teammate will follow up shortly.';

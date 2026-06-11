@@ -6,6 +6,7 @@ use App\Billing\CreditMeter;
 use App\Billing\Exceptions\OutOfCredits;
 use App\Events\LeadMessage;
 use App\Models\Agent;
+use App\Models\AgentConfigVersion;
 use App\Models\Conversation;
 use App\Models\Lead;
 use App\Models\Team;
@@ -190,7 +191,7 @@ class ChatController extends Controller
                 return;
             }
 
-            $messagesBilled = 1 + count($messages);
+            $messagesBilled = (1 + count($messages)) * AgentConfigVersion::creditsPerMessage($agent->id);
             if ($team instanceof Team) {
                 try {
                     $this->credits->consume(
@@ -255,7 +256,10 @@ class ChatController extends Controller
         $conversation ??= $this->safelyResolve($request, $userId, $lead?->id);
 
         $team = $this->team($request);
-        $messagesBilled = 1 + count($messages);
+        // Quality tier multiplier: Enhanced agents cost more credits per
+        // message — the coupling that keeps smarter models margin-safe.
+        $multiplier = AgentConfigVersion::creditsPerMessage($agent->id);
+        $messagesBilled = (1 + count($messages)) * $multiplier;
         try {
             $this->credits->consume(
                 team: $team,

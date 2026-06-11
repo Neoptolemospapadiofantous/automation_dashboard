@@ -30,13 +30,13 @@ class RuntimeCosts extends Command
             : now()->startOfMonth();
         $monthEnd = $month->copy()->endOfMonth();
 
-        $inRate = (float) config('runtime.pricing.input_per_mtok');
-        $outRate = (float) config('runtime.pricing.output_per_mtok');
+        $std = (array) config('runtime.tiers.standard.pricing_per_mtok', ['in' => 1.0, 'out' => 5.0]);
+        $enh = (array) config('runtime.tiers.enhanced.pricing_per_mtok', ['in' => 3.0, 'out' => 15.0]);
 
         // DB::table (not the model): SUM aliases are not model attributes.
         $usage = DB::table('runtime_usage')
             ->whereBetween('date', [$month->toDateString(), $monthEnd->toDateString().' 23:59:59'])
-            ->selectRaw('team_id, SUM(turns) as turns, SUM(tokens_in) as tin, SUM(tokens_out) as tout')
+            ->selectRaw('team_id, SUM(turns) as turns, SUM(tokens_in) as tin, SUM(tokens_out) as tout, SUM(tokens_in_enhanced) as tin_e, SUM(tokens_out_enhanced) as tout_e')
             ->groupBy('team_id')
             ->get()
             ->keyBy('team_id');
@@ -58,7 +58,11 @@ class RuntimeCosts extends Command
             $plan = $team?->planObject();
             $teamName = $team !== null ? $team->name : "team #{$teamId}";
 
-            $cost = ((int) $u->tin / 1_000_000) * $inRate + ((int) $u->tout / 1_000_000) * $outRate;
+            // Each tier bucket priced at its own provider rates.
+            $cost = ((int) $u->tin / 1_000_000) * (float) $std['in']
+                + ((int) $u->tout / 1_000_000) * (float) $std['out']
+                + ((int) $u->tin_e / 1_000_000) * (float) $enh['in']
+                + ((int) $u->tout_e / 1_000_000) * (float) $enh['out'];
             $revenue = (float) ($plan?->priceUsd() ?? 0);
 
             $creditsUsed = (int) abs(CreditTransaction::query()
@@ -71,8 +75,8 @@ class RuntimeCosts extends Command
                 $teamName,
                 $plan?->label() ?? '—',
                 number_format((int) $u->turns),
-                number_format((int) $u->tin),
-                number_format((int) $u->tout),
+                number_format((int) $u->tin + (int) $u->tin_e),
+                number_format((int) $u->tout + (int) $u->tout_e),
                 number_format($creditsUsed),
                 '$'.number_format($cost, 2),
                 '$'.number_format($revenue, 2),
@@ -84,7 +88,7 @@ class RuntimeCosts extends Command
             $totals['revenue'] += $revenue;
         }
 
-        $this->components->info("Runtime costs — {$month->format('Y-m')} (rates: \${$inRate}/\${$outRate} per MTok in/out)");
+        $this->components->info("Runtime costs — {$month->format('Y-m')} (per-tier provider rates from config runtime.tiers)");
         $this->table(
             ['Team', 'Plan', 'Turns', 'Tokens in', 'Tokens out', 'Credits used', 'LLM cost', 'Plan revenue', 'Margin'],
             $rows,
