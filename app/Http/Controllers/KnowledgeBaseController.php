@@ -239,7 +239,7 @@ class KnowledgeBaseController extends Controller
         // a free-LLM vector that kept working at zero balance.
         $team = $agent->team;
         try {
-            if ($team !== null) {
+            if ($team instanceof Team) {
                 app(CreditMeter::class)->consume(
                     team: $team,
                     amount: AgentConfigVersion::creditsPerMessage($agent->id),
