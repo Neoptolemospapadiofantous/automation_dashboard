@@ -35,7 +35,6 @@ Key invariants:
 
 | Env | Purpose | Default |
 |---|---|---|
-| `RUNTIME_DEFAULT_MODE` | engine for NEW agents (`native` \| `voiceflow`) | `voiceflow` in code, `native` in `.env` |
 | `ANTHROPIC_API_KEY` | chat loop (required for native) | — |
 | `OPENAI_API_KEY` | KB embeddings (required for native KB) | — |
 | `ANTHROPIC_MODEL_DEFAULT` | turn model | `claude-haiku-4-5-20251001` |
@@ -64,13 +63,6 @@ Handoffs: when a visitor asks for a human, the `request_handoff` tool flags
 the session AND notifies the team owner (bell + email,
 `HandoffRequestedNotification`).
 
-## What native agents do NOT have (legacy-engine features)
-
-- Evaluations / Environments pages (Voiceflow APIs — hidden from the sidebar
-  when the current agent is native)
-- /system/webhooks viewer (no upstream webhooks exist)
-- File types DOCX/XLSX in the KB (native: PDF/TXT/MD/CSV + URL + text)
-
 ## Known follow-ups
 
 - pgvector swap for `kb_chunks.embedding` (JSON + in-process cosine is fine
@@ -80,8 +72,6 @@ the session AND notifies the team owner (bell + email,
   whole messages)
 - Per-agent flow selection (every agent runs `LeadCaptureFlow` today; a
   `flow` column + template registry is the planned shape)
-- Deleting the entire Voiceflow surface once the last legacy agent migrates —
-  the adapter docblock (`VoiceflowAdapter.php`) lists the one-commit plan.
 
 ## Economics note
 

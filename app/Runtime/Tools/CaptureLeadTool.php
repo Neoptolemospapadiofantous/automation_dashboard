@@ -16,8 +16,7 @@ use App\Runtime\Session\ConversationContext;
  * shouldn't litter the kanban. Without an email, every capture is a
  * fresh row (no reliable identity to merge on).
  *
- * Broadcasts LeadSaved so the kanban updates live, same as the legacy
- * Voiceflow webhook path.
+ * Broadcasts LeadSaved so the kanban updates live.
  */
 class CaptureLeadTool implements Tool
 {

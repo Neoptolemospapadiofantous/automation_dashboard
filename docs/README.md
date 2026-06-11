@@ -1,8 +1,9 @@
 # Dashboard documentation
 
 Living architecture + design notes for the multi-tenant SaaS dashboard
-for AI lead-qualification agents (native Flowstack runtime; legacy
-Voiceflow adapter for pre-migration agents). Each file documents
+for AI lead-qualification agents, powered by the native Flowstack
+runtime (the Voiceflow integration was fully removed — phase docs
+below are historical records). Each file documents
 one cohesive piece of work; phase docs are written when shipped and kept
 as historical record (don't rewrite history when the design evolves —
 write a new phase doc that supersedes the prior one).
@@ -24,7 +25,7 @@ write a new phase doc that supersedes the prior one).
 - [phase-6-conversation-storage.md](./phase-6-conversation-storage.md) — [[phase-6-conversation-storage|conversations + messages persistence]]
 - [phase-11-transcript-backfill.md](./phase-11-transcript-backfill.md) — [[phase-11-transcript-backfill|Voiceflow Transcripts API import]]
 - [phase-12-knowledge-base.md](./phase-12-knowledge-base.md) — Voiceflow KB API
-- [runtime-native.md](./runtime-native.md) — **the current engine**: Flowstack-owned LLM runtime (Anthropic + RAG), default for all new agents; Voiceflow is legacy-only
+- [runtime-native.md](./runtime-native.md) — **the current engine**: Flowstack-owned LLM runtime (Anthropic + RAG), the only engine; Voiceflow was removed
 - [phase-15-voiceflow-wrapper.md](./phase-15-voiceflow-wrapper.md) — full wrapper (typed subclients, evaluations, environments, session + org webhooks); supersedes Phase 5's ad-hoc client
 - [voiceflow/README.md](./voiceflow/README.md) — Voiceflow API reference dump (vendor docs, frozen)
 

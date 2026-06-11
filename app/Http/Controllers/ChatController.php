@@ -156,6 +156,11 @@ class ChatController extends Controller
         $team = $request->user()->currentTeam;
 
         return new StreamedResponse(function () use ($request, $agent, $data, $lead, $conversation, $team): void {
+            // The turn runs to completion server-side before frames flush —
+            // a client disconnect mid-stream must NOT kill the process
+            // before billing + transcript recording below run.
+            ignore_user_abort(true);
+
             $messages = [];
             $ended = false;
 

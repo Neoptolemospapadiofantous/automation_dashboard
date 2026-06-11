@@ -21,7 +21,7 @@ class LeadFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'phone' => fake()->phoneNumber(),
             'company' => fake()->company(),
-            'source' => fake()->randomElement(['manual', 'voiceflow', 'web', 'import']),
+            'source' => fake()->randomElement(['manual', 'chat', 'web', 'import']),
             'status' => fake()->randomElement(LeadStatus::cases()),
             'score' => fake()->numberBetween(0, 100),
             'voiceflow_user_id' => null,

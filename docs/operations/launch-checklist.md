@@ -11,7 +11,7 @@ Work through this top-to-bottom. Each section says what breaks if you skip it.
 
 - [ ] Pick a branch and stay on it during testing:
   - `voiceflow-wrapper-and-hermes-system` — the product surface
-  - `runtime-native-l1` — the native engine branch (DEFAULT for new agents via RUNTIME_DEFAULT_MODE=native)
+  - `runtime-native-l1` — the native engine branch (the only engine; Voiceflow deleted)
 - [ ] Unlock pre-verification users. Email verification is now enforced; users
       created before it was enabled have `email_verified_at = null` and will
       hit the verify wall:
@@ -117,7 +117,7 @@ Run as a brand-new user in a fresh browser/incognito session:
 6. [ ] **Top-up** → Checkout → webhook fires (watch the `stripe listen` terminal) → balance increases
 7. [ ] **Cancel**: ⚙ Manage subscription → Stripe portal → cancel → return → `/billing` shows downgrade to free tier
 8. [ ] **Leads**: trigger a capture via chat (or create manually) → appears on `/leads` → assign to a rep → rep gets bell + email
-9. [ ] **Leads detail**: open the captured lead → notes autosave + conversation links work (the /system/webhooks viewer only applies to legacy Voiceflow agents)
+9. [ ] **Leads detail**: open the captured lead → notes autosave + conversation links work
 10. [ ] **Analytics**: `/agents/{slug}/analytics` → counters, sparklines, funnel, heatmap populate
 
 Bonus checks:

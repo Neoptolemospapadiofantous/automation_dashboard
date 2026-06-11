@@ -205,7 +205,7 @@ class LeadController extends Controller
         $data = $this->validateLead($request);
 
         // Stamp agent_id from the current team so Phase G's agent-scoped
-        // queries can find this lead. Mirrors VoiceflowController::upsertLead.
+        // queries can find this lead. Mirrors the engine's capture_lead upsert.
         $lead = Lead::create([
             ...$data,
             'team_id' => $request->user()->currentTeam->id,

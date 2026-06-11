@@ -47,7 +47,6 @@ class HandleInertiaRequests extends Middleware
             // share session keys — without this, controllers' ->with('flash.x')
             // calls land in the session but never reach the front end.
             'flash' => fn () => array_filter([
-                'webhook_secret_rotated' => $request->session()->get('flash.webhook_secret_rotated'),
                 'plan_limit' => $request->session()->get('flash.plan_limit'),
             ], fn ($v) => $v !== null),
             // Unread lead notifications for the bell UI.

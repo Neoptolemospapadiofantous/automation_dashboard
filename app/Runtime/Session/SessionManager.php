@@ -17,8 +17,8 @@ class SessionManager
 {
     /**
      * Fresh session for a launch — deletes any existing (agent, visitor)
-     * row first, matching Voiceflow's reset-on-launch semantics (the embed
-     * iframe calls launch on every open; the greeting replays).
+     * row first, reset-on-launch semantics: the embed iframe calls launch on
+     * every open and the greeting replays from a fresh session.
      */
     public function reset(Agent $agent, string $visitorId, string $initialState): RuntimeSession
     {

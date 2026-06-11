@@ -31,7 +31,7 @@ class NativeDashboardTest extends TestCase
         ]);
     }
 
-    // ── Chat page (VoiceflowController native branch) ───────────────────────
+    // ── Chat page (ChatController) ──────────────────────────────────────────
 
     public function test_chat_launch_uses_native_engine_and_bills_credits(): void
     {
@@ -176,6 +176,53 @@ class NativeDashboardTest extends TestCase
             ->assertOk()
             ->assertJsonPath('answer', 'The Starter plan is $99/month.')
             ->assertJsonPath('chunks.0.source.name', 'Pricing');
+    }
+
+    // ── Streaming (SSE) ──────────────────────────────────────────────────────
+
+    public function test_chat_interact_stream_emits_trace_and_summary_and_bills(): void
+    {
+        Http::fake([
+            'api.anthropic.com/*' => Http::response($this->text('Streamed reply!')),
+        ]);
+
+        $user = $this->userWithNativeAgent();
+        $user->currentTeam->forceFill(['credit_balance' => 100])->save();
+
+        $response = $this->actingAs($user)->post(route('chat.interact-stream'), [
+            'user_id' => 'web-stream-1',
+            'message' => 'hello',
+        ]);
+
+        $response->assertOk();
+        $body = $response->streamedContent();
+
+        // SSE protocol the Chat page speaks: trace frame with the message…
+        $this->assertStringContainsString('event: trace', $body);
+        $this->assertStringContainsString('Streamed reply!', $body);
+        // …then a summary frame with the billing total (1 user + 1 reply).
+        $this->assertStringContainsString('event: summary', $body);
+        $this->assertStringContainsString('"messages_billed":2', $body);
+
+        // Billing + transcript recording ran after the stream.
+        $this->assertSame(98, $user->currentTeam->fresh()->credit_balance);
+        $this->assertDatabaseHas('messages', ['role' => 'agent', 'text' => 'Streamed reply!']);
+    }
+
+    public function test_chat_interact_stream_emits_402_error_frame_when_dry(): void
+    {
+        $user = $this->userWithNativeAgent();
+        $user->currentTeam->forceFill(['credit_balance' => 0])->save();
+
+        $response = $this->actingAs($user)->post(route('chat.interact-stream'), [
+            'user_id' => 'web-stream-2',
+            'message' => 'hello',
+        ]);
+
+        $response->assertOk(); // SSE always 200; the error rides the frame
+        $body = $response->streamedContent();
+        $this->assertStringContainsString('event: error', $body);
+        $this->assertStringContainsString('"status":402', $body);
     }
 
     // ── Signup provisioning ─────────────────────────────────────────────────

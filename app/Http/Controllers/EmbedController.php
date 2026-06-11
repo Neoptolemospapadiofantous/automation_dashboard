@@ -21,9 +21,12 @@ use Illuminate\Support\Str;
  *
  * Endpoints are unauthenticated (the JS runs on someone else's site).
  * Authorization is per-agent-slug: anyone with the slug can embed,
- * but the agent must be `active`. Credit consumption is charged to
- * the agent's team — customers pay for embedded conversations the
- * same way they pay for dashboard chats.
+ * but the agent must be `active`.
+ *
+ * Billing (differs from dashboard chat ON PURPOSE — simpler public
+ * surface): interact() debits 1 flat credit per visitor turn; launch()
+ * only pre-checks hasCredits(1) and the greeting itself is free. The
+ * dashboard bills 1 + replies on every call including launch.
  *
  * Visitor identity: a 30-day cookie scoped to the embed flow. The
  * visitor doesn't have a Flowstack account; the cookie is just a

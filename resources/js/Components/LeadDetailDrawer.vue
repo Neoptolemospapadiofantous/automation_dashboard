@@ -51,7 +51,7 @@ async function saveNotes() {
 const fmtDate = (iso) => (iso ? new Date(iso).toLocaleString() : '—');
 
 // Captured-vars renderer — shows entries as key/value rows, falls back
-// to a single line for primitive values. Voiceflow can shove anything
+// to a single line for primitive values. the engine can shove anything
 // into `captured`, so be defensive.
 const capturedRows = computed(() => {
     const c = props.lead?.captured;

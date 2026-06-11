@@ -24,8 +24,6 @@ class DatabaseSeeder extends Seeder
 
         $agent = Agent::factory()->for($user->currentTeam)->create([
             'name' => 'Demo agent',
-            'voiceflow_api_key' => 'VF.DM.demo.placeholder',
-            'voiceflow_project_id' => 'demo000000000000000000aa',
         ]);
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
 

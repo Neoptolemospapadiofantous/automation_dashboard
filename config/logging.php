@@ -73,21 +73,6 @@ return [
             'replace_placeholders' => true,
         ],
 
-        // Dedicated channel for Voiceflow HTTP traffic — every call from
-        // VoiceflowHttpClient::ensureOk() logs here with endpoint label +
-        // status + context. Keeps the noisy upstream traffic out of
-        // laravel.log so the main log stays useful. Referenced by:
-        //   - VoiceflowHttpClient.php (config('services.voiceflow.log_channel'))
-        //   - SystemArchitectureController (advertises storage/logs/voiceflow.log
-        //     to operators in the in-app docs page)
-        'voiceflow' => [
-            'driver' => 'daily',
-            'path' => storage_path('logs/voiceflow.log'),
-            'level' => env('VOICEFLOW_LOG_LEVEL', 'info'),
-            'days' => env('LOG_DAILY_DAYS', 14),
-            'replace_placeholders' => true,
-        ],
-
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

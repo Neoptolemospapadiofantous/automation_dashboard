@@ -84,9 +84,6 @@
         "hermes-dashboard": [
             "bash scripts/hermes_dashboard.sh"
         ],
-        "voiceflow:coverage": [
-            "bash scripts/voiceflow_coverage.sh"
-        ],
         "deploy": [
             "bin/deploy.sh"
         ],

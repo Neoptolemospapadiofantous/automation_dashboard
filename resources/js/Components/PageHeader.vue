@@ -7,7 +7,7 @@ import { Link } from '@inertiajs/vue3';
  * <PageHeader
  *   :breadcrumbs="[{ label: 'Agents', href: route('agents.index') }, { label: agent.name }]"
  *   title="Sales Bot"
- *   description="Voiceflow Dialog Manager configuration"
+ *   description="Engine configuration"
  * >
  *   <template #actions>
  *     <PrimaryButton>Save</PrimaryButton>

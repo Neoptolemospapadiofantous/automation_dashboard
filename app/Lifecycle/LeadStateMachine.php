@@ -22,7 +22,7 @@ use App\Events\Domain\LeadWon;
  * - Going forward is allowed; explicit demotions are not (a regressed
  *   "qualified" → "engaging" is almost always a bug, not a feature).
  * - Cross-step jumps (new → assigned) are allowed because the kanban UI
- *   lets reps drag cards across columns; auto-status from the Voiceflow
+ *   lets reps drag cards across columns; auto-status from the engine
  *   webhook is still gated by its own logic.
  */
 class LeadStateMachine extends StateMachine

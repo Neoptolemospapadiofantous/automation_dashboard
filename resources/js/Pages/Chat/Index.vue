@@ -141,7 +141,7 @@ async function sendStreaming(message) {
     // Tail
     if (buffer.trim()) handleSseFrame(buffer, assistantBubble);
 
-    // Strip empty bubble if Voiceflow returned no text traces.
+    // Strip empty bubble if the engine returned no text traces.
     if (assistantBubble.text === '') {
         messages.value = messages.value.filter((m) => m !== assistantBubble);
     }
