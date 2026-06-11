@@ -9,7 +9,49 @@ const props = defineProps({
     stats: { type: Object, required: true },
     funnel: { type: Array, required: true },
     rep_load: { type: Array, required: true },
+    setup: { type: Object, default: () => ({ complete: true, steps: [] }) },
 });
+
+// Setup checklist copy + destinations, keyed to the backend's step keys.
+// The card self-completes (each step is derived from live data) and
+// disappears entirely once everything is done.
+const SETUP_META = {
+    engine: {
+        label: 'Connect the engine',
+        hint: 'Set ANTHROPIC_API_KEY + OPENAI_API_KEY in .env, then config:clear.',
+        route: null,
+    },
+    knowledge: {
+        label: 'Add knowledge',
+        hint: 'Paste your FAQ, pricing, or a docs URL so answers are grounded.',
+        route: 'knowledge.index',
+    },
+    behavior: {
+        label: 'Publish behavior',
+        hint: 'Tell the agent who you sell to and how to qualify — then Publish.',
+        route: 'agents.versions.index',
+    },
+    chat: {
+        label: 'Test it in Chat',
+        hint: 'Talk to your agent the way a lead would.',
+        route: 'chat.index',
+    },
+    install: {
+        label: 'Install the widget',
+        hint: 'Copy the snippet onto your website — done when the first visitor opens it.',
+        route: 'install.index',
+    },
+    lead: {
+        label: 'Capture your first lead',
+        hint: 'Share contact details in a chat and watch the card appear on the board.',
+        route: 'leads.index',
+    },
+};
+
+const setupSteps = computed(() =>
+    (props.setup.steps ?? []).map((s) => ({ ...s, ...(SETUP_META[s.key] ?? { label: s.key, hint: '', route: null }) })),
+);
+const setupDone = computed(() => setupSteps.value.filter((s) => s.done).length);
 
 const page = usePage();
 const teamId = computed(() => page.props.auth.user.current_team_id);
@@ -64,6 +106,38 @@ const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)
 
         <div class="py-8">
             <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+                <!-- Setup checklist — self-completing, hidden once done -->
+                <div v-if="!setup.complete" class="rounded-xl border border-indigo-100 bg-indigo-50/50 p-5">
+                    <div class="mb-3 flex items-center justify-between">
+                        <h2 class="text-sm font-semibold text-gray-900">Finish setting up your agent</h2>
+                        <span class="text-xs text-gray-500">{{ setupDone }}/{{ setupSteps.length }} done</span>
+                    </div>
+                    <ul class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        <li
+                            v-for="s in setupSteps"
+                            :key="s.key"
+                            class="flex items-start gap-2.5 rounded-lg bg-white px-3 py-2.5 shadow-sm"
+                            :class="s.done ? 'opacity-60' : ''"
+                        >
+                            <span
+                                class="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+                                :class="s.done ? 'bg-emerald-500 text-white' : 'border-2 border-gray-300 text-transparent'"
+                            >✓</span>
+                            <div class="min-w-0">
+                                <component
+                                    :is="s.route && !s.done ? 'a' : 'span'"
+                                    :href="s.route && !s.done ? route(s.route) : undefined"
+                                    class="text-xs font-medium"
+                                    :class="s.route && !s.done ? 'text-indigo-700 hover:underline' : 'text-gray-700'"
+                                >
+                                    {{ s.label }}
+                                </component>
+                                <p class="mt-0.5 text-[11px] leading-snug text-gray-400">{{ s.hint }}</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
                 <!-- Stat cards -->
                 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
                     <div v-for="c in cards" :key="c.label" class="rounded-xl bg-white p-4 shadow">
