@@ -56,8 +56,13 @@ const destroy = async (envId) => {
     useForm({}).delete(route('agents.environments.destroy', envId), { preserveScroll: true });
 };
 
-const exportUrl = (alias, version = 'published') =>
-    route('agents.environments.export', alias) + '?version=' + encodeURIComponent(version);
+// Defensive: route() THROWS during render if the param is undefined/null
+// (Ziggy "alias parameter is required"), which kills the entire list. A
+// bad row degrades to '#' instead of crashing the page.
+const exportUrl = (alias, version = 'published') => {
+    if (!alias) return '#';
+    return route('agents.environments.export', alias) + '?version=' + encodeURIComponent(version);
+};
 
 const splitRows = computed(() => {
     if (!props.trafficSplit || typeof props.trafficSplit !== 'object') return [];

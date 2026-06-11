@@ -51,9 +51,42 @@ class EnvironmentsController extends Controller
         return Inertia::render('Agents/Environments', [
             'configured' => true,
             'projectId' => $projectId,
-            'environments' => $environments,
+            'environments' => array_values(array_filter(array_map(
+                fn (array $env) => $this->normalizeEnvironment($env),
+                $environments,
+            ))),
             'trafficSplit' => $trafficSplit,
         ]);
+    }
+
+    /**
+     * Normalize Voiceflow's raw environment payload into the shape the Vue
+     * page renders. Voiceflow returns Mongo-style `_id` (and sometimes
+     * `name` instead of `alias`) — passing the raw body through left
+     * env.alias AND env.id undefined in the page, which crashed the render
+     * with "Ziggy error: 'alias' parameter is required" the moment
+     * exportUrl() built a route from undefined.
+     *
+     * Returns null for rows with no usable reference at all (skipped).
+     *
+     * @param  array<string, mixed>  $env
+     * @return array<string, mixed>|null
+     */
+    protected function normalizeEnvironment(array $env): ?array
+    {
+        $id = (string) ($env['id'] ?? $env['_id'] ?? '');
+        $alias = (string) ($env['alias'] ?? $env['name'] ?? '');
+
+        if ($id === '' && $alias === '') {
+            return null; // nothing to address it by — can't render actions
+        }
+
+        return [
+            'id' => $id !== '' ? $id : $alias,
+            'alias' => $alias !== '' ? $alias : null,
+            'isLive' => (bool) ($env['isLive'] ?? $env['live'] ?? false),
+            'updatedAt' => $env['updatedAt'] ?? $env['updated_at'] ?? null,
+        ];
     }
 
     public function clone(Request $request): RedirectResponse
