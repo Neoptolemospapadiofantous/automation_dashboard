@@ -52,8 +52,10 @@ php artisan tinker --execute="\App\Models\Agent::where('slug','SLUG')->first()->
 # Health (also: the health button on /agents/{slug})
 # → {ok, engine: 'native', llm_model, embedding_model}
 
-# Housekeeping (scheduled daily)
-php artisan runtime:prune-sessions
+# Housekeeping + ops (scheduled daily unless noted)
+php artisan runtime:prune-sessions     # drop idle sessions (30d)
+php artisan credits:grant-renewals     # annual-cycle renewals + webhook self-heal
+php artisan runtime:costs              # per-team LLM cost vs revenue (manual, ops-only)
 ```
 
 ## Quality tiers (per-agent model choice)

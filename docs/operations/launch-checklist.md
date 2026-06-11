@@ -26,11 +26,14 @@ Work through this top-to-bottom. Each section says what breaks if you skip it.
 
 **Skip symptom:** agent health card red; chat/embed return 503.
 
-New agents run on the Flowstack-owned engine (RUNTIME_DEFAULT_MODE=native).
-Two provider keys power it:
+New agents run on the Flowstack-owned engine. Two keys are required;
+a third is optional:
 
-- [ ] `ANTHROPIC_API_KEY` — console.anthropic.com → API keys (the chat loop)
-- [ ] `OPENAI_API_KEY` — platform.openai.com → API keys (KB embeddings, ~pennies)
+- [ ] `ANTHROPIC_API_KEY` — console.anthropic.com → API keys (Claude tiers)
+- [ ] `OPENAI_API_KEY` — platform.openai.com → API keys (KB embeddings + the ChatGPT tier)
+- [ ] `GEMINI_API_KEY` — OPTIONAL, aistudio.google.com/apikey (unlocks the Gemini
+      tier; must be a PAID-tier key — free keys train on your customers data)
+- [ ] Set monthly spend caps in each provider console (platform-level backstop)
 - [ ] `php artisan config:clear`
 - [ ] Verify: agent page → health button → `engine: native, ok: true`
 
@@ -46,9 +49,11 @@ Two provider keys power it:
   - [ ] Starter annual — $948/yr on the same product → copy `price_*` (optional; toggle hides without it)
   - [ ] Operator — recurring $399/mo → copy `price_*`
   - [ ] Operator annual — $3,828/yr → copy `price_*` (optional)
-  - [ ] Top-up Small — one-time $20 → copy `price_*`
-  - [ ] Top-up Medium — one-time $80 → copy `price_*`
-  - [ ] Top-up Large — one-time $300 → copy `price_*`
+  - [ ] Top-up Small — one-time $29 (1,000 credits) → copy `price_*`
+  - [ ] Top-up Medium — one-time $119 (5,000 credits) → copy `price_*`
+  - [ ] Top-up Large — one-time $399 (20,000 credits) → copy `price_*`
+        (packs MUST price above Operator's $0.016/credit — enforced by
+        BillingInvariantsTest; see docs/operations/pricing-audit.md)
 - [ ] dashboard.stripe.com/test/settings/billing/portal → **Activate test link**
       (without this, "Manage subscription" shows the friendly fallback error)
 - [ ] Install Stripe CLI → `stripe login` → `stripe listen --forward-to localhost:8000/webhooks/stripe`
@@ -119,6 +124,7 @@ Run as a brand-new user in a fresh browser/incognito session:
 8. [ ] **Leads**: trigger a capture via chat (or create manually) → appears on `/leads` → assign to a rep → rep gets bell + email
 9. [ ] **Leads detail**: open the captured lead → notes autosave + conversation links work
 10. [ ] **Analytics**: `/agents/{slug}/analytics` → counters, sparklines, funnel, heatmap populate
+11. [ ] **Model tiers**: `/agents/versions` → switch the tier (e.g. Haiku → ChatGPT) → Publish → chat again; the reply style changes and the turn debits the new multiplier (verify in /billing history)
 
 Bonus checks:
 - [ ] RBAC: invite a second user as Editor → confirm they cannot top-up / delete the agent / open the billing portal
