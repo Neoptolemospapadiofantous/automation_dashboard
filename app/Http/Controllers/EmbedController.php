@@ -11,6 +11,7 @@ use App\Runtime\Exceptions\RuntimeException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
 
@@ -102,7 +103,10 @@ class EmbedController extends Controller
         $agent = $this->resolveAgent($slug);
 
         $team = $agent->team;
-        if ($team instanceof Team && ! $team->hasCredits(1)) {
+        if (! $team instanceof Team) {
+            return response()->json(['error' => 'Agent misconfigured.'], 503);
+        }
+        if (! $team->hasCredits(1)) {
             return response()->json([
                 'error' => "This agent isn't available right now. Please try again later.",
             ], 402);
@@ -111,6 +115,27 @@ class EmbedController extends Controller
         $visitorId = $request->cookie("fs_embed_{$slug}");
         if (! is_string($visitorId) || $visitorId === '') {
             $visitorId = 'embed-'.Str::random(28);
+        }
+
+        // Greeting cap: launches are normally free (the visitor hasn't said
+        // anything yet), which makes them a token-burn vector for bots
+        // spread across IPs (the per-IP throttle alone can't see that).
+        // Past the daily allowance, a launch debits one credit like any
+        // other turn — real traffic spikes keep working, paid for.
+        $cap = max(0, (int) config('runtime.safety.free_greetings_per_day'));
+        $greetings = (int) Cache::increment($this->greetingCounterKey($team->id));
+        if ($greetings === 1) {
+            // First hit today sets the expiry; increments don't touch TTL.
+            Cache::put($this->greetingCounterKey($team->id), 1, now()->addDays(2));
+        }
+        if ($greetings > $cap) {
+            try {
+                $this->credits->consume(team: $team, amount: 1, agentId: $agent->id, meta: ['embed' => true, 'greeting_over_cap' => true]);
+            } catch (OutOfCredits) {
+                return response()->json([
+                    'error' => "This agent isn't available right now. Please try again later.",
+                ], 402);
+            }
         }
 
         // Routed through the Runtime contract (AppServiceProvider binds
@@ -176,6 +201,11 @@ class EmbedController extends Controller
         return response()->json([
             'traces' => $traces,
         ]);
+    }
+
+    protected function greetingCounterKey(int $teamId): string
+    {
+        return 'embed_greetings:'.$teamId.':'.now()->format('Ymd');
     }
 
     protected function resolveAgent(string $slug): Agent

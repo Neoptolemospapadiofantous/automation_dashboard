@@ -4,6 +4,7 @@ namespace App\Runtime\Flow;
 
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
+use App\Models\RuntimeUsage;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\LLM\AnthropicClient;
 use App\Runtime\Session\ConversationContext;
@@ -123,6 +124,10 @@ class FlowExecutor
         $session->variables = $vars;
 
         $this->sessions->appendHistory($session, $newEntries); // also saves + touches activity
+
+        // Durable cost rollup (runtime_usage) — sessions are ephemeral, this
+        // survives resets/pruning. Best-effort: never fail the visitor's turn.
+        rescue(fn () => RuntimeUsage::record($context->agent, $tokensIn, $tokensOut), report: true);
 
         if (trim($finalText) === '') {
             $finalText = 'Thanks — a teammate will follow up shortly.';

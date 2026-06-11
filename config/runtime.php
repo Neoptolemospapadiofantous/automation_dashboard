@@ -72,6 +72,25 @@ return [
     'safety' => [
         'max_tool_calls_per_turn' => (int) env('RUNTIME_MAX_TOOL_CALLS', 10),
         'max_turns_per_session' => (int) env('RUNTIME_MAX_TURNS', 100),
+        // Embed greetings are free (the visitor hasn't said anything yet),
+        // which makes them a token-burn vector for bots spread across IPs.
+        // Beyond this many launches per team per day, launch() debits one
+        // credit like any other turn. 500 ≈ a very busy small site.
+        'free_greetings_per_day' => (int) env('RUNTIME_FREE_GREETINGS_PER_DAY', 500),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Provider pricing (USD per million tokens)
+    |--------------------------------------------------------------------------
+    |
+    | Used ONLY by the runtime:costs margin report — never by billing
+    | (customers pay credits, not tokens). Defaults match Haiku 4.5.
+    | Update when switching ANTHROPIC_MODEL_DEFAULT.
+    */
+    'pricing' => [
+        'input_per_mtok' => (float) env('RUNTIME_PRICE_INPUT_MTOK', 1.00),
+        'output_per_mtok' => (float) env('RUNTIME_PRICE_OUTPUT_MTOK', 5.00),
     ],
 
     /*
