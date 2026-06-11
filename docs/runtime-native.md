@@ -61,11 +61,19 @@ php artisan runtime:prune-sessions
 Customers pick a TIER per agent on the Versions page — never a raw model
 name. Tier couples model to credit price so margin survives by design:
 
-| Tier | Model (env-overridable) | Credits/msg | Provider $/MTok in/out |
-|---|---|---|---|
-| Claude Haiku | claude-haiku-4-5 | 1 | $1 / $5 |
-| Claude Sonnet | claude-sonnet-4-6 | 3 | $3 / $15 |
-| Claude Opus | claude-opus-4-8 | 10 | $5 / $25 |
+| Tier | Provider | Model (env-overridable) | Credits/msg | $/MTok in/out |
+|---|---|---|---|---|
+| Claude Haiku | Anthropic | claude-haiku-4-5 | 1 | $1 / $5 |
+| Claude Sonnet | Anthropic | claude-sonnet-4-6 | 3 | $3 / $15 |
+| Claude Opus | Anthropic | claude-opus-4-8 | 10 | $5 / $25 |
+| ChatGPT | OpenAI | gpt-5.1 | 3 | $1.25 / $10 |
+| Gemini | Google | gemini-2.5-flash | 1 | $0.30 / $2.50 |
+
+Tiers whose provider API key is missing are greyed out in the picker and
+rejected by validation. The session history stays in ONE canonical
+(Anthropic-shaped) format — OpenAI/Gemini clients translate on the wire
+both ways, so switching an agent's provider mid-conversation keeps its
+history replayable.
 
 Legacy tier keys (standard/enhanced) alias to haiku/sonnet — published
 rows from before the lineup keep working without a data migration.

@@ -7,6 +7,7 @@ use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
 use App\Models\Team;
+use App\Runtime\LLM\LlmRouter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +64,8 @@ class AgentVersionsController extends Controller
                 'label' => (string) ($tier['label'] ?? ucfirst($key)),
                 'description' => (string) ($tier['description'] ?? ''),
                 'credits_per_message' => (int) ($tier['credits_per_message'] ?? 1),
+                // Greyed out in the UI until the provider's API key is set.
+                'available' => LlmRouter::providerAvailable((string) ($tier['provider'] ?? 'anthropic')),
             ];
         }
 
@@ -219,7 +222,13 @@ class AgentVersionsController extends Controller
      */
     protected function validateConfig(Request $request): array
     {
-        $tierKeys = array_keys((array) config('runtime.tiers'));
+        // Only tiers whose provider key is configured are selectable.
+        $tierKeys = [];
+        foreach ((array) config('runtime.tiers') as $key => $tier) {
+            if (LlmRouter::providerAvailable((string) ($tier['provider'] ?? 'anthropic'))) {
+                $tierKeys[] = $key;
+            }
+        }
 
         $data = $request->validate([
             'instructions' => ['nullable', 'string', 'max:4000'],

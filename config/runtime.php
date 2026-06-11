@@ -26,6 +26,18 @@ return [
             'model_default' => env('ANTHROPIC_MODEL_DEFAULT', 'claude-haiku-4-5-20251001'),
             'max_tokens' => (int) env('ANTHROPIC_MAX_TOKENS', 1024),
         ],
+        // ChatGPT tier. Reuses the OPENAI_API_KEY already present for
+        // embeddings unless RUNTIME_OPENAI_API_KEY overrides it.
+        'openai' => [
+            'api_key' => env('RUNTIME_OPENAI_API_KEY', env('OPENAI_API_KEY')),
+            'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com'),
+            'model_default' => env('RUNTIME_TIER_GPT_MODEL', 'gpt-5.1'),
+        ],
+        'google' => [
+            'api_key' => env('GEMINI_API_KEY'),
+            'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com'),
+            'model_default' => env('RUNTIME_TIER_GEMINI_MODEL', 'gemini-2.5-flash'),
+        ],
     ],
 
     /*
@@ -56,31 +68,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Per-tenant safety rails
-    |--------------------------------------------------------------------------
-    |
-    | Hard caps that prevent a single conversation (intentional abuse or
-    | runaway loop) from burning the customer's credit balance.
-    |
-    | max_tool_calls_per_turn: how many tool calls the LLM can chain
-    |   inside one user turn before we force a stop. Real agents need
-    |   ~2-3; >10 indicates a loop.
-    |
-    | max_turns_per_session: hard ceiling on session length. Realistic
-    |   conversations end around turn 15-20; 100 is generous.
-    */
-    'safety' => [
-        'max_tool_calls_per_turn' => (int) env('RUNTIME_MAX_TOOL_CALLS', 10),
-        'max_turns_per_session' => (int) env('RUNTIME_MAX_TURNS', 100),
-        // Embed greetings are free (the visitor hasn't said anything yet),
-        // which makes them a token-burn vector for bots spread across IPs.
-        // Beyond this many launches per team per day, launch() debits one
-        // credit like any other turn. 500 ≈ a very busy small site.
-        'free_greetings_per_day' => (int) env('RUNTIME_FREE_GREETINGS_PER_DAY', 500),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Quality tiers — the user-facing model choice
     |--------------------------------------------------------------------------
     |
@@ -95,6 +82,7 @@ return [
     */
     'tiers' => [
         'haiku' => [
+            'provider' => 'anthropic',
             'label' => 'Claude Haiku',
             'description' => 'Fastest replies at the lowest cost. Excellent for FAQ answering, lead capture, and high-traffic sites.',
             'model' => env('RUNTIME_TIER_HAIKU_MODEL', 'claude-haiku-4-5-20251001'),
@@ -102,6 +90,7 @@ return [
             'pricing_per_mtok' => ['in' => 1.00, 'out' => 5.00],
         ],
         'sonnet' => [
+            'provider' => 'anthropic',
             'label' => 'Claude Sonnet',
             'description' => 'Smarter conversations with deeper reasoning. Best for complex products, nuanced qualification, and longer sales cycles.',
             'model' => env('RUNTIME_TIER_SONNET_MODEL', 'claude-sonnet-4-6'),
@@ -109,11 +98,28 @@ return [
             'pricing_per_mtok' => ['in' => 3.00, 'out' => 15.00],
         ],
         'opus' => [
+            'provider' => 'anthropic',
             'label' => 'Claude Opus',
             'description' => 'The most capable model. Expert-grade reasoning for technical sales, high-stakes conversations, and premium experiences.',
             'model' => env('RUNTIME_TIER_OPUS_MODEL', 'claude-opus-4-8'),
             'credits_per_message' => (int) env('RUNTIME_TIER_OPUS_CREDITS', 10),
             'pricing_per_mtok' => ['in' => 5.00, 'out' => 25.00],
+        ],
+        'gpt' => [
+            'provider' => 'openai',
+            'label' => 'ChatGPT',
+            'description' => 'OpenAI\'s flagship model. Strong general reasoning and a familiar conversational style.',
+            'model' => env('RUNTIME_TIER_GPT_MODEL', 'gpt-5.1'),
+            'credits_per_message' => (int) env('RUNTIME_TIER_GPT_CREDITS', 3),
+            'pricing_per_mtok' => ['in' => 1.25, 'out' => 10.00],
+        ],
+        'gemini' => [
+            'provider' => 'google',
+            'label' => 'Gemini',
+            'description' => 'Google\'s fast multimodal model. Snappy answers at low cost with solid factual recall.',
+            'model' => env('RUNTIME_TIER_GEMINI_MODEL', 'gemini-2.5-flash'),
+            'credits_per_message' => (int) env('RUNTIME_TIER_GEMINI_CREDITS', 1),
+            'pricing_per_mtok' => ['in' => 0.30, 'out' => 2.50],
         ],
     ],
 

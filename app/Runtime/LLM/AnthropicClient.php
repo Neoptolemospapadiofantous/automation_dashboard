@@ -21,7 +21,7 @@ use Throwable;
  *   - Misconfigured       — no API key set
  *   - UpstreamUnavailable — Anthropic returned an error / unreachable
  */
-class AnthropicClient
+class AnthropicClient implements LlmClient
 {
     /**
      * Run one completion turn.

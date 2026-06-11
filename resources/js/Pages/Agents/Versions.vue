@@ -121,10 +121,13 @@ const dirty = computed(() => form.isDirty);
                             <label
                                 v-for="t in tiers"
                                 :key="t.key"
-                                class="flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition"
-                                :class="form.model_tier === t.key ? 'border-indigo-400 bg-indigo-50/50 ring-1 ring-indigo-300' : 'border-gray-200 hover:border-gray-300'"
+                                class="flex items-start gap-2.5 rounded-lg border p-3 text-sm transition"
+                                :class="[
+                                    t.available === false ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+                                    form.model_tier === t.key ? 'border-indigo-400 bg-indigo-50/50 ring-1 ring-indigo-300' : 'border-gray-200 hover:border-gray-300',
+                                ]"
                             >
-                                <input v-model="form.model_tier" type="radio" :value="t.key" class="mt-0.5 text-indigo-600 focus:ring-indigo-400" />
+                                <input v-model="form.model_tier" type="radio" :value="t.key" :disabled="t.available === false" class="mt-0.5 text-indigo-600 focus:ring-indigo-400" />
                                 <span>
                                     <span class="flex items-center gap-2 font-medium text-gray-900">
                                         {{ t.label }}
@@ -132,7 +135,7 @@ const dirty = computed(() => form.isDirty);
                                             {{ t.credits_per_message }} cr/msg
                                         </span>
                                     </span>
-                                    <span class="mt-1 block text-xs leading-snug text-gray-500">{{ t.description }}</span>
+                                    <span class="mt-1 block text-xs leading-snug text-gray-500">{{ t.available === false ? 'Not available yet on this workspace.' : t.description }}</span>
                                 </span>
                             </label>
                         </div>

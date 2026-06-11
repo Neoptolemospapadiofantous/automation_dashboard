@@ -97,7 +97,7 @@ class QualityTierTest extends TestCase
         $this->assertSame(99, $user->currentTeam->fresh()->credit_balance);
     }
 
-    public function test_sonnet_tokens_land_in_the_enhanced_usage_bucket(): void
+    public function test_sonnet_tokens_land_in_a_sonnet_tier_row(): void
     {
         $user = $this->owner();
         $agent = $user->currentTeam->currentAgent;
@@ -106,10 +106,9 @@ class QualityTierTest extends TestCase
         app(Runtime::class)->launch($agent, 'v1');
 
         $row = RuntimeUsage::where('team_id', $user->currentTeam->id)->first();
-        $this->assertSame(100, $row->tokens_in_enhanced);
-        $this->assertSame(50, $row->tokens_out_enhanced);
-        $this->assertSame(0, $row->tokens_in);
-        $this->assertSame(0, $row->tokens_out);
+        $this->assertSame('sonnet', $row->tier);
+        $this->assertSame(100, $row->tokens_in);
+        $this->assertSame(50, $row->tokens_out);
     }
 
     public function test_unknown_tier_degrades_to_haiku(): void
@@ -216,8 +215,9 @@ class QualityTierTest extends TestCase
         $this->assertSame(90, $user->currentTeam->fresh()->credit_balance); // 1 × 10
 
         $row = RuntimeUsage::where('team_id', $user->currentTeam->id)->first();
-        $this->assertSame(100, $row->tokens_in_opus);
-        $this->assertSame(50, $row->tokens_out_opus);
+        $this->assertSame('opus', $row->tier);
+        $this->assertSame(100, $row->tokens_in);
+        $this->assertSame(50, $row->tokens_out);
     }
 
     public function test_legacy_tier_keys_alias_to_the_lineup(): void

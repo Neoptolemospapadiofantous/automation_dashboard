@@ -6,7 +6,7 @@ use App\Models\Agent;
 use App\Models\AgentConfigVersion;
 use App\Models\RuntimeUsage;
 use App\Runtime\Contracts\KnowledgeStore;
-use App\Runtime\LLM\AnthropicClient;
+use App\Runtime\LLM\LlmRouter;
 use App\Runtime\Session\ConversationContext;
 use App\Runtime\Session\SessionManager;
 use App\Runtime\Tools\ToolRegistry;
@@ -32,7 +32,7 @@ class FlowExecutor
     public const OPENING_MESSAGE = '[The visitor just opened the chat window. Greet them.]';
 
     public function __construct(
-        protected AnthropicClient $llm,
+        protected LlmRouter $llm,
         protected ToolRegistry $tools,
         protected KnowledgeStore $knowledge,
         protected SessionManager $sessions,
@@ -49,10 +49,11 @@ class FlowExecutor
         $system = $this->systemPrompt($context->agent, $state, $context);
         $specs = $this->tools->specs($state->tools);
 
-        // Quality tier (Versions page): resolves the model for every LLM
-        // call this turn. Unknown/absent tiers degrade to standard.
+        // Quality tier (Versions page): resolves provider + model for every
+        // LLM call this turn. Unknown/absent tiers degrade to the default.
         $tier = AgentConfigVersion::publishedTier($context->agent->id);
         $model = AgentConfigVersion::modelForTier($tier);
+        $client = $this->llm->clientFor((string) config("runtime.tiers.{$tier}.provider", 'anthropic'));
 
         $userEntry = ['role' => 'user', 'content' => $context->userMessage];
         $messages = array_merge((array) ($session->history ?? []), [$userEntry]);
@@ -68,7 +69,7 @@ class FlowExecutor
         $tokensOut = 0;
 
         while (true) {
-            $result = $this->llm->complete($system, $messages, $specs, $model);
+            $result = $client->complete($system, $messages, $specs, $model);
             $tokensIn += $result->inputTokens;
             $tokensOut += $result->outputTokens;
 

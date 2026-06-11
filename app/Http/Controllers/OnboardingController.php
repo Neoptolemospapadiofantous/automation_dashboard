@@ -6,6 +6,7 @@ use App\Actions\Agents\CreateAgent;
 use App\Lifecycle\OnboardingState;
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
+use App\Runtime\LLM\LlmRouter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -37,6 +38,7 @@ class OnboardingController extends Controller
                 'label' => (string) ($tier['label'] ?? ucfirst($key)),
                 'description' => (string) ($tier['description'] ?? ''),
                 'credits_per_message' => (int) ($tier['credits_per_message'] ?? 1),
+                'available' => LlmRouter::providerAvailable((string) ($tier['provider'] ?? 'anthropic')),
             ];
         }
 
@@ -58,7 +60,7 @@ class OnboardingController extends Controller
             'team_size' => ['nullable', 'string', 'in:solo,2-5,6-20,21-100,100+'],
             'website' => ['nullable', 'url', 'max:255'],
             // Quality tier — couples model to credit price (see runtime.tiers).
-            'model_tier' => ['nullable', 'string', 'in:'.implode(',', array_keys((array) config('runtime.tiers')))],
+            'model_tier' => ['nullable', 'string', 'in:'.implode(',', $this->availableTierKeys())],
         ]);
 
         $team = $request->user()->currentTeam;
@@ -128,6 +130,21 @@ class OnboardingController extends Controller
                 'slug' => $agent->slug,
             ],
         ]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function availableTierKeys(): array
+    {
+        $keys = [];
+        foreach ((array) config('runtime.tiers') as $key => $tier) {
+            if (LlmRouter::providerAvailable((string) ($tier['provider'] ?? 'anthropic'))) {
+                $keys[] = $key;
+            }
+        }
+
+        return $keys;
     }
 
     /**

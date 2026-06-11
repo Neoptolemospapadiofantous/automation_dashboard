@@ -30,17 +30,20 @@ class RuntimeCosts extends Command
             : now()->startOfMonth();
         $monthEnd = $month->copy()->endOfMonth();
 
-        $haiku = (array) config('runtime.tiers.haiku.pricing_per_mtok', ['in' => 1.0, 'out' => 5.0]);
-        $sonnet = (array) config('runtime.tiers.sonnet.pricing_per_mtok', ['in' => 3.0, 'out' => 15.0]);
-        $opus = (array) config('runtime.tiers.opus.pricing_per_mtok', ['in' => 5.0, 'out' => 25.0]);
+        // Per-tier provider rates from config; unknown tiers fall back to
+        // the most expensive rates so estimates err pessimistic.
+        $rates = [];
+        foreach ((array) config('runtime.tiers') as $key => $tier) {
+            $rates[$key] = (array) ($tier['pricing_per_mtok'] ?? ['in' => 5.0, 'out' => 25.0]);
+        }
 
         // DB::table (not the model): SUM aliases are not model attributes.
         $usage = DB::table('runtime_usage')
             ->whereBetween('date', [$month->toDateString(), $monthEnd->toDateString().' 23:59:59'])
-            ->selectRaw('team_id, SUM(turns) as turns, SUM(tokens_in) as tin, SUM(tokens_out) as tout, SUM(tokens_in_enhanced) as tin_e, SUM(tokens_out_enhanced) as tout_e, SUM(tokens_in_opus) as tin_o, SUM(tokens_out_opus) as tout_o')
-            ->groupBy('team_id')
+            ->selectRaw('team_id, tier, SUM(turns) as turns, SUM(tokens_in) as tin, SUM(tokens_out) as tout')
+            ->groupBy('team_id', 'tier')
             ->get()
-            ->keyBy('team_id');
+            ->groupBy('team_id');
 
         if ($usage->isEmpty()) {
             $this->components->info("No runtime usage recorded for {$month->format('Y-m')}.");
@@ -48,24 +51,30 @@ class RuntimeCosts extends Command
             return self::SUCCESS;
         }
 
-        $teams = Team::query()->whereIn('id', $usage->keys())->get()->keyBy('id');
+        $teams = Team::query()->whereIn('id', $usage->keys()->all())->get()->keyBy('id');
 
         $rows = [];
         $totals = ['turns' => 0, 'cost' => 0.0, 'revenue' => 0.0];
 
-        foreach ($usage as $teamId => $u) {
+        foreach ($usage as $teamId => $tierRows) {
             $team = $teams->get($teamId);
             $team = $team instanceof Team ? $team : null;
             $plan = $team?->planObject();
             $teamName = $team !== null ? $team->name : "team #{$teamId}";
 
-            // Each tier bucket priced at its own provider rates.
-            $cost = ((int) $u->tin / 1_000_000) * (float) $haiku['in']
-                + ((int) $u->tout / 1_000_000) * (float) $haiku['out']
-                + ((int) $u->tin_e / 1_000_000) * (float) $sonnet['in']
-                + ((int) $u->tout_e / 1_000_000) * (float) $sonnet['out']
-                + ((int) $u->tin_o / 1_000_000) * (float) $opus['in']
-                + ((int) $u->tout_o / 1_000_000) * (float) $opus['out'];
+            // Each tier row priced at its own provider rates.
+            $cost = 0.0;
+            $turns = 0;
+            $tin = 0;
+            $tout = 0;
+            foreach ($tierRows as $u) {
+                $rate = $rates[(string) $u->tier] ?? ['in' => 5.0, 'out' => 25.0];
+                $cost += ((int) $u->tin / 1_000_000) * (float) $rate['in']
+                    + ((int) $u->tout / 1_000_000) * (float) $rate['out'];
+                $turns += (int) $u->turns;
+                $tin += (int) $u->tin;
+                $tout += (int) $u->tout;
+            }
             $revenue = (float) ($plan?->priceUsd() ?? 0);
 
             $creditsUsed = (int) abs(CreditTransaction::query()
@@ -77,16 +86,16 @@ class RuntimeCosts extends Command
             $rows[] = [
                 $teamName,
                 $plan?->label() ?? '—',
-                number_format((int) $u->turns),
-                number_format((int) $u->tin + (int) $u->tin_e + (int) $u->tin_o),
-                number_format((int) $u->tout + (int) $u->tout_e + (int) $u->tout_o),
+                number_format($turns),
+                number_format($tin),
+                number_format($tout),
                 number_format($creditsUsed),
                 '$'.number_format($cost, 2),
                 '$'.number_format($revenue, 2),
                 $revenue > 0 ? round((1 - $cost / $revenue) * 100).'%' : '—',
             ];
 
-            $totals['turns'] += (int) $u->turns;
+            $totals['turns'] += $turns;
             $totals['cost'] += $cost;
             $totals['revenue'] += $revenue;
         }
