@@ -147,6 +147,59 @@ class QualityTierTest extends TestCase
         $this->assertSame(1, AgentConfigVersion::creditsPerMessage($standardAgent->id));
     }
 
+    public function test_onboarding_with_enhanced_tier_seeds_published_config(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+
+        $this->actingAs($user)->post(route('onboarding.start'), [
+            'name' => 'Closer bot',
+            'model_tier' => 'enhanced',
+        ])->assertRedirect(route('onboarding.done'));
+
+        $agent = $user->currentTeam->fresh()->currentAgent;
+        $this->assertSame('enhanced', AgentConfigVersion::publishedTier($agent->id));
+        $this->assertSame(3, AgentConfigVersion::creditsPerMessage($agent->id));
+    }
+
+    public function test_onboarding_with_standard_tier_seeds_nothing(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+
+        $this->actingAs($user)->post(route('onboarding.start'), [
+            'name' => 'FAQ bot',
+            'model_tier' => 'standard',
+        ])->assertRedirect(route('onboarding.done'));
+
+        // Standard is the default — no config row, so the dashboard
+        // checklist's 'Publish behavior' step stays meaningful.
+        $this->assertSame(0, AgentConfigVersion::count());
+        $agent = $user->currentTeam->fresh()->currentAgent;
+        $this->assertSame(1, AgentConfigVersion::creditsPerMessage($agent->id));
+    }
+
+    public function test_onboarding_reclick_does_not_overwrite_tier(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+
+        $this->actingAs($user)->post(route('onboarding.start'), ['model_tier' => 'enhanced']);
+        // Double-submit with a different tier: existing agent is reused,
+        // its config must NOT be touched.
+        $this->actingAs($user)->post(route('onboarding.start'), ['model_tier' => 'standard']);
+
+        $agent = $user->currentTeam->fresh()->currentAgent;
+        $this->assertSame('enhanced', AgentConfigVersion::publishedTier($agent->id));
+        $this->assertSame(1, AgentConfigVersion::count());
+    }
+
+    public function test_onboarding_rejects_bogus_tier(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+
+        $this->actingAs($user)->post(route('onboarding.start'), [
+            'model_tier' => 'gpt-5-ultra',
+        ])->assertSessionHasErrors('model_tier');
+    }
+
     private function publishTier(Agent $agent, string $tier): void
     {
         AgentConfigVersion::create([

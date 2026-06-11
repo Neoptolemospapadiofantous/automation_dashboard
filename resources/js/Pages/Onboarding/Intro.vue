@@ -4,6 +4,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 
 defineProps({
     team: { type: Object, required: true },
+    tiers: { type: Array, default: () => [] },
 });
 
 // Optional segmentation fields — all nullable server-side. Filling these
@@ -14,6 +15,7 @@ const form = useForm({
     use_case: null,
     team_size: null,
     website: '',
+    model_tier: 'standard',
 });
 
 const industries = [
@@ -110,6 +112,32 @@ function continueOn() {
                                 <option v-for="ts in teamSizes" :key="ts.value" :value="ts.value">{{ ts.label }}</option>
                             </select>
                         </div>
+                    </div>
+
+                    <!-- Response quality tier — couples model to credit cost -->
+                    <div>
+                        <label class="text-sm font-medium text-gray-800">Response quality</label>
+                        <p class="mt-0.5 text-[11px] text-gray-500">
+                            How smart should your agent be? You can change this per agent anytime on the Versions page.
+                        </p>
+                        <div class="mt-2 flex gap-3">
+                            <label
+                                v-for="t in tiers"
+                                :key="t.key"
+                                class="flex flex-1 cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition"
+                                :class="form.model_tier === t.key ? 'border-indigo-400 bg-indigo-50/50 ring-1 ring-indigo-300' : 'border-gray-200 hover:border-gray-300'"
+                            >
+                                <input v-model="form.model_tier" type="radio" :value="t.key" class="mt-0.5 text-indigo-600 focus:ring-indigo-400" />
+                                <span>
+                                    <span class="font-medium text-gray-900">{{ t.label }}</span>
+                                    <span class="block text-[11px] text-gray-500">
+                                        {{ t.credits_per_message }} credit{{ t.credits_per_message > 1 ? 's' : '' }} / message
+                                        {{ t.key === 'enhanced' ? '· deeper reasoning for complex products' : '· fast, great for lead capture' }}
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+                        <div v-if="form.errors.model_tier" class="mt-1 text-xs text-rose-600">{{ form.errors.model_tier }}</div>
                     </div>
 
                     <!-- Website — where they'll embed -->

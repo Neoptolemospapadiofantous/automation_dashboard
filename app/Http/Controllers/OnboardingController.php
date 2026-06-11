@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Agents\CreateAgent;
 use App\Lifecycle\OnboardingState;
 use App\Models\Agent;
+use App\Models\AgentConfigVersion;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -29,8 +30,18 @@ class OnboardingController extends Controller
             return $jump;
         }
 
+        $tiers = [];
+        foreach ((array) config('runtime.tiers') as $key => $tier) {
+            $tiers[] = [
+                'key' => $key,
+                'label' => (string) ($tier['label'] ?? ucfirst($key)),
+                'credits_per_message' => (int) ($tier['credits_per_message'] ?? 1),
+            ];
+        }
+
         return Inertia::render('Onboarding/Intro', [
             'team' => ['id' => $request->user()->currentTeam->id, 'name' => $request->user()->currentTeam->name],
+            'tiers' => $tiers,
         ]);
     }
 
@@ -45,6 +56,8 @@ class OnboardingController extends Controller
             'use_case' => ['nullable', 'string', 'in:lead_capture,customer_support,scheduling,qualification,faq,other'],
             'team_size' => ['nullable', 'string', 'in:solo,2-5,6-20,21-100,100+'],
             'website' => ['nullable', 'url', 'max:255'],
+            // Quality tier — couples model to credit price (see runtime.tiers).
+            'model_tier' => ['nullable', 'string', 'in:'.implode(',', array_keys((array) config('runtime.tiers')))],
         ]);
 
         $team = $request->user()->currentTeam;
@@ -71,7 +84,23 @@ class OnboardingController extends Controller
             ->whereIn('status', [Agent::STATUS_DRAFT, Agent::STATUS_ACTIVE])
             ->latest()
             ->first();
-        $existing ?: (new CreateAgent)->execute($team, $data['name'] ?? 'Default agent');
+        $agent = $existing ?: (new CreateAgent)->execute($team, $data['name'] ?? 'Default agent');
+
+        // Seed the quality tier chosen in the wizard. Only for NON-standard
+        // picks on a freshly created agent: standard is the default anyway,
+        // and seeding an empty published config would falsely tick the
+        // dashboard checklist's 'Publish behavior' step. Re-clicks never
+        // overwrite an existing agent's config.
+        $tier = (string) ($data['model_tier'] ?? 'standard');
+        if ($existing === null && $tier !== 'standard') {
+            AgentConfigVersion::create([
+                'agent_id' => $agent->id,
+                'version' => 1,
+                'status' => AgentConfigVersion::STATUS_PUBLISHED,
+                'config' => ['instructions' => '', 'greeting' => '', 'model_tier' => $tier],
+                'published_at' => now(),
+            ]);
+        }
 
         // Managed signups are activated atomically by CreateAgent — no
         // credential-paste step. Go straight to Done.
