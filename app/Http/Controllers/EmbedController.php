@@ -112,9 +112,8 @@ class EmbedController extends Controller
 
         // Routed through the Runtime contract — the binding (AppServiceProvider)
         // returns RuntimeDispatcher, which picks Voiceflow or native engine
-        // based on agent.runtime_mode. Today every agent is on 'voiceflow',
-        // so behaviour is identical; once we flip an agent to 'native', the
-        // new engine answers here.
+        // based on agent.runtime_mode (native is the default for new agents;
+        // legacy agents stay on the Voiceflow adapter until migrated).
         try {
             $traces = $this->runtime->launch($agent, $visitorId);
         } catch (RuntimeException $e) {

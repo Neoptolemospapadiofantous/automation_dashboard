@@ -33,6 +33,16 @@ function addUrl() {
 const fileInput = ref(null);
 const fileForm = useForm({ file: null });
 
+// File-picker accept list + help text derive from the engine's
+// accepted_types prop (native: pdf/txt/md/csv; legacy adds docx/xlsx) so
+// the picker never offers a format the backend will reject.
+const EXT_BY_TYPE = { pdf: '.pdf', text: '.txt', md: '.md', csv: '.csv', docx: '.docx', xlsx: '.xlsx' };
+const fileAccept = computed(() => {
+    const exts = (props.accepted_types ?? []).map((t) => EXT_BY_TYPE[t]).filter(Boolean);
+    return exts.length ? exts.join(',') : '.pdf,.txt,.md,.csv';
+});
+const fileHelp = computed(() => fileAccept.value.replaceAll('.', '').toUpperCase().split(',').join(', '));
+
 function onFilePicked(event) {
     const picked = event.target.files?.[0] ?? null;
     fileForm.file = picked;
@@ -226,13 +236,13 @@ const description = computed(() => {
                                     id="file"
                                     ref="fileInput"
                                     type="file"
-                                    accept=".pdf,.docx,.txt,.md,.csv,.xlsx"
+                                    :accept="fileAccept"
                                     class="block w-full text-xs file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
                                     :disabled="!configured || fileForm.processing"
                                     @change="onFilePicked"
                                 />
                                 <InputError :message="fileForm.errors.file" />
-                                <p class="text-[11px] text-gray-400">PDF, DOCX, TXT, MD, CSV, XLSX · max 10 MB.</p>
+                                <p class="text-[11px] text-gray-400">{{ fileHelp }} · max 10 MB.</p>
                                 <PrimaryButton :disabled="fileForm.processing || !configured || !fileForm.file">
                                     {{ fileForm.processing ? 'Uploading…' : 'Upload file' }}
                                 </PrimaryButton>

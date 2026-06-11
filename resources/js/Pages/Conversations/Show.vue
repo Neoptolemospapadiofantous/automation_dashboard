@@ -21,7 +21,7 @@ const endUpstream = async () => {
     if (!hasTranscript.value || isEnded.value) return;
     const ok = await confirm({
         title: 'End upstream session',
-        message: 'Force-end this session upstream at Voiceflow? The local conversation is preserved.',
+        message: 'Force-end this session at the provider? The local conversation is preserved.',
         buttonText: 'End upstream',
     });
     if (!ok) return;
@@ -33,7 +33,7 @@ const endUpstream = async () => {
 const deleteUpstream = async () => {
     const ok = await confirm({
         title: 'Delete conversation',
-        message: `Delete this conversation and ${hasTranscript.value ? 'its Voiceflow transcript' : 'its local record'}? This is irreversible.`,
+        message: `Delete this conversation and ${hasTranscript.value ? 'its provider transcript' : 'its local record'}? This is irreversible.`,
         buttonText: 'Delete',
         dangerous: true,
     });
@@ -75,7 +75,7 @@ const deleteUpstream = async () => {
                         v-if="hasTranscript && !isEnded"
                         type="button"
                         @click="endUpstream"
-                        :title="'End the Voiceflow session for transcript ' + conversation.voiceflow_transcript_id"
+                        :title="'End the upstream session for transcript ' + conversation.voiceflow_transcript_id"
                     >
                         End upstream
                     </SecondaryButton>

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Voiceflow;
 
 use App\Http\Controllers\Controller;
+use App\Models\Agent;
+use App\Models\Team;
 use App\Services\Voiceflow\Client\AnalyticsClient;
 use App\Services\VoiceflowService;
 use Illuminate\Http\JsonResponse;
@@ -55,7 +57,10 @@ class EvaluationsController extends Controller
                 'name' => $data['name'],
                 'type' => $data['type'],
                 'description' => $data['description'] ?? '',
-                'projectID' => (string) config('services.voiceflow.project_id'),
+                // Per-agent project, NOT the global env fallback — using config here
+                // would stamp evaluations onto the platform's project for
+                // every tenant (cross-tenant wrongness).
+                'projectID' => (string) $this->currentAgentProjectId($request),
             ]);
         } catch (\Throwable $e) {
             report($e);
@@ -122,5 +127,21 @@ class EvaluationsController extends Controller
     protected function abortIfUnconfigured(): void
     {
         abort_unless($this->voiceflow->isConfigured(), 503, 'Voiceflow is not configured.');
+    }
+
+    /**
+     * The CURRENT AGENT's Voiceflow project id — never the global env
+     * fallback (that would stamp evaluations onto the platform's project
+     * for every tenant).
+     */
+    protected function currentAgentProjectId(Request $request): string
+    {
+        $team = $request->user()?->currentTeam;
+        if (! $team instanceof Team) {
+            return '';
+        }
+        $agent = $team->currentAgent;
+
+        return $agent instanceof Agent ? (string) $agent->voiceflow_project_id : '';
     }
 }

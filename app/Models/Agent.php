@@ -152,6 +152,16 @@ class Agent extends Model
      */
     public function isConfigured(): bool
     {
+        // Native agents need no per-agent credentials — the engine's keys
+        // are platform-level (ANTHROPIC_API_KEY / OPENAI_API_KEY) and their
+        // presence is reported by AgentRuntime::health, not by this row.
+        // Without this branch, native agents were locked out of the Chat
+        // page, shown "Needs credentials" badges, and could never pass the
+        // disabled→active lifecycle guard.
+        if ($this->getAttribute('runtime_mode') === self::RUNTIME_NATIVE) {
+            return true;
+        }
+
         return ! empty($this->voiceflow_api_key) && ! empty($this->voiceflow_project_id);
     }
 

@@ -4,9 +4,8 @@
  * Native runtime configuration. Reads env so prod/staging/dev can swap
  * LLM providers, embedding models, and RAG defaults without code changes.
  *
- * See app/Runtime/ for the implementation. The runtime is feature-flagged
- * per-agent via agents.runtime_mode — production stays on 'voiceflow' until
- * we explicitly flip an agent.
+ * See app/Runtime/ for the implementation. The engine is selected per-agent via
+ * agents.runtime_mode; new agents default to native (see default_mode).
  */
 
 return [
@@ -34,18 +33,14 @@ return [
     | The primary LLM used for the conversational loop. Currently 'anthropic'
     | (Claude) is the only implemented client; openai is a planned alternate.
     |
-    | model_default   — used for the bulk of routine turns (cheap + fast)
-    | model_complex   — used when the flow asks for a more capable model
-    |                   (e.g. qualifying messy intent, summarizing transcripts)
+    | model_default — used for every turn (cheap + fast; raise to Sonnet
+    |                  via ANTHROPIC_MODEL_DEFAULT if quality demands it)
     */
     'llm' => [
-        'provider' => env('RUNTIME_LLM_PROVIDER', 'anthropic'),
-
         'anthropic' => [
             'api_key' => env('ANTHROPIC_API_KEY'),
             'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),
             'model_default' => env('ANTHROPIC_MODEL_DEFAULT', 'claude-haiku-4-5-20251001'),
-            'model_complex' => env('ANTHROPIC_MODEL_COMPLEX', 'claude-sonnet-4-6'),
             'max_tokens' => (int) env('ANTHROPIC_MAX_TOKENS', 1024),
         ],
     ],
@@ -61,7 +56,6 @@ return [
     | benchmarks demand it.
     */
     'embeddings' => [
-        'provider' => env('RUNTIME_EMBEDDINGS_PROVIDER', 'openai'),
         'model' => env('RUNTIME_EMBEDDINGS_MODEL', 'text-embedding-3-small'),
         'dimensions' => (int) env('RUNTIME_EMBEDDINGS_DIMENSIONS', 1536),
         'openai_api_key' => env('OPENAI_API_KEY'),

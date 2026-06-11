@@ -1,3 +1,5 @@
+> **HISTORICAL / Voiceflow-legacy.** The native runtime is the default engine since `runtime-native-l1` — see [docs/runtime-native.md](../runtime-native.md). Voiceflow specifics below apply only to legacy `runtime_mode=voiceflow` agents.
+
 ---
 type: reference
 status: active

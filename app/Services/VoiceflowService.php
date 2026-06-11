@@ -104,11 +104,17 @@ class VoiceflowService
         // The Phase J managed branch (read api_key + project_id from
         // .env config) was for an environment-clone design we abandoned
         // in Phase K — see docs/phase-13-multitenancy.md.
+        // SECURITY: cast to strings so null columns become '' instead of
+        // null. The constructor's ??= env fallback only fires on null —
+        // without the cast, an agent with no Voiceflow credentials (every
+        // native agent) would silently inherit the PLATFORM's global
+        // VOICEFLOW_API_KEY/PROJECT_ID and surface the platform project's
+        // data on that team's pages (cross-tenant leak).
         return new self(
-            apiKey: $agent->voiceflow_api_key,
+            apiKey: (string) $agent->voiceflow_api_key,
             environment: $agent->voiceflow_environment ?: 'main',
-            projectId: $agent->voiceflow_project_id,
-            workspaceApiKey: $agent->voiceflow_workspace_api_key,
+            projectId: (string) $agent->voiceflow_project_id,
+            workspaceApiKey: (string) $agent->voiceflow_workspace_api_key,
         );
     }
 

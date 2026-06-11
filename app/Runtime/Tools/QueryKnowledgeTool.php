@@ -49,7 +49,8 @@ class QueryKnowledgeTool implements Tool
             return 'No question provided.';
         }
 
-        $topK = isset($args['top_k']) ? max(1, min(10, (int) $args['top_k'])) : 5;
+        $default = max(1, (int) config('runtime.rag.retrieval_top_k', 5));
+        $topK = isset($args['top_k']) ? max(1, min(10, (int) $args['top_k'])) : $default;
 
         $results = $this->knowledge->search($context->agent->id, $question, $topK);
         if ($results === []) {

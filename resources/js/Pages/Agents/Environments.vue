@@ -67,7 +67,7 @@ const splitRows = computed(() => {
 
 <template>
     <AppLayout title="Environments">
-        <PageHeader title="Environments" description="Voiceflow environment management — list, clone, publish, export.">
+        <PageHeader title="Environments" description="Legacy-engine environment management — list, clone, publish, export.">
             <template #breadcrumbs>
                 <Link :href="route('agents.index')" class="text-sm text-gray-500 hover:text-gray-700">← Agents</Link>
             </template>
@@ -81,13 +81,13 @@ const splitRows = computed(() => {
         <div class="py-8">
             <div class="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
                 <div v-if="!configured" class="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
-                    Voiceflow isn't configured for the current agent — environments cannot be managed.
+                    Environments are a legacy-engine feature and aren't available for this agent.
                 </div>
 
                 <div v-if="showClone && configured" class="rounded-lg bg-white p-4 shadow">
                     <h3 class="mb-3 text-base font-medium text-gray-900">Clone environment</h3>
                     <p class="mb-3 text-xs text-gray-500">
-                        Voiceflow has no create-from-scratch; new environments must be cloned from an existing one.
+                        New environments must be cloned from an existing one (no create-from-scratch upstream).
                         Pick a source environment ID below and a fresh alias for the new one.
                     </p>
                     <form @submit.prevent="submitClone" class="space-y-3">
@@ -109,7 +109,7 @@ const splitRows = computed(() => {
                 </div>
 
                 <div v-if="environments.length === 0 && configured" class="rounded-lg bg-white p-8 shadow">
-                    <EmptyState title="No environments returned" message="Voiceflow returned an empty list. This is unusual — every project has at least 'main'." />
+                    <EmptyState title="No environments returned" message="The provider returned an empty list. This is unusual — every project has at least 'main'." />
                 </div>
 
                 <ul v-if="environments.length > 0" class="divide-y divide-gray-200 overflow-hidden rounded-lg bg-white shadow">

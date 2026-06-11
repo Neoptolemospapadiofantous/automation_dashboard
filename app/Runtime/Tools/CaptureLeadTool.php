@@ -53,6 +53,15 @@ class CaptureLeadTool implements Tool
     {
         $email = trim((string) ($args['email'] ?? ''));
 
+        // leads.captured is an ARRAY cast (the legacy upsert path
+        // array_merge()s it) — store the captured field map, never a bool.
+        $capturedFields = array_filter([
+            'name' => trim((string) ($args['name'] ?? '')) ?: null,
+            'email' => $email !== '' ? $email : null,
+            'phone' => trim((string) ($args['phone'] ?? '')) ?: null,
+            'company' => trim((string) ($args['company'] ?? '')) ?: null,
+        ]);
+
         $attributes = [
             'name' => trim((string) ($args['name'] ?? '')) ?: '(no name)',
             'phone' => trim((string) ($args['phone'] ?? '')) ?: null,
@@ -63,7 +72,7 @@ class CaptureLeadTool implements Tool
             'score' => isset($args['score']) ? max(0, min(100, (int) $args['score'])) : 50,
             'status' => LeadStatus::New->value,
             'source' => 'chat',
-            'captured' => true,
+            'captured' => $capturedFields,
         ];
 
         if ($email !== '') {

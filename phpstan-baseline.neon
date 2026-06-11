@@ -217,12 +217,6 @@ parameters:
 			path: app/Events/Domain/AgentCreated.php
 
 		-
-			message: '#^Property App\\Events\\Domain\\ConversationStarted\:\:\$conversation is never read$#'
-			identifier: shipmonk.deadProperty.neverRead
-			count: 1
-			path: app/Events/Domain/ConversationStarted.php
-
-		-
 			message: '#^Property App\\Events\\Domain\\StateChanged\:\:\$context is never read$#'
 			identifier: shipmonk.deadProperty.neverRead
 			count: 1
@@ -1103,36 +1097,6 @@ parameters:
 			identifier: identical.alwaysFalse
 			count: 1
 			path: app/Services/Voiceflow/Client/VoiceflowHttpClient.php
-
-		-
-			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 1
-			path: app/Services/Voiceflow/Dto/Trace.php
-
-		-
-			message: '#^Method App\\Services\\Voiceflow\\Dto\\Trace\:\:__construct\(\) has parameter \$payload with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Services/Voiceflow/Dto/Trace.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Dto\\Trace\:\:isEnd$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Dto/Trace.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Dto\\Trace\:\:listFromArray$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Dto/Trace.php
-
-		-
-			message: '#^Unused App\\Services\\Voiceflow\\Dto\\Trace\:\:text$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Services/Voiceflow/Dto/Trace.php
 
 		-
 			message: '#^Method App\\Services\\Voiceflow\\Exceptions\\RateLimitedException\:\:__construct\(\) has parameter \$context with no value type specified in iterable type array\.$#'

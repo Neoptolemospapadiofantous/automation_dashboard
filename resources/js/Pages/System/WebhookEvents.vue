@@ -43,7 +43,7 @@ const visibleCount = computed(() => props.events.length);
     <AppLayout title="Webhook events">
         <PageHeader
             title="Webhook events"
-            description="Inbound webhook events from Voiceflow. Shows the last 100 events for your team — use the filters to narrow down."
+            description="Inbound provider webhook events (legacy-engine agents). Shows the last 100 events for your team — use the filters to narrow down."
         >
             <template #actions>
                 <span class="text-xs text-gray-500">{{ visibleCount }} shown</span>
@@ -91,7 +91,7 @@ const visibleCount = computed(() => props.events.length);
                                 <th class="px-4 py-2 text-left font-semibold">Event type</th>
                                 <th class="px-4 py-2 text-left font-semibold">State</th>
                                 <th class="px-4 py-2 text-left font-semibold">Signed</th>
-                                <th class="px-4 py-2 text-left font-semibold">Voiceflow user</th>
+                                <th class="px-4 py-2 text-left font-semibold">External user</th>
                                 <th class="px-4 py-2 text-right font-semibold"></th>
                             </tr>
                         </thead>
@@ -164,7 +164,7 @@ const visibleCount = computed(() => props.events.length);
                             <div>
                                 <p class="text-sm font-medium text-gray-600">No webhook events yet</p>
                                 <p class="mt-1 text-xs text-gray-400">
-                                    Events appear here as Voiceflow fires them at
+                                    Events appear here as the legacy engine provider fires them at
                                     <code class="rounded bg-gray-100 px-1 py-0.5 text-[11px]">/api/voiceflow/webhooks/*</code>.
                                 </p>
                             </div>

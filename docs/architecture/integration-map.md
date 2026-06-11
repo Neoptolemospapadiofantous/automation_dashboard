@@ -1,3 +1,5 @@
+> **HISTORICAL / Voiceflow-legacy.** The native runtime is the default engine since `runtime-native-l1` — see [docs/runtime-native.md](../runtime-native.md). Voiceflow specifics below apply only to legacy `runtime_mode=voiceflow` agents.
+
 # Architecture — integration map
 
 Where every product surface connects to every other, what's wired today,

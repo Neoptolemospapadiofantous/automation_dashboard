@@ -90,7 +90,7 @@ const runNow = async () => {
         <div class="py-8">
             <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
                 <div v-if="!configured" class="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
-                    Voiceflow isn't configured for the current agent. Finish onboarding to define evaluations.
+                    Evaluations are a legacy-engine feature and aren't available for this agent.
                 </div>
 
                 <div v-if="showCreate && configured" class="mb-6 rounded-lg bg-white p-4 shadow">

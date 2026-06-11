@@ -76,7 +76,7 @@ class RuntimeClient
      *
      * @param  array{type:non-empty-string, payload?: array<string,mixed>}  $action
      * @param  array<string,mixed>  $variables
-     * @return array<int, array<string,mixed>> raw traces (parse with Trace::listFromArray)
+     * @return array<int, array<string,mixed>> raw traces
      */
     public function interact(string $userId, array $action, array $variables = []): array
     {

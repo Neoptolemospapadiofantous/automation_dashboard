@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Agent;
 use App\Models\User;
-use App\Services\Voiceflow\Client\RuntimeClient;
+use App\Providers\VoiceflowServiceProvider;
 use App\Services\Voiceflow\Client\StreamingClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -57,7 +57,7 @@ class VoiceflowInteractStreamTest extends TestCase
         // Inject a streaming client whose reader yields a deterministic SSE stream
         // — the live HTTP client would hit Voiceflow. We bypass it via a closure.
         $this->app->bind(StreamingClient::class, function () {
-            return new class(runtime: $this->app->make(RuntimeClient::class), baseUrl: 'https://runtime.voiceflow.test', projectId: 'proj-1', environment: 'main') extends StreamingClient
+            return new class(runtime: VoiceflowServiceProvider::runtimeFor(null), baseUrl: 'https://runtime.voiceflow.test', projectId: 'proj-1', environment: 'main') extends StreamingClient
             {
                 public function streamInteract(string $userId, array $action, array $variables = [], ?\Closure $reader = null): \Generator
                 {

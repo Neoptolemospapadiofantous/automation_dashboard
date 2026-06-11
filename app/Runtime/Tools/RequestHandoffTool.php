@@ -2,6 +2,9 @@
 
 namespace App\Runtime\Tools;
 
+use App\Models\Team;
+use App\Models\User;
+use App\Notifications\HandoffRequestedNotification;
 use App\Runtime\Contracts\Tool;
 use App\Runtime\Session\ConversationContext;
 
@@ -38,11 +41,28 @@ class RequestHandoffTool implements Tool
 
     public function execute(array $args, ConversationContext $context): array|string
     {
+        $reason = trim((string) ($args['reason'] ?? '')) ?: 'unspecified';
+
         $vars = (array) ($context->session->variables ?? []);
         $vars['handoff_requested'] = true;
-        $vars['handoff_reason'] = trim((string) ($args['reason'] ?? '')) ?: 'unspecified';
+        $vars['handoff_reason'] = $reason;
         $context->session->variables = $vars;
         $context->session->save();
+
+        // Make the "a teammate has been notified" promise TRUE: bell + email
+        // to the team owner. Best-effort — a mail hiccup must not fail the
+        // visitor's turn (the session flag above is the durable record).
+        rescue(function () use ($context, $reason): void {
+            $team = $context->agent->team;
+            $owner = $team instanceof Team ? $team->owner : null;
+            if ($owner instanceof User) {
+                $owner->notify(new HandoffRequestedNotification(
+                    agent: $context->agent,
+                    visitorId: $context->session->visitor_id,
+                    reason: $reason,
+                ));
+            }
+        }, report: true);
 
         return ['status' => 'handoff_flagged', 'message' => 'A teammate has been notified.'];
     }

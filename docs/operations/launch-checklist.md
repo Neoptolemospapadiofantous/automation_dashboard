@@ -11,7 +11,7 @@ Work through this top-to-bottom. Each section says what breaks if you skip it.
 
 - [ ] Pick a branch and stay on it during testing:
   - `voiceflow-wrapper-and-hermes-system` — the product surface
-  - `runtime-native-l1` — same surface + inert native-runtime skeleton (safe; no agent uses it)
+  - `runtime-native-l1` — the native engine branch (DEFAULT for new agents via RUNTIME_DEFAULT_MODE=native)
 - [ ] Unlock pre-verification users. Email verification is now enforced; users
       created before it was enabled have `email_verified_at = null` and will
       hit the verify wall:
@@ -22,9 +22,22 @@ Work through this top-to-bottom. Each section says what breaks if you skip it.
 
 ---
 
-## 1. Voiceflow pool (15 min) — BLOCKING
+## 1. Native runtime keys (2 min) — BLOCKING
 
-**Skip symptom:** new signup → "We're at capacity" at onboarding.
+**Skip symptom:** agent health card red; chat/embed return 503.
+
+New agents run on the Flowstack-owned engine (RUNTIME_DEFAULT_MODE=native).
+Two provider keys power it:
+
+- [ ] `ANTHROPIC_API_KEY` — console.anthropic.com → API keys (the chat loop)
+- [ ] `OPENAI_API_KEY` — platform.openai.com → API keys (KB embeddings, ~pennies)
+- [ ] `php artisan config:clear`
+- [ ] Verify: agent page → health button → `engine: native, ok: true`
+
+## 1b. Legacy Voiceflow pool (OPTIONAL — only for runtime_mode=voiceflow agents)
+
+**Only needed if** you keep RUNTIME_DEFAULT_MODE=voiceflow or have existing
+legacy agents. Skip symptom (legacy mode only): new signup → "We're at capacity".
 
 There is no programmatic project creation (confirmed by Voiceflow support
 2026-06-10). Projects are created by hand and registered into the pool.
@@ -118,14 +131,14 @@ grab the signed verification URL from the log.
 Run as a brand-new user in a fresh browser/incognito session:
 
 1. [ ] **Register** → verification email (inbox, or `storage/logs/laravel.log`) → click link → land on dashboard
-2. [ ] **Onboard** → answer the 4 profile questions → agent provisions from pool → Done page shows install snippet
+2. [ ] **Onboard** → answer the 4 profile questions → agent provisions on the native engine (no pool) → Done page shows install snippet
 3. [ ] **Embed**: copy snippet from `/install` → paste into a local HTML file → floating button appears → chat works
 4. [ ] **Subscribe**: `/billing` → Starter → Stripe Checkout with `4242…` → return → plan shows Starter, 2,500 credits
 5. [ ] **Chat** in the dashboard → credits decrement per turn
 6. [ ] **Top-up** → Checkout → webhook fires (watch the `stripe listen` terminal) → balance increases
 7. [ ] **Cancel**: ⚙ Manage subscription → Stripe portal → cancel → return → `/billing` shows downgrade to free tier
 8. [ ] **Leads**: trigger a capture via chat (or create manually) → appears on `/leads` → assign to a rep → rep gets bell + email
-9. [ ] **Webhooks**: `/system/webhooks` lists the Voiceflow events with processed state
+9. [ ] **Leads detail**: open the captured lead → notes autosave + conversation links work (the /system/webhooks viewer only applies to legacy Voiceflow agents)
 10. [ ] **Analytics**: `/agents/{slug}/analytics` → counters, sparklines, funnel, heatmap populate
 
 Bonus checks:
@@ -146,6 +159,5 @@ Bonus checks:
 ## Out of scope for this launch (by decision or phase)
 
 - Free trial (product decision: none — $99 Starter is the entry point)
-- Slack notifier (deferred)
-- Native runtime (`runtime-native-l1`, Phases 2–8 in progress — inert in production)
-- 2FA, audit log, CRM sync, transcript export (backlog)
+- Slack notifier, 2FA, audit log, CRM sync, transcript export (backlog)
+- Legacy Voiceflow agent migration to native (one tinker command per agent when ready)

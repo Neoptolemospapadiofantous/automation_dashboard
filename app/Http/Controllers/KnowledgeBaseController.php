@@ -56,7 +56,7 @@ class KnowledgeBaseController extends Controller
         $agent = $team?->currentAgent;
 
         if ($native = $this->nativeAgent($request)) {
-            return $this->nativeIndex($native);
+            return $this->nativeIndex($request, $native);
         }
 
         $configured = $this->voiceflow->isConfigured();
@@ -292,18 +292,27 @@ class KnowledgeBaseController extends Controller
             : null;
     }
 
-    protected function nativeIndex(Agent $agent): Response
+    protected function nativeIndex(Request $request, Agent $agent): Response
     {
         $configured = (string) config('runtime.embeddings.openai_api_key') !== '';
+
+        $nativeTypes = ['url', 'pdf', 'text', 'md', 'csv'];
+        $filter = $request->validate([
+            'type' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', $nativeTypes)],
+        ])['type'] ?? null;
 
         $documents = [];
         if ($configured) {
             foreach ($this->knowledge->listDocuments($agent->id) as $doc) {
+                $type = (string) ($doc['metadata']['source'] ?? 'text');
+                if ($filter !== null && $type !== $filter) {
+                    continue;
+                }
                 $documents[] = [
                     'documentID' => (string) $doc['id'],
                     'data' => [
                         'name' => $doc['title'],
-                        'type' => (string) ($doc['metadata']['source'] ?? 'text'),
+                        'type' => $type,
                         'url' => $doc['metadata']['source_url'] ?? null,
                     ],
                     'status' => ['type' => 'SUCCESS'],
@@ -317,8 +326,8 @@ class KnowledgeBaseController extends Controller
             'documents' => $documents,
             'total' => count($documents),
             'error' => $configured ? null : 'Set OPENAI_API_KEY to enable this agent\'s knowledge base.',
-            'filter' => ['type' => null],
-            'accepted_types' => ['url', 'pdf', 'text', 'md', 'csv'],
+            'filter' => ['type' => $filter],
+            'accepted_types' => $nativeTypes,
             'agent' => [
                 'id' => $agent->id,
                 'name' => $agent->name,

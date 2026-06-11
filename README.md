@@ -3,7 +3,9 @@
 A real-time lead-delegation dashboard built with **Laravel 12 + Inertia 2 + Vue 3
 (Jetstream, teams)**. Every change — incoming leads, agent conversations,
 qualification status, and delegation — ticks **live across all connected
-screens** over WebSockets. Lead conversations are handled by **Voiceflow**
+screens** over WebSockets. Lead conversations are handled by the **native
+Flowstack runtime** (Anthropic + RAG — see docs/runtime-native.md); a legacy
+**Voiceflow** adapter serves pre-migration agents
 agents, proxied server-side through Laravel so the API key never reaches the
 browser.
 
@@ -16,7 +18,7 @@ browser.
 | Frontend     | Vue 3, Inertia 2, Vite 7, Tailwind, Laravel Echo + pusher-js |
 | Real-time    | **Pusher** (managed) — swappable for self-hosted **Reverb**  |
 | Database     | **MySQL** in production · SQLite for zero-config local dev    |
-| AI agents    | Voiceflow Dialog Manager API (server-proxied)                |
+| AI agents    | Native runtime (Anthropic + OpenAI embeddings); legacy Voiceflow adapter |
 
 ## Why Pusher (and how to switch to Reverb)
 

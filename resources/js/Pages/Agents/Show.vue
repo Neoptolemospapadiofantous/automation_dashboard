@@ -74,7 +74,7 @@ async function destroy() {
         <PageHeader
             :breadcrumbs="[{ label: 'Agents', href: route('agents.index') }, { label: agent.name }]"
             :title="agent.name"
-            description="Provisioned automatically. Voiceflow runs in the background — you only need to manage the name."
+            description="Provisioned automatically. The conversational engine is fully managed — you only need to manage the name."
         >
             <template #actions>
                 <div class="flex flex-wrap items-center gap-1.5">
@@ -172,7 +172,7 @@ async function destroy() {
                             <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
                         </svg>
                         <div>
-                            The Voiceflow project, API keys, environment, and webhook are all provisioned and managed on your behalf. If something goes wrong, contact support — there's nothing here for you to tweak.
+                            The conversational engine, API keys, and infrastructure are all provisioned and managed on your behalf. If something goes wrong, contact support — there's nothing here for you to tweak.
                         </div>
                     </div>
                 </div>
@@ -238,7 +238,7 @@ async function destroy() {
                     <h3 class="text-base font-semibold text-rose-800">Danger zone</h3>
                     <p class="mt-1 text-sm text-rose-700">
                         Deleting the agent unlinks (but does not delete) its leads and conversations.
-                        The Voiceflow project itself is retired in our pool and won't be reassigned.
+                        Its underlying engine resources are retired and never reassigned to another customer.
                     </p>
                     <div class="mt-4">
                         <DangerButton @click="destroy">Delete agent</DangerButton>

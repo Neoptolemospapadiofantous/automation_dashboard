@@ -28,10 +28,6 @@ class VoiceflowServiceProvider extends ServiceProvider
     {
         $this->app->singleton(VoiceflowHttpClient::class);
 
-        $this->app->scoped(RuntimeClient::class, function ($app): RuntimeClient {
-            return self::runtimeFor($this->resolveCurrentAgent(), $app->make(VoiceflowHttpClient::class));
-        });
-
         $this->app->scoped(AnalyticsClient::class, function ($app): AnalyticsClient {
             return self::analyticsFor($this->resolveCurrentAgent(), $app->make(VoiceflowHttpClient::class));
         });
