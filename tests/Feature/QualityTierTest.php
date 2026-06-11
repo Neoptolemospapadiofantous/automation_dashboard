@@ -34,32 +34,32 @@ class QualityTierTest extends TestCase
         ]);
     }
 
-    public function test_default_agent_uses_the_standard_model(): void
+    public function test_default_agent_uses_the_haiku_model(): void
     {
         $user = $this->owner();
         $agent = $user->currentTeam->currentAgent;
 
         app(Runtime::class)->launch($agent, 'v1');
 
-        Http::assertSent(fn (Request $r): bool => $r['model'] === config('runtime.tiers.standard.model'));
+        Http::assertSent(fn (Request $r): bool => $r['model'] === config('runtime.tiers.haiku.model'));
     }
 
-    public function test_enhanced_agent_uses_the_enhanced_model(): void
+    public function test_sonnet_agent_uses_the_sonnet_model(): void
     {
         $user = $this->owner();
         $agent = $user->currentTeam->currentAgent;
-        $this->publishTier($agent, 'enhanced');
+        $this->publishTier($agent, 'sonnet');
 
         app(Runtime::class)->launch($agent, 'v1');
 
-        Http::assertSent(fn (Request $r): bool => $r['model'] === config('runtime.tiers.enhanced.model'));
+        Http::assertSent(fn (Request $r): bool => $r['model'] === config('runtime.tiers.sonnet.model'));
     }
 
     public function test_dashboard_chat_bills_the_tier_multiplier(): void
     {
         $user = $this->owner();
         $agent = $user->currentTeam->currentAgent;
-        $this->publishTier($agent, 'enhanced'); // 3 credits/message
+        $this->publishTier($agent, 'sonnet'); // 3 credits/message
         $user->currentTeam->forceFill(['credit_balance' => 100])->save();
 
         $this->actingAs($user)->postJson(route('chat.launch'))->assertOk();
@@ -72,7 +72,7 @@ class QualityTierTest extends TestCase
     {
         $user = $this->owner();
         $agent = $user->currentTeam->currentAgent;
-        $this->publishTier($agent, 'enhanced');
+        $this->publishTier($agent, 'sonnet');
         $user->currentTeam->forceFill(['credit_balance' => 100])->save();
 
         $this->postJson("/embed/{$agent->slug}/interact", [
@@ -83,7 +83,7 @@ class QualityTierTest extends TestCase
         $this->assertSame(97, $user->currentTeam->fresh()->credit_balance); // 1 × 3
     }
 
-    public function test_standard_agent_still_bills_one_credit_on_embed(): void
+    public function test_haiku_agent_still_bills_one_credit_on_embed(): void
     {
         $user = $this->owner();
         $agent = $user->currentTeam->currentAgent;
@@ -97,11 +97,11 @@ class QualityTierTest extends TestCase
         $this->assertSame(99, $user->currentTeam->fresh()->credit_balance);
     }
 
-    public function test_enhanced_tokens_land_in_the_enhanced_usage_bucket(): void
+    public function test_sonnet_tokens_land_in_the_enhanced_usage_bucket(): void
     {
         $user = $this->owner();
         $agent = $user->currentTeam->currentAgent;
-        $this->publishTier($agent, 'enhanced');
+        $this->publishTier($agent, 'sonnet');
 
         app(Runtime::class)->launch($agent, 'v1');
 
@@ -112,7 +112,7 @@ class QualityTierTest extends TestCase
         $this->assertSame(0, $row->tokens_out);
     }
 
-    public function test_unknown_tier_degrades_to_standard(): void
+    public function test_unknown_tier_degrades_to_haiku(): void
     {
         $user = $this->owner();
         $agent = $user->currentTeam->currentAgent;
@@ -122,7 +122,7 @@ class QualityTierTest extends TestCase
             'published_at' => now(),
         ]);
 
-        $this->assertSame('standard', AgentConfigVersion::publishedTier($agent->id));
+        $this->assertSame('haiku', AgentConfigVersion::publishedTier($agent->id));
         $this->assertSame(1, AgentConfigVersion::creditsPerMessage($agent->id));
     }
 
@@ -139,7 +139,7 @@ class QualityTierTest extends TestCase
     {
         $user = $this->owner();
         $enhancedAgent = $user->currentTeam->currentAgent;
-        $this->publishTier($enhancedAgent, 'enhanced');
+        $this->publishTier($enhancedAgent, 'sonnet');
 
         $standardAgent = Agent::factory()->for($user->currentTeam)->create(['status' => 'active']);
 
@@ -147,30 +147,30 @@ class QualityTierTest extends TestCase
         $this->assertSame(1, AgentConfigVersion::creditsPerMessage($standardAgent->id));
     }
 
-    public function test_onboarding_with_enhanced_tier_seeds_published_config(): void
+    public function test_onboarding_with_sonnet_tier_seeds_published_config(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
 
         $this->actingAs($user)->post(route('onboarding.start'), [
             'name' => 'Closer bot',
-            'model_tier' => 'enhanced',
+            'model_tier' => 'sonnet',
         ])->assertRedirect(route('onboarding.done'));
 
         $agent = $user->currentTeam->fresh()->currentAgent;
-        $this->assertSame('enhanced', AgentConfigVersion::publishedTier($agent->id));
+        $this->assertSame('sonnet', AgentConfigVersion::publishedTier($agent->id));
         $this->assertSame(3, AgentConfigVersion::creditsPerMessage($agent->id));
     }
 
-    public function test_onboarding_with_standard_tier_seeds_nothing(): void
+    public function test_onboarding_with_haiku_tier_seeds_nothing(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
 
         $this->actingAs($user)->post(route('onboarding.start'), [
             'name' => 'FAQ bot',
-            'model_tier' => 'standard',
+            'model_tier' => 'haiku',
         ])->assertRedirect(route('onboarding.done'));
 
-        // Standard is the default — no config row, so the dashboard
+        // Haiku is the default — no config row, so the dashboard
         // checklist's 'Publish behavior' step stays meaningful.
         $this->assertSame(0, AgentConfigVersion::count());
         $agent = $user->currentTeam->fresh()->currentAgent;
@@ -181,13 +181,13 @@ class QualityTierTest extends TestCase
     {
         $user = User::factory()->withPersonalTeam()->create();
 
-        $this->actingAs($user)->post(route('onboarding.start'), ['model_tier' => 'enhanced']);
+        $this->actingAs($user)->post(route('onboarding.start'), ['model_tier' => 'sonnet']);
         // Double-submit with a different tier: existing agent is reused,
         // its config must NOT be touched.
-        $this->actingAs($user)->post(route('onboarding.start'), ['model_tier' => 'standard']);
+        $this->actingAs($user)->post(route('onboarding.start'), ['model_tier' => 'haiku']);
 
         $agent = $user->currentTeam->fresh()->currentAgent;
-        $this->assertSame('enhanced', AgentConfigVersion::publishedTier($agent->id));
+        $this->assertSame('sonnet', AgentConfigVersion::publishedTier($agent->id));
         $this->assertSame(1, AgentConfigVersion::count());
     }
 
@@ -198,6 +198,38 @@ class QualityTierTest extends TestCase
         $this->actingAs($user)->post(route('onboarding.start'), [
             'model_tier' => 'gpt-5-ultra',
         ])->assertSessionHasErrors('model_tier');
+    }
+
+    public function test_opus_agent_uses_opus_model_and_bills_ten(): void
+    {
+        $user = $this->owner();
+        $agent = $user->currentTeam->currentAgent;
+        $this->publishTier($agent, 'opus');
+        $user->currentTeam->forceFill(['credit_balance' => 100])->save();
+
+        $this->postJson("/embed/{$agent->slug}/interact", [
+            'visitor_id' => 'embed-v1',
+            'message' => 'hello',
+        ])->assertOk();
+
+        Http::assertSent(fn (Request $r): bool => $r['model'] === config('runtime.tiers.opus.model'));
+        $this->assertSame(90, $user->currentTeam->fresh()->credit_balance); // 1 × 10
+
+        $row = RuntimeUsage::where('team_id', $user->currentTeam->id)->first();
+        $this->assertSame(100, $row->tokens_in_opus);
+        $this->assertSame(50, $row->tokens_out_opus);
+    }
+
+    public function test_legacy_tier_keys_alias_to_the_lineup(): void
+    {
+        // Rows published before the full lineup used standard/enhanced —
+        // they must keep resolving without a data migration.
+        $user = $this->owner();
+        $agent = $user->currentTeam->currentAgent;
+        $this->publishTier($agent, 'enhanced');
+
+        $this->assertSame('sonnet', AgentConfigVersion::publishedTier($agent->id));
+        $this->assertSame(3, AgentConfigVersion::creditsPerMessage($agent->id));
     }
 
     private function publishTier(Agent $agent, string $tier): void

@@ -63,16 +63,29 @@ class AgentConfigVersion extends Model
     }
 
     /**
-     * The agent's live quality tier key. Unknown/absent values degrade
-     * to 'standard' — old configs (pre-tiers) and bad data both land on
-     * the cheap model at the cheap price, never the reverse.
+     * Legacy tier keys from before the full model lineup. Published rows
+     * saved under the old names keep working without a data migration.
+     */
+    private const LEGACY_TIER_ALIASES = [
+        'standard' => 'haiku',
+        'enhanced' => 'sonnet',
+    ];
+
+    public const DEFAULT_TIER = 'haiku';
+
+    /**
+     * The agent's live quality tier key. Legacy keys alias to their
+     * lineup equivalent; unknown/absent values degrade to the cheapest
+     * tier — bad data lands on the cheap model at the cheap price,
+     * never the reverse.
      */
     public static function publishedTier(int $agentId): string
     {
         $config = static::publishedConfig($agentId);
-        $tier = (string) ($config['model_tier'] ?? 'standard');
+        $tier = (string) ($config['model_tier'] ?? self::DEFAULT_TIER);
+        $tier = self::LEGACY_TIER_ALIASES[$tier] ?? $tier;
 
-        return array_key_exists($tier, (array) config('runtime.tiers')) ? $tier : 'standard';
+        return array_key_exists($tier, (array) config('runtime.tiers')) ? $tier : self::DEFAULT_TIER;
     }
 
     /**

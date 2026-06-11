@@ -24,7 +24,7 @@ const seed = props.draft ?? published.value?.config ?? { instructions: '', greet
 const form = useForm({
     instructions: seed.instructions ?? '',
     greeting: seed.greeting ?? '',
-    model_tier: seed.model_tier ?? 'standard',
+    model_tier: seed.model_tier ?? 'haiku',
 });
 
 const tierLabel = (key) => props.tiers.find((t) => t.key === key)?.label ?? key;
@@ -117,20 +117,22 @@ const dirty = computed(() => form.isDirty);
                         <p class="mt-0.5 text-xs text-gray-400">
                             Smarter answers cost more credits per message. Applies to this agent only, from the moment you publish.
                         </p>
-                        <div class="mt-2 flex gap-3">
+                        <div class="mt-2 grid gap-3 sm:grid-cols-3">
                             <label
                                 v-for="t in tiers"
                                 :key="t.key"
-                                class="flex flex-1 cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition"
+                                class="flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition"
                                 :class="form.model_tier === t.key ? 'border-indigo-400 bg-indigo-50/50 ring-1 ring-indigo-300' : 'border-gray-200 hover:border-gray-300'"
                             >
                                 <input v-model="form.model_tier" type="radio" :value="t.key" class="mt-0.5 text-indigo-600 focus:ring-indigo-400" />
                                 <span>
-                                    <span class="font-medium text-gray-900">{{ t.label }}</span>
-                                    <span class="block text-xs text-gray-500">
-                                        {{ t.credits_per_message }} credit{{ t.credits_per_message > 1 ? 's' : '' }} / message
-                                        {{ t.key === 'enhanced' ? '· deeper reasoning for complex products' : '· fast, great for lead capture' }}
+                                    <span class="flex items-center gap-2 font-medium text-gray-900">
+                                        {{ t.label }}
+                                        <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">
+                                            {{ t.credits_per_message }} cr/msg
+                                        </span>
                                     </span>
+                                    <span class="mt-1 block text-xs leading-snug text-gray-500">{{ t.description }}</span>
                                 </span>
                             </label>
                         </div>

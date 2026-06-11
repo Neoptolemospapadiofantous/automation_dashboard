@@ -30,13 +30,14 @@ class RuntimeCosts extends Command
             : now()->startOfMonth();
         $monthEnd = $month->copy()->endOfMonth();
 
-        $std = (array) config('runtime.tiers.standard.pricing_per_mtok', ['in' => 1.0, 'out' => 5.0]);
-        $enh = (array) config('runtime.tiers.enhanced.pricing_per_mtok', ['in' => 3.0, 'out' => 15.0]);
+        $haiku = (array) config('runtime.tiers.haiku.pricing_per_mtok', ['in' => 1.0, 'out' => 5.0]);
+        $sonnet = (array) config('runtime.tiers.sonnet.pricing_per_mtok', ['in' => 3.0, 'out' => 15.0]);
+        $opus = (array) config('runtime.tiers.opus.pricing_per_mtok', ['in' => 5.0, 'out' => 25.0]);
 
         // DB::table (not the model): SUM aliases are not model attributes.
         $usage = DB::table('runtime_usage')
             ->whereBetween('date', [$month->toDateString(), $monthEnd->toDateString().' 23:59:59'])
-            ->selectRaw('team_id, SUM(turns) as turns, SUM(tokens_in) as tin, SUM(tokens_out) as tout, SUM(tokens_in_enhanced) as tin_e, SUM(tokens_out_enhanced) as tout_e')
+            ->selectRaw('team_id, SUM(turns) as turns, SUM(tokens_in) as tin, SUM(tokens_out) as tout, SUM(tokens_in_enhanced) as tin_e, SUM(tokens_out_enhanced) as tout_e, SUM(tokens_in_opus) as tin_o, SUM(tokens_out_opus) as tout_o')
             ->groupBy('team_id')
             ->get()
             ->keyBy('team_id');
@@ -59,10 +60,12 @@ class RuntimeCosts extends Command
             $teamName = $team !== null ? $team->name : "team #{$teamId}";
 
             // Each tier bucket priced at its own provider rates.
-            $cost = ((int) $u->tin / 1_000_000) * (float) $std['in']
-                + ((int) $u->tout / 1_000_000) * (float) $std['out']
-                + ((int) $u->tin_e / 1_000_000) * (float) $enh['in']
-                + ((int) $u->tout_e / 1_000_000) * (float) $enh['out'];
+            $cost = ((int) $u->tin / 1_000_000) * (float) $haiku['in']
+                + ((int) $u->tout / 1_000_000) * (float) $haiku['out']
+                + ((int) $u->tin_e / 1_000_000) * (float) $sonnet['in']
+                + ((int) $u->tout_e / 1_000_000) * (float) $sonnet['out']
+                + ((int) $u->tin_o / 1_000_000) * (float) $opus['in']
+                + ((int) $u->tout_o / 1_000_000) * (float) $opus['out'];
             $revenue = (float) ($plan?->priceUsd() ?? 0);
 
             $creditsUsed = (int) abs(CreditTransaction::query()
@@ -75,8 +78,8 @@ class RuntimeCosts extends Command
                 $teamName,
                 $plan?->label() ?? '—',
                 number_format((int) $u->turns),
-                number_format((int) $u->tin + (int) $u->tin_e),
-                number_format((int) $u->tout + (int) $u->tout_e),
+                number_format((int) $u->tin + (int) $u->tin_e + (int) $u->tin_o),
+                number_format((int) $u->tout + (int) $u->tout_e + (int) $u->tout_o),
                 number_format($creditsUsed),
                 '$'.number_format($cost, 2),
                 '$'.number_format($revenue, 2),

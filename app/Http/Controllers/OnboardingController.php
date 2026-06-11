@@ -35,6 +35,7 @@ class OnboardingController extends Controller
             $tiers[] = [
                 'key' => $key,
                 'label' => (string) ($tier['label'] ?? ucfirst($key)),
+                'description' => (string) ($tier['description'] ?? ''),
                 'credits_per_message' => (int) ($tier['credits_per_message'] ?? 1),
             ];
         }
@@ -91,8 +92,8 @@ class OnboardingController extends Controller
         // and seeding an empty published config would falsely tick the
         // dashboard checklist's 'Publish behavior' step. Re-clicks never
         // overwrite an existing agent's config.
-        $tier = (string) ($data['model_tier'] ?? 'standard');
-        if ($existing === null && $tier !== 'standard') {
+        $tier = (string) ($data['model_tier'] ?? AgentConfigVersion::DEFAULT_TIER);
+        if ($existing === null && $tier !== AgentConfigVersion::DEFAULT_TIER) {
             AgentConfigVersion::create([
                 'agent_id' => $agent->id,
                 'version' => 1,

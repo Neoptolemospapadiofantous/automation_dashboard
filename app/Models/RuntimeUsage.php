@@ -19,6 +19,8 @@ use Illuminate\Support\Carbon;
  * @property int $tokens_out
  * @property int $tokens_in_enhanced
  * @property int $tokens_out_enhanced
+ * @property int $tokens_in_opus
+ * @property int $tokens_out_opus
  */
 class RuntimeUsage extends Model
 {
@@ -33,6 +35,8 @@ class RuntimeUsage extends Model
         'tokens_out',
         'tokens_in_enhanced',
         'tokens_out_enhanced',
+        'tokens_in_opus',
+        'tokens_out_opus',
     ];
 
     protected $casts = [
@@ -45,7 +49,7 @@ class RuntimeUsage extends Model
      * so the margin report needs them separated). 2-3 cheap queries —
      * negligible next to the multi-second LLM call in the same turn.
      */
-    public static function record(Agent $agent, int $tokensIn, int $tokensOut, string $tier = 'standard'): void
+    public static function record(Agent $agent, int $tokensIn, int $tokensOut, string $tier = 'haiku'): void
     {
         // startOfDay() Carbon on BOTH lookup and insert so the value passes
         // through the date cast identically — a raw string here fails to
@@ -57,8 +61,13 @@ class RuntimeUsage extends Model
             'date' => now()->startOfDay(),
         ]);
 
-        $inCol = $tier === 'enhanced' ? 'tokens_in_enhanced' : 'tokens_in';
-        $outCol = $tier === 'enhanced' ? 'tokens_out_enhanced' : 'tokens_out';
+        // Column lineage: tokens_in/out = haiku (née standard),
+        // *_enhanced = sonnet, *_opus = opus.
+        [$inCol, $outCol] = match ($tier) {
+            'sonnet', 'enhanced' => ['tokens_in_enhanced', 'tokens_out_enhanced'],
+            'opus' => ['tokens_in_opus', 'tokens_out_opus'],
+            default => ['tokens_in', 'tokens_out'],
+        };
 
         $row->increment('turns');
         if ($tokensIn > 0) {

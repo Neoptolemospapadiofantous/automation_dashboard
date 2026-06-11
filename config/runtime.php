@@ -84,26 +84,62 @@ return [
     | Quality tiers — the user-facing model choice
     |--------------------------------------------------------------------------
     |
-    | Customers pick a TIER per agent (Versions page), never a model name.
-    | Each tier couples a model to a credit price so margin survives by
-    | construction: smarter model ⇒ more credits per message.
+    | Customers pick a model per agent (onboarding + Versions page). Each
+    | tier couples a model to a credit price so margin survives by
+    | construction: smarter model ⇒ more credits per message. Legacy tier
+    | keys 'standard'/'enhanced' (pre-lineup) alias to haiku/sonnet in
+    | AgentConfigVersion::publishedTier.
     |
     | pricing_per_mtok feeds ONLY the runtime:costs margin report — never
     | billing (customers pay credits, not tokens).
     */
     'tiers' => [
-        'standard' => [
-            'label' => 'Standard',
-            'model' => env('RUNTIME_TIER_STANDARD_MODEL', 'claude-haiku-4-5-20251001'),
-            'credits_per_message' => (int) env('RUNTIME_TIER_STANDARD_CREDITS', 1),
+        'haiku' => [
+            'label' => 'Claude Haiku',
+            'description' => 'Fastest replies at the lowest cost. Excellent for FAQ answering, lead capture, and high-traffic sites.',
+            'model' => env('RUNTIME_TIER_HAIKU_MODEL', 'claude-haiku-4-5-20251001'),
+            'credits_per_message' => (int) env('RUNTIME_TIER_HAIKU_CREDITS', 1),
             'pricing_per_mtok' => ['in' => 1.00, 'out' => 5.00],
         ],
-        'enhanced' => [
-            'label' => 'Enhanced',
-            'model' => env('RUNTIME_TIER_ENHANCED_MODEL', 'claude-sonnet-4-6'),
-            'credits_per_message' => (int) env('RUNTIME_TIER_ENHANCED_CREDITS', 3),
+        'sonnet' => [
+            'label' => 'Claude Sonnet',
+            'description' => 'Smarter conversations with deeper reasoning. Best for complex products, nuanced qualification, and longer sales cycles.',
+            'model' => env('RUNTIME_TIER_SONNET_MODEL', 'claude-sonnet-4-6'),
+            'credits_per_message' => (int) env('RUNTIME_TIER_SONNET_CREDITS', 3),
             'pricing_per_mtok' => ['in' => 3.00, 'out' => 15.00],
         ],
+        'opus' => [
+            'label' => 'Claude Opus',
+            'description' => 'The most capable model. Expert-grade reasoning for technical sales, high-stakes conversations, and premium experiences.',
+            'model' => env('RUNTIME_TIER_OPUS_MODEL', 'claude-opus-4-8'),
+            'credits_per_message' => (int) env('RUNTIME_TIER_OPUS_CREDITS', 10),
+            'pricing_per_mtok' => ['in' => 5.00, 'out' => 25.00],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Per-tenant safety rails
+    |--------------------------------------------------------------------------
+    |
+    | Hard caps that prevent a single conversation (intentional abuse or
+    | runaway loop) from burning the customer's credit balance.
+    |
+    | max_tool_calls_per_turn: how many tool calls the LLM can chain
+    |   inside one user turn before we force a stop. Real agents need
+    |   ~2-3; >10 indicates a loop.
+    |
+    | max_turns_per_session: hard ceiling on session length. Realistic
+    |   conversations end around turn 15-20; 100 is generous.
+    */
+    'safety' => [
+        'max_tool_calls_per_turn' => (int) env('RUNTIME_MAX_TOOL_CALLS', 10),
+        'max_turns_per_session' => (int) env('RUNTIME_MAX_TURNS', 100),
+        // Embed greetings are free (the visitor hasn't said anything yet),
+        // which makes them a token-burn vector for bots spread across IPs.
+        // Beyond this many launches per team per day, launch() debits one
+        // credit like any other turn. 500 ≈ a very busy small site.
+        'free_greetings_per_day' => (int) env('RUNTIME_FREE_GREETINGS_PER_DAY', 500),
     ],
 
     /*

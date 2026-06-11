@@ -61,6 +61,7 @@ class AgentVersionsController extends Controller
             $tiers[] = [
                 'key' => $key,
                 'label' => (string) ($tier['label'] ?? ucfirst($key)),
+                'description' => (string) ($tier['description'] ?? ''),
                 'credits_per_message' => (int) ($tier['credits_per_message'] ?? 1),
             ];
         }
@@ -229,7 +230,7 @@ class AgentVersionsController extends Controller
         return [
             'instructions' => trim((string) ($data['instructions'] ?? '')),
             'greeting' => trim((string) ($data['greeting'] ?? '')),
-            'model_tier' => (string) ($data['model_tier'] ?? 'standard'),
+            'model_tier' => (string) ($data['model_tier'] ?? AgentConfigVersion::DEFAULT_TIER),
         ];
     }
 

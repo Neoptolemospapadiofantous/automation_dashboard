@@ -63,8 +63,12 @@ name. Tier couples model to credit price so margin survives by design:
 
 | Tier | Model (env-overridable) | Credits/msg | Provider $/MTok in/out |
 |---|---|---|---|
-| Standard | claude-haiku-4-5 | 1 | $1 / $5 |
-| Enhanced | claude-sonnet-4-6 | 3 | $3 / $15 |
+| Claude Haiku | claude-haiku-4-5 | 1 | $1 / $5 |
+| Claude Sonnet | claude-sonnet-4-6 | 3 | $3 / $15 |
+| Claude Opus | claude-opus-4-8 | 10 | $5 / $25 |
+
+Legacy tier keys (standard/enhanced) alias to haiku/sonnet — published
+rows from before the lineup keep working without a data migration.
 
 The tier rides the published config (draft → publish → rollback like any
 behavior change). Unknown/absent tiers degrade to Standard. runtime_usage
