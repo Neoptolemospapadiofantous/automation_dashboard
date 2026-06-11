@@ -25,10 +25,10 @@ use Illuminate\Support\Str;
  * Authorization is per-agent-slug: anyone with the slug can embed,
  * but the agent must be `active`.
  *
- * Billing (differs from dashboard chat ON PURPOSE — simpler public
- * surface): interact() debits 1 flat credit per visitor turn; launch()
- * only pre-checks hasCredits(1) and the greeting itself is free. The
- * dashboard bills 1 + replies on every call including launch.
+ * Billing matches the dashboard's documented basis: (1 per visitor
+ * message + 1 per agent reply) × the agent's quality-tier multiplier.
+ * launch() greetings are free up to a per-team daily allowance, then
+ * debit the multiplier (anti-abuse, see below).
  *
  * Visitor identity: a 30-day cookie scoped to the embed flow. The
  * visitor doesn't have a Flowstack account; the cookie is just a
@@ -121,8 +121,8 @@ class EmbedController extends Controller
         // Greeting cap: launches are normally free (the visitor hasn't said
         // anything yet), which makes them a token-burn vector for bots
         // spread across IPs (the per-IP throttle alone can't see that).
-        // Past the daily allowance, a launch debits one credit like any
-        // other turn — real traffic spikes keep working, paid for.
+        // Past the daily allowance, a launch debits the tier multiplier —
+        // real traffic spikes keep working, paid for.
         $cap = max(0, (int) config('runtime.safety.free_greetings_per_day'));
         $greetings = (int) Cache::increment($this->greetingCounterKey($team->id));
         if ($greetings === 1) {
@@ -183,16 +183,12 @@ class EmbedController extends Controller
             return response()->json(['error' => 'Agent misconfigured.'], 503);
         }
 
-        try {
-            // 1 flat per visitor message × the agent's quality-tier
-            // multiplier (Enhanced = smarter model = more credits).
-            $this->credits->consume(
-                team: $team,
-                amount: AgentConfigVersion::creditsPerMessage($agent->id),
-                agentId: $agent->id,
-                meta: ['embed' => true],
-            );
-        } catch (OutOfCredits) {
+        // Pre-check only — the debit happens AFTER the engine replies so the
+        // billing basis matches the documented rate (1 per visitor message
+        // + 1 per agent reply, × the quality-tier multiplier) and users
+        // aren't charged for failures.
+        $multiplier = AgentConfigVersion::creditsPerMessage($agent->id);
+        if (! $team->hasCredits($multiplier)) {
             return response()->json([
                 'error' => "This agent isn't available right now. Please try again later.",
             ], 402);
@@ -204,6 +200,20 @@ class EmbedController extends Controller
             return response()->json([
                 'error' => 'The agent is temporarily unavailable.',
             ], 503);
+        }
+
+        $replies = count(array_filter($traces, fn (array $t) => (string) ($t['payload']['message'] ?? '') !== ''));
+        try {
+            $this->credits->consume(
+                team: $team,
+                amount: (1 + $replies) * $multiplier,
+                agentId: $agent->id,
+                meta: ['embed' => true],
+            );
+        } catch (OutOfCredits) {
+            // Post-reply race — the turn already happened; flag for ops and
+            // let the NEXT turn fail the pre-check.
+            report(new \RuntimeException('Credit debit raced past zero for team '.$team->id.' (embed)'));
         }
 
         return response()->json([

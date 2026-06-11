@@ -119,7 +119,8 @@ class EmbedTest extends TestCase
         ])->assertOk()
             ->assertJsonStructure(['traces']);
 
-        $this->assertSame(99, $agent->team->fresh()->credit_balance);
+        // (1 user message + 1 reply) × haiku multiplier 1 = 2 credits.
+        $this->assertSame(98, $agent->team->fresh()->credit_balance);
     }
 
     private function makeAgent(string $status): Agent

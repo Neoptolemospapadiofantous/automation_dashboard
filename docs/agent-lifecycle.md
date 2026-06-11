@@ -95,8 +95,8 @@ in discovery; saying *"I'm Jane, jane@x.co"* makes a card appear on
 
 Floating button → iframe chat → same engine via the public embed
 endpoints. Visitor identity is a 30-day cookie. Billing differs from the
-dashboard **on purpose**: the greeting is free, then 1 flat credit per
-visitor message. Only `active` agents serve; endpoints are IP-throttled.
+dashboard only in that greetings are free (up to a daily allowance);
+after that, the same per-message × tier-multiplier billing applies. Only `active` agents serve; endpoints are IP-throttled.
 
 ## Phase 6 — Harvest
 
@@ -107,7 +107,7 @@ visitor message. Only `active` agents serve; endpoints are IP-throttled.
   the team owner (`HandoffRequestedNotification`).
 - **`/conversations`** — searchable transcripts, linked to leads.
 - **`/agents/{slug}/analytics`** — volume, funnel, heatmap.
-- **`/billing`** — credits drain per message; burn alerts at 50%/80%;
+- **`/billing`** — credits drain per message × the agent's model-tier multiplier (Haiku/Gemini 1×, ChatGPT/Sonnet 3×, Opus 10×); burn alerts at 50%/80%;
   Stripe top-ups + upgrades; out of credits = clean 402 in chat,
   "unavailable" on embed.
 

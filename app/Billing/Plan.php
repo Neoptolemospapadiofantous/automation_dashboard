@@ -41,7 +41,7 @@ enum Plan: string
     case Business = 'business';
 
     /**
-     * Monthly credit allotment. 1 credit = 1 message (user OR agent direction).
+     * Monthly credit allotment. credits meter messages (1× base, higher multipliers on smarter model tiers) (user OR agent direction).
      *
      * Custom returns 0: no auto-renewal grant. Custom is project-based —
      * credits are negotiated per engagement and granted manually by ops.

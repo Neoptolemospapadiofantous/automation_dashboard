@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Authorization\Role;
+use App\Billing\CreditMeter;
+use App\Billing\Exceptions\OutOfCredits;
 use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Agent;
+use App\Models\AgentConfigVersion;
 use App\Models\Team;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\LLM\AnthropicClient;
@@ -230,6 +233,23 @@ class KnowledgeBaseController extends Controller
         $data = $request->validate([
             'question' => ['required', 'string', 'max:1000'],
         ]);
+
+        // This endpoint runs a real LLM synthesis — it bills like a chat
+        // turn (tier multiplier). Pricing-audit finding: unbilled, it was
+        // a free-LLM vector that kept working at zero balance.
+        $team = $agent->team;
+        try {
+            if ($team !== null) {
+                app(CreditMeter::class)->consume(
+                    team: $team,
+                    amount: AgentConfigVersion::creditsPerMessage($agent->id),
+                    agentId: $agent->id,
+                    meta: ['kb_query' => true],
+                );
+            }
+        } catch (OutOfCredits) {
+            return response()->json(['error' => 'Out of credits for this billing period.'], 402);
+        }
 
         try {
             $chunks = $this->knowledge->search($agent->id, $data['question'], 5);

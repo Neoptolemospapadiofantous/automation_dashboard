@@ -146,7 +146,9 @@ class GeminiClient implements LlmClient
             if (isset($part['functionCall'])) {
                 $name = (string) ($part['functionCall']['name'] ?? '');
                 $args = (array) ($part['functionCall']['args'] ?? []);
-                $id = 'gem_'.$name.'_'.$i++;
+                // Newer API revisions include an id on functionCall — use it
+                // when present, else synthesize a stable one.
+                $id = (string) ($part['functionCall']['id'] ?? ('gem_'.$name.'_'.$i++));
                 $toolCalls[] = new ToolCall(id: $id, name: $name, input: $args);
                 $blocks[] = ['type' => 'tool_use', 'id' => $id, 'name' => $name, 'input' => $args];
             }

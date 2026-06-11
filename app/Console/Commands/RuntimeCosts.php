@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
  * Platform margin view: per-team token spend vs. plan revenue for a month.
  *
  * Cost basis = runtime_usage rollups (written by the FlowExecutor every
- * turn) × config('runtime.pricing') rates. Revenue = the team's plan
+ * turn) × the per-tier rates in config('runtime.tiers.*.pricing_per_mtok'). Revenue = the team's plan
  * price (subscriptions only — top-ups appear in the credits column, not
  * revenue, to keep the number conservative). This is an OPS report —
  * customers never see token economics, they see credits.
@@ -75,7 +75,10 @@ class RuntimeCosts extends Command
                 $tin += (int) $u->tin;
                 $tout += (int) $u->tout;
             }
-            $revenue = (float) ($plan?->priceUsd() ?? 0);
+            // Phantom-revenue guard: teams default to a plan value at signup
+            // without ever paying — only count revenue for live subscriptions.
+            $hasActiveSub = $team !== null && $team->getAttribute('stripe_subscription_status') === 'active';
+            $revenue = $hasActiveSub ? (float) ($plan?->priceUsd() ?? 0) : 0.0;
 
             $creditsUsed = (int) abs(CreditTransaction::query()
                 ->where('team_id', $teamId)

@@ -79,6 +79,10 @@ return [
     |
     | pricing_per_mtok feeds ONLY the runtime:costs margin report — never
     | billing (customers pay credits, not tokens).
+    |
+    | VERIFIED 2026-06-11 against official provider pages (see
+    | docs/operations/pricing-audit.md): all five model IDs valid, all
+    | five rate pairs exact. Re-verify when bumping any model env.
     */
     'tiers' => [
         'haiku' => [

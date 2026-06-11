@@ -263,7 +263,7 @@ function openPortal() {
                             </div>
                         </div>
                         <div class="mt-3 text-xs text-gray-500">
-                            1 credit = 1 message (each user message and each agent reply). Credits reset on renewal — no rollover.
+                            Each user message and each agent reply consumes credits — 1× on Claude Haiku/Gemini, more on smarter models (see the Versions page). Credits reset on renewal — no rollover.
                         </div>
                         <div v-if="billing?.allows_topups" class="mt-4">
                             <PrimaryButton type="button" @click="openTopup">
@@ -336,7 +336,7 @@ function openPortal() {
                     </button>
                 </div>
                 <p class="mt-4 text-xs text-gray-400">
-                    Need more than this? Operator gets the cheapest per-credit rate; Custom plans have negotiated budgets.
+                    Top-ups are priced above subscription rates on purpose — if you top up often, upgrading to Operator is the cheaper path. Custom plans have negotiated budgets.
                 </p>
             </template>
             <template #footer>

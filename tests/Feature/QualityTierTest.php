@@ -68,7 +68,7 @@ class QualityTierTest extends TestCase
         $this->assertSame(94, $user->currentTeam->fresh()->credit_balance);
     }
 
-    public function test_embed_interact_debits_the_tier_multiplier(): void
+    public function test_embed_interact_bills_per_reply_times_multiplier(): void
     {
         $user = $this->owner();
         $agent = $user->currentTeam->currentAgent;
@@ -80,10 +80,10 @@ class QualityTierTest extends TestCase
             'message' => 'hello',
         ])->assertOk();
 
-        $this->assertSame(97, $user->currentTeam->fresh()->credit_balance); // 1 × 3
+        $this->assertSame(94, $user->currentTeam->fresh()->credit_balance); // (1 + 1 reply) × 3
     }
 
-    public function test_haiku_agent_still_bills_one_credit_on_embed(): void
+    public function test_haiku_agent_bills_two_credits_per_embed_turn(): void
     {
         $user = $this->owner();
         $agent = $user->currentTeam->currentAgent;
@@ -94,7 +94,7 @@ class QualityTierTest extends TestCase
             'message' => 'hello',
         ])->assertOk();
 
-        $this->assertSame(99, $user->currentTeam->fresh()->credit_balance);
+        $this->assertSame(98, $user->currentTeam->fresh()->credit_balance); // (1 + 1 reply) × 1
     }
 
     public function test_sonnet_tokens_land_in_a_sonnet_tier_row(): void
@@ -212,7 +212,7 @@ class QualityTierTest extends TestCase
         ])->assertOk();
 
         Http::assertSent(fn (Request $r): bool => $r['model'] === config('runtime.tiers.opus.model'));
-        $this->assertSame(90, $user->currentTeam->fresh()->credit_balance); // 1 × 10
+        $this->assertSame(80, $user->currentTeam->fresh()->credit_balance); // (1 + 1 reply) × 10
 
         $row = RuntimeUsage::where('team_id', $user->currentTeam->id)->first();
         $this->assertSame('opus', $row->tier);
