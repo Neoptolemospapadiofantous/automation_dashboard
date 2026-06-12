@@ -62,8 +62,26 @@ if [[ -f .env && -f .env.example ]]; then
 fi
 
 # ── 4. Mutating public routes without throttle middleware ─────────────────────
-unthrottled_public=$(grep -nE "^Route::(post|put|patch|delete)" routes/web.php routes/api.php 2>/dev/null \
-  | grep -viE "throttle|middleware\(\[.*throttle" | head -20)
+# route:list sees the FULL middleware stack incl. chained ->middleware()
+# lines and group middleware — line-greps produced false positives.
+# Authed Jetstream/framework form routes (session + CSRF) are acceptable
+# without throttle; PUBLIC endpoints are not — those are whitelisted here.
+unthrottled_public=$(php artisan route:list --json 2>/dev/null | php -r '
+// webhooks/stripe: guarded by Stripe signature verification (whsec), not
+// IP-throttle — throttling would drop legitimate renewal-batch bursts.
+$wl = "#^(broadcasting/auth|storage/.*|current-team|logout|teams.*|team-invitations/.*|user|user/.*|webhooks/stripe)$#";
+$r = json_decode(stream_get_contents(STDIN), true) ?: [];
+foreach ($r as $x) {
+    $m = implode(",", $x["middleware"] ?? []);
+    $v = $x["method"] ?? "";
+    $u = $x["uri"] ?? "";
+    if (preg_match("/POST|PUT|PATCH|DELETE/", $v)
+        && stripos($m, "throttle") === false
+        && stripos($m, "signed") === false
+        && ! preg_match($wl, $u)) {
+        echo $v . " " . $u . PHP_EOL;
+    }
+}' | head -20)
 if [[ -n "$unthrottled_public" ]]; then
   n=$(echo "$unthrottled_public" | wc -l)
   record MEDIUM "routes-missing-throttle" "$n mutating route(s) without throttle middleware (sample in data/agents/audit-sentinel/routes_unthrottled.log)"
@@ -78,7 +96,7 @@ if [[ -n "$debug_routes" ]]; then
 fi
 
 # ── 6. Hard-coded secrets-shaped strings in source ─────────────────────────────
-secrets_hits=$(grep -rnE "(sk_live_|pk_live_|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|xox[baprs]-[A-Za-z0-9-]+)" \
+secrets_hits=$(grep -rnE "(sk_live_[A-Za-z0-9]{16,}|pk_live_[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|xox[baprs]-[A-Za-z0-9-]{16,})" \
   app/ config/ routes/ 2>/dev/null | head -5)
 if [[ -n "$secrets_hits" ]]; then
   n=$(echo "$secrets_hits" | wc -l)

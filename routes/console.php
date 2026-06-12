@@ -15,3 +15,11 @@ Schedule::command('runtime:prune-sessions')->daily();
 // Credit-renewal safety net: monthly grants for annual subscriptions +
 // self-heal for missed invoice.paid webhooks (see the command docblock).
 Schedule::command('credits:grant-renewals')->daily();
+
+// Hermes audit agents — daily sweeps (no-LLM bash scripts). Their reports
+// land in data/agents/*/; `composer hermes-status` summarizes. The full
+// watchdog (hermes-fast) stays on-demand + CI; these cover drift that
+// only shows over time (CVEs, outdated deps, disk, log errors, secrets).
+Schedule::exec('bash scripts/agents/audit_sentinel.sh')->dailyAt('6:00');
+Schedule::exec('bash scripts/agents/update_inspector.sh')->weeklyOn(1, '6:10');
+Schedule::exec('bash scripts/agents/system_check.sh')->everySixHours();

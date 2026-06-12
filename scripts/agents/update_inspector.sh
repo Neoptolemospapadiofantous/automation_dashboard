@@ -98,8 +98,10 @@ fi
 # ── 4. Overall verdict ─────────────────────────────────────────────────────────
 overall="PASS"
 total_major=$((php_major + js_major))
+# Majors are upgrade DECISIONS, not drift — they warn, never fail.
+# (Laravel 13 / PHPUnit 13 / Vite 8 / Tailwind 4 / Inertia 3 are all
+# known-pending majors as of 2026-06-12; bump deliberately post-launch.)
 [[ $total_major -gt 0 ]] && overall="WARN"
-[[ $total_major -gt 5 ]] && overall="FAIL"  # arbitrary — review during /hermes-update
 
 cat > "$OUT/findings.json" <<EOF
 {

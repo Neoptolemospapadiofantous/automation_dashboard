@@ -101,7 +101,11 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    // throttle:30,1 guards the PUBLIC auth endpoints (register,
+    // forgot/reset-password) against spam + mail-bombing — audit-sentinel
+    // finding 2026-06-12. Login additionally has Fortify's own
+    // LoginRateLimiter on top. 30/min/IP is generous for humans.
+    'middleware' => ['web', 'throttle:30,1'],
 
     /*
     |--------------------------------------------------------------------------
