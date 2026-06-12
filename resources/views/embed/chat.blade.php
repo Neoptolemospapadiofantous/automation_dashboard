@@ -6,32 +6,53 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $agentName }} · Chat</title>
     <style>
-        :root { --primary: #6366f1; }
+        /* Flowstack brand — white sheet. Values inlined from
+           resources/css/tokens.css (.sheet-white): this page is served into
+           customers' iframes and deliberately loads no app bundle or
+           external fonts. Hard edges (radius 0) per the brand. */
+        :root {
+            --bg:          #FFFFFF;
+            --bg-elev:     #FAFAFA;
+            --surface:     #FAFAFA;
+            --surface-hi:  #F0F0F0;
+            --border-line: #E5E5E5;
+            --border-hi:   #D4D4D4;
+            --ink:         #000000;
+            --ink-dim:     #525252;
+            --ink-mute:    #8A8A8A;
+            --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
+        }
         * { box-sizing: border-box; }
         html, body { margin: 0; height: 100%; }
         body {
             font-family: ui-sans-serif, system-ui, sans-serif;
-            background: #fff;
-            color: #111;
+            background: var(--bg);
+            color: var(--ink);
             display: flex;
             flex-direction: column;
             height: 100%;
         }
         header {
             padding: 14px 16px;
-            border-bottom: 1px solid #f3f4f6;
+            border-bottom: 1px solid var(--border-line);
             display: flex;
             align-items: center;
             gap: 10px;
-            background: #fff;
+            background: var(--bg-elev);
         }
         header h1 { font-size: 14px; font-weight: 600; margin: 0; }
-        header .ai-disclosure { font-size: 10px; color: rgba(255,255,255,0.75); margin: 1px 0 0; }
+        /* Art. 50 disclosure — mono annotation, must stay legible on the
+           light header (was once white-on-white; never again). */
+        header .ai-disclosure {
+            font-size: 10px; color: var(--ink-dim); margin: 2px 0 0;
+            font-family: var(--font-mono); letter-spacing: 0.04em;
+        }
         header .badge {
-            width: 32px; height: 32px; border-radius: 50%;
-            background: var(--primary); color: #fff;
+            width: 32px; height: 32px; border-radius: 0;
+            background: var(--ink); color: var(--bg);
             display: flex; align-items: center; justify-content: center;
             font-size: 14px; font-weight: 700;
+            font-family: var(--font-mono);
         }
         #thread {
             flex: 1; overflow-y: auto;
@@ -39,53 +60,59 @@
         }
         .msg {
             max-width: 80%; padding: 10px 12px;
-            border-radius: 14px; font-size: 14px; line-height: 1.4;
+            border-radius: 0; font-size: 14px; line-height: 1.4;
             white-space: pre-wrap; word-wrap: break-word;
         }
         .msg.user {
             align-self: flex-end;
-            background: var(--primary); color: #fff;
-            border-bottom-right-radius: 4px;
+            background: var(--ink); color: var(--bg);
         }
         .msg.agent {
             align-self: flex-start;
-            background: #f3f4f6; color: #111;
-            border-bottom-left-radius: 4px;
+            background: var(--surface); color: var(--ink);
+            border: 1px solid var(--border-line);
         }
         .msg.system {
             align-self: center;
-            background: transparent; color: #9ca3af;
-            font-size: 11px; font-style: italic;
+            background: transparent; color: var(--ink-mute);
+            font-size: 11px; font-family: var(--font-mono);
         }
         form {
             display: flex; padding: 12px;
-            border-top: 1px solid #f3f4f6;
-            gap: 8px; background: #fff;
+            border-top: 1px solid var(--border-line);
+            gap: 8px; background: var(--bg);
         }
         form input {
             flex: 1; padding: 10px 12px;
-            border: 1px solid #e5e7eb; border-radius: 8px;
+            border: 1px solid var(--border-hi); border-radius: 0;
             font-size: 14px; outline: none;
+            background: var(--bg); color: var(--ink);
         }
-        form input:focus { border-color: var(--primary); }
+        form input:focus { border-color: var(--ink); }
         form button {
-            padding: 10px 16px; border: 0; border-radius: 8px;
-            background: var(--primary); color: #fff;
-            font-weight: 600; font-size: 14px; cursor: pointer;
+            padding: 10px 16px; border: 1px solid var(--ink); border-radius: 0;
+            background: var(--ink); color: var(--bg);
+            font-weight: 600; font-size: 12px; cursor: pointer;
+            font-family: var(--font-mono);
+            letter-spacing: 0.06em; text-transform: uppercase;
+            transition: background .15s, color .15s;
         }
+        form button:hover:not(:disabled) { background: var(--bg); color: var(--ink); }
         form button:disabled { opacity: .5; cursor: not-allowed; }
         .typing {
             align-self: flex-start;
-            background: #f3f4f6; color: #6b7280;
-            padding: 10px 12px; border-radius: 14px;
+            background: var(--surface); color: var(--ink-mute);
+            border: 1px solid var(--border-line);
+            padding: 10px 12px; border-radius: 0;
             font-size: 13px;
         }
         .powered {
             text-align: center; padding: 6px 12px;
-            color: #9ca3af; font-size: 10px;
-            border-top: 1px solid #f3f4f6; background: #fafafa;
+            color: var(--ink-mute); font-size: 10px;
+            font-family: var(--font-mono); letter-spacing: 0.06em;
+            border-top: 1px solid var(--border-line); background: var(--bg-elev);
         }
-        .powered a { color: #6366f1; text-decoration: none; }
+        .powered a { color: var(--ink-dim); text-decoration: underline; text-underline-offset: 2px; }
     </style>
 </head>
 <body>

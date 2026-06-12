@@ -44,6 +44,9 @@ write a new phase doc that supersedes the prior one).
 - [architecture/public-stats-flow.md](./architecture/public-stats-flow.md) — dashboard data flow (Mermaid)
 - [architecture/landing-sse-pipeline.md](./architecture/landing-sse-pipeline.md) — landing-side SSE pipeline (Mermaid)
 
+### Design
+- [theme-unification.md](./theme-unification.md) — landing↔dashboard↔embed shared tokens ("two sheets, one ink"). Phase 1 built; Phases 2–3 planned
+
 ### Infra + ops
 - [phase-2-realtime.md](./phase-2-realtime.md) — [[phase-2-realtime|broadcasting backbone (Pusher / Echo)]]
 - [phase-4-deploy.md](./phase-4-deploy.md) — Forge deploy command

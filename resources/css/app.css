@@ -1,3 +1,7 @@
+/* Flowstack brand tokens — vendored from automation-landing/branding/tokens.css.
+   The dashboard renders the WHITE sheet: <html class="sheet-white"> (app.blade.php). */
+@import './tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

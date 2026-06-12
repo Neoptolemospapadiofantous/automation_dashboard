@@ -8,28 +8,32 @@
     window.__flowstackEmbedLoaded = true;
 
     var IFRAME_URL = {!! json_encode($iframeUrl, JSON_UNESCAPED_SLASHES) !!};
-    var COLOR = {!! json_encode($primaryColor, JSON_UNESCAPED_SLASHES) !!};
+    var INK = {!! json_encode($ink, JSON_UNESCAPED_SLASHES) !!};
+    var BG = {!! json_encode($bg, JSON_UNESCAPED_SLASHES) !!};
     var AGENT_NAME = {!! json_encode($agentName, JSON_UNESCAPED_SLASHES) !!};
 
+    // Flowstack blueprint brand: hard edges (radius 0), ink block button,
+    // hover inverts ink/ground — mirrors the marketing site's .btn-grad.
     var css = ''
         + '#fs-embed-btn {'
         + '  position: fixed; bottom: 24px; right: 24px;'
-        + '  width: 56px; height: 56px; border-radius: 50%;'
-        + '  background: ' + COLOR + '; color: #fff;'
-        + '  border: none; cursor: pointer; z-index: 2147483646;'
-        + '  box-shadow: 0 8px 24px rgba(0,0,0,.18);'
+        + '  width: 56px; height: 56px; border-radius: 0;'
+        + '  background: ' + INK + '; color: ' + BG + ';'
+        + '  border: 1px solid ' + INK + '; cursor: pointer; z-index: 2147483646;'
+        + '  box-shadow: 6px 6px 0 rgba(0,0,0,.14);'
         + '  display: flex; align-items: center; justify-content: center;'
-        + '  font-family: ui-sans-serif, system-ui, sans-serif;'
-        + '  transition: transform .15s ease;'
+        + '  font-family: ui-monospace, "JetBrains Mono", monospace;'
+        + '  transition: background .15s, color .15s;'
         + '}'
-        + '#fs-embed-btn:hover { transform: scale(1.05); }'
+        + '#fs-embed-btn:hover { background: ' + BG + '; color: ' + INK + '; }'
         + '#fs-embed-btn svg { width: 24px; height: 24px; }'
         + '#fs-embed-frame-wrap {'
         + '  position: fixed; bottom: 96px; right: 24px;'
         + '  width: 380px; height: min(640px, calc(100vh - 120px));'
-        + '  border-radius: 16px; overflow: hidden;'
-        + '  box-shadow: 0 16px 48px rgba(0,0,0,.20);'
-        + '  background: #fff; z-index: 2147483645;'
+        + '  border-radius: 0; overflow: hidden;'
+        + '  border: 1px solid ' + INK + ';'
+        + '  box-shadow: 8px 8px 0 rgba(0,0,0,.12);'
+        + '  background: ' + BG + '; z-index: 2147483645;'
         + '  display: none;'
         + '}'
         + '#fs-embed-frame-wrap.open { display: block; }'

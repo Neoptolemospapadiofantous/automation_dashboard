@@ -53,11 +53,17 @@ class EmbedController extends Controller
         $agent = $this->resolveAgent($slug);
 
         $iframeUrl = url("/embed/{$slug}");
-        $primaryColor = '#6366f1'; // indigo-500; future: read from request data-attributes
+
+        // Flowstack brand tokens (resources/css/tokens.css, black sheet) —
+        // the button is a black ink block on the customer's page, matching
+        // the marketing site. Future: per-agent override via data-attributes.
+        $ink = '#000000';
+        $bg = '#FFFFFF';
 
         $js = view('embed.widget', [
             'iframeUrl' => $iframeUrl,
-            'primaryColor' => $primaryColor,
+            'ink' => $ink,
+            'bg' => $bg,
             'agentName' => $agent->name,
         ])->render();
 
