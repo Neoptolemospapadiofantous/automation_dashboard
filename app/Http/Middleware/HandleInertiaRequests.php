@@ -61,18 +61,24 @@ class HandleInertiaRequests extends Middleware
 
             // Agent picker data for the nav. Shared on every Inertia request
             // so the picker stays in sync without each page re-querying.
-            'currentAgent' => fn () => $request->user()?->currentTeam?->currentAgent
-                ? [
-                    'id' => $request->user()->currentTeam->currentAgent->id,
-                    'name' => $request->user()->currentTeam->currentAgent->name,
-                    'status' => $request->user()->currentTeam->currentAgent->status,
-                ]
-                : null,
-            'teamAgents' => fn () => $request->user()?->currentTeam
-                ? $request->user()->currentTeam->agents()->orderBy('created_at')->get()
+            'currentAgent' => function () use ($request) {
+                $team = $request->user()?->currentTeam;
+                $agent = $team instanceof Team ? $team->currentAgent : null;
+
+                return $agent instanceof Agent
+                    ? ['id' => $agent->id, 'name' => $agent->name, 'status' => $agent->status]
+                    : null;
+            },
+            'teamAgents' => function () use ($request) {
+                $team = $request->user()?->currentTeam;
+                if (! $team instanceof Team) {
+                    return [];
+                }
+
+                return $team->agents()->orderBy('created_at')->get()
                     ->map(fn ($a) => ['id' => $a->id, 'name' => $a->name, 'status' => $a->status])
-                    ->values()
-                : [],
+                    ->values();
+            },
 
             // Billing snapshot for the credit pill in the sidebar.
             //

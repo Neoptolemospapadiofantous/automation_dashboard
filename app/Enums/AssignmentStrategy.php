@@ -11,14 +11,4 @@ enum AssignmentStrategy: string
     case LeastLoaded = 'least_loaded';
     case Manual = 'manual';
     case Unassigned = 'unassigned';
-
-    public function label(): string
-    {
-        return match ($this) {
-            self::RoundRobin => 'Round robin',
-            self::LeastLoaded => 'Least loaded',
-            self::Manual => 'Manual',
-            self::Unassigned => 'Unassigned',
-        };
-    }
 }

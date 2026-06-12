@@ -169,12 +169,6 @@ parameters:
 			path: app/Enums/LeadStatus.php
 
 		-
-			message: '#^Method App\\Enums\\LeadStatus\:\:values\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Enums/LeadStatus.php
-
-		-
 			message: '#^Property App\\Events\\Domain\\AgentCreated\:\:\$agent is never read$#'
 			identifier: shipmonk.deadProperty.neverRead
 			count: 1
@@ -627,12 +621,6 @@ parameters:
 		-
 			message: '#^Instanceof between string and App\\Billing\\Plan will always evaluate to false\.$#'
 			identifier: instanceof.alwaysFalse
-			count: 1
-			path: app/Models/Team.php
-
-		-
-			message: '#^Method App\\Models\\Team\:\:agents\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
 			count: 1
 			path: app/Models/Team.php
 

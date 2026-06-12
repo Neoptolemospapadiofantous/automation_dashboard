@@ -73,16 +73,4 @@ enum OnboardingState: string
     {
         return $this === self::Complete;
     }
-
-    /**
-     * Human-readable label for checklists / progress UI.
-     */
-    public function label(): string
-    {
-        return match ($this) {
-            self::NeedsTeam => 'Create your team',
-            self::NeedsAgent => 'Set up your agent',
-            self::Complete => 'Ready to chat',
-        };
-    }
 }

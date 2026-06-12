@@ -38,6 +38,7 @@ class Team extends JetstreamTeam
         'profile',
     ];
 
+    /** @return HasMany<Agent, $this> */
     public function agents(): HasMany
     {
         return $this->hasMany(Agent::class);
