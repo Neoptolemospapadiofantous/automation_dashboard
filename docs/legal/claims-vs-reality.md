@@ -32,6 +32,7 @@
 | "Webhook verification" | Stripe signature ✓ — that's the only inbound webhook now |
 | "Encryption at rest" | Whatever the host DB provides — NOT app-layer. Don't claim until deploy target is chosen |
 | "Exit/portability export" | Agent config exports ✓; no full customer-data export |
+| "Registration requires Terms/Privacy acceptance" | Jetstream feature ready but OFF (config/jetstream.php) — enable only when counsel approves the policy text; Register.vue checkbox appears automatically |
 
 ## ❌ Not true — must NOT appear in any published copy
 

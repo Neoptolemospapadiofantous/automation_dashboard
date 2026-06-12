@@ -4,11 +4,18 @@ The dashboard's externally-reachable, non-session-authenticated routes.
 
 | Route | Auth | Purpose |
 |---|---|---|
-| `GET /api/public/stats` | none (anonymous) | Marketing-site metrics + scarcity counter |
-| `POST /api/voiceflow/lead-captured/{agent:slug}` | per-agent `X-Webhook-Secret` header (constant-time compare) | Inbound Voiceflow Custom Action — captures qualified leads. Throttled `60/min/IP`. Tenancy is encoded in the slug; secret authenticates the caller. See [phase-5-voiceflow.md](./phase-5-voiceflow.md) for the contract. |
-| `POST /api/voiceflow/webhooks/session/{agent:slug}` | per-agent `X-Webhook-Secret` header (constant-time compare) | Inbound Voiceflow session-lifecycle webhook (`runtime.session.*`, `runtime.call.*`). Throttled `120/min/IP`. Persists every event to `voiceflow_webhook_events` with idempotency on `(agent_id, event_id)` and reactively updates the matching `Conversation`. See [phase-15-voiceflow-wrapper.md](./phase-15-voiceflow-wrapper.md). |
-| `POST /api/voiceflow/webhooks/org` | platform `services.voiceflow.org_webhook_secret` (Svix HMAC pending `svix/svix` dep) | Inbound Voiceflow org-events webhook (`organization.project.*`). Throttled `60/min/IP`. Reactively retires `voiceflow_project_pool` rows when a project is deleted upstream. See [phase-15-voiceflow-wrapper.md](./phase-15-voiceflow-wrapper.md). |
+| `GET /api/public/stats` | none (anonymous) | Marketing-site metrics + scarcity counter. Throttled `60/min/IP` |
+| `GET /api/health` | none (anonymous) | Deploy/uptime probe — db + cache checks, 200/503. Throttled `60/min/IP`. No tenant data |
+| `GET /widget/{slug}.js` | agent must be `active` | Embed loader JS (floating button + iframe bootstrap). Edge-cacheable 5 min |
+| `GET /embed/{slug}` | agent must be `active` | Standalone chat page served into the customer-site iframe (`frame-ancestors *`). Carries the AI Act Art. 50 disclosure in the header |
+| `POST /embed/{slug}/launch` | agent must be `active` + team credits | Opens a visitor session (30-day cookie). Throttled `60/min/IP`; free-greeting daily cap per team, then debits. |
+| `POST /embed/{slug}/interact` | agent must be `active` + team credits | Visitor message → native engine → traces. Throttled + billed `(1+replies)×tier` |
+| `POST /webhooks/stripe` | Stripe signature (`whsec`, constant-time) | Inbound Stripe events (checkout, invoices, subscription lifecycle). Deliberately not IP-throttled — signature is the guard; throttling would drop renewal bursts |
 | `GET /` | none | Static framework Welcome page — serves no tenant data |
+
+> Historical note: the three `/api/voiceflow/*` webhook receivers were
+> removed with the Voiceflow engine (2026-06-11) — no inbound
+> engine webhooks exist on the native runtime.
 
 The rest of this document covers `/api/public/stats`, the only *anonymous*
 endpoint. The [[landing-sse-pipeline|marketing site]] (`/home/theone/automation-landing`) reads it to show

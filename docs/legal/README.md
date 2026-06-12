@@ -10,6 +10,7 @@
 | [trust-page.md](./trust-page.md) | Public website Legal / Privacy / Trust page — publishable draft |
 | [compliance-framework.md](./compliance-framework.md) | Internal framework + DPA / ToS skeletons for business customers |
 | [claims-vs-reality.md](./claims-vs-reality.md) | **The honesty ledger**: every legal claim mapped to its implementation status. A claim moves to the docs only when this table says ✅ |
+| [privacy-policy.md](./privacy-policy.md) | Privacy + Cookie Policy draft — the CONTROLLER-role artifact the rest of the set presupposes (dashboard accounts, billing) |
 | [docx-redlines.md](./docx-redlines.md) | Required corrections for the `source/` masters — copy-paste replacement text per section |
 | `source/*.docx` | The v2 multi-sector master drafts (business-owned). **Not usable until the redlines are applied** — they still describe the deleted Voiceflow architecture |
 
