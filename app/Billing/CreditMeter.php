@@ -127,6 +127,21 @@ class CreditMeter
         $amount = $plan->monthlyCredits();
 
         DB::transaction(function () use ($team, $plan, $amount, $meta) {
+            // Ledger integrity: the reset WIPES leftover monthly credits —
+            // record that as a negative adjustment so SUM(credit_transactions)
+            // always equals credit_balance + topup_balance (credits:reconcile
+            // asserts this). Without this row the audit trail could never
+            // balance and drift was undetectable.
+            $expired = max(0, (int) $team->credit_balance);
+            if ($expired > 0) {
+                CreditTransaction::create([
+                    'team_id' => $team->id,
+                    'amount' => -$expired,
+                    'reason' => CreditTransaction::REASON_EXPIRE_MONTHLY,
+                    'meta' => ['at_renewal' => true],
+                ]);
+            }
+
             $team->forceFill([
                 // Hard reset of the MONTHLY bucket only — no rollover for
                 // the allowance. topup_balance is untouched: purchased

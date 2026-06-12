@@ -22,6 +22,10 @@ class CreditTransaction extends Model
 
     public const REASON_ADJUSTMENT = 'adjustment';
 
+    // Leftover monthly credits wiped at renewal — recorded so the ledger
+    // always sums to the live balances (asserted by credits:reconcile).
+    public const REASON_EXPIRE_MONTHLY = 'expire_monthly';
+
     protected $fillable = [
         'team_id',
         'agent_id',

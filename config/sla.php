@@ -38,4 +38,16 @@ return [
         'cache_key' => 'health:check',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Provider spend ceiling (USD/day, platform-wide)
+    |--------------------------------------------------------------------------
+    | runtime:spend-check compares yesterday's runtime_usage cost against
+    | this. A breach means a runaway agent, an abusive team, or a tool
+    | loop — investigate via runtime:costs. Generous default; tighten
+    | once real traffic establishes a baseline.
+    */
+    'spend' => [
+        'daily_ceiling_usd' => (float) env('SLA_DAILY_SPEND_CEILING_USD', 25.0),
+    ],
 ];
