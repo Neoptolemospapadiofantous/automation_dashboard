@@ -196,7 +196,7 @@ const capturedEntries = () => Object.entries(captured.value);
 
 <template>
     <AppLayout title="Chat">
-        <PageHeader title="Chat" description="Talk to your current agent the way a lead would. Captured fields appear on the right and sync to the board live." />
+        <PageHeader title="Chat" description="Talk to your current agent the way a lead would — replies are AI-generated. Captured fields appear on the right and sync to the board live." />
 
         <div class="py-8">
             <div class="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">

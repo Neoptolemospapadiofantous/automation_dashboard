@@ -26,6 +26,7 @@
             background: #fff;
         }
         header h1 { font-size: 14px; font-weight: 600; margin: 0; }
+        header .ai-disclosure { font-size: 10px; color: rgba(255,255,255,0.75); margin: 1px 0 0; }
         header .badge {
             width: 32px; height: 32px; border-radius: 50%;
             background: var(--primary); color: #fff;
@@ -90,7 +91,12 @@
 <body>
 <header>
     <div class="badge">{{ substr($agentName, 0, 1) }}</div>
-    <h1>{{ $agentName }}</h1>
+    <div>
+        <h1>{{ $agentName }}</h1>
+        {{-- EU AI Act Art. 50 transparency: rendered by the PLATFORM,
+             independent of agent scripting, at every conversation. --}}
+        <p class="ai-disclosure">AI assistant — not a person. You can ask for a human at any time.</p>
+    </div>
 </header>
 
 <div id="thread" role="log" aria-live="polite"></div>

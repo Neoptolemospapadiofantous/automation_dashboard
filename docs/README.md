@@ -25,6 +25,7 @@ write a new phase doc that supersedes the prior one).
 - [phase-6-conversation-storage.md](./phase-6-conversation-storage.md) — [[phase-6-conversation-storage|conversations + messages persistence]]
 - [phase-11-transcript-backfill.md](./phase-11-transcript-backfill.md) — [[phase-11-transcript-backfill|Voiceflow Transcripts API import]]
 - [phase-12-knowledge-base.md](./phase-12-knowledge-base.md) — Voiceflow KB API
+- [legal/README.md](./legal/README.md) — legal & compliance drafts: generic trust page + framework, claims-vs-reality honesty ledger, parked insurance-vertical set
 - [../CONTRIBUTING.md](../CONTRIBUTING.md) — workflow conventions, [IF-*] assurance decisions, deferred items
 - [../PROJECT_ASSURANCE_STRATEGY.md](../PROJECT_ASSURANCE_STRATEGY.md) — the assurance spec (categories A–I); suites live in tests/{Wiring,Integrity,Security,Contracts,Snapshots,Performance}
 - [operations/pricing-audit.md](./operations/pricing-audit.md) — provider rates verified 2026-06-11, credit economics, margin matrix, standing invariants
