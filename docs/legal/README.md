@@ -10,10 +10,13 @@
 | [trust-page.md](./trust-page.md) | Public website Legal / Privacy / Trust page — publishable draft |
 | [compliance-framework.md](./compliance-framework.md) | Internal framework + DPA / ToS skeletons for business customers |
 | [claims-vs-reality.md](./claims-vs-reality.md) | **The honesty ledger**: every legal claim mapped to its implementation status. A claim moves to the docs only when this table says ✅ |
+| [docx-redlines.md](./docx-redlines.md) | Required corrections for the `source/` masters — copy-paste replacement text per section |
+| `source/*.docx` | The v2 multi-sector master drafts (business-owned). **Not usable until the redlines are applied** — they still describe the deleted Voiceflow architecture |
 
-Scope: **GDPR** (Platform = processor, Client = controller) and the
-**EU AI Act** (Platform = provider; Art. 50 transparency implemented).
-No sector-specific regimes are in scope.
+Scope: multi-sector (per the v2 masters) — **GDPR** (Platform =
+processor) and the **EU AI Act** (Platform = provider; Art. 50
+implemented) apply to every engagement; sector regimes (DORA, IDD,
+healthcare, consumer law) apply conditionally per Client sector.
 
 ## Standing rule
 
