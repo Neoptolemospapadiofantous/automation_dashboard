@@ -1,0 +1,11 @@
+{
+    "traces": [
+        {
+            "type": "text",
+            "payload": {
+                "message": "Hi there! What brings you to us today?"
+            }
+        }
+    ],
+    "flow_state": "discovery"
+}

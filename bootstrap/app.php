@@ -3,6 +3,7 @@
 use App\Billing\Exceptions\OutOfCredits;
 use App\Billing\Exceptions\PlanLimitExceeded;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SecurityHeaders;
 use App\Lifecycle\InvalidTransition;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -22,6 +23,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            // Baseline security headers (nosniff / referrer-policy /
+            // X-Frame-Options). Sets X-Frame-Options only when absent so
+            // the embed iframe page's ALLOWALL survives — see the class
+            // docblock before touching this.
+            SecurityHeaders::class,
         ]);
 
         // Stripe webhooks sign the body with a shared secret — no CSRF token

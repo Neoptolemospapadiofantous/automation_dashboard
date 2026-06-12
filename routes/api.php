@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PublicStatsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -15,3 +16,10 @@ Route::get('/user', function (Request $request) {
 Route::middleware('throttle:60,1')
     ->get('/public/stats', [PublicStatsController::class, 'show'])
     ->name('public.stats');
+
+// Unauthenticated health probe for uptime monitoring (strategy G5):
+// db + cache checks only — cheap, no LLM/provider calls. Throttled per IP
+// so a misbehaving monitor can't turn the probe into a load test.
+Route::middleware('throttle:60,1')
+    ->get('/health', HealthController::class)
+    ->name('health');

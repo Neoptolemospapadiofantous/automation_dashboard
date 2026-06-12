@@ -1,0 +1,12 @@
+{
+    "traces": [
+        {
+            "type": "text",
+            "payload": {
+                "message": "The Starter plan is $99 per month."
+            }
+        }
+    ],
+    "flow_state": "discovery",
+    "system_prompt_contains_chunk": true
+}

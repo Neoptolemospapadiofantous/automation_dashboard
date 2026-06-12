@@ -1,0 +1,71 @@
+# CI — GitHub mirror of the local hermes watchdog (scripts/hermes.sh):
+# pint, phpstan, full test suite, config/route/migration boot checks,
+# composer audit — plus gitleaks secret scanning and the frontend build.
+# Strategy reference: PROJECT_ASSURANCE_STRATEGY.md, Category I2.
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # gitleaks scans history
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: pcov
+
+      - run: composer install --no-interaction --prefer-dist
+
+      - run: composer validate --strict
+
+      - run: composer audit
+
+      - run: vendor/bin/pint --test
+
+      - run: vendor/bin/phpstan analyse --no-progress --memory-limit=2G
+
+      # Tests run on SQLite in-memory (phpunit.xml env wins over .env), but
+      # the app still needs a base .env + APP_KEY to boot.
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # NOT --parallel: SQLite :memory: + RefreshDatabase.
+      - run: php artisan test
+
+      # Boot checks, mirroring hermes: config cacheable, routes register,
+      # migrations run cleanly on a fresh database. config:cache runs AFTER
+      # the tests — cached config would override phpunit.xml env vars.
+      - name: Boot checks
+        run: |
+          php artisan config:cache
+          php artisan route:list -q
+          php artisan config:clear
+          touch database/database.sqlite
+          php artisan migrate --force
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run build

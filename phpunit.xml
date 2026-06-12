@@ -11,6 +11,24 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <testsuite name="Wiring">
+            <directory>tests/Wiring</directory>
+        </testsuite>
+        <testsuite name="Integrity">
+            <directory>tests/Integrity</directory>
+        </testsuite>
+        <testsuite name="Performance">
+            <directory>tests/Performance</directory>
+        </testsuite>
+        <testsuite name="Security">
+            <directory>tests/Security</directory>
+        </testsuite>
+        <testsuite name="Contracts">
+            <directory>tests/Contracts</directory>
+        </testsuite>
+        <testsuite name="Snapshots">
+            <directory>tests/Snapshots</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

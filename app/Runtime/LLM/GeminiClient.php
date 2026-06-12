@@ -34,7 +34,7 @@ class GeminiClient implements LlmClient
             'systemInstruction' => ['parts' => [['text' => $system]]],
             'contents' => $this->toGeminiContents($messages),
             'generationConfig' => [
-                'maxOutputTokens' => $maxTokens ?? (int) config('runtime.llm.anthropic.max_tokens'),
+                'maxOutputTokens' => $maxTokens ?? (int) config('runtime.llm.google.max_tokens', config('runtime.llm.anthropic.max_tokens')),
             ],
         ];
         if ($tools !== []) {
@@ -109,7 +109,11 @@ class GeminiClient implements LlmClient
                     ]],
                     'tool_result' => ['functionResponse' => [
                         'name' => $toolNames[(string) ($block['tool_use_id'] ?? '')] ?? 'unknown_tool',
-                        'response' => ['result' => (string) ($block['content'] ?? '')],
+                        'response' => [
+                            'result' => (string) ($block['content'] ?? ''),
+                            // canonical is_error survives the translation
+                            'error' => (bool) ($block['is_error'] ?? false),
+                        ],
                     ]],
                     default => null,
                 };
@@ -154,11 +158,17 @@ class GeminiClient implements LlmClient
             }
         }
 
+        $finish = (string) ($body['candidates'][0]['finishReason'] ?? 'STOP');
+
         return new CompletionResult(
             text: $text,
             toolCalls: $toolCalls,
             contentBlocks: $blocks,
-            stopReason: $toolCalls !== [] ? 'tool_use' : 'end_turn',
+            stopReason: match (true) {
+                $toolCalls !== [] => 'tool_use',
+                $finish === 'MAX_TOKENS' => 'max_tokens',
+                default => 'end_turn',
+            },
             inputTokens: (int) ($body['usageMetadata']['promptTokenCount'] ?? 0),
             outputTokens: (int) ($body['usageMetadata']['candidatesTokenCount'] ?? 0),
         );

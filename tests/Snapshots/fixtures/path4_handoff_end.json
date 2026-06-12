@@ -1,0 +1,24 @@
+{
+    "turn1_traces": [
+        {
+            "type": "text",
+            "payload": {
+                "message": "Of course — a teammate will reach out shortly. Anything else?"
+            }
+        }
+    ],
+    "turn2_traces": [
+        {
+            "type": "text",
+            "payload": {
+                "message": "Thanks for stopping by — goodbye!"
+            }
+        }
+    ],
+    "final_state": "ended",
+    "variables": {
+        "handoff_requested": true,
+        "handoff_reason": "Visitor asked to speak with a human",
+        "ended_reason": "visitor said goodbye"
+    }
+}

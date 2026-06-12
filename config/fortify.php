@@ -172,9 +172,14 @@ return [
             'confirmPassword' => true,
             // 'window' => 0,
         ]),
-        Features::passkeys([
-            'confirmPassword' => true,
-        ]),
+        // Passkeys DISABLED: the feature was enabled by the Jetstream
+        // scaffold but User never implemented the PasskeyUser contract, so
+        // /passkeys/confirm/options 500'd for every authenticated user
+        // (caught by the Wiring route-smoke suite, 2026-06-12). Re-enable
+        // only together with the HasPasskeys trait + contract on User.
+        // Features::passkeys([
+        //     'confirmPassword' => true,
+        // ]),
     ],
 
 ];

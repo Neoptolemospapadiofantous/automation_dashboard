@@ -26,7 +26,7 @@ class OpenAiClient implements LlmClient
 
         $payload = [
             'model' => $model ?? (string) config('runtime.llm.openai.model_default'),
-            'max_completion_tokens' => $maxTokens ?? (int) config('runtime.llm.anthropic.max_tokens'),
+            'max_completion_tokens' => $maxTokens ?? (int) config('runtime.llm.openai.max_tokens', config('runtime.llm.anthropic.max_tokens')),
             'messages' => $this->toOpenAiMessages($system, $messages),
         ];
         if ($tools !== []) {
@@ -109,15 +109,27 @@ class OpenAiClient implements LlmClient
                 continue;
             }
 
-            // user message carrying tool_result blocks → role:tool entries
+            // user message carrying blocks: tool_result → role:tool entries;
+            // text blocks → a user message (canonical allows both shapes —
+            // dropping them silently was a history-replay divergence caught
+            // by the contract suite).
+            $userText = '';
             foreach ((array) $content as $block) {
                 if (($block['type'] ?? '') === 'tool_result') {
                     $out[] = [
                         'role' => 'tool',
                         'tool_call_id' => (string) $block['tool_use_id'],
-                        'content' => (string) $block['content'],
+                        // is_error preserved as a structured prefix — OpenAI's
+                        // role:tool has no error flag of its own.
+                        'content' => (($block['is_error'] ?? false) ? '[tool error] ' : '').(string) $block['content'],
                     ];
                 }
+                if (($block['type'] ?? '') === 'text') {
+                    $userText .= (string) ($block['text'] ?? '');
+                }
+            }
+            if ($userText !== '') {
+                $out[] = ['role' => 'user', 'content' => $userText];
             }
         }
 
@@ -160,7 +172,11 @@ class OpenAiClient implements LlmClient
             text: $text,
             toolCalls: $toolCalls,
             contentBlocks: $blocks,
-            stopReason: $finish === 'tool_calls' ? 'tool_use' : 'end_turn',
+            stopReason: match ($finish) {
+                'tool_calls' => 'tool_use',
+                'length' => 'max_tokens',
+                default => 'end_turn',
+            },
             inputTokens: (int) ($body['usage']['prompt_tokens'] ?? 0),
             outputTokens: (int) ($body['usage']['completion_tokens'] ?? 0),
         );

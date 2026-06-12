@@ -123,6 +123,14 @@ else
   record WARN composer-audit "advisories present — see data/logs/composer-audit.log"
 fi
 
+# ── 5c. Composer manifest sanity (mirrors the CI quality job) ──────────────────
+log "=== COMPOSER VALIDATE ==="
+if composer validate --strict --no-check-all > "$LOG_DIR/composer-validate.log" 2>&1; then
+  record PASS composer-validate "composer.json valid"
+else
+  record FAIL composer-validate "composer.json invalid — see data/logs/composer-validate.log"
+fi
+
 # ── 6. Frontend build + pnpm audit (skipped in --fast mode) ───────────────────
 if [[ $FAST -eq 0 ]]; then
   log "=== FRONTEND BUILD ==="
