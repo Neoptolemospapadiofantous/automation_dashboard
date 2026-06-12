@@ -60,13 +60,13 @@ const deleteUpstream = async () => {
                     <template v-if="conversation.lead">
                         <Link
                             :href="route('conversations.index', { lead_id: conversation.lead.id })"
-                            class="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                            class="inline-flex items-center gap-1.5 rounded-none bg-surface-hi px-2.5 py-1 text-xs font-medium text-ink hover:bg-ink hover:text-bg"
                         >
                             💬 All conversations with {{ conversation.lead.name }}
                         </Link>
                         <Link
                             :href="route('leads.index')"
-                            class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                            class="inline-flex items-center gap-1.5 rounded-none bg-surface-hi px-2.5 py-1 text-xs font-medium text-ink-dim hover:bg-ink hover:text-bg"
                         >
                             → View on board
                         </Link>
@@ -88,7 +88,7 @@ const deleteUpstream = async () => {
 
         <div class="py-8">
             <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-                <div class="space-y-3 rounded-xl bg-white p-4 shadow">
+                <div class="space-y-3 rounded-none border border-border-line bg-bg p-4">
                     <div
                         v-for="m in messages"
                         :key="m.id"
@@ -96,14 +96,14 @@ const deleteUpstream = async () => {
                         :class="m.role === 'user' ? 'justify-end' : 'justify-start'"
                     >
                         <div
-                            class="max-w-[80%] rounded-2xl px-4 py-2 text-sm"
-                            :class="m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800'"
+                            class="max-w-[80%] rounded-none px-4 py-2 text-sm"
+                            :class="m.role === 'user' ? 'bg-ink text-bg' : 'bg-surface-hi text-ink'"
                         >
                             <p>{{ m.text }}</p>
-                            <p class="mt-1 text-[10px] opacity-60">{{ fmt(m.sent_at) }}</p>
+                            <p class="mt-1 font-mono text-[10px] opacity-60">{{ fmt(m.sent_at) }}</p>
                         </div>
                     </div>
-                    <p v-if="!messages.length" class="py-8 text-center text-gray-400">No messages recorded.</p>
+                    <p v-if="!messages.length" class="py-8 text-center text-ink-mute">No messages recorded.</p>
                 </div>
             </div>
         </div>

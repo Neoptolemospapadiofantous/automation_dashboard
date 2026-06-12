@@ -134,20 +134,20 @@ async function ask() {
 const statusTone = (s) => ({
     SUCCESS: 'bg-green-100 text-green-700',
     PENDING: 'bg-amber-100 text-amber-700',
-    INITIALIZED: 'bg-gray-100 text-gray-600',
+    INITIALIZED: 'bg-surface-hi text-ink-dim',
     ERROR: 'bg-rose-100 text-rose-700',
-}[s] || 'bg-gray-100 text-gray-600');
+}[s] || 'bg-surface-hi text-ink-dim');
 
 const typeBadge = (t) => ({
-    url: 'bg-indigo-50 text-indigo-700',
-    pdf: 'bg-rose-50 text-rose-700',
-    docx: 'bg-blue-50 text-blue-700',
-    text: 'bg-gray-100 text-gray-700',
-    md: 'bg-gray-100 text-gray-700',
-    csv: 'bg-emerald-50 text-emerald-700',
-    xlsx: 'bg-emerald-50 text-emerald-700',
-    table: 'bg-emerald-50 text-emerald-700',
-}[t] || 'bg-gray-100 text-gray-600');
+    url: 'bg-surface-hi text-ink',
+    pdf: 'bg-surface-hi text-ink',
+    docx: 'bg-surface-hi text-ink',
+    text: 'bg-surface-hi text-ink',
+    md: 'bg-surface-hi text-ink',
+    csv: 'bg-surface-hi text-ink',
+    xlsx: 'bg-surface-hi text-ink',
+    table: 'bg-surface-hi text-ink',
+}[t] || 'bg-surface-hi text-ink-dim');
 
 const description = computed(() => {
     if (!props.agent) return 'Ground your agent in your own content.';
@@ -159,11 +159,11 @@ const description = computed(() => {
     <AppLayout title="Knowledge Base">
         <PageHeader title="Knowledge Base" :description="description">
             <template #actions>
-                <span v-if="agent" class="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
-                    <span class="inline-block h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                <span v-if="agent" class="inline-flex items-center gap-1.5 rounded-none bg-surface-hi px-2.5 py-1 font-mono text-xs font-medium text-ink">
+                    <span class="inline-block h-1.5 w-1.5 rounded-full bg-ink" />
                     {{ agent.name }}
                 </span>
-                <span class="text-xs text-gray-500">
+                <span class="font-mono text-xs text-ink-dim">
                     {{ total ? `${total} document${total === 1 ? '' : 's'}` : 'No documents' }}
                 </span>
             </template>
@@ -171,21 +171,21 @@ const description = computed(() => {
 
         <div class="py-8">
             <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-                <div v-if="!configured" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                <div v-if="!configured" class="rounded-none border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
                     Your agent isn't set up yet — finish onboarding to add documents to its knowledge base.
                 </div>
 
                 <div class="grid gap-6 lg:grid-cols-3">
                     <!-- Documents panel (left, wider) -->
-                    <div class="lg:col-span-2 rounded-xl bg-white p-5 shadow">
-                        <div class="flex items-center justify-between gap-3 border-b border-gray-100 pb-3">
-                            <h3 class="text-sm font-semibold text-gray-700">Documents</h3>
+                    <div class="lg:col-span-2 rounded-none border border-border-line bg-bg p-5">
+                        <div class="flex items-center justify-between gap-3 border-b border-border-line pb-3">
+                            <h3 class="text-sm font-semibold text-ink">Documents</h3>
                             <!-- Type filter -->
                             <div class="flex flex-wrap items-center gap-1.5">
                                 <button
                                     type="button"
-                                    class="rounded-full border px-2.5 py-0.5 text-xs font-medium transition"
-                                    :class="!filter.type ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
+                                    class="rounded-none border px-2.5 py-0.5 font-mono text-xs font-medium transition"
+                                    :class="!filter.type ? 'border-ink bg-ink text-bg' : 'border-border-line text-ink-dim hover:bg-surface-hi'"
                                     @click="changeFilter(null)"
                                 >
                                     All
@@ -194,8 +194,8 @@ const description = computed(() => {
                                     v-for="t in accepted_types"
                                     :key="t"
                                     type="button"
-                                    class="rounded-full border px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide transition"
-                                    :class="filter.type === t ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
+                                    class="rounded-none border px-2.5 py-0.5 font-mono text-xs font-medium uppercase tracking-wider transition"
+                                    :class="filter.type === t ? 'border-ink bg-ink text-bg' : 'border-border-line text-ink-dim hover:bg-surface-hi'"
                                     @click="changeFilter(t)"
                                 >
                                     {{ t }}
@@ -205,7 +205,7 @@ const description = computed(() => {
 
                         <!-- Add forms (three: URL / file / text-paste) -->
                         <div class="mt-4 grid gap-4 sm:grid-cols-3">
-                            <form class="space-y-2 rounded-lg border border-dashed border-gray-200 p-3" @submit.prevent="addUrl">
+                            <form class="space-y-2 rounded-none border border-dashed border-border-hi p-3" @submit.prevent="addUrl">
                                 <InputLabel for="url" value="Add a URL" />
                                 <TextInput
                                     id="url"
@@ -230,25 +230,25 @@ const description = computed(() => {
                                 </PrimaryButton>
                             </form>
 
-                            <form class="space-y-2 rounded-lg border border-dashed border-gray-200 p-3" @submit.prevent="uploadFile">
+                            <form class="space-y-2 rounded-none border border-dashed border-border-hi p-3" @submit.prevent="uploadFile">
                                 <InputLabel for="file" value="Upload a file" />
                                 <input
                                     id="file"
                                     ref="fileInput"
                                     type="file"
                                     :accept="fileAccept"
-                                    class="block w-full text-xs file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
+                                    class="block w-full text-xs file:mr-3 file:rounded-none file:border-0 file:bg-ink file:px-3 file:py-1.5 file:font-mono file:text-xs file:font-medium file:text-bg hover:file:bg-ink-dim"
                                     :disabled="!configured || fileForm.processing"
                                     @change="onFilePicked"
                                 />
                                 <InputError :message="fileForm.errors.file" />
-                                <p class="text-[11px] text-gray-400">{{ fileHelp }} · max 10 MB.</p>
+                                <p class="text-[11px] text-ink-mute">{{ fileHelp }} · max 10 MB.</p>
                                 <PrimaryButton :disabled="fileForm.processing || !configured || !fileForm.file">
                                     {{ fileForm.processing ? 'Uploading…' : 'Upload file' }}
                                 </PrimaryButton>
                             </form>
 
-                            <form class="space-y-2 rounded-lg border border-dashed border-gray-200 p-3" @submit.prevent="addText">
+                            <form class="space-y-2 rounded-none border border-dashed border-border-hi p-3" @submit.prevent="addText">
                                 <InputLabel for="text-name" value="Paste text" />
                                 <TextInput
                                     id="text-name"
@@ -263,12 +263,12 @@ const description = computed(() => {
                                     id="text-body"
                                     v-model="textForm.text"
                                     rows="3"
-                                    class="block w-full rounded-md border-gray-200 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="block w-full rounded-none border-border-hi bg-bg text-xs text-ink focus:border-ink focus:ring-0"
                                     placeholder="Policy snippet, FAQ entry, short answer…"
                                     :disabled="!configured || textForm.processing"
                                 />
                                 <InputError :message="textForm.errors.text" />
-                                <p class="text-[11px] text-gray-400">Plain text · max 200k chars.</p>
+                                <p class="text-[11px] text-ink-mute">Plain text · max 200k chars.</p>
                                 <PrimaryButton :disabled="textForm.processing || !configured || !textForm.name || !textForm.text">
                                     {{ textForm.processing ? 'Saving…' : 'Add text' }}
                                 </PrimaryButton>
@@ -278,42 +278,42 @@ const description = computed(() => {
                         <p v-if="error" class="mt-4 text-sm text-rose-600">{{ error }}</p>
 
                         <!-- Document list -->
-                        <ul class="mt-5 divide-y divide-gray-100">
+                        <ul class="mt-5 divide-y divide-border-line">
                             <li
                                 v-for="d in documents"
                                 :key="d.documentID"
-                                class="group flex items-start gap-3 py-2.5 text-sm hover:bg-gray-50"
+                                class="group flex items-start gap-3 py-2.5 text-sm hover:bg-surface-hi"
                             >
-                                <span class="rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide" :class="typeBadge(d.data?.type)">
+                                <span class="rounded-none px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider" :class="typeBadge(d.data?.type)">
                                     {{ d.data?.type || '?' }}
                                 </span>
                                 <div class="min-w-0 flex-1">
-                                    <div class="truncate font-medium text-gray-800">
+                                    <div class="truncate font-medium text-ink">
                                         {{ d.data?.name || d.data?.url || d.documentID }}
                                     </div>
-                                    <div v-if="d.data?.url && d.data?.name !== d.data?.url" class="truncate text-xs text-gray-400">
+                                    <div v-if="d.data?.url && d.data?.name !== d.data?.url" class="truncate text-xs text-ink-mute">
                                         {{ d.data.url }}
                                     </div>
                                 </div>
-                                <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium" :class="statusTone(d.status?.type)">
+                                <span class="shrink-0 rounded-none px-2 py-0.5 font-mono text-[10px] font-medium" :class="statusTone(d.status?.type)">
                                     {{ d.status?.type || '—' }}
                                 </span>
                                 <button
                                     type="button"
-                                    class="text-xs text-gray-400 opacity-0 transition group-hover:opacity-100 hover:text-indigo-600"
+                                    class="text-xs text-ink-mute opacity-0 transition group-hover:opacity-100 hover:text-ink"
                                     @click="inspect(d.documentID)"
                                 >
                                     Inspect
                                 </button>
                                 <button
                                     type="button"
-                                    class="text-xs text-gray-400 opacity-0 transition group-hover:opacity-100 hover:text-rose-600"
+                                    class="text-xs text-ink-mute opacity-0 transition group-hover:opacity-100 hover:text-rose-600"
                                     @click="destroy(d.documentID, d.data?.name)"
                                 >
                                     Delete
                                 </button>
                             </li>
-                            <li v-if="configured && !documents.length" class="py-8 text-center text-sm text-gray-400">
+                            <li v-if="configured && !documents.length" class="py-8 text-center text-sm text-ink-mute">
                                 <template v-if="filter.type">No {{ filter.type }} documents.</template>
                                 <template v-else>No documents yet — add a URL or upload a file.</template>
                             </li>
@@ -323,38 +323,38 @@ const description = computed(() => {
                     <!-- Right column: Ask + Inspect panels -->
                     <div class="space-y-6">
                         <!-- Ask the KB -->
-                        <div class="rounded-xl bg-white p-5 shadow">
-                            <h3 class="mb-3 text-sm font-semibold text-gray-700">Ask the knowledge base</h3>
+                        <div class="rounded-none border border-border-line bg-bg p-5">
+                            <h3 class="mb-3 text-sm font-semibold text-ink">Ask the knowledge base</h3>
                             <form class="flex gap-2" @submit.prevent="ask">
                                 <TextInput v-model="question" type="text" class="flex-1" placeholder="e.g. What is your pricing?" :disabled="!configured" />
                                 <PrimaryButton :disabled="querying || !configured">{{ querying ? '…' : 'Ask' }}</PrimaryButton>
                             </form>
                             <div v-if="answer" class="mt-4">
-                                <p class="rounded-lg bg-indigo-50 p-3 text-sm text-gray-800">{{ answer }}</p>
+                                <p class="rounded-none bg-bg-elev border border-border-line p-3 text-sm text-ink">{{ answer }}</p>
                                 <div v-if="sourceChunks.length" class="mt-3 space-y-2">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Sources</p>
-                                    <div v-for="(c, i) in sourceChunks" :key="i" class="rounded border border-gray-100 p-2 text-xs text-gray-600">
-                                        <span v-if="c.source" class="font-medium text-gray-700">{{ c.source }}: </span>{{ c.content }}
+                                    <p class="font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Sources</p>
+                                    <div v-for="(c, i) in sourceChunks" :key="i" class="rounded-none border border-border-line p-2 text-xs text-ink-dim">
+                                        <span v-if="c.source" class="font-medium text-ink">{{ c.source }}: </span>{{ c.content }}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Inspect panel — chunks of a single document -->
-                        <div v-if="inspecting" class="rounded-xl bg-white p-5 shadow">
+                        <div v-if="inspecting" class="rounded-none border border-border-line bg-bg p-5">
                             <div class="mb-3 flex items-center justify-between">
-                                <h3 class="text-sm font-semibold text-gray-700">
+                                <h3 class="text-sm font-semibold text-ink">
                                     Document chunks
                                 </h3>
-                                <button type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="inspecting = null">Close ×</button>
+                                <button type="button" class="text-xs text-ink-mute hover:text-ink" @click="inspecting = null">Close ×</button>
                             </div>
-                            <div v-if="inspectLoading" class="text-sm text-gray-400">Loading…</div>
+                            <div v-if="inspectLoading" class="text-sm text-ink-mute">Loading…</div>
                             <div v-else-if="inspectError" class="text-sm text-rose-600">{{ inspectError }}</div>
                             <div v-else>
-                                <div class="truncate text-xs font-medium text-gray-700">
+                                <div class="truncate text-xs font-medium text-ink">
                                     {{ inspecting.data?.data?.name || inspecting.documentID }}
                                 </div>
-                                <div class="mt-1 text-[11px] text-gray-400">
+                                <div class="mt-1 font-mono text-[11px] text-ink-mute">
                                     {{ (inspecting.chunks ?? []).length }} chunks ·
                                     last updated {{ inspecting.data?.updatedAt ? new Date(inspecting.data.updatedAt).toLocaleString() : '—' }}
                                 </div>
@@ -362,11 +362,11 @@ const description = computed(() => {
                                     <div
                                         v-for="(c, i) in (inspecting.chunks ?? [])"
                                         :key="c.chunkID || i"
-                                        class="rounded border border-gray-100 p-2 text-xs leading-relaxed text-gray-600"
+                                        class="rounded-none border border-border-line p-2 text-xs leading-relaxed text-ink-dim"
                                     >
                                         {{ c.content }}
                                     </div>
-                                    <p v-if="!(inspecting.chunks ?? []).length" class="text-xs text-gray-400">
+                                    <p v-if="!(inspecting.chunks ?? []).length" class="text-xs text-ink-mute">
                                         No chunks yet — document may still be processing.
                                     </p>
                                 </div>

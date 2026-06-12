@@ -1,8 +1,9 @@
 # Theme unification — landing ↔ dashboard ↔ embed
 
-> **Status: Phase 1 BUILT** (2026-06-12). Tokens shared, embed widget +
-> chat iframe + auth surface on-brand. Phase 2 (interior sweep) and
-> Phase 3 (Tailwind v4) remain planned — see below.
+> **Status: Phases 1 + 2 BUILT** (2026-06-12). Tokens shared; embed
+> widget + chat iframe + auth surface + the full dashboard interior
+> (~67 Vue files) on-brand. Phase 3 (Tailwind v4 unification) remains
+> planned — see below.
 
 ## The problem
 
@@ -111,11 +112,25 @@ Original scope (kept for reference):
    handoff moment. Jetstream blade/Vue auth layouts → white-sheet
    tokens, radius-0, mono labels.
 
-### Phase 2 — white-sheet interior (~a day)
+### Phase 2 — white-sheet interior ✅ BUILT
 
-Sweep ~30 Vue pages: `indigo-*` → ink/accent tokens, `rounded-*` → 0,
-`gray-*` → ramp tokens. Mechanical; needs visual QA per page. Charts
-(`--chart-1..5`) map from the token file.
+Shipped 2026-06-12 via three parallel agents with disjoint file sets
+(AppLayout + shared components / core pages / settings + billing +
+auth leftovers) — 67 Vue files swept, class-only diffs.
+
+**Doctrine decision recorded here: mono is chrome discipline, not data
+discipline.** Semantic status hues stay — green (success/active/paid),
+amber (warning/draft/low credits), red (errors/destructive), blue
+(info), chart series palettes — because in an ops dashboard color *is*
+data. Their containers are still squared (`rounded-none`). Radius
+survives only on avatars, tiny status dots, toggle switches, and
+spinners.
+
+Other notables: `ApplicationLogo`/`ApplicationMark` now render the
+Flowstack mark in `currentColor`; dropdowns/modals use hairline border
++ hard offset shadow (`8px 8px 0 rgba(0,0,0,.06)`); table heads and
+micro-labels are mono uppercase; the Banner default variant is an ink
+block (danger stays red).
 
 ### Phase 3 — Tailwind v4 migration (defer)
 

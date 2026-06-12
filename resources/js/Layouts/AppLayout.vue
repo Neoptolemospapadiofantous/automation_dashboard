@@ -52,35 +52,35 @@ const handleMobileNavClick = (event) => {
         <Head :title="title" />
         <Banner />
 
-        <div class="min-h-screen bg-gray-50">
+        <div class="min-h-screen bg-bg-elev">
             <!-- ───────────────────────── Sidebar (desktop) ───────────────────────── -->
-            <aside class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-60 lg:flex-col lg:border-r lg:border-gray-200 lg:bg-white">
+            <aside class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-60 lg:flex-col lg:border-r lg:border-border-line lg:bg-bg">
                 <!-- Logo -->
-                <div class="flex h-16 items-center border-b border-gray-100 px-5">
+                <div class="flex h-16 items-center border-b border-border-line px-5">
                     <Link :href="route('dashboard')" class="flex items-center gap-2">
                         <ApplicationMark class="block h-8 w-auto" />
                     </Link>
                 </div>
 
                 <!-- Agent picker (workspace switcher) -->
-                <div v-if="currentAgent || teamAgents.length" class="border-b border-gray-100 px-3 py-3">
+                <div v-if="currentAgent || teamAgents.length" class="border-b border-border-line px-3 py-3">
                     <Dropdown align="left" width="56">
                         <template #trigger>
-                            <button type="button" class="group flex w-full items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-2 text-left text-sm font-medium text-gray-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/30 hover:text-gray-900">
-                                <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-indigo-50 text-indigo-600">
+                            <button type="button" class="group flex w-full items-center gap-2 rounded-none border border-border-line bg-bg px-2.5 py-2 text-left text-sm font-medium text-ink-dim transition hover:border-border-hi hover:bg-surface-hi hover:text-ink">
+                                <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-none bg-surface-hi text-ink">
                                     <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                                     </svg>
                                 </span>
                                 <span class="flex-1 truncate">{{ currentAgent?.name ?? 'No agent' }}</span>
-                                <svg class="size-4 text-gray-400 transition group-hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <svg class="size-4 text-ink-mute transition group-hover:text-ink-dim" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
                                 </svg>
                             </button>
                         </template>
                         <template #content>
                             <div class="w-56">
-                                <div class="block px-4 py-2 text-xs uppercase tracking-wide text-gray-400">Agents</div>
+                                <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Agents</div>
                                 <DropdownLink :href="route('agents.index')">All agents</DropdownLink>
                                 <!-- Second+ agents skip the onboarding wizard
                                      (it's a one-time welcome). Land on the
@@ -89,8 +89,8 @@ const handleMobileNavClick = (event) => {
                                      managed correctly. -->
                                 <DropdownLink :href="route('agents.index')">+ New agent</DropdownLink>
                                 <template v-if="teamAgents.length > 1">
-                                    <div class="border-t border-gray-200" />
-                                    <div class="block px-4 py-2 text-xs uppercase tracking-wide text-gray-400">Switch</div>
+                                    <div class="border-t border-border-line" />
+                                    <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Switch</div>
                                     <template v-for="agent in teamAgents" :key="agent.id">
                                         <form @submit.prevent="switchToAgent(agent)">
                                             <DropdownLink as="button">
@@ -128,7 +128,7 @@ const handleMobileNavClick = (event) => {
 
                     <!-- Inbox group -->
                     <div>
-                        <div class="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Inbox</div>
+                        <div class="px-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Inbox</div>
                         <div class="space-y-0.5">
                             <SidebarLink :href="route('leads.index')" active-pattern="leads.*">
                                 <template #icon>
@@ -153,7 +153,7 @@ const handleMobileNavClick = (event) => {
 
                     <!-- Knowledge group -->
                     <div>
-                        <div class="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Knowledge</div>
+                        <div class="px-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Knowledge</div>
                         <div class="space-y-0.5">
                             <SidebarLink :href="route('knowledge.index')" active-pattern="knowledge.*">
                                 <template #icon>
@@ -166,7 +166,7 @@ const handleMobileNavClick = (event) => {
 
                     <!-- Workspace group -->
                     <div>
-                        <div class="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Workspace</div>
+                        <div class="px-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Workspace</div>
                         <div class="space-y-0.5">
                             <SidebarLink :href="route('agents.index')" :active-pattern="['agents.index', 'agents.show']">
                                 <template #icon>
@@ -202,41 +202,41 @@ const handleMobileNavClick = (event) => {
                 <!-- User card. placement="top" because this trigger is pinned
                      to the bottom of a fixed-height sidebar — opening DOWN
                      would render the panel off-screen below the viewport. -->
-                <div class="border-t border-gray-100 p-3">
+                <div class="border-t border-border-line p-3">
                     <Dropdown align="left" width="60" placement="top">
                         <template #trigger>
-                            <button type="button" class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-gray-50">
+                            <button type="button" class="flex w-full items-center gap-2 rounded-none px-2 py-1.5 text-left text-sm hover:bg-surface-hi">
                                 <img
                                     v-if="$page.props.jetstream.managesProfilePhotos"
                                     class="size-7 rounded-full object-cover"
                                     :src="$page.props.auth.user.profile_photo_url"
                                     :alt="$page.props.auth.user.name"
                                 />
-                                <div v-else class="flex size-7 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-600">
+                                <div v-else class="flex size-7 items-center justify-center rounded-full bg-surface-hi text-xs font-medium text-ink-dim">
                                     {{ $page.props.auth.user.name.charAt(0) }}
                                 </div>
                                 <div class="min-w-0 flex-1">
-                                    <div class="truncate text-sm font-medium text-gray-900">{{ $page.props.auth.user.name }}</div>
-                                    <div class="truncate text-xs text-gray-500">{{ $page.props.auth.user.current_team?.name }}</div>
+                                    <div class="truncate text-sm font-medium text-ink">{{ $page.props.auth.user.name }}</div>
+                                    <div class="truncate text-xs text-ink-mute">{{ $page.props.auth.user.current_team?.name }}</div>
                                 </div>
-                                <svg class="size-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <svg class="size-4 text-ink-mute" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
                                 </svg>
                             </button>
                         </template>
                         <template #content>
-                            <div class="block px-4 py-2 text-xs uppercase tracking-wide text-gray-400">Account</div>
+                            <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Account</div>
                             <DropdownLink :href="route('profile.show')">Profile</DropdownLink>
                             <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">API tokens</DropdownLink>
 
                             <template v-if="$page.props.jetstream.hasTeamFeatures">
-                                <div class="border-t border-gray-200" />
-                                <div class="block px-4 py-2 text-xs uppercase tracking-wide text-gray-400">Team</div>
+                                <div class="border-t border-border-line" />
+                                <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Team</div>
                                 <DropdownLink :href="route('teams.show', $page.props.auth.user.current_team)">Team settings</DropdownLink>
                                 <DropdownLink v-if="$page.props.jetstream.canCreateTeams" :href="route('teams.create')">+ New team</DropdownLink>
                                 <template v-if="$page.props.auth.user.all_teams.length > 1">
-                                    <div class="border-t border-gray-200" />
-                                    <div class="block px-4 py-2 text-xs uppercase tracking-wide text-gray-400">Switch team</div>
+                                    <div class="border-t border-border-line" />
+                                    <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Switch team</div>
                                     <template v-for="team in $page.props.auth.user.all_teams" :key="team.id">
                                         <form @submit.prevent="switchToTeam(team)">
                                             <DropdownLink as="button">
@@ -253,7 +253,7 @@ const handleMobileNavClick = (event) => {
                                 </template>
                             </template>
 
-                            <div class="border-t border-gray-200" />
+                            <div class="border-t border-border-line" />
                             <form @submit.prevent="logout">
                                 <DropdownLink as="button">Log out</DropdownLink>
                             </form>
@@ -264,11 +264,11 @@ const handleMobileNavClick = (event) => {
 
             <!-- ───────────────────────── Top bar (everywhere) ───────────────────────── -->
             <div class="lg:pl-60">
-                <div class="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-gray-200 bg-white/95 px-4 backdrop-blur sm:px-6 lg:px-8">
+                <div class="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-border-line bg-bg/95 px-4 backdrop-blur sm:px-6 lg:px-8">
                     <!-- Hamburger (mobile) -->
                     <button
                         type="button"
-                        class="inline-flex items-center justify-center rounded-md p-1.5 text-gray-500 hover:bg-gray-100 lg:hidden"
+                        class="inline-flex items-center justify-center rounded-none p-1.5 text-ink-dim hover:bg-surface-hi lg:hidden"
                         @click="showMobileNav = true"
                     >
                         <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -280,7 +280,7 @@ const handleMobileNavClick = (event) => {
                          shrink the PageHeader on simple pages. Pages that want a
                          richer header still get one via the PageHeader component. -->
                     <div v-if="props.title" class="hidden min-w-0 flex-1 lg:flex lg:items-center lg:gap-2">
-                        <span class="truncate text-sm font-medium text-gray-700">{{ props.title }}</span>
+                        <span class="truncate text-sm font-medium text-ink">{{ props.title }}</span>
                     </div>
                     <div v-else class="hidden flex-1 lg:block"><!-- spacer --></div>
 
@@ -288,19 +288,19 @@ const handleMobileNavClick = (event) => {
                         <!-- Notifications bell -->
                         <Dropdown align="right" width="80">
                             <template #trigger>
-                                <button type="button" class="relative inline-flex items-center rounded-full p-2 text-gray-500 hover:bg-gray-100">
+                                <button type="button" class="relative inline-flex items-center rounded-none p-2 text-ink-dim hover:bg-surface-hi">
                                     <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                                     </svg>
-                                    <span v-if="notifications.length" class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
+                                    <span v-if="notifications.length" class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 font-mono text-[10px] font-semibold text-white">
                                         {{ notifications.length }}
                                     </span>
                                 </button>
                             </template>
                             <template #content>
                                 <div class="flex items-center justify-between px-4 py-2">
-                                    <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">Notifications</span>
-                                    <button v-if="notifications.length" type="button" class="text-xs text-indigo-600 hover:text-indigo-500" @click="markNotificationsRead">
+                                    <span class="font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Notifications</span>
+                                    <button v-if="notifications.length" type="button" class="text-xs text-ink underline hover:text-ink-dim" @click="markNotificationsRead">
                                         Mark all read
                                     </button>
                                 </div>
@@ -309,11 +309,11 @@ const handleMobileNavClick = (event) => {
                                         v-for="n in notifications"
                                         :key="n.id"
                                         :href="route('leads.index', n.lead_id ? { focus: n.lead_id } : {})"
-                                        class="block border-t border-gray-100 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                                        class="block border-t border-border-line px-4 py-3 text-sm text-ink-dim hover:bg-surface-hi"
                                     >
                                         {{ n.message }}
                                     </Link>
-                                    <p v-if="!notifications.length" class="border-t border-gray-100 px-4 py-6 text-center text-sm text-gray-400">
+                                    <p v-if="!notifications.length" class="border-t border-border-line px-4 py-6 text-center text-sm text-ink-mute">
                                         You're all caught up.
                                     </p>
                                 </div>
@@ -327,14 +327,14 @@ const handleMobileNavClick = (event) => {
                                     <button v-if="$page.props.jetstream.managesProfilePhotos" class="flex rounded-full border-2 border-transparent">
                                         <img class="size-8 rounded-full object-cover" :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user.name" />
                                     </button>
-                                    <button v-else type="button" class="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <button v-else type="button" class="inline-flex items-center rounded-none px-3 py-2 text-sm font-medium text-ink-dim hover:bg-surface-hi">
                                         {{ $page.props.auth.user.name }}
                                     </button>
                                 </template>
                                 <template #content>
                                     <DropdownLink :href="route('profile.show')">Profile</DropdownLink>
                                     <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">API tokens</DropdownLink>
-                                    <div class="border-t border-gray-200" />
+                                    <div class="border-t border-border-line" />
                                     <form @submit.prevent="logout">
                                         <DropdownLink as="button">Log out</DropdownLink>
                                     </form>
@@ -349,7 +349,7 @@ const handleMobileNavClick = (event) => {
                      in the default slot (it brings its own white-card wrapper).
                      Older pages that just put an <h2> in #header still render
                      correctly thanks to the white-card fallback wrapper here. -->
-                <header v-if="$slots.header" class="border-b border-gray-200 bg-white px-4 py-5 sm:px-6 lg:px-8">
+                <header v-if="$slots.header" class="border-b border-border-line bg-bg px-4 py-5 sm:px-6 lg:px-8">
                     <div class="mx-auto max-w-7xl">
                         <slot name="header" />
                     </div>
@@ -362,13 +362,13 @@ const handleMobileNavClick = (event) => {
 
             <!-- ───────────────────────── Mobile sidebar (overlay) ───────────────────────── -->
             <div v-if="showMobileNav" class="fixed inset-0 z-40 lg:hidden">
-                <div class="fixed inset-0 bg-gray-900/40" @click="showMobileNav = false" />
-                <div class="fixed inset-y-0 left-0 flex w-72 flex-col bg-white shadow-xl">
-                    <div class="flex h-16 items-center justify-between border-b border-gray-100 px-5">
+                <div class="fixed inset-0 bg-ink/40" @click="showMobileNav = false" />
+                <div class="fixed inset-y-0 left-0 flex w-72 flex-col bg-bg border-r border-border-line shadow-[8px_8px_0_rgba(0,0,0,0.06)]">
+                    <div class="flex h-16 items-center justify-between border-b border-border-line px-5">
                         <Link :href="route('dashboard')" @click="showMobileNav = false">
                             <ApplicationMark class="block h-8 w-auto" />
                         </Link>
-                        <button type="button" class="rounded-md p-2 text-gray-500 hover:bg-gray-100" @click="showMobileNav = false">
+                        <button type="button" class="rounded-none p-2 text-ink-dim hover:bg-surface-hi" @click="showMobileNav = false">
                             <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
@@ -378,13 +378,13 @@ const handleMobileNavClick = (event) => {
                     <!-- Agent picker (mobile) — full switch list, mirrors desktop.
                          Previous version only showed the current agent name as
                          text; mobile users couldn't switch agents at all. -->
-                    <div v-if="currentAgent || teamAgents.length" class="border-b border-gray-100 px-3 py-3">
-                        <div class="px-2 pb-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">Agent</div>
+                    <div v-if="currentAgent || teamAgents.length" class="border-b border-border-line px-3 py-3">
+                        <div class="px-2 pb-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Agent</div>
                         <template v-for="agent in teamAgents" :key="agent.id">
                             <button
                                 type="button"
-                                class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-gray-50"
-                                :class="agent.id === currentAgent?.id ? 'text-indigo-700' : 'text-gray-700'"
+                                class="flex w-full items-center gap-2 rounded-none px-2 py-1.5 text-left text-sm hover:bg-surface-hi"
+                                :class="agent.id === currentAgent?.id ? 'text-ink' : 'text-ink-dim'"
                                 @click="switchToAgent(agent); showMobileNav = false"
                             >
                                 <svg v-if="agent.id === currentAgent?.id" class="size-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -399,7 +399,7 @@ const handleMobileNavClick = (event) => {
                              wizard is for the team's first agent only). -->
                         <Link
                             :href="route('agents.index')"
-                            class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-gray-600 hover:bg-gray-50"
+                            class="flex w-full items-center gap-2 rounded-none px-2 py-1.5 text-left text-sm text-ink-dim hover:bg-surface-hi"
                         >
                             <span class="size-4" />
                             <span class="flex-1">+ New agent</span>
@@ -410,7 +410,7 @@ const handleMobileNavClick = (event) => {
                         <SidebarLink :href="route('dashboard')" active-pattern="dashboard">Dashboard</SidebarLink>
                         <SidebarLink :href="route('chat.index')" active-pattern="chat.index">Chat</SidebarLink>
                         <div>
-                            <div class="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Inbox</div>
+                            <div class="px-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Inbox</div>
                             <div class="space-y-0.5">
                                 <SidebarLink :href="route('leads.index')" active-pattern="leads.*">Leads</SidebarLink>
                                 <SidebarLink :href="route('conversations.index')" :active-pattern="['conversations.index', 'conversations.show']">Conversations</SidebarLink>
@@ -418,13 +418,13 @@ const handleMobileNavClick = (event) => {
                             </div>
                         </div>
                         <div>
-                            <div class="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Knowledge</div>
+                            <div class="px-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Knowledge</div>
                             <div class="space-y-0.5">
                                 <SidebarLink :href="route('knowledge.index')" active-pattern="knowledge.*">Documents</SidebarLink>
                             </div>
                         </div>
                         <div>
-                            <div class="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">Workspace</div>
+                            <div class="px-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Workspace</div>
                             <div class="space-y-0.5">
                                 <SidebarLink :href="route('agents.index')" :active-pattern="['agents.index', 'agents.show']">Agents</SidebarLink>
                                 <SidebarLink :href="route('agents.versions.index')" active-pattern="agents.versions.*">Versions</SidebarLink>

@@ -50,28 +50,28 @@ const meta = computed(() => {
 
 <template>
     <Head :title="meta.title" />
-    <div class="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div class="flex min-h-screen items-center justify-center bg-bg-elev px-4">
         <div class="mx-auto max-w-md text-center">
-            <p class="font-mono text-[10px] uppercase tracking-[0.3em] text-gray-400">{{ meta.eyebrow }}</p>
-            <h1 class="mt-3 text-3xl font-semibold tracking-tight text-gray-900">{{ meta.title }}</h1>
-            <p class="mt-3 text-sm text-gray-600">{{ meta.body }}</p>
+            <p class="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-mute">{{ meta.eyebrow }}</p>
+            <h1 class="mt-3 text-3xl font-semibold tracking-tight text-ink">{{ meta.title }}</h1>
+            <p class="mt-3 text-sm text-ink-dim">{{ meta.body }}</p>
 
             <div class="mt-8 flex items-center justify-center gap-3">
                 <Link
                     href="/dashboard"
-                    class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                    class="rounded-none border border-ink bg-ink px-4 py-2 text-sm font-medium text-bg hover:bg-bg hover:text-ink"
                 >
                     Back to dashboard
                 </Link>
                 <a
                     href="https://flowstack.com"
-                    class="rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    class="rounded-none border border-border-hi bg-bg px-4 py-2 text-sm font-medium text-ink-dim hover:bg-surface-hi"
                 >
                     Visit flowstack.com
                 </a>
             </div>
 
-            <p class="mt-10 font-mono text-[10px] text-gray-300">FLOWSTACK</p>
+            <p class="mt-10 font-mono text-[10px] text-ink-mute">FLOWSTACK</p>
         </div>
     </div>
 </template>

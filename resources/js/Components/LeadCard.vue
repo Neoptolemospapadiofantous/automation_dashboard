@@ -12,7 +12,7 @@ const emit = defineEmits(['delete', 'assign', 'open']);
 const scoreColor = (score) => {
     if (score >= 70) return 'bg-green-100 text-green-700';
     if (score >= 40) return 'bg-amber-100 text-amber-700';
-    return 'bg-gray-100 text-gray-600';
+    return 'bg-surface-hi text-ink-dim';
 };
 
 function onAssignChange(e) {
@@ -29,7 +29,7 @@ function onAssignChange(e) {
 
 <template>
     <div
-        class="group cursor-grab rounded-lg border border-gray-200 bg-white p-3 shadow-sm active:cursor-grabbing"
+        class="group cursor-grab rounded-none border border-border-line bg-bg p-3 active:cursor-grabbing"
         draggable="true"
         @dragstart="$event.dataTransfer.setData('text/lead-id', String(lead.id))"
     >
@@ -42,10 +42,10 @@ function onAssignChange(e) {
             @keydown.enter="$emit('open', lead)"
         >
             <div class="min-w-0">
-                <p class="truncate font-medium text-gray-900 hover:text-indigo-700">{{ lead.name }}</p>
-                <p v-if="lead.company" class="truncate text-xs text-gray-500">{{ lead.company }}</p>
+                <p class="truncate font-medium text-ink hover:underline">{{ lead.name }}</p>
+                <p v-if="lead.company" class="truncate text-xs text-ink-dim">{{ lead.company }}</p>
             </div>
-            <span class="rounded px-1.5 py-0.5 text-xs font-semibold" :class="scoreColor(lead.score)">
+            <span class="rounded-none px-1.5 py-0.5 font-mono text-xs font-semibold" :class="scoreColor(lead.score)">
                 {{ lead.score }}
             </span>
         </div>
@@ -54,7 +54,7 @@ function onAssignChange(e) {
             <a
                 v-if="lead.email"
                 :href="`mailto:${lead.email}`"
-                class="truncate text-gray-500 hover:text-indigo-600 hover:underline"
+                class="truncate text-ink-dim hover:text-ink hover:underline"
                 :title="`Email ${lead.email}`"
                 @click.stop
                 @mousedown.stop
@@ -65,7 +65,7 @@ function onAssignChange(e) {
             <a
                 v-if="lead.phone"
                 :href="`tel:${lead.phone}`"
-                class="truncate text-gray-500 hover:text-indigo-600 hover:underline"
+                class="truncate text-ink-dim hover:text-ink hover:underline"
                 :title="`Call ${lead.phone}`"
                 @click.stop
                 @mousedown.stop
@@ -77,13 +77,13 @@ function onAssignChange(e) {
 
         <div class="mt-2 flex items-center justify-between">
             <div class="flex items-center gap-1.5">
-                <span class="rounded bg-gray-50 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-gray-400">
+                <span class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-mute">
                     {{ lead.source }}
                 </span>
                 <Link
                     v-if="lead.conversations_count"
                     :href="route('conversations.index', { lead_id: lead.id })"
-                    class="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 hover:bg-indigo-100"
+                    class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-medium text-ink hover:bg-ink hover:text-bg"
                     :title="`View ${lead.conversations_count} conversation${lead.conversations_count === 1 ? '' : 's'}`"
                     @click.stop
                     @mousedown.stop
@@ -94,7 +94,7 @@ function onAssignChange(e) {
             </div>
             <button
                 type="button"
-                class="text-xs text-gray-300 opacity-0 transition hover:text-rose-500 group-hover:opacity-100"
+                class="text-xs text-ink-mute opacity-0 transition hover:text-rose-500 group-hover:opacity-100"
                 title="Delete lead"
                 aria-label="Delete lead"
                 @click="$emit('delete', lead)"
@@ -104,9 +104,9 @@ function onAssignChange(e) {
         </div>
 
         <!-- Delegation: assign to a rep or auto round-robin -->
-        <div class="mt-2 border-t border-gray-100 pt-2" @mousedown.stop @dragstart.stop>
+        <div class="mt-2 border-t border-border-line pt-2" @mousedown.stop @dragstart.stop>
             <select
-                class="w-full rounded border-gray-200 py-1 text-xs text-gray-600 focus:border-indigo-400 focus:ring-indigo-400"
+                class="w-full rounded-none border-border-hi bg-bg py-1 text-xs text-ink-dim focus:border-ink focus:ring-0"
                 :value="lead.assigned_to ?? ''"
                 aria-label="Assign lead"
                 @change="onAssignChange"

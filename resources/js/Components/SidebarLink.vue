@@ -24,12 +24,12 @@ const isActive = computed(() => {
 <template>
     <Link
         :href="href"
-        class="group flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm font-medium transition-colors"
+        class="group flex items-center gap-2.5 rounded-none px-2 py-1.5 text-sm font-medium transition-colors"
         :class="isActive
-            ? 'bg-indigo-50 text-indigo-700'
-            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+            ? 'bg-surface-hi text-ink'
+            : 'text-ink-dim hover:bg-surface hover:text-ink'"
     >
-        <span v-if="$slots.icon" class="flex h-4 w-4 items-center justify-center text-gray-400 group-hover:text-gray-500" :class="{ 'text-indigo-500 group-hover:text-indigo-600': isActive }">
+        <span v-if="$slots.icon" class="flex h-4 w-4 items-center justify-center text-ink-mute group-hover:text-ink-dim" :class="{ 'text-ink group-hover:text-ink': isActive }">
             <slot name="icon" />
         </span>
         <span class="flex-1 truncate">

@@ -57,8 +57,8 @@ const statusTone = (s) =>
     ({
         published: 'bg-emerald-50 text-emerald-700',
         draft: 'bg-amber-50 text-amber-700',
-        archived: 'bg-gray-100 text-gray-500',
-    })[s] ?? 'bg-gray-100 text-gray-500';
+        archived: 'bg-surface-hi text-ink-dim',
+    })[s] ?? 'bg-surface-hi text-ink-dim';
 
 const dirty = computed(() => form.isDirty);
 </script>
@@ -72,19 +72,19 @@ const dirty = computed(() => form.isDirty);
 
         <div class="mx-auto max-w-5xl space-y-6 px-4 pb-12 sm:px-6">
             <!-- Editor -->
-            <div class="rounded-lg bg-white p-5 shadow">
+            <div class="rounded-none border border-border-line bg-bg p-5">
                 <div class="mb-4 flex items-center justify-between">
-                    <h2 class="text-base font-medium text-gray-900">Behavior draft</h2>
-                    <span v-if="published" class="text-xs text-gray-400">
+                    <h2 class="text-base font-medium text-ink">Behavior draft</h2>
+                    <span v-if="published" class="font-mono text-xs text-ink-mute">
                         Live now: v{{ published.version }} · published {{ fmt(published.published_at) }}
                     </span>
-                    <span v-else class="text-xs text-gray-400">Nothing published yet — the agent runs on defaults.</span>
+                    <span v-else class="text-xs text-ink-mute">Nothing published yet — the agent runs on defaults.</span>
                 </div>
 
                 <div class="space-y-4">
                     <div>
                         <InputLabel for="instructions" value="Custom instructions" />
-                        <p class="mt-0.5 text-xs text-gray-400">
+                        <p class="mt-0.5 text-xs text-ink-mute">
                             Added to the agent's system prompt on every turn. Tone, what to emphasize, things to avoid, qualification criteria…
                         </p>
                         <textarea
@@ -92,7 +92,7 @@ const dirty = computed(() => form.isDirty);
                             v-model="form.instructions"
                             rows="7"
                             maxlength="4000"
-                            class="mt-2 block w-full rounded-md border-gray-200 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400"
+                            class="mt-2 block w-full rounded-none border-border-hi bg-bg text-sm text-ink focus:border-ink focus:ring-0"
                             placeholder="e.g. We sell to dental clinics. Always ask about practice size. Never discuss competitor pricing. If they mention enterprise, prioritize booking a call over email capture."
                         />
                         <InputError :message="form.errors.instructions" class="mt-1" />
@@ -100,13 +100,13 @@ const dirty = computed(() => form.isDirty);
 
                     <div>
                         <InputLabel for="greeting" value="Greeting guidance (optional)" />
-                        <p class="mt-0.5 text-xs text-gray-400">Shapes only the first message of each conversation.</p>
+                        <p class="mt-0.5 text-xs text-ink-mute">Shapes only the first message of each conversation.</p>
                         <input
                             id="greeting"
                             v-model="form.greeting"
                             type="text"
                             maxlength="500"
-                            class="mt-2 block w-full rounded-md border-gray-200 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400"
+                            class="mt-2 block w-full rounded-none border-border-hi bg-bg text-sm text-ink focus:border-ink focus:ring-0"
                             placeholder="e.g. Mention our March webinar in the greeting."
                         />
                         <InputError :message="form.errors.greeting" class="mt-1" />
@@ -114,28 +114,28 @@ const dirty = computed(() => form.isDirty);
 
                     <div>
                         <InputLabel for="model_tier" value="Response quality" />
-                        <p class="mt-0.5 text-xs text-gray-400">
+                        <p class="mt-0.5 text-xs text-ink-mute">
                             Smarter answers cost more credits per message. Applies to this agent only, from the moment you publish.
                         </p>
                         <div class="mt-2 grid gap-3 sm:grid-cols-3">
                             <label
                                 v-for="t in tiers"
                                 :key="t.key"
-                                class="flex items-start gap-2.5 rounded-lg border p-3 text-sm transition"
+                                class="flex items-start gap-2.5 rounded-none border p-3 text-sm transition"
                                 :class="[
                                     t.available === false ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
-                                    form.model_tier === t.key ? 'border-indigo-400 bg-indigo-50/50 ring-1 ring-indigo-300' : 'border-gray-200 hover:border-gray-300',
+                                    form.model_tier === t.key ? 'border-ink bg-surface-hi ring-1 ring-ink' : 'border-border-line hover:border-border-hi',
                                 ]"
                             >
-                                <input v-model="form.model_tier" type="radio" :value="t.key" :disabled="t.available === false" class="mt-0.5 text-indigo-600 focus:ring-indigo-400" />
+                                <input v-model="form.model_tier" type="radio" :value="t.key" :disabled="t.available === false" class="mt-0.5 text-ink focus:ring-ink" />
                                 <span>
-                                    <span class="flex items-center gap-2 font-medium text-gray-900">
+                                    <span class="flex items-center gap-2 font-medium text-ink">
                                         {{ t.label }}
-                                        <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">
+                                        <span class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-dim">
                                             {{ t.credits_per_message }} cr/msg
                                         </span>
                                     </span>
-                                    <span class="mt-1 block text-xs leading-snug text-gray-500">{{ t.available === false ? 'Not available yet on this workspace.' : t.description }}</span>
+                                    <span class="mt-1 block text-xs leading-snug text-ink-dim">{{ t.available === false ? 'Not available yet on this workspace.' : t.description }}</span>
                                 </span>
                             </label>
                         </div>
@@ -151,14 +151,14 @@ const dirty = computed(() => form.isDirty);
                         <PrimaryButton :disabled="form.processing || publishForm.processing" @click="publish">
                             {{ publishForm.processing ? 'Publishing…' : 'Publish' }}
                         </PrimaryButton>
-                        <p class="text-xs text-gray-400">Publishing goes live on the very next message — no deploy.</p>
+                        <p class="text-xs text-ink-mute">Publishing goes live on the very next message — no deploy.</p>
                     </div>
                 </div>
             </div>
 
             <!-- History -->
-            <div class="rounded-lg bg-white p-5 shadow">
-                <h2 class="mb-4 text-base font-medium text-gray-900">History</h2>
+            <div class="rounded-none border border-border-line bg-bg p-5">
+                <h2 class="mb-4 text-base font-medium text-ink">History</h2>
 
                 <EmptyState
                     v-if="versions.length === 0"
@@ -166,29 +166,29 @@ const dirty = computed(() => form.isDirty);
                     message="Save a draft and publish it — every published version is kept here and can be restored."
                 />
 
-                <ul v-else class="divide-y divide-gray-100">
+                <ul v-else class="divide-y divide-border-line">
                     <li v-for="v in versions" :key="v.version" class="flex items-center justify-between gap-4 py-3">
                         <div class="min-w-0">
                             <div class="flex items-center gap-2">
-                                <span class="font-mono text-sm font-semibold text-gray-900">v{{ v.version }}</span>
-                                <span class="rounded-full px-2 py-0.5 text-[10px] font-medium" :class="statusTone(v.status)">
+                                <span class="font-mono text-sm font-semibold text-ink">v{{ v.version }}</span>
+                                <span class="rounded-none px-2 py-0.5 font-mono text-[10px] font-medium" :class="statusTone(v.status)">
                                     {{ v.status }}
                                 </span>
-                                <span class="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700">
+                                <span class="rounded-none bg-surface-hi px-2 py-0.5 font-mono text-[10px] font-medium text-ink-dim">
                                     {{ tierLabel(v.config?.model_tier ?? 'standard') }} · {{ tierCost(v.config?.model_tier ?? 'standard') }}cr/msg
                                 </span>
                             </div>
-                            <p class="mt-0.5 truncate text-xs text-gray-500">
+                            <p class="mt-0.5 truncate text-xs text-ink-dim">
                                 {{ v.config?.instructions ? v.config.instructions.slice(0, 110) : '(no custom instructions)' }}
                             </p>
-                            <p class="mt-0.5 text-[10px] text-gray-400">
+                            <p class="mt-0.5 font-mono text-[10px] text-ink-mute">
                                 {{ v.status === 'published' ? 'published ' + fmt(v.published_at) : 'updated ' + fmt(v.updated_at) }}
                             </p>
                         </div>
                         <div class="flex shrink-0 gap-2">
                             <a
                                 :href="route('agents.versions.export', v.version)"
-                                class="inline-flex items-center rounded-md bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                                class="inline-flex items-center rounded-none border border-border-line bg-bg px-3 py-1.5 font-mono text-xs font-medium text-ink-dim hover:bg-surface-hi"
                             >
                                 Export JSON
                             </a>

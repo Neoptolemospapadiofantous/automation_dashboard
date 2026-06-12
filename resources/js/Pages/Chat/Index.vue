@@ -202,7 +202,7 @@ const capturedEntries = () => Object.entries(captured.value);
             <div class="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
                 <!-- Conversation -->
                 <div class="lg:col-span-2">
-                    <div class="flex h-[32rem] flex-col overflow-hidden rounded-xl bg-white shadow">
+                    <div class="flex h-[32rem] flex-col overflow-hidden rounded-none border border-border-line bg-bg">
                         <div v-if="!configured" class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-700">
                             Your agent isn't set up yet.
                             <Link :href="route('agents.index')" class="font-medium underline">Finish onboarding</Link>
@@ -210,7 +210,7 @@ const capturedEntries = () => Object.entries(captured.value);
                         </div>
 
                         <div ref="scroller" class="flex-1 space-y-3 overflow-y-auto p-4">
-                            <div v-if="!started" class="flex h-full flex-col items-center justify-center text-center text-gray-400">
+                            <div v-if="!started" class="flex h-full flex-col items-center justify-center text-center text-ink-mute">
                                 <p class="mb-4">Start a conversation with the lead-qualification agent.</p>
                                 <PrimaryButton :disabled="busy || !configured" @click="start">
                                     {{ busy ? 'Starting…' : 'Start conversation' }}
@@ -224,27 +224,27 @@ const capturedEntries = () => Object.entries(captured.value);
                                 :class="m.role === 'user' ? 'justify-end' : 'justify-start'"
                             >
                                 <div
-                                    class="max-w-[80%] rounded-2xl px-4 py-2 text-sm"
+                                    class="max-w-[80%] rounded-none px-4 py-2 text-sm"
                                     :class="m.role === 'user'
-                                        ? 'bg-indigo-600 text-white'
-                                        : 'bg-gray-100 text-gray-800'"
+                                        ? 'bg-ink text-bg'
+                                        : 'bg-surface-hi text-ink'"
                                 >
                                     {{ m.text }}
                                 </div>
                             </div>
 
                             <div v-if="busy && started" class="flex justify-start">
-                                <div class="rounded-2xl bg-gray-100 px-4 py-2 text-sm text-gray-400">…</div>
+                                <div class="rounded-none bg-surface-hi px-4 py-2 text-sm text-ink-mute">…</div>
                             </div>
                         </div>
 
                         <!-- Quick-reply buttons -->
-                        <div v-if="buttons.length" class="flex flex-wrap gap-2 border-t border-gray-100 px-4 py-2">
+                        <div v-if="buttons.length" class="flex flex-wrap gap-2 border-t border-border-line px-4 py-2">
                             <button
                                 v-for="(b, i) in buttons"
                                 :key="i"
                                 type="button"
-                                class="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                                class="rounded-none border border-ink bg-bg px-3 py-1 font-mono text-xs font-medium text-ink hover:bg-ink hover:text-bg"
                                 @click="send(b.name)"
                             >
                                 {{ b.name }}
@@ -254,13 +254,13 @@ const capturedEntries = () => Object.entries(captured.value);
                         <!-- Composer -->
                         <form
                             v-if="started && !ended"
-                            class="flex items-center gap-2 border-t border-gray-100 p-3"
+                            class="flex items-center gap-2 border-t border-border-line p-3"
                             @submit.prevent="send()"
                         >
                             <TextInput v-model="input" type="text" class="flex-1" placeholder="Type a message…" :disabled="busy" />
                             <PrimaryButton :disabled="busy || !input.trim()">Send</PrimaryButton>
                         </form>
-                        <div v-else-if="ended" class="border-t border-gray-100 p-3 text-center text-sm text-gray-400">
+                        <div v-else-if="ended" class="border-t border-border-line p-3 text-center text-sm text-ink-mute">
                             Conversation ended.
                         </div>
                     </div>
@@ -268,22 +268,22 @@ const capturedEntries = () => Object.entries(captured.value);
 
                 <!-- Captured lead -->
                 <div>
-                    <div class="rounded-xl bg-white p-4 shadow">
-                        <h3 class="mb-3 text-sm font-semibold text-gray-700">Captured lead</h3>
+                    <div class="rounded-none border border-border-line bg-bg p-4">
+                        <h3 class="mb-3 text-sm font-semibold text-ink-dim">Captured lead</h3>
                         <dl v-if="capturedEntries().length" class="space-y-2">
                             <div v-for="[k, v] in capturedEntries()" :key="k" class="flex justify-between gap-2 text-sm">
-                                <dt class="capitalize text-gray-500">{{ k }}</dt>
-                                <dd class="truncate font-medium text-gray-900">{{ v }}</dd>
+                                <dt class="capitalize text-ink-dim">{{ k }}</dt>
+                                <dd class="truncate font-medium text-ink">{{ v }}</dd>
                             </div>
                         </dl>
-                        <p v-else class="text-sm text-gray-400">
+                        <p v-else class="text-sm text-ink-mute">
                             Lead fields captured during the conversation will appear here and sync to the board live.
                         </p>
 
                         <a
                             v-if="leadId"
                             :href="route('leads.index')"
-                            class="mt-4 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-500"
+                            class="mt-4 inline-block text-sm font-medium text-ink underline hover:text-ink-dim"
                         >
                             View on the board →
                         </a>

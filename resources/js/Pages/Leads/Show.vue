@@ -90,79 +90,79 @@ const currentStatusLabel = computed(() => {
 
                 <!-- Status + assign + score row -->
                 <div class="grid gap-3 sm:grid-cols-3">
-                    <div class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5">
-                        <div class="text-xs uppercase tracking-wide text-gray-400">Status</div>
+                    <div class="rounded-none border border-border-line bg-bg p-4">
+                        <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Status</div>
                         <select
                             :value="lead.status"
-                            class="mt-2 w-full rounded-md border-gray-200 text-sm focus:border-indigo-400 focus:ring-indigo-400"
+                            class="mt-2 w-full rounded-none border-border-line text-sm focus:border-ink focus:ring-ink"
                             @change="updateStatus($event.target.value)"
                         >
                             <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
                         </select>
-                        <div class="mt-1 text-[11px] text-gray-400">Currently: {{ currentStatusLabel }}</div>
+                        <div class="mt-1 text-[11px] text-ink-mute">Currently: {{ currentStatusLabel }}</div>
                     </div>
-                    <div class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5">
-                        <div class="text-xs uppercase tracking-wide text-gray-400">Assigned to</div>
+                    <div class="rounded-none border border-border-line bg-bg p-4">
+                        <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Assigned to</div>
                         <select
                             :value="lead.assigned_to ?? ''"
-                            class="mt-2 w-full rounded-md border-gray-200 text-sm focus:border-indigo-400 focus:ring-indigo-400"
+                            class="mt-2 w-full rounded-none border-border-line text-sm focus:border-ink focus:ring-ink"
                             @change="assignTo($event.target.value || null)"
                         >
                             <option value="">— Unassigned —</option>
                             <option v-for="m in members" :key="m.id" :value="m.id">{{ m.name }}</option>
                         </select>
                     </div>
-                    <div class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5">
-                        <div class="text-xs uppercase tracking-wide text-gray-400">Score</div>
+                    <div class="rounded-none border border-border-line bg-bg p-4">
+                        <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Score</div>
                         <div class="mt-2 flex items-baseline gap-2">
-                            <span class="text-2xl font-semibold text-gray-900">{{ lead.score ?? '—' }}</span>
-                            <span class="text-xs text-gray-400">/ 100</span>
+                            <span class="font-mono text-2xl font-semibold text-ink">{{ lead.score ?? '—' }}</span>
+                            <span class="text-xs text-ink-mute">/ 100</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Contact -->
-                <div class="rounded-xl bg-white p-5 shadow ring-1 ring-black/5">
-                    <h3 class="text-sm font-semibold text-gray-700">Contact</h3>
+                <div class="rounded-none border border-border-line bg-bg p-5">
+                    <h3 class="text-sm font-semibold text-ink-dim">Contact</h3>
                     <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
                         <div>
-                            <dt class="text-xs text-gray-400">Email</dt>
-                            <dd class="mt-0.5 text-gray-700">
-                                <a v-if="lead.email" :href="`mailto:${lead.email}`" class="text-indigo-600 hover:text-indigo-800">{{ lead.email }}</a>
-                                <span v-else class="text-gray-400">—</span>
+                            <dt class="text-xs text-ink-mute">Email</dt>
+                            <dd class="mt-0.5 text-ink-dim">
+                                <a v-if="lead.email" :href="`mailto:${lead.email}`" class="text-ink underline hover:text-ink-dim">{{ lead.email }}</a>
+                                <span v-else class="text-ink-mute">—</span>
                             </dd>
                         </div>
                         <div>
-                            <dt class="text-xs text-gray-400">Phone</dt>
-                            <dd class="mt-0.5 text-gray-700">
-                                <a v-if="lead.phone" :href="`tel:${lead.phone}`" class="text-indigo-600 hover:text-indigo-800">{{ lead.phone }}</a>
-                                <span v-else class="text-gray-400">—</span>
+                            <dt class="text-xs text-ink-mute">Phone</dt>
+                            <dd class="mt-0.5 text-ink-dim">
+                                <a v-if="lead.phone" :href="`tel:${lead.phone}`" class="text-ink underline hover:text-ink-dim">{{ lead.phone }}</a>
+                                <span v-else class="text-ink-mute">—</span>
                             </dd>
                         </div>
                         <div>
-                            <dt class="text-xs text-gray-400">Company</dt>
-                            <dd class="mt-0.5 text-gray-700">{{ lead.company ?? '—' }}</dd>
+                            <dt class="text-xs text-ink-mute">Company</dt>
+                            <dd class="mt-0.5 text-ink-dim">{{ lead.company ?? '—' }}</dd>
                         </div>
                         <div>
-                            <dt class="text-xs text-gray-400">Source</dt>
-                            <dd class="mt-0.5 text-gray-700">{{ lead.source ?? '—' }}</dd>
+                            <dt class="text-xs text-ink-mute">Source</dt>
+                            <dd class="mt-0.5 text-ink-dim">{{ lead.source ?? '—' }}</dd>
                         </div>
                         <div>
-                            <dt class="text-xs text-gray-400">Captured</dt>
-                            <dd class="mt-0.5 text-gray-700">{{ fmt(lead.created_at) }}</dd>
+                            <dt class="text-xs text-ink-mute">Captured</dt>
+                            <dd class="mt-0.5 text-ink-dim">{{ fmt(lead.created_at) }}</dd>
                         </div>
                         <div>
-                            <dt class="text-xs text-gray-400">Last updated</dt>
-                            <dd class="mt-0.5 text-gray-700">{{ fmt(lead.updated_at) }}</dd>
+                            <dt class="text-xs text-ink-mute">Last updated</dt>
+                            <dd class="mt-0.5 text-ink-dim">{{ fmt(lead.updated_at) }}</dd>
                         </div>
                     </dl>
                 </div>
 
                 <!-- Notes -->
-                <div class="rounded-xl bg-white p-5 shadow ring-1 ring-black/5">
+                <div class="rounded-none border border-border-line bg-bg p-5">
                     <div class="flex items-baseline justify-between">
-                        <h3 class="text-sm font-semibold text-gray-700">Notes</h3>
-                        <span class="text-[11px] text-gray-400">
+                        <h3 class="text-sm font-semibold text-ink-dim">Notes</h3>
+                        <span class="text-[11px] text-ink-mute">
                             {{ notesForm.processing ? 'Saving…' : (notesForm.recentlySuccessful ? 'Saved' : '') }}
                         </span>
                     </div>
@@ -170,36 +170,36 @@ const currentStatusLabel = computed(() => {
                         v-model="notes"
                         rows="6"
                         placeholder="Anything worth remembering — last contact, follow-up date, qualification notes…"
-                        class="mt-2 w-full rounded-md border-gray-200 text-sm focus:border-indigo-400 focus:ring-indigo-400"
+                        class="mt-2 w-full rounded-none border-border-line text-sm focus:border-ink focus:ring-ink"
                         @input="saveNotes"
                     ></textarea>
                 </div>
 
                 <!-- Conversations -->
-                <div class="rounded-xl bg-white p-5 shadow ring-1 ring-black/5">
-                    <h3 class="text-sm font-semibold text-gray-700">Conversations</h3>
-                    <p class="mt-1 text-xs text-gray-500">Last 20 conversations this visitor had with the agent.</p>
-                    <div v-if="conversations.length" class="mt-3 divide-y divide-gray-100">
+                <div class="rounded-none border border-border-line bg-bg p-5">
+                    <h3 class="text-sm font-semibold text-ink-dim">Conversations</h3>
+                    <p class="mt-1 text-xs text-ink-dim">Last 20 conversations this visitor had with the agent.</p>
+                    <div v-if="conversations.length" class="mt-3 divide-y divide-border-line">
                         <Link
                             v-for="c in conversations"
                             :key="c.id"
                             :href="route('conversations.show', c.id)"
-                            class="flex items-center justify-between py-2.5 text-sm hover:bg-gray-50"
+                            class="flex items-center justify-between py-2.5 text-sm hover:bg-surface-hi"
                         >
                             <div class="flex flex-col">
-                                <span class="font-medium text-gray-800">Conversation #{{ c.id }}</span>
-                                <span class="text-[11px] text-gray-400">{{ fmt(c.started_at) }}</span>
+                                <span class="font-medium text-ink">Conversation #{{ c.id }}</span>
+                                <span class="text-[11px] text-ink-mute">{{ fmt(c.started_at) }}</span>
                             </div>
-                            <div class="flex items-center gap-3 text-xs text-gray-500">
+                            <div class="flex items-center gap-3 text-xs text-ink-dim">
                                 <span>{{ c.message_count }} msg</span>
-                                <span class="text-indigo-600">View →</span>
+                                <span class="text-ink underline">View →</span>
                             </div>
                         </Link>
                     </div>
-                    <p v-else class="mt-3 text-xs italic text-gray-400">No conversations on file.</p>
+                    <p v-else class="mt-3 text-xs italic text-ink-mute">No conversations on file.</p>
                 </div>
 
-                <Link :href="route('leads.index')" class="block text-center text-xs text-indigo-600 hover:text-indigo-800">
+                <Link :href="route('leads.index')" class="block text-center text-xs text-ink underline hover:text-ink-dim">
                     ← Back to all leads
                 </Link>
             </div>

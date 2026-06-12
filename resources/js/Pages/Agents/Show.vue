@@ -78,14 +78,14 @@ async function destroy() {
         >
             <template #actions>
                 <div class="flex flex-wrap items-center gap-1.5">
-                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium" :class="{
+                    <span class="inline-flex rounded-none px-2.5 py-1 font-mono text-xs font-medium" :class="{
                         'bg-green-50 text-green-700': agent.status === 'active',
                         'bg-amber-50 text-amber-700': agent.status === 'draft',
-                        'bg-gray-100 text-gray-500': agent.status === 'disabled',
+                        'bg-surface-hi text-ink-dim': agent.status === 'disabled',
                     }">
                         {{ agent.status }}
                     </span>
-                    <span v-if="is_current" class="inline-flex rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700">
+                    <span v-if="is_current" class="inline-flex rounded-none bg-ink px-2.5 py-1 font-mono text-xs font-medium text-bg">
                         Current
                     </span>
                 </div>
@@ -100,28 +100,28 @@ async function destroy() {
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <Link
                         :href="route('leads.index')"
-                        class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5 transition hover:ring-indigo-200"
+                        class="rounded-none border border-border-line bg-bg p-4 transition hover:border-ink"
                     >
-                        <div class="text-xs uppercase tracking-wide text-gray-400">Leads</div>
+                        <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Leads</div>
                         <div class="mt-1 flex items-baseline gap-1.5">
-                            <span class="text-2xl font-semibold text-gray-900">{{ activity.leads.toLocaleString() }}</span>
+                            <span class="font-mono text-2xl font-semibold text-ink">{{ activity.leads.toLocaleString() }}</span>
                             <span v-if="activity.leads_qualified" class="text-xs text-green-700">· {{ activity.leads_qualified }} qualified</span>
                         </div>
                     </Link>
                     <Link
                         :href="route('conversations.index')"
-                        class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5 transition hover:ring-indigo-200"
+                        class="rounded-none border border-border-line bg-bg p-4 transition hover:border-ink"
                     >
-                        <div class="text-xs uppercase tracking-wide text-gray-400">Conversations</div>
-                        <div class="mt-1 text-2xl font-semibold text-gray-900">{{ activity.conversations.toLocaleString() }}</div>
+                        <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Conversations</div>
+                        <div class="mt-1 font-mono text-2xl font-semibold text-ink">{{ activity.conversations.toLocaleString() }}</div>
                     </Link>
-                    <div class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5">
-                        <div class="text-xs uppercase tracking-wide text-gray-400">Messages</div>
-                        <div class="mt-1 text-2xl font-semibold text-gray-900">{{ activity.messages.toLocaleString() }}</div>
+                    <div class="rounded-none border border-border-line bg-bg p-4">
+                        <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Messages</div>
+                        <div class="mt-1 font-mono text-2xl font-semibold text-ink">{{ activity.messages.toLocaleString() }}</div>
                     </div>
-                    <div class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5">
-                        <div class="text-xs uppercase tracking-wide text-gray-400">Pulse</div>
-                        <div class="mt-1 text-sm font-medium" :class="activity.last_message_at ? 'text-gray-900' : 'text-gray-400'">
+                    <div class="rounded-none border border-border-line bg-bg p-4">
+                        <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Pulse</div>
+                        <div class="mt-1 text-sm font-medium" :class="activity.last_message_at ? 'text-ink' : 'text-ink-mute'">
                             {{ lastActivityLabel }}
                         </div>
                     </div>
@@ -130,20 +130,20 @@ async function destroy() {
                 <!-- Analytics deep-link. Shows charts, funnel, sources, hourly. -->
                 <Link
                     :href="route('agents.analytics', agent.slug)"
-                    class="flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 transition hover:bg-indigo-50"
+                    class="flex items-center justify-between rounded-none border border-border-hi bg-bg-elev p-4 transition hover:bg-surface-hi"
                 >
                     <div>
-                        <p class="text-sm font-semibold text-gray-900">📊 Analytics for this agent</p>
-                        <p class="mt-0.5 text-xs text-gray-600">
+                        <p class="text-sm font-semibold text-ink">📊 Analytics for this agent</p>
+                        <p class="mt-0.5 text-xs text-ink-dim">
                             7/30/90-day trends · funnel · top sources · hourly activity heatmap
                         </p>
                     </div>
-                    <span class="text-sm text-indigo-700">View →</span>
+                    <span class="text-sm text-ink underline">View →</span>
                 </Link>
 
-                <form class="rounded-xl bg-white p-6 shadow ring-1 ring-black/5" @submit.prevent="save">
-                    <h3 class="text-base font-semibold text-gray-800">Agent details</h3>
-                    <p class="mt-1 text-sm text-gray-500">
+                <form class="rounded-none border border-border-line bg-bg p-6" @submit.prevent="save">
+                    <h3 class="text-base font-semibold text-ink">Agent details</h3>
+                    <p class="mt-1 text-sm text-ink-dim">
                         Your agent is set up and running. You can rename it here; everything else is managed for you.
                     </p>
 
@@ -157,7 +157,7 @@ async function destroy() {
                         <PrimaryButton :disabled="form.processing" :class="{ 'opacity-50': form.processing }">
                             Save
                         </PrimaryButton>
-                        <span v-if="agent.last_health_check_at" class="text-xs text-gray-500">
+                        <span v-if="agent.last_health_check_at" class="text-xs text-ink-dim">
                             Provisioned {{ new Date(agent.last_health_check_at).toLocaleString() }} —
                             <span :class="agent.last_health_ok ? 'text-green-700' : 'text-rose-700'">
                                 {{ agent.last_health_ok ? '✓ healthy' : '✗ failed' }}
@@ -166,9 +166,9 @@ async function destroy() {
                     </div>
                 </form>
 
-                <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                <div class="rounded-none border border-border-line bg-bg-elev p-4 text-sm text-ink-dim">
                     <div class="flex items-start gap-3">
-                        <svg class="mt-0.5 size-4 flex-shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <svg class="mt-0.5 size-4 flex-shrink-0 text-ink-mute" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
                         </svg>
                         <div>
@@ -180,12 +180,12 @@ async function destroy() {
                 <!-- Embed snippet — the HTML the customer pastes into their own
                      website's <head> or before </body>. Renders the floating
                      chat widget that opens an iframe to /embed/{slug}. -->
-                <div class="rounded-xl bg-white p-6 shadow ring-1 ring-black/5">
+                <div class="rounded-none border border-border-line bg-bg p-6">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <h3 class="text-base font-semibold text-gray-900">Embed on your website</h3>
-                            <p class="mt-1 text-sm text-gray-500">
-                                Paste this snippet into your website's HTML — anywhere before <code class="rounded bg-gray-100 px-1 py-0.5 text-[11px]">&lt;/body&gt;</code> works. A floating chat
+                            <h3 class="text-base font-semibold text-ink">Embed on your website</h3>
+                            <p class="mt-1 text-sm text-ink-dim">
+                                Paste this snippet into your website's HTML — anywhere before <code class="rounded-none bg-surface-hi px-1 py-0.5 text-[11px]">&lt;/body&gt;</code> works. A floating chat
                                 button appears bottom-right; clicking it opens this agent's chat in an iframe.
                             </p>
                         </div>
@@ -193,13 +193,13 @@ async function destroy() {
                             :href="embedPreviewUrl"
                             target="_blank"
                             rel="noopener"
-                            class="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                            class="rounded-none border border-ink bg-bg px-3 py-1.5 font-mono text-xs font-medium text-ink hover:bg-ink hover:text-bg"
                         >
                             Preview ↗
                         </a>
                     </div>
 
-                    <div class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3 font-mono text-[12px] leading-relaxed text-gray-700">
+                    <div class="mt-4 rounded-none border border-border-line bg-bg-elev p-3 font-mono text-[12px] leading-relaxed text-ink-dim">
                         <pre class="whitespace-pre-wrap break-all">{{ embedSnippet }}</pre>
                     </div>
 
@@ -211,30 +211,30 @@ async function destroy() {
                             :href="widgetUrl"
                             target="_blank"
                             rel="noopener"
-                            class="text-xs text-indigo-600 hover:text-indigo-800"
+                            class="text-xs text-ink underline hover:text-ink-dim"
                         >
                             View raw widget.js
                         </a>
                     </div>
 
-                    <div class="mt-4 grid gap-3 sm:grid-cols-3 text-xs text-gray-500">
+                    <div class="mt-4 grid gap-3 sm:grid-cols-3 text-xs text-ink-dim">
                         <div>
-                            <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-400">Mobile</p>
+                            <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">Mobile</p>
                             <p class="mt-1">Full-screen takeover under 480px wide.</p>
                         </div>
                         <div>
-                            <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-400">Sessions</p>
+                            <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">Sessions</p>
                             <p class="mt-1">Visitor cookies are 30-day, scoped to the agent — return visitors continue their thread.</p>
                         </div>
                         <div>
-                            <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-400">Billing</p>
+                            <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">Billing</p>
                             <p class="mt-1">Embedded conversations debit credits from this team, same as dashboard chats.</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Danger zone -->
-                <div class="rounded-xl border border-rose-200 bg-rose-50 p-6">
+                <div class="rounded-none border border-rose-200 bg-rose-50 p-6">
                     <h3 class="text-base font-semibold text-rose-800">Danger zone</h3>
                     <p class="mt-1 text-sm text-rose-700">
                         Deleting the agent unlinks (but does not delete) its leads and conversations.

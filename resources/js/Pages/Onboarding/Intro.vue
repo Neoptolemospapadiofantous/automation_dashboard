@@ -53,19 +53,19 @@ function continueOn() {
 
 <template>
     <Head title="Welcome — Set up your agent" />
-    <div class="min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-bg-elev">
         <div class="mx-auto max-w-2xl px-4 py-12">
             <div class="mb-8 flex items-center justify-between text-xs">
-                <ol class="flex items-center gap-2 font-medium text-gray-500">
-                    <li class="text-indigo-600">1. Set up agent</li>
+                <ol class="flex items-center gap-2 font-mono font-medium text-ink-dim">
+                    <li class="text-ink">1. Set up agent</li>
                     <li>→</li>
                     <li>2. Done</li>
                 </ol>
             </div>
 
-            <div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
-                <h1 class="text-2xl font-semibold text-gray-900">Welcome to {{ team.name }}.</h1>
-                <p class="mt-2 text-gray-600">
+            <div class="rounded-none border border-border-line bg-bg p-8 shadow-[8px_8px_0_rgba(0,0,0,0.06)]">
+                <h1 class="text-2xl font-semibold text-ink">Welcome to {{ team.name }}.</h1>
+                <p class="mt-2 text-ink-dim">
                     A couple of quick questions to tailor your setup. None are required —
                     skip and we'll still provision your AI agent right away.
                 </p>
@@ -73,19 +73,19 @@ function continueOn() {
                 <form class="mt-8 space-y-6" @submit.prevent="continueOn">
                     <!-- Primary use case (radio cards) -->
                     <fieldset>
-                        <legend class="text-sm font-medium text-gray-800">What's the main thing you'll use this for?</legend>
+                        <legend class="text-sm font-medium text-ink">What's the main thing you'll use this for?</legend>
                         <div class="mt-3 grid gap-2 sm:grid-cols-2">
                             <label
                                 v-for="uc in useCases"
                                 :key="uc.value"
-                                class="flex cursor-pointer flex-col rounded-lg border p-3 text-left transition"
+                                class="flex cursor-pointer flex-col rounded-none border p-3 text-left transition"
                                 :class="form.use_case === uc.value
-                                    ? 'border-indigo-400 bg-indigo-50 ring-1 ring-indigo-200'
-                                    : 'border-gray-200 bg-white hover:border-indigo-200'"
+                                    ? 'border-ink bg-surface-hi ring-1 ring-ink'
+                                    : 'border-border-line bg-bg hover:border-ink'"
                             >
                                 <input v-model="form.use_case" :value="uc.value" type="radio" class="sr-only" />
-                                <span class="text-sm font-semibold text-gray-900">{{ uc.label }}</span>
-                                <span class="mt-0.5 text-[11px] text-gray-500">{{ uc.desc }}</span>
+                                <span class="text-sm font-semibold text-ink">{{ uc.label }}</span>
+                                <span class="mt-0.5 text-[11px] text-ink-dim">{{ uc.desc }}</span>
                             </label>
                         </div>
                     </fieldset>
@@ -93,20 +93,20 @@ function continueOn() {
                     <!-- Industry + team size (selects, side-by-side on wider screens) -->
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label class="text-sm font-medium text-gray-800">Industry</label>
+                            <label class="text-sm font-medium text-ink">Industry</label>
                             <select
                                 v-model="form.industry"
-                                class="mt-2 w-full rounded-md border-gray-200 text-sm focus:border-indigo-400 focus:ring-indigo-400"
+                                class="mt-2 w-full rounded-none border-border-line text-sm focus:border-ink focus:ring-ink"
                             >
                                 <option :value="null">Skip</option>
                                 <option v-for="ind in industries" :key="ind.value" :value="ind.value">{{ ind.label }}</option>
                             </select>
                         </div>
                         <div>
-                            <label class="text-sm font-medium text-gray-800">Team size</label>
+                            <label class="text-sm font-medium text-ink">Team size</label>
                             <select
                                 v-model="form.team_size"
-                                class="mt-2 w-full rounded-md border-gray-200 text-sm focus:border-indigo-400 focus:ring-indigo-400"
+                                class="mt-2 w-full rounded-none border-border-line text-sm focus:border-ink focus:ring-ink"
                             >
                                 <option :value="null">Skip</option>
                                 <option v-for="ts in teamSizes" :key="ts.value" :value="ts.value">{{ ts.label }}</option>
@@ -116,29 +116,29 @@ function continueOn() {
 
                     <!-- Response quality tier — couples model to credit cost -->
                     <div>
-                        <label class="text-sm font-medium text-gray-800">Response quality</label>
-                        <p class="mt-0.5 text-[11px] text-gray-500">
+                        <label class="text-sm font-medium text-ink">Response quality</label>
+                        <p class="mt-0.5 text-[11px] text-ink-dim">
                             How smart should your agent be? You can change this per agent anytime on the Versions page.
                         </p>
                         <div class="mt-2 grid gap-3 sm:grid-cols-3">
                             <label
                                 v-for="t in tiers"
                                 :key="t.key"
-                                class="flex items-start gap-2.5 rounded-lg border p-3 text-sm transition"
+                                class="flex items-start gap-2.5 rounded-none border p-3 text-sm transition"
                                 :class="[
                                     t.available === false ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
-                                    form.model_tier === t.key ? 'border-indigo-400 bg-indigo-50/50 ring-1 ring-indigo-300' : 'border-gray-200 hover:border-gray-300',
+                                    form.model_tier === t.key ? 'border-ink bg-surface-hi ring-1 ring-ink' : 'border-border-line hover:border-border-hi',
                                 ]"
                             >
-                                <input v-model="form.model_tier" type="radio" :value="t.key" :disabled="t.available === false" class="mt-0.5 text-indigo-600 focus:ring-indigo-400" />
+                                <input v-model="form.model_tier" type="radio" :value="t.key" :disabled="t.available === false" class="mt-0.5 text-ink focus:ring-ink" />
                                 <span>
-                                    <span class="flex items-center gap-2 font-medium text-gray-900">
+                                    <span class="flex items-center gap-2 font-medium text-ink">
                                         {{ t.label }}
-                                        <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">
+                                        <span class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-dim">
                                             {{ t.credits_per_message }} cr/msg
                                         </span>
                                     </span>
-                                    <span class="mt-1 block text-[11px] leading-snug text-gray-500">{{ t.available === false ? 'Not available yet on this workspace.' : t.description }}</span>
+                                    <span class="mt-1 block text-[11px] leading-snug text-ink-dim">{{ t.available === false ? 'Not available yet on this workspace.' : t.description }}</span>
                                 </span>
                             </label>
                         </div>
@@ -147,22 +147,22 @@ function continueOn() {
 
                     <!-- Website — where they'll embed -->
                     <div>
-                        <label class="text-sm font-medium text-gray-800">Your website (optional)</label>
+                        <label class="text-sm font-medium text-ink">Your website (optional)</label>
                         <input
                             v-model="form.website"
                             type="url"
                             placeholder="https://example.com"
-                            class="mt-2 w-full rounded-md border-gray-200 text-sm focus:border-indigo-400 focus:ring-indigo-400"
+                            class="mt-2 w-full rounded-none border-border-line text-sm focus:border-ink focus:ring-ink"
                         />
-                        <p class="mt-1 text-[11px] text-gray-500">
+                        <p class="mt-1 text-[11px] text-ink-dim">
                             We'll show install instructions tailored to this domain.
                         </p>
                     </div>
 
                     <div v-if="form.errors.website" class="text-xs text-rose-600">{{ form.errors.website }}</div>
 
-                    <div class="flex items-center justify-between border-t border-gray-100 pt-5">
-                        <p class="text-xs text-gray-400">
+                    <div class="flex items-center justify-between border-t border-border-line pt-5">
+                        <p class="text-xs text-ink-mute">
                             You can change all of this later in account settings.
                         </p>
                         <PrimaryButton :disabled="form.processing" :class="{ 'opacity-50': form.processing }" type="submit">

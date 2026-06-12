@@ -183,16 +183,16 @@ function submit() {
         <PageHeader title="Leads" description="Kanban board of every lead in this agent. Drag cards to move statuses.">
             <template #actions>
                 <span
-                    class="inline-flex items-center gap-1.5 rounded-full bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600"
+                    class="inline-flex items-center gap-1.5 rounded-none bg-surface-hi px-2.5 py-1 text-xs font-medium text-ink-dim"
                     :title="connected ? 'Live' : 'Offline — set PUSHER_* to enable live updates'"
                 >
-                    <span class="inline-block h-1.5 w-1.5 rounded-full" :class="connected ? 'bg-green-500 animate-pulse' : 'bg-gray-300'" />
+                    <span class="inline-block h-1.5 w-1.5 rounded-full" :class="connected ? 'bg-green-500 animate-pulse' : 'bg-ink-mute'" />
                     {{ connected ? 'Live' : 'Offline' }}
                 </span>
                 <button
                     type="button"
-                    class="rounded-md border px-3 py-1.5 text-sm font-medium transition"
-                    :class="filters.mine ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'"
+                    class="rounded-none border px-3 py-1.5 text-sm font-medium transition"
+                    :class="filters.mine ? 'border-ink bg-ink text-bg' : 'border-border-hi bg-bg text-ink-dim hover:bg-surface-hi'"
                     @click="toggleMine"
                 >
                     {{ filters.mine ? 'My leads' : 'All leads' }}
@@ -207,23 +207,23 @@ function submit() {
                 <!-- Filter bar. All filters are server-side (URL-bound) so
                      state survives reload + can be shared. The text search
                      debounces by 350ms. -->
-                <div class="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-white p-3 shadow ring-1 ring-black/5">
+                <div class="mb-4 flex flex-wrap items-center gap-2 rounded-none border border-border-line bg-bg p-3">
                     <div class="relative flex-1 min-w-[180px]">
                         <input
                             v-model="search"
                             type="search"
                             placeholder="Search name, email, company, phone…"
-                            class="w-full rounded border-gray-200 pl-8 text-sm focus:border-indigo-400 focus:ring-indigo-400"
+                            class="w-full rounded-none border-border-line pl-8 text-sm focus:border-ink focus:ring-ink"
                             @input="onSearchInput"
                         />
-                        <svg class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <svg class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-mute" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                         </svg>
                     </div>
 
                     <select
                         :value="filters.status ?? ''"
-                        class="rounded border-gray-200 py-1.5 text-xs text-gray-600"
+                        class="rounded-none border-border-line py-1.5 text-xs text-ink-dim"
                         @change="applyFilters({ status: $event.target.value || null })"
                     >
                         <option value="">All statuses</option>
@@ -233,7 +233,7 @@ function submit() {
                     <select
                         v-if="sources.length"
                         :value="filters.source ?? ''"
-                        class="rounded border-gray-200 py-1.5 text-xs text-gray-600"
+                        class="rounded-none border-border-line py-1.5 text-xs text-ink-dim"
                         @change="applyFilters({ source: $event.target.value || null })"
                     >
                         <option value="">All sources</option>
@@ -242,7 +242,7 @@ function submit() {
 
                     <select
                         :value="filters.assignee ?? ''"
-                        class="rounded border-gray-200 py-1.5 text-xs text-gray-600"
+                        class="rounded-none border-border-line py-1.5 text-xs text-ink-dim"
                         @change="applyFilters({ assignee: $event.target.value ? Number($event.target.value) : null })"
                     >
                         <option value="">Anyone assigned</option>
@@ -251,7 +251,7 @@ function submit() {
 
                     <select
                         :value="filters.min_score ?? ''"
-                        class="rounded border-gray-200 py-1.5 text-xs text-gray-600"
+                        class="rounded-none border-border-line py-1.5 text-xs text-ink-dim"
                         @change="applyFilters({ min_score: $event.target.value ? Number($event.target.value) : null })"
                     >
                         <option value="">Any score</option>
@@ -265,8 +265,8 @@ function submit() {
                             v-for="k in ['7d', '30d', '90d']"
                             :key="k"
                             type="button"
-                            class="rounded-full border px-2.5 py-0.5 text-xs font-medium transition"
-                            :class="filters.since_key === k ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
+                            class="rounded-none border px-2.5 py-0.5 text-xs font-medium transition"
+                            :class="filters.since_key === k ? 'border-ink bg-ink text-bg' : 'border-border-line text-ink-dim hover:bg-surface-hi'"
                             @click="applyFilters({ since: filters.since_key === k ? null : k })"
                         >
                             {{ k }}
@@ -276,13 +276,13 @@ function submit() {
                     <button
                         v-if="activeFilterCount > 0"
                         type="button"
-                        class="text-xs text-gray-500 hover:text-gray-800 underline"
+                        class="text-xs text-ink-dim hover:text-ink underline"
                         @click="clearFilters"
                     >
                         Clear ({{ activeFilterCount }})
                     </button>
 
-                    <div class="ml-auto text-xs text-gray-400">
+                    <div class="ml-auto text-xs text-ink-mute">
                         {{ leads.size ?? leads.length ?? 0 }} {{ (leads.size ?? leads.length ?? 0) === 1 ? 'lead' : 'leads' }}
                     </div>
                 </div>
@@ -292,26 +292,26 @@ function submit() {
                      empty columns "Drop leads here" with no CTA). -->
                 <div
                     v-if="leads.size === 0"
-                    class="mb-6 rounded-xl border border-dashed border-gray-200 bg-white/60 p-8 text-center"
+                    class="mb-6 rounded-none border border-dashed border-border-line bg-bg p-8 text-center"
                 >
-                    <svg class="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <svg class="mx-auto h-10 w-10 text-ink-mute" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
                     </svg>
-                    <h3 class="mt-3 text-sm font-medium text-gray-700">No leads yet</h3>
-                    <p class="mt-1 text-xs text-gray-500">
+                    <h3 class="mt-3 text-sm font-medium text-ink-dim">No leads yet</h3>
+                    <p class="mt-1 text-xs text-ink-dim">
                         Leads appear here automatically when your agent captures
                         contact info. You can also create one manually.
                     </p>
                     <div class="mt-4 flex justify-center gap-2">
                         <Link
                             :href="route('chat.index')"
-                            class="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                            class="rounded-none border border-ink bg-ink px-3 py-1.5 text-xs font-medium text-bg hover:bg-bg hover:text-ink"
                         >
                             Try the chat panel
                         </Link>
                         <button
                             type="button"
-                            class="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                            class="rounded-none border border-border-line bg-bg px-3 py-1.5 text-xs font-medium text-ink-dim hover:bg-surface-hi"
                             @click="showCreate = true"
                         >
                             Create one manually
@@ -322,13 +322,13 @@ function submit() {
                     <div
                         v-for="col in columns"
                         :key="col.value"
-                        class="flex w-72 flex-shrink-0 flex-col rounded-xl bg-gray-100 p-3"
+                        class="flex w-72 flex-shrink-0 flex-col rounded-none border border-border-line bg-surface p-3"
                         @dragover.prevent
                         @drop="onDrop($event, col.value)"
                     >
                         <div class="mb-3 flex items-center justify-between px-1">
-                            <h3 class="text-sm font-semibold text-gray-700">{{ col.label }}</h3>
-                            <span class="rounded-full bg-white px-2 py-0.5 text-xs text-gray-500">
+                            <h3 class="text-sm font-semibold text-ink-dim">{{ col.label }}</h3>
+                            <span class="rounded-none bg-bg px-2 py-0.5 font-mono text-xs text-ink-dim">
                                 {{ col.leads.length }}
                             </span>
                         </div>
@@ -345,7 +345,7 @@ function submit() {
                             />
                             <p
                                 v-if="!col.leads.length"
-                                class="rounded-lg border-2 border-dashed border-gray-200 p-4 text-center text-xs text-gray-400"
+                                class="rounded-none border-2 border-dashed border-border-line p-4 text-center text-xs text-ink-mute"
                             >
                                 Drop leads here
                             </p>
@@ -384,13 +384,13 @@ function submit() {
                     </div>
                     <div>
                         <InputLabel for="status" value="Status" />
-                        <select id="status" v-model="form.status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <select id="status" v-model="form.status" class="mt-1 block w-full rounded-none border-border-hi focus:border-ink focus:ring-ink">
                             <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
                         </select>
                     </div>
                     <div>
                         <InputLabel for="assigned_to" value="Assign to" />
-                        <select id="assigned_to" v-model="form.assigned_to" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <select id="assigned_to" v-model="form.assigned_to" class="mt-1 block w-full rounded-none border-border-hi focus:border-ink focus:ring-ink">
                             <option :value="null">Unassigned</option>
                             <option v-for="m in members" :key="m.id" :value="m.id">{{ m.name }}</option>
                         </select>

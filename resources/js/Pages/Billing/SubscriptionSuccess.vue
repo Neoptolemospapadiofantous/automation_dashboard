@@ -27,8 +27,8 @@ setTimeout(refresh, 2500);
         <div class="flex min-h-[60vh] items-center justify-center px-4">
             <div class="max-w-md text-center">
                 <p class="font-mono text-[10px] uppercase tracking-[0.3em] text-emerald-600">PAYMENT CONFIRMED</p>
-                <h1 class="mt-3 text-3xl font-semibold tracking-tight text-gray-900">You're subscribed</h1>
-                <p class="mt-3 text-sm text-gray-600">
+                <h1 class="mt-3 text-3xl font-semibold tracking-tight text-ink">You're subscribed</h1>
+                <p class="mt-3 text-sm text-ink-dim">
                     Thanks. Your subscription is processing — credits and plan tier usually
                     activate within a few seconds. This page refreshes itself once that lands.
                 </p>
@@ -36,19 +36,19 @@ setTimeout(refresh, 2500);
                 <div class="mt-8 flex items-center justify-center gap-3">
                     <Link
                         href="/billing"
-                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                        class="rounded-none border border-ink bg-ink px-4 py-2 text-sm font-medium text-bg hover:bg-bg hover:text-ink"
                     >
                         See your plan
                     </Link>
                     <Link
                         href="/chat"
-                        class="rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        class="rounded-none border border-border-hi bg-bg px-4 py-2 text-sm font-medium text-ink-dim hover:bg-surface-hi"
                     >
                         Open chat
                     </Link>
                 </div>
 
-                <p class="mt-10 font-mono text-[10px] text-gray-300">FLOWSTACK</p>
+                <p class="mt-10 font-mono text-[10px] text-ink-mute">FLOWSTACK</p>
             </div>
         </div>
     </AppLayout>

@@ -72,13 +72,13 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
             :description="`Activity, conversion, and credit usage over the last ${window.days} days.`"
         >
             <template #actions>
-                <div class="flex items-center gap-1 rounded-lg bg-white p-0.5 shadow-sm ring-1 ring-black/5">
+                <div class="flex items-center gap-1 rounded-none border border-border-line bg-bg p-0.5">
                     <button
                         v-for="d in [7, 30, 90]"
                         :key="d"
                         type="button"
-                        class="rounded-md px-3 py-1 text-xs font-medium transition"
-                        :class="window.days === d ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50'"
+                        class="rounded-none px-3 py-1 font-mono text-xs font-medium transition"
+                        :class="window.days === d ? 'bg-ink text-bg' : 'text-ink-dim hover:bg-surface-hi'"
                         @click="setWindow(d)"
                     >
                         {{ d }}d
@@ -92,42 +92,42 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
 
                 <!-- Headline counters with sparklines -->
                 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <div class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5">
+                    <div class="rounded-none border border-border-line bg-bg p-4">
                         <div class="flex items-baseline justify-between">
-                            <div class="text-xs uppercase tracking-wide text-gray-400">Conversations</div>
-                            <div class="text-xs text-gray-400">{{ window.days }}d</div>
+                            <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Conversations</div>
+                            <div class="font-mono text-xs text-ink-mute">{{ window.days }}d</div>
                         </div>
-                        <div class="mt-1 text-2xl font-semibold text-gray-900">{{ fmt(totals.conversations) }}</div>
+                        <div class="mt-1 font-mono text-2xl font-semibold text-ink">{{ fmt(totals.conversations) }}</div>
                         <svg viewBox="0 0 200 40" class="mt-2 h-10 w-full">
                             <polyline :points="convoSparkline" fill="none" stroke="#6366f1" stroke-width="1.5" />
                         </svg>
                     </div>
-                    <div class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5">
+                    <div class="rounded-none border border-border-line bg-bg p-4">
                         <div class="flex items-baseline justify-between">
-                            <div class="text-xs uppercase tracking-wide text-gray-400">Messages</div>
-                            <div class="text-xs text-gray-400">{{ window.days }}d</div>
+                            <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Messages</div>
+                            <div class="font-mono text-xs text-ink-mute">{{ window.days }}d</div>
                         </div>
-                        <div class="mt-1 text-2xl font-semibold text-gray-900">{{ fmt(totals.messages) }}</div>
+                        <div class="mt-1 font-mono text-2xl font-semibold text-ink">{{ fmt(totals.messages) }}</div>
                         <svg viewBox="0 0 200 40" class="mt-2 h-10 w-full">
                             <polyline :points="messagesSparkline" fill="none" stroke="#0ea5e9" stroke-width="1.5" />
                         </svg>
                     </div>
-                    <div class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5">
+                    <div class="rounded-none border border-border-line bg-bg p-4">
                         <div class="flex items-baseline justify-between">
-                            <div class="text-xs uppercase tracking-wide text-gray-400">Leads</div>
-                            <div class="text-xs text-gray-400">{{ window.days }}d</div>
+                            <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Leads</div>
+                            <div class="font-mono text-xs text-ink-mute">{{ window.days }}d</div>
                         </div>
-                        <div class="mt-1 text-2xl font-semibold text-gray-900">{{ fmt(totals.leads) }}</div>
+                        <div class="mt-1 font-mono text-2xl font-semibold text-ink">{{ fmt(totals.leads) }}</div>
                         <svg viewBox="0 0 200 40" class="mt-2 h-10 w-full">
                             <polyline :points="leadsSparkline" fill="none" stroke="#10b981" stroke-width="1.5" />
                         </svg>
                     </div>
-                    <div class="rounded-xl bg-white p-4 shadow ring-1 ring-black/5">
+                    <div class="rounded-none border border-border-line bg-bg p-4">
                         <div class="flex items-baseline justify-between">
-                            <div class="text-xs uppercase tracking-wide text-gray-400">Credits spent</div>
-                            <div class="text-xs text-gray-400">{{ window.days }}d</div>
+                            <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Credits spent</div>
+                            <div class="font-mono text-xs text-ink-mute">{{ window.days }}d</div>
                         </div>
-                        <div class="mt-1 text-2xl font-semibold text-gray-900">{{ fmt(totals.credits_spent) }}</div>
+                        <div class="mt-1 font-mono text-2xl font-semibold text-ink">{{ fmt(totals.credits_spent) }}</div>
                         <svg viewBox="0 0 200 40" class="mt-2 h-10 w-full">
                             <polyline :points="creditsSparkline" fill="none" stroke="#f59e0b" stroke-width="1.5" />
                         </svg>
@@ -136,24 +136,24 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
 
                 <!-- Conversion rates -->
                 <div class="grid gap-3 sm:grid-cols-3">
-                    <div class="rounded-xl bg-white p-5 shadow ring-1 ring-black/5">
-                        <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-400">Capture rate</p>
-                        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ totals.capture_rate }}%</p>
-                        <p class="mt-1 text-xs text-gray-500">
+                    <div class="rounded-none border border-border-line bg-bg p-5">
+                        <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">Capture rate</p>
+                        <p class="mt-2 font-mono text-3xl font-semibold text-ink">{{ totals.capture_rate }}%</p>
+                        <p class="mt-1 text-xs text-ink-dim">
                             of {{ fmt(totals.conversations) }} conversations produced a lead
                         </p>
                     </div>
-                    <div class="rounded-xl bg-white p-5 shadow ring-1 ring-black/5">
-                        <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-400">Qualify rate</p>
-                        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ totals.qualify_rate }}%</p>
-                        <p class="mt-1 text-xs text-gray-500">
+                    <div class="rounded-none border border-border-line bg-bg p-5">
+                        <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">Qualify rate</p>
+                        <p class="mt-2 font-mono text-3xl font-semibold text-ink">{{ totals.qualify_rate }}%</p>
+                        <p class="mt-1 text-xs text-ink-dim">
                             of {{ fmt(totals.leads) }} leads moved past Engaging
                         </p>
                     </div>
-                    <div class="rounded-xl bg-white p-5 shadow ring-1 ring-black/5">
-                        <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-400">Win rate</p>
-                        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ totals.win_rate }}%</p>
-                        <p class="mt-1 text-xs text-gray-500">
+                    <div class="rounded-none border border-border-line bg-bg p-5">
+                        <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">Win rate</p>
+                        <p class="mt-2 font-mono text-3xl font-semibold text-ink">{{ totals.win_rate }}%</p>
+                        <p class="mt-1 text-xs text-ink-dim">
                             of {{ fmt(totals.qualified) }} qualified leads closed
                         </p>
                     </div>
@@ -161,55 +161,55 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
 
                 <div class="grid gap-6 lg:grid-cols-2">
                     <!-- Funnel -->
-                    <div class="rounded-xl bg-white p-5 shadow ring-1 ring-black/5">
-                        <h3 class="text-sm font-semibold text-gray-700">Lead funnel</h3>
-                        <p class="mt-1 text-xs text-gray-500">Status distribution for leads created in this window.</p>
+                    <div class="rounded-none border border-border-line bg-bg p-5">
+                        <h3 class="text-sm font-semibold text-ink">Lead funnel</h3>
+                        <p class="mt-1 text-xs text-ink-dim">Status distribution for leads created in this window.</p>
                         <div class="mt-4 space-y-2">
                             <div
                                 v-for="step in funnel"
                                 :key="step.status"
                                 class="flex items-center gap-3 text-xs"
                             >
-                                <div class="w-20 flex-shrink-0 text-gray-600">{{ step.label }}</div>
-                                <div class="flex-1 rounded-full bg-gray-100">
+                                <div class="w-20 flex-shrink-0 text-ink-dim">{{ step.label }}</div>
+                                <div class="flex-1 rounded-none bg-surface-hi">
                                     <div
-                                        class="h-2 rounded-full bg-indigo-500"
+                                        class="h-2 rounded-none bg-ink"
                                         :style="{ width: `${(step.count / funnelMax) * 100}%` }"
                                     />
                                 </div>
-                                <div class="w-10 text-right text-gray-700 tabular-nums">{{ fmt(step.count) }}</div>
+                                <div class="w-10 text-right font-mono text-ink-dim tabular-nums">{{ fmt(step.count) }}</div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Sources -->
-                    <div class="rounded-xl bg-white p-5 shadow ring-1 ring-black/5">
-                        <h3 class="text-sm font-semibold text-gray-700">Top sources</h3>
-                        <p class="mt-1 text-xs text-gray-500">Where leads came from (top 8).</p>
+                    <div class="rounded-none border border-border-line bg-bg p-5">
+                        <h3 class="text-sm font-semibold text-ink">Top sources</h3>
+                        <p class="mt-1 text-xs text-ink-dim">Where leads came from (top 8).</p>
                         <div v-if="sources.length" class="mt-4 space-y-2">
                             <div
                                 v-for="src in sources"
                                 :key="src.source"
                                 class="flex items-center gap-3 text-xs"
                             >
-                                <div class="w-24 flex-shrink-0 truncate text-gray-600">{{ src.source }}</div>
-                                <div class="flex-1 rounded-full bg-gray-100">
+                                <div class="w-24 flex-shrink-0 truncate text-ink-dim">{{ src.source }}</div>
+                                <div class="flex-1 rounded-none bg-surface-hi">
                                     <div
-                                        class="h-2 rounded-full bg-emerald-500"
+                                        class="h-2 rounded-none bg-emerald-500"
                                         :style="{ width: `${(src.count / sourcesMax) * 100}%` }"
                                     />
                                 </div>
-                                <div class="w-10 text-right text-gray-700 tabular-nums">{{ fmt(src.count) }}</div>
+                                <div class="w-10 text-right font-mono text-ink-dim tabular-nums">{{ fmt(src.count) }}</div>
                             </div>
                         </div>
-                        <p v-else class="mt-4 text-xs italic text-gray-400">No leads captured in this window.</p>
+                        <p v-else class="mt-4 text-xs italic text-ink-mute">No leads captured in this window.</p>
                     </div>
                 </div>
 
                 <!-- Hourly activity heatmap -->
-                <div class="rounded-xl bg-white p-5 shadow ring-1 ring-black/5">
-                    <h3 class="text-sm font-semibold text-gray-700">Hour-of-day activity</h3>
-                    <p class="mt-1 text-xs text-gray-500">
+                <div class="rounded-none border border-border-line bg-bg p-5">
+                    <h3 class="text-sm font-semibold text-ink">Hour-of-day activity</h3>
+                    <p class="mt-1 text-xs text-ink-dim">
                         When conversations are started, by hour (UTC). Use this to time your support hours.
                     </p>
                     <div class="mt-4 flex items-end gap-1">
@@ -220,17 +220,17 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
                             :title="`${hour}:00 — ${count} conversation${count === 1 ? '' : 's'}`"
                         >
                             <div
-                                class="w-full rounded-sm bg-indigo-500 transition"
+                                class="w-full rounded-none bg-ink transition"
                                 :style="{ height: '32px', opacity: hourCellOpacity(count) }"
                             />
-                            <div class="font-mono text-[9px] text-gray-400">{{ hour }}</div>
+                            <div class="font-mono text-[9px] text-ink-mute">{{ hour }}</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Back link -->
                 <div class="text-center">
-                    <Link :href="route('agents.show', agent.slug)" class="text-xs text-indigo-600 hover:text-indigo-800">
+                    <Link :href="route('agents.show', agent.slug)" class="text-xs text-ink underline hover:text-ink-dim">
                         ← Back to agent settings
                     </Link>
                 </div>
