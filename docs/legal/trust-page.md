@@ -1,9 +1,8 @@
-# Legal, Privacy & Trust — website page (generic vertical, publishable draft)
+# Legal, Privacy & Trust — website page (publishable draft)
 
 > **NOT LEGAL ADVICE — draft for counsel.** Replace every
 > `[PLACEHOLDER]`; publish nothing that `claims-vs-reality.md` doesn't
-> mark ✅. Adapted 2026-06-12 from the insurance-vertical draft to the
-> generic product and the **native runtime** (no Voiceflow).
+> mark ✅.
 
 ---
 

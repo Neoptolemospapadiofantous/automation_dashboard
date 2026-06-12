@@ -35,7 +35,7 @@
 
 ## ❌ Not true — must NOT appear in any published copy
 
-| Claim (from the insurance drafts) | Reality |
+| Claim (from superseded drafts) | Reality |
 |---|---|
 | "Built on Voiceflow… SOC 2 Type II, ISO 27001, HIPAA" sub-processor assurances | Voiceflow deleted. Real sub-processors below |
 | "PII redaction at the engine layer" | No transcript redaction exists. Transcripts store full message content |

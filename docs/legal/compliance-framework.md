@@ -1,10 +1,8 @@
-# Legal & Compliance Framework — generic vertical (draft for counsel)
+# Legal & Compliance Framework (draft for counsel)
 
-> **NOT LEGAL ADVICE.** Drafting template adapted 2026-06-12 from the
-> insurance-vertical framework (`insurance-vertical/`) to the generic
-> SMB product and the native runtime. Qualified counsel must review,
-> complete `[PLACEHOLDERS]`, and approve before use. Claims must match
-> `claims-vs-reality.md` (✅ rows only).
+> **NOT LEGAL ADVICE.** Drafting template. Qualified counsel must
+> review, complete `[PLACEHOLDERS]`, and approve before use. Claims
+> must match `claims-vs-reality.md` (✅ rows only).
 
 ## Part A — Framework
 
@@ -50,28 +48,24 @@ against a daily spend ceiling.
 - [Encryption at rest / backups: state per chosen hosting — see
   claims-vs-reality.md before claiming.]
 
-### A4. Regulatory position (generic vertical)
+### A4. Regulatory position
 
 | Regime | Client | Platform |
 |---|---|---|
-| GDPR | Data controller | Data processor |
-| EU AI Act | Deployer | Provider |
+| GDPR (Reg. 2016/679) | Data controller | Data processor |
+| EU AI Act (Reg. 2024/1689) | Deployer | Provider |
 
 **GDPR.** Processor on documented instructions; DPA below; data
 minimisation by design (lead capture stores only volunteered contact
 fields); erasure supported. *(Formal DSR intake flow: roadmap — see
 claims-vs-reality.md before contractually promising response SLAs.)*
 
-**EU AI Act (Reg. 2024/1689).** Article 50 transparency: the Platform
-renders an "AI assistant — not a person" disclosure at the start of
-every conversation, at the interface layer, independent of any Client
+**EU AI Act.** Article 50 transparency: the Platform renders an
+"AI assistant — not a person" disclosure at the start of every
+conversation, at the interface layer, independent of any Client
 configuration, with a human-handoff affordance (implemented + tested,
-ahead of the 2 Aug 2026 date). The generic product targets no Annex III
+ahead of the 2 Aug 2026 date). The product targets no Annex III
 high-risk use cases; Clients warrant their use cases in the ToS.
-
-**Not engaged at this vertical:** DORA, IDD (no financial-entity
-clients targeted). The parked insurance-vertical drafts cover both for
-when that market activates.
 
 ### A5. Transfers
 
@@ -82,31 +76,52 @@ claims-vs-reality.md, including the Google paid-tier requirement].
 
 ## Part B — Contract skeletons
 
-### Schedule 1 — DPA (GDPR Art. 28)
+### Schedule 1 — Data Processing Agreement (GDPR Art. 28)
 
-Substantively identical to the insurance draft's Schedule 1 (it is
-vertical-neutral): documented instructions · confidentiality · Art. 32
-measures (Annex 2 = A3 above, implemented items only) · sub-processor
-authorisation + change notice (Annex 3 = the real provider list) ·
-DSR assistance · breach notification without undue delay · return or
-deletion at termination · audit cooperation · SCCs for transfers.
-[Counsel to complete Annexes 1–3.]
+Clause skeleton, each mapped to Art. 28(3):
 
-### Schedule 2 — Terms of Service (deltas from the insurance draft)
+1. **Definitions** — GDPR meanings; "Applicable Law" = GDPR [+ Cyprus
+   Law 125(I)/2018].
+2. **Subject-matter / duration / nature / purpose** — per Annex 1.
+3. **Documented instructions** [28(3)(a)] — processing only on the
+   Controller's documented instructions, incl. transfers.
+4. **Confidentiality** [28(3)(b)] — authorised persons bound.
+5. **Security** [28(3)(c)] — Annex 2 = A3 above, implemented items only.
+6. **Sub-processors** [28(2),(4)] — general authorisation for Annex 3
+   list; change notice with objection right; equivalent obligations
+   flowed down; Processor remains liable.
+7. **Data-subject rights assistance** [28(3)(e)].
+8. **Breach notification & DPIA assistance** [28(3)(f)] — notify
+   without undue delay.
+9. **Return or deletion at termination** [28(3)(g)].
+10. **Audit cooperation** [28(3)(h)].
+11. **Transfers** — SCCs + TIA per Annex 3.
 
-- Permitted use: lawful business website assistance and lead capture;
-  Client warrants no EU AI Act high-risk use (Annex III) and no
-  processing of special-category data through the assistant
-  [until consent tooling ships].
-- AI transparency: Platform-rendered disclosure; Client must not
+Annex 1: processing details · Annex 2: security measures (A3) ·
+Annex 3: sub-processor list + transfer mechanisms (claims-vs-reality.md
+table). [Counsel to complete all three.]
+
+### Schedule 2 — Terms of Service (skeleton)
+
+- **Service**: branded AI assistant for website Q&A and lead capture.
+- **Permitted use**: lawful business assistance; Client warrants no
+  EU AI Act high-risk use (Annex III) and no special-category data
+  through the assistant [until consent tooling ships].
+- **AI transparency**: Platform-rendered disclosure; Client must not
   remove it or present the assistant as human.
-- Fees: subscription allowance resets each cycle (no rollover);
+- **Fees**: subscription allowance resets each cycle (no rollover);
   purchased top-ups roll over until used; model-tier multipliers per
-  the published pricing page.
-- Accuracy disclaimer; liability cap [12-month fees]; confidentiality;
-  IP; term/termination; export of agent configuration on exit;
-  governing law [Cyprus] — all as per the insurance draft, minus
-  Schedules 3 (DORA) and 4's insurance-specific scope.
+  the published pricing page; suspension on exhaustion/non-payment
+  with notice.
+- **Accuracy disclaimer**: AI-generated responses may contain errors
+  and are not professional advice.
+- **Liability cap** [e.g. 12-month fees]; indirect-loss exclusion;
+  statutory carve-outs. [Align to professional-indemnity cover with counsel.]
+- **Confidentiality & IP**: Platform retains platform IP; Client
+  retains its data and brand, licensing them for service provision.
+- **Term / termination / exit**: agent-configuration export; data
+  return-or-deletion per DPA.
+- **Governing law** [Cyprus]; jurisdiction [Cyprus courts].
 
 ### End-user transparency notice (implemented copy)
 
@@ -117,6 +132,8 @@ additionally forbids claiming to be human.
 
 ## Sources
 
-Inherit the EUR-Lex source list from
-`insurance-vertical/Legal-Compliance-Contractual-Framework.docx`
-(GDPR, AI Act, EAA, NIS2 links remain valid; DORA/IDD parked).
+- GDPR — Regulation (EU) 2016/679 — https://eur-lex.europa.eu/eli/reg/2016/679/oj/eng
+- EU AI Act — Regulation (EU) 2024/1689 — https://eur-lex.europa.eu/eli/reg/2024/1689/oj/eng
+- EU AI Act timeline (EC AI Act Service Desk) — https://ai-act-service-desk.ec.europa.eu
+- EU–US Data Privacy Framework participant list — https://www.dataprivacyframework.gov/list
+- Cyprus Commissioner for Personal Data Protection — https://www.dataprotection.gov.cy

@@ -5,27 +5,17 @@
 > complete every `[PLACEHOLDER]`, and approve before any document is
 > relied on, signed, or published.
 
-## Current set (generic SMB vertical — the active go-to-market)
-
 | File | Use |
 |---|---|
 | [trust-page.md](./trust-page.md) | Public website Legal / Privacy / Trust page — publishable draft |
 | [compliance-framework.md](./compliance-framework.md) | Internal framework + DPA / ToS skeletons for business customers |
 | [claims-vs-reality.md](./claims-vs-reality.md) | **The honesty ledger**: every legal claim mapped to its implementation status. A claim moves to the docs only when this table says ✅ |
 
-## Parked: insurance vertical (`insurance-vertical/`)
-
-The four `.docx` drafts target the EU **insurance** sector (DORA, IDD,
-Cyprus Superintendent of Insurance). Decision 2026-06-12: generic SMB
-first; insurance later. The drafts are kept because their regulatory
-research (AI Act timeline, DORA Art. 30 tiering, IDD distribution
-gating, Cyprus authorities) is solid — but **they describe the deleted
-Voiceflow architecture** and must be rewritten against
-[runtime-native.md](../runtime-native.md) before that vertical
-activates. Known-obsolete claims are catalogued in claims-vs-reality.md.
+Scope: **GDPR** (Platform = processor, Client = controller) and the
+**EU AI Act** (Platform = provider; Art. 50 transparency implemented).
+No sector-specific regimes are in scope.
 
 ## Standing rule
 
-Mirror of the drafts' own review notes, promoted to policy: **claim
-only what `claims-vs-reality.md` marks implemented.** Compliance copy
-that outruns the codebase is a liability, not an asset.
+**Claim only what `claims-vs-reality.md` marks implemented.**
+Compliance copy that outruns the codebase is a liability, not an asset.
