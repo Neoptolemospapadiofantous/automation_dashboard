@@ -28,6 +28,7 @@ class Team extends JetstreamTeam
         'current_agent_id',
         'plan',
         'credit_balance',
+        'topup_balance',
         'credits_renewed_at',
         'alert_thresholds_fired',
         'stripe_customer_id',
@@ -84,6 +85,7 @@ class Team extends JetstreamTeam
             'personal_team' => 'boolean',
             'plan' => Plan::class,
             'credit_balance' => 'integer',
+            'topup_balance' => 'integer',
             'credits_renewed_at' => 'datetime',
             // List of stringified percent thresholds already fired this
             // billing period — e.g. ["50","80"]. CreditBurnAlerts uses
@@ -109,7 +111,17 @@ class Team extends JetstreamTeam
      */
     public function hasCredits(int $atLeast = 1): bool
     {
-        return $this->credit_balance >= $atLeast;
+        // Both buckets count: the monthly allowance plus rolled-over
+        // purchased top-ups (see CreditMeter for the consume order).
+        return $this->totalCredits() >= $atLeast;
+    }
+
+    /**
+     * Monthly allowance + purchased top-up credits combined.
+     */
+    public function totalCredits(): int
+    {
+        return (int) $this->credit_balance + (int) $this->topup_balance;
     }
 
     /**

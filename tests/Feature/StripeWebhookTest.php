@@ -60,7 +60,11 @@ class StripeWebhookTest extends TestCase
             credits: 5_000,
         ));
 
-        $this->assertSame(5_100, $team->fresh()->credit_balance);
+        $fresh = $team->fresh();
+        // Purchased credits land in the rollover bucket (policy 2026-06-12).
+        $this->assertSame(100, $fresh->credit_balance);
+        $this->assertSame(5_000, $fresh->topup_balance);
+        $this->assertSame(5_100, $fresh->totalCredits());
         $this->assertSame(1, CreditTransaction::query()->where('reason', 'grant_topup')->count());
     }
 
@@ -79,7 +83,7 @@ class StripeWebhookTest extends TestCase
         $this->fakeWebhook($event);
         $this->fakeWebhook($event); // Stripe retries — same session id
 
-        $this->assertSame(1_000, $team->fresh()->credit_balance);
+        $this->assertSame(1_000, $team->fresh()->topup_balance);
         $this->assertSame(1, CreditTransaction::query()->where('reason', 'grant_topup')->count());
     }
 

@@ -90,21 +90,46 @@ class BillingCreditMeterTest extends TestCase
         $this->assertSame($start - 2, $user->currentTeam->fresh()->credit_balance);
     }
 
-    public function test_grant_monthly_renewal_resets_balance_no_rollover(): void
+    public function test_renewal_resets_monthly_but_topups_roll_over(): void
     {
         $team = User::factory()->withPersonalTeam()->create()->currentTeam;
-        // User burned through most of the month but didn't use all credits.
-        $team->forceFill(['credit_balance' => 12])->save();
+        // Burned most of the month; 800 PURCHASED credits still unspent.
+        $team->forceFill(['credit_balance' => 12, 'topup_balance' => 800])->save();
 
         (new CreditMeter)->grantMonthlyRenewal($team);
 
-        // Hard reset to plan allotment — the 12 leftover credits are gone.
-        $this->assertSame(Plan::Free->monthlyCredits(), $team->fresh()->credit_balance);
+        $fresh = $team->fresh();
+        // Monthly bucket: hard reset, the 12 leftovers are gone.
+        $this->assertSame(Plan::Free->monthlyCredits(), $fresh->credit_balance);
+        // Paid bucket: untouched — customers keep what they bought.
+        $this->assertSame(800, $fresh->topup_balance);
+        $this->assertSame(Plan::Free->monthlyCredits() + 800, $fresh->totalCredits());
         $this->assertDatabaseHas('credit_transactions', [
             'team_id' => $team->id,
             'amount' => Plan::Free->monthlyCredits(),
             'reason' => 'grant_renewal',
         ]);
+    }
+
+    public function test_consume_drains_monthly_before_topups(): void
+    {
+        $team = User::factory()->withPersonalTeam()->create()->currentTeam;
+        $team->forceFill(['credit_balance' => 3, 'topup_balance' => 10])->save();
+
+        (new CreditMeter)->consume($team, 5);
+
+        $fresh = $team->fresh();
+        $this->assertSame(0, $fresh->credit_balance);  // monthly emptied first
+        $this->assertSame(8, $fresh->topup_balance);   // then 2 from the paid bucket
+    }
+
+    public function test_has_credits_counts_both_buckets(): void
+    {
+        $team = User::factory()->withPersonalTeam()->create()->currentTeam;
+        $team->forceFill(['credit_balance' => 0, 'topup_balance' => 4])->save();
+
+        $this->assertTrue($team->fresh()->hasCredits(4));
+        $this->assertFalse($team->fresh()->hasCredits(5));
     }
 
     public function test_grant_topup_is_additive_for_paid_plans(): void
@@ -117,7 +142,11 @@ class BillingCreditMeterTest extends TestCase
 
         (new CreditMeter)->grantTopUp($team, 500, ['stripe_invoice' => 'inv_xxx']);
 
-        $this->assertSame(600, $team->fresh()->credit_balance);
+        $fresh = $team->fresh();
+        // Purchased credits land in the rollover bucket, not the monthly one.
+        $this->assertSame(100, $fresh->credit_balance);
+        $this->assertSame(500, $fresh->topup_balance);
+        $this->assertSame(600, $fresh->totalCredits());
     }
 
     public function test_grant_topup_refuses_custom_plan(): void

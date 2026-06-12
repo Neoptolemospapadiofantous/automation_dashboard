@@ -52,7 +52,7 @@ const textClass = computed(() => ({
                 <div class="h-full rounded-full transition-all" :class="barClass" :style="{ width: percent + '%' }" />
             </div>
             <div class="mt-1 text-[10px] text-gray-400">
-                {{ billing.credits_used.toLocaleString() }} / {{ billing.credits_total.toLocaleString() }} credits used
+                {{ billing.credits_used.toLocaleString() }} / {{ billing.credits_total.toLocaleString() }} monthly used<span v-if="billing.topup_balance > 0"> · +{{ billing.topup_balance.toLocaleString() }} top-up</span>
                 <span v-if="billing.max_agents < 1000"> · {{ billing.agents_count }} / {{ billing.max_agents }} agents</span>
             </div>
         </Link>

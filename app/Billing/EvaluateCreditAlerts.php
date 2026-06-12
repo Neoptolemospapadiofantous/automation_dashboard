@@ -36,8 +36,11 @@ class EvaluateCreditAlerts
             return ['newlyCrossed' => [], 'fired' => $this->normalizedFired($team)];
         }
 
-        $balance = max(0, (int) $team->credit_balance);
-        $usedPercent = (int) floor((1.0 - ($balance / $grant)) * 100);
+        // Both buckets count: a team that burned its monthly allowance but
+        // bought 5,000 top-up credits is NOT running low — alerts measure
+        // effective runway against the monthly grant.
+        $balance = max(0, $team->totalCredits());
+        $usedPercent = (int) floor((1.0 - min(1.0, $balance / $grant)) * 100);
 
         $alreadyFired = $this->normalizedFired($team);
         $currentlyCrossed = array_values(array_filter(

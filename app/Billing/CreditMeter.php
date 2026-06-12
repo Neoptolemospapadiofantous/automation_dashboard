@@ -43,8 +43,15 @@ class CreditMeter
                     throw new OutOfCredits($fresh->planObject());
                 }
 
+                // Two-bucket drain: the monthly allowance first, then
+                // rolled-over purchased top-ups — paid credits are the
+                // last to go (they survive renewals; monthly does not).
+                $fromMonthly = min($amount, (int) $fresh->credit_balance);
+                $fromTopup = $amount - $fromMonthly;
+
                 $fresh->forceFill([
-                    'credit_balance' => $fresh->credit_balance - $amount,
+                    'credit_balance' => $fresh->credit_balance - $fromMonthly,
+                    'topup_balance' => $fresh->topup_balance - $fromTopup,
                 ])->save();
 
                 CreditTransaction::create([
@@ -52,7 +59,7 @@ class CreditMeter
                     'agent_id' => $agentId,
                     'amount' => -$amount,
                     'reason' => CreditTransaction::REASON_CONSUME_MESSAGE,
-                    'meta' => $meta,
+                    'meta' => $fromTopup > 0 ? array_merge($meta, ['from_topup' => $fromTopup]) : $meta,
                 ]);
 
                 $this->evaluateAndDispatchAlerts($fresh);
@@ -121,7 +128,9 @@ class CreditMeter
 
         DB::transaction(function () use ($team, $plan, $amount, $meta) {
             $team->forceFill([
-                // Hard reset, not additive — "no rollover" semantics.
+                // Hard reset of the MONTHLY bucket only — no rollover for
+                // the allowance. topup_balance is untouched: purchased
+                // credits persist until spent.
                 'credit_balance' => $amount,
                 'credits_renewed_at' => now(),
                 // Wipe fired thresholds: new billing period means even if
@@ -140,8 +149,8 @@ class CreditMeter
     }
 
     /**
-     * Add credits from a one-off top-up purchase (Pro+ only). Additive —
-     * stacks on top of whatever the user has left this month.
+     * Add credits from a one-off top-up purchase. Lands in the rollover
+     * bucket — survives monthly renewals until spent.
      */
     public function grantTopUp(Team $team, int $amount, array $meta = []): void
     {
@@ -154,8 +163,10 @@ class CreditMeter
         }
 
         DB::transaction(function () use ($team, $amount, $meta) {
+            // Purchased credits live in their own bucket: they roll over
+            // across renewals until spent (policy 2026-06-12).
             $team->forceFill([
-                'credit_balance' => $team->credit_balance + $amount,
+                'topup_balance' => $team->topup_balance + $amount,
             ])->save();
 
             CreditTransaction::create([

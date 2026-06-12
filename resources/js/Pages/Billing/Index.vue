@@ -256,14 +256,14 @@ function openPortal() {
                         <div class="mt-2 flex items-baseline justify-between text-sm">
                             <div class="text-gray-700">
                                 <span class="font-semibold tabular-nums">{{ fmtNum(billing?.credits_used) }}</span>
-                                <span class="text-gray-400"> / {{ fmtNum(billing?.credits_total) }} credits used</span>
+                                <span class="text-gray-400"> / {{ fmtNum(billing?.credits_total) }} monthly used</span>
                             </div>
                             <div class="text-gray-500">
-                                <span class="font-medium tabular-nums">{{ fmtNum(billing?.credits_remaining) }}</span> remaining
+                                <span class="font-medium tabular-nums">{{ fmtNum(billing?.credits_remaining) }}</span> remaining<template v-if="billing?.topup_balance > 0"> (includes <span class="font-medium tabular-nums">{{ fmtNum(billing.topup_balance) }}</span> rolled-over top-up)</template>
                             </div>
                         </div>
                         <div class="mt-3 text-xs text-gray-500">
-                            Each user message and each agent reply consumes credits — 1× on Claude Haiku/Gemini, more on smarter models (see the Versions page). Credits reset on renewal — no rollover.
+                            Each user message and each agent reply consumes credits — 1× on Claude Haiku/Gemini, more on smarter models (see the Versions page). Your monthly allowance resets on renewal; purchased top-up credits roll over until used.
                         </div>
                         <div v-if="billing?.allows_topups" class="mt-4">
                             <PrimaryButton type="button" @click="openTopup">
