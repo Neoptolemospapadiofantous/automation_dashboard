@@ -87,6 +87,9 @@ class HandleInertiaRequests extends Middleware
             'billing' => fn () => $request->user()?->currentTeam
                 ? (function () use ($request) {
                     $team = $request->user()->currentTeam;
+                    if (! $team instanceof Team) {
+                        return null;
+                    }
                     $plan = $team->planObject();
                     $isCustom = $plan === Plan::Business;
 
