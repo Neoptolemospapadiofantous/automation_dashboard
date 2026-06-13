@@ -13,10 +13,10 @@
     "app/Events/Domain": { "doc": "docs/domain-events.md" },
     "app/Http/Controllers": { "doc": "docs/project-overview.md" },
     "app/Http/Controllers/Concerns": { "doc": "docs/authorization.md" },
-    "app/Http/Middleware": { "doc": "docs/project-overview.md" },
+    "app/Http/Middleware": { "doc": "docs/security.md" },
     "app/Lifecycle": { "doc": "docs/architecture/state-machines.md" },
     "app/Listeners": { "doc": "docs/domain-events.md" },
-    "app/Models": { "doc": "docs/project-overview.md" },
+    "app/Models": { "doc": "docs/architecture/data-model.md" },
     "app/Notifications": { "doc": "docs/project-overview.md" },
     "app/Policies": { "doc": "docs/authorization.md" },
     "app/Providers": { "waived": "framework service providers — standard wiring" },
@@ -31,5 +31,22 @@
     "app/Runtime/Tools": { "doc": "docs/runtime-native.md" },
     "app/Services": { "doc": "docs/phase-6-conversation-storage.md" },
     "app/Services/Billing": { "doc": "docs/project-overview.md" }
-  }
+  },
+  "_documents_comment": "Canonical project-level docs (not tied to one app/ dir). Each must EXIST and be LINKED from docs/README.md. Catches deleted or orphaned source-of-truth docs. Phase docs (history), the voiceflow archive, and legal drafts are intentionally NOT listed here.",
+  "documents": [
+    "docs/project-overview.md",
+    "docs/business-model.md",
+    "docs/architecture/data-model.md",
+    "docs/security.md",
+    "docs/glossary.md",
+    "docs/runtime-native.md",
+    "docs/public-surface.md",
+    "docs/authorization.md",
+    "docs/domain-events.md",
+    "docs/architecture/state-machines.md",
+    "docs/operations/commands.md",
+    "docs/design-system.md",
+    "docs/agent-lifecycle.md",
+    "docs/hermes/README.md"
+  ]
 }

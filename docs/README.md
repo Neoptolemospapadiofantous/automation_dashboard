@@ -22,6 +22,15 @@ write a new phase doc that supersedes the prior one).
 - [phase-13-multitenancy.md](./phase-13-multitenancy.md) — per-team agents, state machine, project-pool provisioning, onboarding wizard (BYOK was removed from the product surface in Phase 14; the `mode` column remains for ops-only Custom-tier use)
 - [authorization.md](./authorization.md) — roles, `TeamPolicy`, the `AuthorizesByTeamRole` trait — how team actions are gated (`app/Authorization`, `app/Policies`)
 - [architecture/state-machines.md](./architecture/state-machines.md) — the lifecycle state-machine pattern (Agent/Lead/Conversation transitions, `HasLifecycle`) (`app/Lifecycle`)
+- [architecture/data-model.md](./architecture/data-model.md) — the consolidated schema / ERD: entities, relationships, the `team_id`/`agent_id` tenancy spine (`app/Models`)
+
+### Business & domain
+- [business-model.md](./business-model.md) — the commercial model: plans, the 5 tiers, two-bucket credits, top-up packs, margins, how money flows through Stripe
+- [glossary.md](./glossary.md) — domain vocabulary (Team / Agent / Lead / Visitor / Credit / Tier / Flow / Tool …), each grounded in code
+
+### Security
+- [security.md](./security.md) — engineering security posture: surface boundaries, headers/framing, tenant isolation, rate limits, secrets, the `tests/Security` guarantees, honest gaps
+- [authorization.md](./authorization.md) — the role/permission model (also linked under Tenancy)
 
 ### Conversational engine (history)
 - [phase-5-voiceflow.md](./phase-5-voiceflow.md) — [[phase-5-voiceflow|legacy-engine proxy, lead capture, chat panel]] (historical — superseded by the native runtime)

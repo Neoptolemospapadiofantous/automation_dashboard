@@ -22,15 +22,18 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(REPO)
 
 with open("docs/coverage.json") as f:
-    registry = json.load(f)["subsystems"]
+    coverage = json.load(f)
+registry = coverage["subsystems"]
+documents = coverage.get("documents", [])
 
+problems = []
+
+# ── Part 1: code coverage ──────────────────────────────────────────────────
 # A "subsystem" is any directory under app/ that directly holds ≥1 .php file.
 actual = set()
 for root, _dirs, files in os.walk("app"):
     if any(fn.endswith(".php") for fn in files):
         actual.add(root.replace(os.sep, "/"))
-
-problems = []
 
 for path in sorted(actual):
     if path not in registry:
@@ -50,12 +53,31 @@ for path, entry in sorted(registry.items()):
     elif "waived" not in entry:
         problems.append(f"INVALID       {path} — entry needs either \"doc\" or \"waived\"")
 
+# ── Part 2: canonical project docs ─────────────────────────────────────────
+# Each must exist AND be linked from the docs index (docs/README.md), so the
+# source-of-truth set can't be silently deleted or orphaned.
+index_text = ""
+if os.path.exists("docs/README.md"):
+    with open("docs/README.md") as f:
+        index_text = f.read()
+
+for doc in documents:
+    if not os.path.exists(doc):
+        problems.append(f"MISSING DOC   {doc} (canonical doc in the registry does not exist)")
+        continue
+    rel = doc[len("docs/"):] if doc.startswith("docs/") else os.path.basename(doc)
+    if rel not in index_text:
+        problems.append(f"UNINDEXED     {doc} — not linked from docs/README.md (add it to the index)")
+
 if problems:
     print("Doc-coverage gate FAILED:")
     for p in problems:
         print("  " + p)
-    print(f"\n{len(actual)} php subsystems · {len(problems)} problem(s).")
+    print(f"\n{len(actual)} php subsystems · {len(documents)} canonical docs · {len(problems)} problem(s).")
     sys.exit(1)
 
-print(f"Doc-coverage OK — {len(actual)} app/ subsystems all registered (documented or waived).")
+print(
+    f"Doc-coverage OK — {len(actual)} app/ subsystems registered (documented or waived); "
+    f"{len(documents)} canonical docs present + indexed."
+)
 sys.exit(0)
