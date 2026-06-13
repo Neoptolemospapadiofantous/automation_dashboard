@@ -234,6 +234,12 @@ echo "$TS  $overall  $pass/$fail/$warn  fast=$FAST" >> "$LOG"
 if command -v python3 >/dev/null 2>&1 && [[ -f docs/hermes/manifest.json ]]; then
   log "=== FINDINGS GRAPH ==="
   python3 scripts/hermes_findings.py 2>&1 | tee -a "$LOG" || true
+
+  # ── 7c. Synthesis (root node) ───────────────────────────────────────────────
+  # Ranks findings by criticality + blast radius, surfaces coverage gaps, and
+  # writes the LLM prompt (data/hermes_synthesis_prompt.md) for /hermes-synthesis.
+  log "=== SYNTHESIS ==="
+  python3 scripts/hermes_synthesis.py 2>&1 | tee -a "$LOG" || true
 fi
 
 # ── 8. Markdown summary (human-readable, printed to stdout) ───────────────────

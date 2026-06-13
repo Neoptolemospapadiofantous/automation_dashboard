@@ -28,6 +28,7 @@ Local CI + audit tooling for automation_dashboard. No scheduled execution; all i
 | `/hermes-lifecycle` | interactive Claude Code session | **free** (subscription) | **full 8-phase pipeline**: scan → agent analysis → docs → obsidian → flowcharts → tests → validate → commit (no push). Heavy session, ~30-60 min wall-clock |
 | `/loop <interval> /hermes-lifecycle` | interactive Claude Code session | **free** (subscription) | Repeat the lifecycle on a recurring interval (e.g. `/loop 4h /hermes-lifecycle`). Stays inside the same session, never pushes. Stop with `/loop stop`. |
 | `/hermes-status` | interactive Claude Code session | **free** (subscription) | runs `composer hermes-status` + adds short interpretation + recent-sessions Mermaid timeline |
+| `/hermes-synthesis` | interactive Claude Code session | **free** (subscription) | the root synthesis node — reads the findings graph + manifest, gives a prioritised, context-aware verdict (what's broken, blast radius, fix-first, gaps) |
 
 ## Files
 
@@ -38,6 +39,7 @@ Local CI + audit tooling for automation_dashboard. No scheduled execution; all i
 | `scripts/hermes_graph.py` | Manifest visualizer — prints the domain tree + each node's context (`--node app/X` for the connection view) |
 | `scripts/hermes_findings.py` | Findings enricher — joins raw findings × manifest into a node-aware graph (status rollup per node/domain + blast radius) |
 | `scripts/hermes_tree.py` | Tree runner — runs the manifest's granular per-node checks scoped to a node/domain/all (`composer hermes-tree`; `--domain billing` / `--node app/X`) |
+| `scripts/hermes_synthesis.py` | Root synthesis — ranks the findings graph by criticality + blast radius, surfaces coverage gaps, writes the brief + LLM prompt (consumed by `/hermes-synthesis`) |
 | `docs/hermes/manifest.json` | **The trunk** — the project graph every Hermes check reads from (subsystems → docs/tests/checks/edges, + canonical docs) |
 | `scripts/fleet_agents.json` | 5 specialist agent definitions (route-auditor, inertia-page-scanner, migration-watcher, voiceflow-surface-sentinel, doc-syncer) — consumed by `.claude/commands/hermes-fleet.md` |
 | `scripts/agents/audit_sentinel.sh` | No-LLM collector — writes `data/agents/audit-sentinel/findings.json` (security/risk scan) |
@@ -100,8 +102,19 @@ instead of only tripping the broad `tests` gate. The same runner does scoped
 dev runs: `python3 scripts/hermes_tree.py --domain billing` or
 `--node app/Runtime/LLM` runs just that slice's deep checks (~seconds). That
 scoping is the primitive the split is built on — a future `hermes:billing` is
-just `hermes_tree.py --domain billing`. Later increments add an LLM synthesis
-node over the findings graph, then the split itself.
+just `hermes_tree.py --domain billing`.
+
+**Increment 4** added the **root synthesis node**. After enrichment,
+`scripts/hermes_synthesis.py` ranks the findings graph by node criticality +
+blast radius, surfaces coverage gaps (pending granular checks, untested nodes),
+and writes the context brief (`data/hermes_synthesis.md`) plus an assembled LLM
+prompt (`data/hermes_synthesis_prompt.md`). The branches are facts; the root
+turns them into a prioritised story: *what's broken, what it threatens (which
+neighbouring nodes/domains), where to look first (the docs/tests the node
+owns).* The LLM half runs free in a Claude session via `/hermes-synthesis` —
+it reads the prompt and writes the verdict, no API call. Next: the split
+itself — each `hermes:<domain>` reads its slice of this same trunk, so the
+branches stay connected by construction.
 
 ## Static-analysis policy
 
