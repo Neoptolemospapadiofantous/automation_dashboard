@@ -54,6 +54,9 @@ jobs:
           touch database/database.sqlite
           php artisan migrate --force
 
+      - name: Doc coverage
+        run: python3 scripts/doc_coverage.py # every app/ subsystem must be documented or waived
+
   frontend:
     runs-on: ubuntu-latest
     steps:

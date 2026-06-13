@@ -20,6 +20,8 @@ write a new phase doc that supersedes the prior one).
 
 ### Tenancy + lifecycle
 - [phase-13-multitenancy.md](./phase-13-multitenancy.md) — per-team agents, state machine, project-pool provisioning, onboarding wizard (BYOK was removed from the product surface in Phase 14; the `mode` column remains for ops-only Custom-tier use)
+- [authorization.md](./authorization.md) — roles, `TeamPolicy`, the `AuthorizesByTeamRole` trait — how team actions are gated (`app/Authorization`, `app/Policies`)
+- [architecture/state-machines.md](./architecture/state-machines.md) — the lifecycle state-machine pattern (Agent/Lead/Conversation transitions, `HasLifecycle`) (`app/Lifecycle`)
 
 ### Conversational engine (history)
 - [phase-5-voiceflow.md](./phase-5-voiceflow.md) — [[phase-5-voiceflow|legacy-engine proxy, lead capture, chat panel]] (historical — superseded by the native runtime)
@@ -51,6 +53,8 @@ write a new phase doc that supersedes the prior one).
 
 ### Infra + ops
 - [phase-2-realtime.md](./phase-2-realtime.md) — [[phase-2-realtime|broadcasting backbone (Pusher / Echo)]]
+- [domain-events.md](./domain-events.md) — the domain-event seam (`app/Events/Domain` — dispatched on every lifecycle transition, intentionally unlistened)
+- [operations/commands.md](./operations/commands.md) — artisan commands + the cron schedule (`app/Console/Commands`, `routes/console.php`)
 - [phase-4-deploy.md](./phase-4-deploy.md) — Forge deploy command
 - [typesense-setup.md](./typesense-setup.md) — conversation search backend
 

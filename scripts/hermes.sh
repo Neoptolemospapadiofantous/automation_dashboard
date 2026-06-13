@@ -176,6 +176,20 @@ else
   record WARN knip "knip not installed — run pnpm install"
 fi
 
+# ── 6d. Doc coverage ───────────────────────────────────────────────────────────
+# Every app/ subsystem (a dir with PHP) must be registered in docs/coverage.json
+# — pointing at a doc or explicitly waived. New undocumented code fails here.
+log "=== DOC COVERAGE ==="
+if command -v python3 >/dev/null 2>&1; then
+  if python3 scripts/doc_coverage.py > "$LOG_DIR/doc-coverage.log" 2>&1; then
+    record PASS doc-coverage "$(tail -1 "$LOG_DIR/doc-coverage.log")"
+  else
+    record FAIL doc-coverage "undocumented subsystem(s) — see data/logs/doc-coverage.log"
+  fi
+else
+  record WARN doc-coverage "python3 not on PATH"
+fi
+
 # ── 7. Write findings JSON ─────────────────────────────────────────────────────
 overall="PASS"
 [[ $fail -gt 0 ]] && overall="FAIL"
