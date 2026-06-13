@@ -75,6 +75,9 @@
         "hermes-metrics": [
             "python3 scripts/hermes_metrics.py"
         ],
+        "hermes-learn": [
+            "python3 scripts/hermes_learn.py"
+        ],
         "hermes-audit": [
             "bash scripts/agents/audit_sentinel.sh"
         ],

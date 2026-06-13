@@ -83,6 +83,7 @@ flowchart LR
 | `composer hermes-tree` | any shell | free | granular per-node checks scoped by node/domain (`scripts/hermes_tree.py --domain billing`) |
 | `composer hermes-domain` | any shell | free | run one domain as its own Hermes (`scripts/hermes_domain.py --domain billing`) |
 | `composer hermes-metrics` | any shell | free | effectiveness report — quality KPI trend + regression check → `docs/hermes/effectiveness.md` |
+| `composer hermes-learn` | any shell | free | the learning loop (deterministic half) — mines history+git → reviewable manifest proposals. **Periodic** |
 | `composer hermes-audit` | any shell | free | security/risk surface scan (CVEs, .env drift, debug routes, throttle gaps) |
 | `composer hermes-update` | any shell | free | outdated PHP + JS deps (counts + per-package current/latest) |
 | `composer hermes-system` | any shell | free | runtime health (disk, logs, queue, DB, Typesense, scheduler) |
@@ -98,6 +99,7 @@ flowchart LR
 | `/loop <interval> /hermes-lifecycle` | interactive Claude Code session | **free** (subscription) | Repeat the lifecycle on a recurring interval (e.g. `/loop 4h /hermes-lifecycle`). Stays inside the same session, never pushes. Stop with `/loop stop`. |
 | `/hermes-status` | interactive Claude Code session | **free** (subscription) | runs `composer hermes-status` + adds short interpretation + recent-sessions Mermaid timeline |
 | `/hermes-synthesis` | interactive Claude Code session | **free** (subscription) | the root synthesis node — reads the findings graph + manifest, gives a prioritised, context-aware verdict (what's broken, blast radius, fix-first, gaps) |
+| `/hermes-learn` | interactive Claude Code session | **free** (subscription) | the learning loop — validates the deterministic proposals + applies them as a human-reviewed manifest diff. **Periodic, proposes-only** |
 
 ## Files
 
@@ -111,6 +113,7 @@ flowchart LR
 | `scripts/hermes_synthesis.py` | Root synthesis — ranks the findings graph by criticality + blast radius, surfaces coverage gaps, writes the brief + LLM prompt (consumed by `/hermes-synthesis`) |
 | `scripts/hermes_domain.py` | The split — runs one domain as its own Hermes (`composer hermes-domain` lists; `--domain billing` runs that slice + shows its cross-domain blast radius) |
 | `scripts/hermes_metrics.py` | Effectiveness report — mines git history for direction-aware quality KPIs + flags regressions; writes `docs/hermes/effectiveness.md` (`composer hermes-metrics`) |
+| `scripts/hermes_learn.py` | Learning loop (deterministic) — snapshots history + mines git for escaped-bug/coverage/flake signals → reviewable manifest proposals (`composer hermes-learn`, periodic) |
 | `docs/hermes/effectiveness.md` | Generated "is Hermes working?" report — KPI charts + regression check |
 | `docs/hermes/manifest.json` | **The trunk** — the project graph every Hermes check reads from (subsystems → docs/tests/checks/edges, + canonical docs) |
 | `scripts/fleet_agents.json` | 5 specialist agent definitions (route-auditor, inertia-page-scanner, migration-watcher, voiceflow-surface-sentinel, doc-syncer) — consumed by `.claude/commands/hermes-fleet.md` |
@@ -198,6 +201,20 @@ connects out to `http, ops, runtime, tenancy`. Use it for fast focused work
 (touch billing → `--domain billing`); the full `composer hermes` still runs
 every domain as the push gate. (Note: `security` and `doc-coverage` are
 cross-cutting *checks* that span domains, not domains themselves.)
+
+**Increment 6** closes the loop — the **learning loop**
+(`scripts/hermes_learn.py`, `composer hermes-learn`; the LLM half is
+`/hermes-learn`). Run periodically (a milestone, ~monthly — **never automated**,
+per the 2026-06-14 decision), it snapshots the findings graph into a history
+ledger and mines history + git for three signals: **escaped bugs whose node
+has no granular check** (learn from misses — the strongest signal), **untested
+subsystems**, and **flaky / repeat-failing checks** (needs ≥3 snapshots). It
+writes *reviewable proposals* to refine the manifest trunk and **never mutates
+it** — `/hermes-learn` validates each against the code and applies them as a
+human-reviewed diff. The cycle: checks → graph → synthesis → metrics (is it
+working?) → learn (make it better) → back into the trunk every other Hermes
+reads. On its first run it already flagged that `app/Lifecycle` and
+`app/Actions/Agents` took escaped bugs but declare no granular check.
 
 ## Static-analysis policy
 
