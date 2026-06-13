@@ -1,11 +1,31 @@
 <!DOCTYPE html>
-{{-- sheet-white: the dashboard renders the white sheet of the Flowstack
-     brand tokens (resources/css/tokens.css — "two sheets, one ink"). --}}
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="sheet-white">
+{{-- "Two sheets, one ink": the sheet class is set by the inline script below
+     before first paint (light = .sheet-white, dark = .sheet-black — see
+     resources/css/tokens.css). No static class here, to avoid a flash. --}}
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+
+        {{-- Theme bootstrap — runs before CSS/paint so there's no flash of the
+             wrong sheet. Honors a saved choice, else the OS preference. The
+             in-app toggle (resources/js/composables/useTheme.js) keeps this in
+             sync afterwards. --}}
+        <script>
+            (function () {
+                try {
+                    var t = localStorage.getItem('fs-theme');
+                    if (t !== 'light' && t !== 'dark') {
+                        t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                    }
+                    document.documentElement.classList.add(t === 'dark' ? 'sheet-black' : 'sheet-white');
+                    document.documentElement.style.colorScheme = t;
+                } catch (e) {
+                    document.documentElement.classList.add('sheet-white');
+                }
+            })();
+        </script>
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 

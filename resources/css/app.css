@@ -6,6 +6,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Focus-ring offset follows the active sheet, so the 2px offset gap reads as
+   the page ground on both the white and the black sheet (Tailwind defaults it
+   to #fff, which would show a white halo in dark mode). */
+*,
+::before,
+::after {
+    --tw-ring-offset-color: var(--bg);
+}
+
 [x-cloak] {
     display: none;
 }

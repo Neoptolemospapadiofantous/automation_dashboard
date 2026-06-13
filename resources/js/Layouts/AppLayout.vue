@@ -7,12 +7,15 @@ import SiteFooter from '@/Components/SiteFooter.vue';
 import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
+import { useTheme } from '@/composables/useTheme';
 import SidebarLink from '@/Components/SidebarLink.vue';
 import CreditMeter from '@/Components/CreditMeter.vue';
 
 const props = defineProps({
     title: String,
 });
+
+const { theme, toggle: toggleTheme } = useTheme();
 
 const page = usePage();
 const notifications = computed(() => page.props.notifications ?? []);
@@ -285,6 +288,24 @@ const handleMobileNavClick = (event) => {
                     <div v-else class="hidden flex-1 lg:block"><!-- spacer --></div>
 
                     <div class="flex items-center gap-2">
+                        <!-- Theme toggle: light = white sheet, dark = black sheet -->
+                        <button
+                            type="button"
+                            class="inline-flex items-center rounded-none p-2 text-ink-dim hover:bg-surface-hi"
+                            :aria-label="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+                            :title="theme === 'dark' ? 'Light' : 'Dark'"
+                            @click="toggleTheme"
+                        >
+                            <!-- Sun (shown in dark mode → click for light) -->
+                            <svg v-if="theme === 'dark'" class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                            </svg>
+                            <!-- Moon (shown in light mode → click for dark) -->
+                            <svg v-else class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                            </svg>
+                        </button>
+
                         <!-- Notifications bell -->
                         <Dropdown align="right" width="80">
                             <template #trigger>
