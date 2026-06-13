@@ -47,6 +47,7 @@ Body structure: **Context → Decision → Rationale → Alternatives rejected �
 
 - [[2026-06-08-no-cron-for-fleet|2026-06-08]] — fleet runs are never scheduled; always interactive or explicit
 - [[2026-06-08-suppressions-yaml-not-baseline|2026-06-08]] — fleet suppressions use YAML with `expires:`, not a baseline file with no review
+- [[2026-06-14-learning-is-periodic-not-automated|2026-06-14]] — the learning loop (increment 6) is periodic + human-reviewed, never automated; extends the no-cron decision
 
 ## When to write one
 
