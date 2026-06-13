@@ -20,10 +20,15 @@ const W = 280;
 const H = 64;
 
 // Polyline points for a KPI's series, scaled to its own min/max so the trend
-// fills the chart (matches the dashboard's sparkline approach).
+// fills the chart (matches the dashboard's sparkline approach). Forward-only
+// KPIs (untested nodes) are null before the manifest existed — skip those so
+// the line plots only real points, and bail if there aren't ≥2 to draw.
 function pointsFor(key) {
-    const vals = (props.metrics?.series ?? []).map((s) => Number(s[key]) || 0);
-    if (!vals.length) return '';
+    const vals = (props.metrics?.series ?? [])
+        .map((s) => s[key])
+        .filter((v) => v !== null && v !== undefined && Number.isFinite(Number(v)))
+        .map((v) => Number(v));
+    if (vals.length < 2) return '';
     const min = Math.min(...vals);
     const max = Math.max(...vals);
     const span = max - min || 1;
@@ -158,10 +163,14 @@ const hasRegressions = computed(() => (props.metrics?.regressions?.length ?? 0) 
                             >{{ c.good ? '▲ good' : '▼ watch' }} · {{ c.delta }}</span>
                         </div>
                         <p class="mt-0.5 font-mono text-[10px] text-ink-mute">
-                            {{ c.dir === 'down' ? 'lower is better' : 'higher is better' }} · was {{ c.start }}{{ c.unit }}
+                            {{ c.dir === 'down' ? 'lower is better' : 'higher is better' }} · was {{ c.start }}{{ c.unit }}<span v-if="c.forward_only"> · forward-only</span>
                         </p>
-                        <!-- trend chart -->
-                        <svg class="mt-3 w-full" :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="none" style="height: 56px">
+                        <!-- node names for the untested KPI -->
+                        <p v-if="c.names && c.names.length" class="mt-1 font-mono text-[10px] text-amber-600">
+                            {{ c.names.join(', ') }}
+                        </p>
+                        <!-- trend chart, or a current-snapshot note when there's no trend yet -->
+                        <svg v-if="c.points" class="mt-3 w-full" :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="none" style="height: 56px">
                             <polyline
                                 :points="c.points"
                                 fill="none"
@@ -170,12 +179,13 @@ const hasRegressions = computed(() => (props.metrics?.regressions?.length ?? 0) 
                                 vector-effect="non-scaling-stroke"
                             />
                         </svg>
+                        <p v-else class="mt-3 font-mono text-[10px] text-ink-mute" style="height: 56px">current snapshot — trend builds over time</p>
                     </div>
                 </div>
 
-                <!-- Defects + coverage -->
+                <!-- Defects (untested nodes is now a headline KPI card above) -->
                 <div class="rounded-none border border-border-line bg-bg p-4 shadow-sheet">
-                    <p class="font-mono text-xs uppercase tracking-wider text-ink-mute">Defects &amp; coverage</p>
+                    <p class="font-mono text-xs uppercase tracking-wider text-ink-mute">Defects</p>
                     <div class="mt-2 flex flex-wrap gap-6">
                         <div>
                             <span class="font-mono text-xl font-semibold text-ink">{{ metrics.escapes }}</span>
@@ -184,15 +194,6 @@ const hasRegressions = computed(() => (props.metrics?.regressions?.length ?? 0) 
                         <div>
                             <span class="font-mono text-xl font-semibold text-emerald-600">{{ metrics.catches }}</span>
                             <span class="ml-1.5 text-xs text-ink-dim">catches (bugs the audit found pre-merge)</span>
-                        </div>
-                        <div>
-                            <span
-                                class="font-mono text-xl font-semibold"
-                                :class="(metrics.untested?.length ?? 0) ? 'text-amber-600' : 'text-emerald-600'"
-                            >{{ metrics.untested?.length ?? 0 }}</span>
-                            <span class="ml-1.5 text-xs text-ink-dim">
-                                untested subsystems<template v-if="metrics.untested?.length"> ({{ metrics.untested.join(', ') }})</template>
-                            </span>
                         </div>
                     </div>
                 </div>

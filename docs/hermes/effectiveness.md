@@ -20,6 +20,7 @@ tags: [hermes, metrics, effectiveness]
 | TODO/FIXME | markers in `app/` | **↓** | inline tech-debt paid down |
 | Test files | `tests/**/*Test.php` | **↑** | coverage grows with features |
 | Docs | `docs/**/*.md` | **↑** | the doc-coverage gate keeps it climbing |
+| Untested nodes | manifest subsystems w/o tests | **↓** | subsystems gain test coverage (forward-only) |
 
 Headline test = **debt density**: suppressed issues per file falling while the code grows
 means the gates are net-positive. **Catch ratio** answers the other half — *is the audit
@@ -36,14 +37,15 @@ catching bugs before they ship?*
 |---|---|---|---|
 | PHPStan baseline | 222 | 124 | **-44%** |
 | Debt density | 2.02 | 0.89 | **-56%** |
-| Escape rate (peak → now) | 11.4% | 5.0% | **-56%** |
+| Escape rate (peak → now) | 11.4% | 4.9% | **-57%** |
 | Catch ratio | 0.0% | 36.4% | +36.4pp |
 | TODO/FIXME | 0 | 1 | +1 |
 | Test files | 25 | 95 | +280% |
 | Docs | 5 | 128 | +2460% |
-| App PHP files | 33 | 139 | +321% |
+| Untested nodes | 1 | 1 | +0% |
+| App PHP files _(context)_ | 33 | 139 | +321% |
 
-Escapes: **7** · catches (audit-found pre-merge): **4** · untested subsystems: **1** (app/Runtime/Exceptions)
+Untested subsystems: **1** (app/Runtime/Exceptions) · escapes: **7** · catches (audit-found pre-merge): **4**
 
 ## Charts
 
@@ -68,7 +70,7 @@ xychart-beta
     title "Escape rate — reactive prod bugfixes per commit (%)  (down = better)"
     x-axis ["05-31", "06-01", "06-03", "06-04", "06-05", "06-08", "06-09", "06-10", "06-11", "06-12", "06-13", "06-14"]
     y-axis "esc_rate" 0 --> 12.4
-    line [0.0, 9.1, 11.4, 11.3, 11.1, 10.2, 7.9, 6.9, 6.9, 6.1, 5.2, 5.0]
+    line [0.0, 9.1, 11.4, 11.3, 11.1, 10.2, 7.9, 6.9, 6.9, 6.1, 5.2, 4.9]
 ```
 
 ```mermaid
@@ -103,24 +105,32 @@ xychart-beta
     line [5, 10, 78, 83, 84, 103, 105, 106, 109, 116, 126, 128]
 ```
 
+```mermaid
+xychart-beta
+    title "Untested subsystems (manifest, forward-only)  (down = better)"
+    x-axis ["06-13", "06-14"]
+    y-axis "untested_n" 0 --> 2
+    line [1, 1]
+```
+
 ## Regression check (latest vs previous snapshot)
 
 ✅ No regressions — no KPI moved against its good direction in the latest snapshot.
 
 ## Data
 
-| date | baseline | density | tests | docs | todos | escapes | esc% | catches | catch% | app php |
-|---|---|---|---|---|---|---|---|---|---|---|
-| 2026-05-31 | 0 | 0.0 | 25 | 5 | 0 | 0 | 0.0% | 0 | 0.0% | 33 |
-| 2026-06-01 | 0 | 0.0 | 31 | 10 | 0 | 2 | 9.1% | 0 | 0.0% | 46 |
-| 2026-06-03 | 0 | 0.0 | 51 | 78 | 0 | 5 | 11.4% | 3 | 37.5% | 88 |
-| 2026-06-04 | 0 | 0.0 | 52 | 83 | 1 | 6 | 11.3% | 4 | 40.0% | 90 |
-| 2026-06-05 | 0 | 0.0 | 52 | 84 | 1 | 6 | 11.1% | 4 | 40.0% | 90 |
-| 2026-06-08 | 222 | 2.02 | 66 | 103 | 1 | 6 | 10.2% | 4 | 40.0% | 110 |
-| 2026-06-09 | 216 | 1.74 | 76 | 105 | 0 | 6 | 7.9% | 4 | 40.0% | 124 |
-| 2026-06-10 | 215 | 1.34 | 89 | 106 | 0 | 6 | 6.9% | 4 | 40.0% | 161 |
-| 2026-06-11 | 141 | 1.05 | 72 | 109 | 1 | 7 | 6.9% | 4 | 36.4% | 134 |
-| 2026-06-12 | 133 | 0.96 | 95 | 116 | 1 | 7 | 6.1% | 4 | 36.4% | 138 |
-| 2026-06-13 | 124 | 0.9 | 95 | 126 | 1 | 7 | 5.2% | 4 | 36.4% | 138 |
-| 2026-06-14 | 124 | 0.89 | 95 | 128 | 1 | 7 | 5.0% | 4 | 36.4% | 139 |
+| date | baseline | density | tests | docs | todos | untested | escapes | esc% | catches | catch% | app php |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-31 | 0 | 0.0 | 25 | 5 | 0 | — | 0 | 0.0% | 0 | 0.0% | 33 |
+| 2026-06-01 | 0 | 0.0 | 31 | 10 | 0 | — | 2 | 9.1% | 0 | 0.0% | 46 |
+| 2026-06-03 | 0 | 0.0 | 51 | 78 | 0 | — | 5 | 11.4% | 3 | 37.5% | 88 |
+| 2026-06-04 | 0 | 0.0 | 52 | 83 | 1 | — | 6 | 11.3% | 4 | 40.0% | 90 |
+| 2026-06-05 | 0 | 0.0 | 52 | 84 | 1 | — | 6 | 11.1% | 4 | 40.0% | 90 |
+| 2026-06-08 | 222 | 2.02 | 66 | 103 | 1 | — | 6 | 10.2% | 4 | 40.0% | 110 |
+| 2026-06-09 | 216 | 1.74 | 76 | 105 | 0 | — | 6 | 7.9% | 4 | 40.0% | 124 |
+| 2026-06-10 | 215 | 1.34 | 89 | 106 | 0 | — | 6 | 6.9% | 4 | 40.0% | 161 |
+| 2026-06-11 | 141 | 1.05 | 72 | 109 | 1 | — | 7 | 6.9% | 4 | 36.4% | 134 |
+| 2026-06-12 | 133 | 0.96 | 95 | 116 | 1 | — | 7 | 6.1% | 4 | 36.4% | 138 |
+| 2026-06-13 | 124 | 0.9 | 95 | 126 | 1 | 1 | 7 | 5.2% | 4 | 36.4% | 138 |
+| 2026-06-14 | 124 | 0.89 | 95 | 128 | 1 | 1 | 7 | 4.9% | 4 | 36.4% | 139 |
 

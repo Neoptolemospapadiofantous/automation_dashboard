@@ -80,6 +80,20 @@ def cum_at(date):
     return n, e, k
 
 
+def untested_at(sha):
+    # untested subsystems recorded in the manifest *at that commit* — None before
+    # the manifest existed, so this KPI is forward-only: its trend builds from the
+    # day the manifest landed, not the start of the repo.
+    blob = git("show", f"{sha}:docs/hermes/manifest.json")
+    if not blob.strip():
+        return None
+    try:
+        nodes = json.loads(blob)["subsystems"]
+    except Exception:
+        return None
+    return sum(1 for _, nd in nodes.items() if not nd.get("tests") and "waived" not in nd)
+
+
 # ── daily snapshots ─────────────────────────────────────────────────────────
 rows = [ln.split("|") for ln in git("log", "--reverse", "--pretty=%h|%ad", "--date=short").splitlines() if "|" in ln]
 last_of_day = {}
@@ -102,6 +116,7 @@ for date in sorted(last_of_day):
         "escapes": e, "catches": k, "commits": n,
         "esc_rate": round(e / n * 100, 1) if n else 0.0,
         "catch_ratio": round(k / (k + e) * 100, 1) if (k + e) else 0.0,
+        "untested_n": untested_at(sha),
     })
 
 if len(snaps) < 2:
@@ -119,6 +134,9 @@ cr_start = next((s for s in snaps if (s["catches"] + s["escapes"]) > 0), first)
 with open("docs/hermes/manifest.json") as fh:
     mnodes = json.load(fh)["subsystems"]
 untested = sorted(k for k, nd in mnodes.items() if not nd.get("tests") and "waived" not in nd)
+# forward-only KPI: start = first snapshot that carried a manifest; now = live count.
+u_hist = [s for s in snaps if s["untested_n"] is not None]
+u_start, u_now = (u_hist[0]["untested_n"] if u_hist else len(untested)), len(untested)
 
 
 def pct(a, b):
@@ -150,12 +168,17 @@ if cur["todos"] > prev["todos"]:
     regressions.append(f"TODO/FIXME markers rose {prev['todos']}→{cur['todos']}")
 if cur["catch_ratio"] < prev["catch_ratio"] and (cur["catches"] + cur["escapes"]) > (prev["catches"] + prev["escapes"]):
     regressions.append(f"catch ratio fell {prev['catch_ratio']}%→{cur['catch_ratio']}% (audit caught a smaller share of new bugs)")
+if cur["untested_n"] is not None and prev["untested_n"] is not None and cur["untested_n"] > prev["untested_n"]:
+    regressions.append(f"untested subsystems rose {prev['untested_n']}→{cur['untested_n']} (new code landed without tests)")
 
 
 def chart(title, key, hint):
-    labels = ", ".join(f'"{s["date"][5:]}"' for s in snaps)
-    vals = [s[key] for s in snaps]
-    ymax = max(vals) + max(1, int(max(vals) * 0.1)) if max(vals) else 1
+    # forward-only KPIs (untested_n) are None before the manifest existed — plot
+    # only the snapshots that actually carry a value.
+    pts = [s for s in snaps if s.get(key) is not None]
+    labels = ", ".join(f'"{s["date"][5:]}"' for s in pts)
+    vals = [s[key] for s in pts]
+    ymax = max(vals) + max(1, int(max(vals) * 0.1)) if vals and max(vals) else 1
     return (f"```mermaid\nxychart-beta\n"
             f'    title "{title}  ({hint})"\n'
             f"    x-axis [{labels}]\n"
@@ -189,6 +212,7 @@ w("| Catch ratio | catches ÷ (catches + escapes) | **↑** | the audit catches 
 w("| TODO/FIXME | markers in `app/` | **↓** | inline tech-debt paid down |")
 w("| Test files | `tests/**/*Test.php` | **↑** | coverage grows with features |")
 w("| Docs | `docs/**/*.md` | **↑** | the doc-coverage gate keeps it climbing |")
+w("| Untested nodes | manifest subsystems w/o tests | **↓** | subsystems gain test coverage (forward-only) |")
 w()
 w("Headline test = **debt density**: suppressed issues per file falling while the code grows")
 w("means the gates are net-positive. **Catch ratio** answers the other half — *is the audit")
@@ -210,10 +234,11 @@ w(f"| Catch ratio | {cr_start['catch_ratio']}% | {last['catch_ratio']}% | {pp(cr
 w(f"| TODO/FIXME | {first['todos']} | {last['todos']} | {pct(first['todos'], last['todos'])} |")
 w(f"| Test files | {first['tests']} | {last['tests']} | {pct(first['tests'], last['tests'])} |")
 w(f"| Docs | {first['docs']} | {last['docs']} | {pct(first['docs'], last['docs'])} |")
-w(f"| App PHP files | {first['php']} | {last['php']} | {pct(first['php'], last['php'])} |")
+w(f"| Untested nodes | {u_start} | {u_now} | {pct(u_start, u_now)} |")
+w(f"| App PHP files _(context)_ | {first['php']} | {last['php']} | {pct(first['php'], last['php'])} |")
 w()
-w(f"Escapes: **{last['escapes']}** · catches (audit-found pre-merge): **{last['catches']}** · "
-  f"untested subsystems: **{len(untested)}**" + (f" ({', '.join(untested)})" if untested else ""))
+w(f"Untested subsystems: **{u_now}**" + (f" ({', '.join(untested)})" if untested else "")
+  + f" · escapes: **{last['escapes']}** · catches (audit-found pre-merge): **{last['catches']}**")
 w()
 w("## Charts")
 w()
@@ -231,6 +256,9 @@ w(chart("Test files", "tests", "up = better"))
 w()
 w(chart("Docs", "docs", "up = better"))
 w()
+if u_hist:
+    w(chart("Untested subsystems (manifest, forward-only)", "untested_n", "down = better"))
+    w()
 w("## Regression check (latest vs previous snapshot)")
 w()
 if regressions:
@@ -242,10 +270,11 @@ else:
 w()
 w("## Data")
 w()
-w("| date | baseline | density | tests | docs | todos | escapes | esc% | catches | catch% | app php |")
-w("|---|---|---|---|---|---|---|---|---|---|---|")
+w("| date | baseline | density | tests | docs | todos | untested | escapes | esc% | catches | catch% | app php |")
+w("|---|---|---|---|---|---|---|---|---|---|---|---|")
 for s in snaps:
-    w(f"| {s['date']} | {s['base']} | {s['density']} | {s['tests']} | {s['docs']} | {s['todos']} | "
+    un = s["untested_n"] if s["untested_n"] is not None else "—"
+    w(f"| {s['date']} | {s['base']} | {s['density']} | {s['tests']} | {s['docs']} | {s['todos']} | {un} | "
       f"{s['escapes']} | {s['esc_rate']}% | {s['catches']} | {s['catch_ratio']}% | {s['php']} |")
 w()
 
@@ -268,6 +297,7 @@ metrics = {
         {"kpi": "TODO / FIXME", "key": "todos", "start": first["todos"], "now": last["todos"], "delta": pct(first["todos"], last["todos"]), "dir": "down"},
         {"kpi": "Test files", "key": "tests", "start": first["tests"], "now": last["tests"], "delta": pct(first["tests"], last["tests"]), "dir": "up"},
         {"kpi": "Docs", "key": "docs", "start": first["docs"], "now": last["docs"], "delta": pct(first["docs"], last["docs"]), "dir": "up"},
+        {"kpi": "Untested nodes", "key": "untested_n", "start": u_start, "now": u_now, "delta": pct(u_start, u_now), "dir": "down", "names": untested, "forward_only": True},
     ],
     "series": snaps,
 }
@@ -283,7 +313,8 @@ print(f"  Catch ratio      : {cr_start['catch_ratio']}% → {last['catch_ratio']
 print(f"  TODO/FIXME       : {first['todos']} → {last['todos']}  ({pct(first['todos'], last['todos'])})  [down=better]")
 print(f"  Test files       : {first['tests']} → {last['tests']}  ({pct(first['tests'], last['tests'])})")
 print(f"  Docs             : {first['docs']} → {last['docs']}  ({pct(first['docs'], last['docs'])})")
-print(f"  Escapes {last['escapes']} · catches {last['catches']} · untested nodes {len(untested)}")
+print(f"  Untested nodes   : {u_start} → {u_now}  ({pct(u_start, u_now)})  [down=better, forward-only]")
+print(f"  Escapes {last['escapes']} · catches {last['catches']}")
 if regressions:
     print("  ⚠️ regressions:")
     for r in regressions:
