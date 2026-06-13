@@ -9,6 +9,7 @@ use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardTickController;
 use App\Http\Controllers\EmbedController;
+use App\Http\Controllers\HermesMetricsController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\LeadController;
@@ -233,3 +234,13 @@ Route::post('/embed/{slug}/launch', [EmbedController::class, 'launch'])
 Route::post('/embed/{slug}/interact', [EmbedController::class, 'interact'])
     ->middleware('throttle:120,1')
     ->name('embed.interact');
+
+// ── Local-only operator page: Hermes effectiveness KPIs ───────────────────────
+// Git-mined quality trend + regression check (composer hermes-metrics). Registered
+// ONLY in local so it never reaches production or the route-smoke test; behind
+// auth but NOT RequireAgent (it's an ops tool, works with no agent).
+if (app()->environment('local')) {
+    Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])
+        ->get('/hermes-metrics', HermesMetricsController::class)
+        ->name('hermes.metrics');
+}

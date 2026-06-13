@@ -25,6 +25,7 @@ Escape vs catch (heuristic on commit subjects, honest about its limits):
 
 Usage: python3 scripts/hermes_metrics.py   (composer hermes-metrics)
 """
+import json
 import os
 import re
 import subprocess
@@ -221,6 +222,25 @@ w()
 os.makedirs("docs/hermes", exist_ok=True)
 with open("docs/hermes/effectiveness.md", "w") as fh:
     fh.write("\n".join(L) + "\n")
+
+# ── structured data for the local dashboard page (/hermes-metrics) ─────────
+metrics = {
+    "range": {"start": base_start["date"], "end": last["date"]},
+    "escapes": last["escapes"],
+    "catches": last["catches"],
+    "regressions": regressions,
+    "headline": [
+        {"kpi": "PHPStan baseline", "key": "base", "start": base_start["base"], "now": last["base"], "delta": pct(base_start["base"], last["base"]), "dir": "down"},
+        {"kpi": "Debt density", "key": "density", "start": base_start["density"], "now": last["density"], "delta": pct(base_start["density"], last["density"]), "dir": "down"},
+        {"kpi": "Escape rate", "key": "esc_rate", "start": peak_esc, "now": last["esc_rate"], "delta": pct(peak_esc, last["esc_rate"]), "dir": "down", "unit": "%"},
+        {"kpi": "Test files", "key": "tests", "start": first["tests"], "now": last["tests"], "delta": pct(first["tests"], last["tests"]), "dir": "up"},
+        {"kpi": "Docs", "key": "docs", "start": first["docs"], "now": last["docs"], "delta": pct(first["docs"], last["docs"]), "dir": "up"},
+    ],
+    "series": snaps,
+}
+os.makedirs("data", exist_ok=True)
+with open("data/hermes_metrics.json", "w") as fh:
+    json.dump(metrics, fh, indent=2)
 
 print(f"Hermes effectiveness ({base_start['date']} → {last['date']}):")
 print(f"  PHPStan baseline : {base_start['base']} → {last['base']}  ({pct(base_start['base'], last['base'])})  [down=better]")

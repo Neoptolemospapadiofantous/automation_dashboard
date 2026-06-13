@@ -40,7 +40,7 @@ that is fixing bugs in shipped code the audit *didn't* catch.
 | Escape rate (peak → now) | 11.4% | 5.1% | **-55%** |
 | App PHP files | 33 | 138 | +318% |
 
-Reactive prod bugfixes (escapes): **7** across 137 commits. Bugs the audit caught pre-merge (catches): **4**.
+Reactive prod bugfixes (escapes): **7** across 138 commits. Bugs the audit caught pre-merge (catches): **4**.
 
 ## Charts
 
