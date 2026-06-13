@@ -107,6 +107,7 @@ flowchart LR
 | `scripts/hermes_findings.py` | Findings enricher — joins raw findings × manifest into a node-aware graph (status rollup per node/domain + blast radius) |
 | `scripts/hermes_tree.py` | Tree runner — runs the manifest's granular per-node checks scoped to a node/domain/all (`composer hermes-tree`; `--domain billing` / `--node app/X`) |
 | `scripts/hermes_synthesis.py` | Root synthesis — ranks the findings graph by criticality + blast radius, surfaces coverage gaps, writes the brief + LLM prompt (consumed by `/hermes-synthesis`) |
+| `scripts/hermes_domain.py` | The split — runs one domain as its own Hermes (`composer hermes-domain` lists; `--domain billing` runs that slice + shows its cross-domain blast radius) |
 | `docs/hermes/manifest.json` | **The trunk** — the project graph every Hermes check reads from (subsystems → docs/tests/checks/edges, + canonical docs) |
 | `scripts/fleet_agents.json` | 5 specialist agent definitions (route-auditor, inertia-page-scanner, migration-watcher, voiceflow-surface-sentinel, doc-syncer) — consumed by `.claude/commands/hermes-fleet.md` |
 | `scripts/agents/audit_sentinel.sh` | No-LLM collector — writes `data/agents/audit-sentinel/findings.json` (security/risk scan) |
@@ -179,9 +180,20 @@ prompt (`data/hermes_synthesis_prompt.md`). The branches are facts; the root
 turns them into a prioritised story: *what's broken, what it threatens (which
 neighbouring nodes/domains), where to look first (the docs/tests the node
 owns).* The LLM half runs free in a Claude session via `/hermes-synthesis` —
-it reads the prompt and writes the verdict, no API call. Next: the split
-itself — each `hermes:<domain>` reads its slice of this same trunk, so the
-branches stay connected by construction.
+it reads the prompt and writes the verdict, no API call.
+
+**Increment 5** is the **split**. `scripts/hermes_domain.py --domain <d>`
+(`composer hermes-domain` to list) runs one domain as its own Hermes — the
+tests + granular checks its manifest nodes declare, plus a doc check — and
+gives a domain verdict that still shows the **outbound blast radius** (the
+edges from this domain's nodes into other domains). Because every domain
+runner reads the same trunk, the seven split-out Hermeses (`runtime`,
+`billing`, `pipeline`, `tenancy`, `http`, `ops`, `platform`) are connected by
+construction, not siloed: `hermes:billing` runs in ~2s and tells you it
+connects out to `http, ops, runtime, tenancy`. Use it for fast focused work
+(touch billing → `--domain billing`); the full `composer hermes` still runs
+every domain as the push gate. (Note: `security` and `doc-coverage` are
+cross-cutting *checks* that span domains, not domains themselves.)
 
 ## Static-analysis policy
 

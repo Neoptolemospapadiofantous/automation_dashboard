@@ -69,6 +69,9 @@
         "hermes-tree": [
             "python3 scripts/hermes_tree.py"
         ],
+        "hermes-domain": [
+            "python3 scripts/hermes_domain.py"
+        ],
         "hermes-audit": [
             "bash scripts/agents/audit_sentinel.sh"
         ],
