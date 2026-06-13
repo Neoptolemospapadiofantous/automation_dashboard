@@ -7,6 +7,73 @@ tags: [hermes, billing, automation]
 
 Local CI + audit tooling for automation_dashboard. No scheduled execution; all invocation is manual via composer scripts or interactive Claude Code slash commands.
 
+## Architecture
+
+Hermes has two halves joined by one **trunk** (`docs/hermes/manifest.json`): a
+deterministic watchdog (facts, no LLM) and an LLM layer (judgment, free in a
+Claude session). Nothing connects directly — everything reads the trunk, so a
+finding always carries its context.
+
+### How a run flows (the tree)
+
+```mermaid
+flowchart TD
+  MAN[("manifest.json — the trunk<br/>30 nodes · 7 domains<br/>docs · tests · checks · edges")]
+
+  HS["hermes.sh / composer hermes"]
+  BROAD["broad gates<br/>pint · phpstan · tests · knip<br/>doc-coverage · audit · build"]
+  TREE["hermes_tree.py<br/>granular per-node checks<br/>margin-invariant · llm-contract · security<br/>route-smoke · schedule · snapshots"]
+  RAW[("data/hermes_findings.json<br/>raw findings")]
+  ENR["hermes_findings.py<br/>enrich: attach nodes · domains<br/>related (blast radius) · doc refs"]
+  GRAPH[("findings graph<br/>+ per-node / per-domain rollup")]
+  SYN["hermes_synthesis.py — root<br/>rank by criticality + blast radius<br/>+ coverage gaps"]
+  BRIEF["data/hermes_synthesis.md<br/>+ _prompt.md"]
+  VERDICT{{"exit code<br/>PASS / FAIL"}}
+  LLM["/hermes-synthesis<br/>LLM verdict (free, in-session)"]
+
+  HS --> BROAD
+  HS --> TREE
+  MAN -. scopes .-> TREE
+  BROAD --> RAW
+  TREE --> RAW
+  RAW --> ENR
+  MAN --> ENR
+  ENR --> GRAPH
+  GRAPH --> SYN
+  MAN --> SYN
+  SYN --> BRIEF
+  SYN --> VERDICT
+  BRIEF -. reads .-> LLM
+```
+
+1. **Branches** — the checks run (`composer hermes`); granular ones are scoped to nodes via the trunk.
+2. **Enrich** — each finding is tagged with the manifest nodes its check covers + their blast radius.
+3. **Synthesize** — the root ranks everything and writes the brief + an LLM prompt.
+4. **Verdict** — exit code is the gate; `/hermes-synthesis` turns the brief into a prioritised story.
+
+### The two layers + the agents
+
+```mermaid
+flowchart LR
+  subgraph DET["Deterministic — facts (no LLM)"]
+    direction TB
+    W["hermes.sh<br/>17 checks → findings graph"]
+    COL["collectors<br/>audit_sentinel · system_check · update_inspector<br/>→ data/agents/*/findings.json"]
+  end
+  subgraph LLML["LLM — judgment (free, in-session)"]
+    direction TB
+    SY["/hermes-synthesis<br/>verdict over the graph"]
+    AU["/hermes-audit · /hermes-system · /hermes-update<br/>interpret a collector"]
+    FL["/hermes-fleet<br/>5 specialist agents (fleet_agents.json)"]
+    LC["/hermes-lifecycle<br/>full 8-phase pipeline"]
+  end
+  TRUNK[("manifest.json")]
+  W --> SY
+  COL --> AU
+  TRUNK -. context .-> W
+  TRUNK -. context .-> SY
+```
+
 ## Quick reference
 
 | Command | Where | Cost | When to run |
