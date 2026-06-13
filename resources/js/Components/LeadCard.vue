@@ -29,7 +29,7 @@ function onAssignChange(e) {
 
 <template>
     <div
-        class="group cursor-grab rounded-none border border-border-line bg-bg p-3 shadow-sheet transition-colors hover:border-ink active:cursor-grabbing"
+        class="group cursor-grab rounded-none border border-border-line bg-bg p-2 shadow-sheet transition-colors hover:border-ink active:cursor-grabbing"
         draggable="true"
         @dragstart="$event.dataTransfer.setData('text/lead-id', String(lead.id))"
     >
@@ -42,15 +42,15 @@ function onAssignChange(e) {
             @keydown.enter="$emit('open', lead)"
         >
             <div class="min-w-0">
-                <p class="truncate font-medium text-ink hover:underline">{{ lead.name }}</p>
-                <p v-if="lead.company" class="truncate text-xs text-ink-dim">{{ lead.company }}</p>
+                <p class="truncate text-sm font-medium text-ink hover:underline">{{ lead.name }}</p>
+                <p v-if="lead.company" class="truncate text-[11px] text-ink-dim">{{ lead.company }}</p>
             </div>
-            <span class="rounded-none px-1.5 py-0.5 font-mono text-xs font-semibold" :class="scoreColor(lead.score)">
+            <span class="rounded-none px-1.5 py-0.5 font-mono text-[11px] font-semibold" :class="scoreColor(lead.score)">
                 {{ lead.score }}
             </span>
         </div>
 
-        <div v-if="lead.email || lead.phone" class="mt-1 flex flex-col gap-0.5 text-xs">
+        <div v-if="lead.email || lead.phone" class="mt-1 flex flex-col gap-0.5 text-[11px]">
             <a
                 v-if="lead.email"
                 :href="`mailto:${lead.email}`"
@@ -75,7 +75,7 @@ function onAssignChange(e) {
             </a>
         </div>
 
-        <div class="mt-2 flex items-center justify-between">
+        <div class="mt-1.5 flex items-center justify-between">
             <div class="flex items-center gap-1.5">
                 <span class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-mute">
                     {{ lead.source }}
@@ -104,9 +104,9 @@ function onAssignChange(e) {
         </div>
 
         <!-- Delegation: assign to a rep or auto round-robin -->
-        <div class="mt-2 border-t border-border-line pt-2" @mousedown.stop @dragstart.stop>
+        <div class="mt-1.5 border-t border-border-line pt-1.5" @mousedown.stop @dragstart.stop>
             <select
-                class="w-full rounded-none border-border-hi bg-bg py-1 text-xs text-ink-dim focus:border-ink focus:ring-2 focus:ring-ink focus:ring-offset-1"
+                class="w-full rounded-none border-border-hi bg-bg py-0.5 text-[11px] text-ink-dim focus:border-ink focus:ring-2 focus:ring-ink focus:ring-offset-1"
                 :value="lead.assigned_to ?? ''"
                 aria-label="Assign lead"
                 @change="onAssignChange"
