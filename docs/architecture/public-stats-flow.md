@@ -124,6 +124,6 @@ field were chosen because:
 Candidates intentionally NOT exposed:
 - `users.count()` — duplicates `teams_count` for our model (each user gets a personal team on signup)
 - `conversations.count()` — engagement signal is better served by `messages_handled`
-- `voiceflow_project_pool` availability — operational signal, not public
+- Provider/runtime cost figures — operational signal, not public
 
 To add another: see [../public-surface.md#adding-a-new-computed-field](../public-surface.md#adding-a-new-computed-field).

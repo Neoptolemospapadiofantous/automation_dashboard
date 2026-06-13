@@ -1,41 +1,40 @@
-# Phase 12 — Voiceflow Knowledge Base
+# Phase 12 — Knowledge Base
 
 Ground the agent (and the dashboard) in your own content — pricing, FAQs,
-product docs — via [[docs/voiceflow/knowledge-base/README|Voiceflow's Knowledge Base API]].
+product docs — via the knowledge-base API the runtime exposed at the time
+(legacy-engine specifics; see the archived reference under
+[[docs/voiceflow/knowledge-base/README|docs/voiceflow/]]).
 
 ## What shipped
 
-- **[[phase-5-voiceflow|`VoiceflowService` KB methods]]**:
-  - `listKbDocuments($page, $limit)` → `GET {realtime}/v1alpha1/public/knowledge-base/document`
-  - `createKbUrlDocument($url, $name)` → `POST {realtime}/v1alpha1/public/knowledge-base/document` (scrapes a URL)
+- **[[phase-5-voiceflow|the legacy-engine client's KB methods]]** (the
+  client has since been superseded by the native runtime in `app/Runtime/`):
+  - `listKbDocuments($page, $limit)` — list KB documents
+  - `createKbUrlDocument($url, $name)` — add a doc by scraping a URL
   - `queryKnowledgeBase($question, $chunkLimit, $synthesis)` →
-    `POST {runtime}/knowledge-base/query` → synthesized answer + source chunks
+    synthesized answer + source chunks
 - **`KnowledgeBaseController`** + routes: `/knowledge` (list + UI),
   `POST /knowledge/url` (add a doc), `POST /knowledge/query` (ask).
 - **Knowledge UI** (`Knowledge/Index.vue`): add URLs, see document status
   (PENDING/SUCCESS/ERROR), and ask the KB a question with sourced answers.
-- **"Knowledge" nav link**; `VOICEFLOW_REALTIME_URL` config/env.
+- **"Knowledge" nav link**; KB host config/env.
 - Tests (HTTP-faked): list, add-url, query, 503-when-unconfigured.
 
-## Hosts (each authed with the raw VF.DM key)
+## Hosts
 
-| Action | Endpoint |
-| ------ | -------- |
-| List / Create document | `https://realtime-api.voiceflow.com/v1alpha1/public/knowledge-base/document` |
-| Query | `https://general-runtime.voiceflow.com/knowledge-base/query` |
-
-The query body sends `projectID` + `question` + `projectEnvironmentIDOrAlias`.
+At the time, list/create-document and query ran against the legacy engine's
+hosted KB endpoints, each authed with the engine's raw API key. The query
+body carried the project id, the question, and the environment alias.
+(Legacy-engine specifics; see the archived reference under
+[[docs/voiceflow/knowledge-base/README|docs/voiceflow/]].)
 
 ## Usage
 
 1. Open **Knowledge** in the nav.
-2. Add a URL (e.g. your pricing page) — Voiceflow scrapes + chunks it
+2. Add a URL (e.g. your pricing page) — it gets scraped + chunked
    (status goes PENDING → SUCCESS).
 3. Ask a question; you get a synthesized answer plus the source chunks.
 4. The same KB powers [[phase-5-voiceflow|the agent's answers during lead conversations]].
-
-See <https://docs.voiceflow.com/api-reference/kbpublicapidocument/create-document>,
-<https://docs.voiceflow.com/api-reference/public-docs/query>.
 
 ## Next ideas
 

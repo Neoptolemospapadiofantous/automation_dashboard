@@ -19,7 +19,7 @@ original goal.
   - **manual** — an explicit target member.
   - Updates the lead, auto-advances status to `assigned`, records the audit row,
     all in one transaction.
-- **Auto-delegation**: the [[phase-5-voiceflow|Voiceflow capture webhook]] round-robins a freshly
+- **Auto-delegation**: the [[phase-5-voiceflow|conversational-engine capture webhook]] round-robins a freshly
   **qualified, unassigned** lead the instant the agent qualifies it.
 - **`POST /leads/{lead}/assign`** endpoint (team-scoped, [[phase-3-leads|broadcasts `LeadSaved`]]).
 - **[[phase-3-leads|Board UI]]**: each card has an assignee dropdown (Unassigned / ⟳ Auto-assign /
@@ -34,7 +34,7 @@ original goal.
 | `app/Models/LeadAssignment.php`, migration | Audit trail. |
 | `app/Services/LeadDelegator.php` | Assignment logic. |
 | `app/Http/Controllers/LeadController.php` | `assign()` + `?mine` filter. |
-| `app/Http/Controllers/VoiceflowWebhookController.php` | Auto-delegate on qualify. |
+| the legacy capture-webhook controller | Auto-delegate on qualify. |
 | `resources/js/Components/LeadCard.vue`, `Pages/Leads/Index.vue` | Assign UI + My-leads. |
 | `tests/Feature/LeadDelegationTest.php` | Strategy + endpoint + scoping tests. |
 

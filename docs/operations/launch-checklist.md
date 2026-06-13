@@ -10,8 +10,7 @@ Work through this top-to-bottom. Each section says what breaks if you skip it.
 ## 0. Pre-flight (2 min)
 
 - [ ] Pick a branch and stay on it during testing:
-  - `voiceflow-wrapper-and-hermes-system` — the product surface
-  - `runtime-native-l1` — the native engine branch (the only engine; Voiceflow deleted)
+  - `runtime-native-l1` — the native engine branch (the only engine; the legacy engine was deleted)
 - [ ] Unlock pre-verification users. Email verification is now enforced; users
       created before it was enabled have `email_verified_at = null` and will
       hit the verify wall:
@@ -145,4 +144,4 @@ Bonus checks:
 
 - Free trial (product decision: none — $99 Starter is the entry point)
 - Slack notifier, 2FA, audit log, CRM sync, transcript export (backlog)
-- Voiceflow: fully deleted (git history keeps it recoverable)
+- Legacy third-party engine: fully deleted (git history keeps it recoverable)

@@ -2,8 +2,8 @@
 
 Living architecture + design notes for the multi-tenant SaaS dashboard
 for AI lead-qualification agents, powered by the native Flowstack
-runtime (the Voiceflow integration was fully removed — phase docs
-below are historical records). Each file documents
+runtime (the legacy third-party engine was fully removed — its phase
+docs below are historical records). Each file documents
 one cohesive piece of work; phase docs are written when shipped and kept
 as historical record (don't rewrite history when the design evolves —
 write a new phase doc that supersedes the prior one).
@@ -21,19 +21,19 @@ write a new phase doc that supersedes the prior one).
 ### Tenancy + lifecycle
 - [phase-13-multitenancy.md](./phase-13-multitenancy.md) — per-team agents, state machine, project-pool provisioning, onboarding wizard (BYOK was removed from the product surface in Phase 14; the `mode` column remains for ops-only Custom-tier use)
 
-### Voiceflow integration
-- [phase-5-voiceflow.md](./phase-5-voiceflow.md) — [[phase-5-voiceflow|Dialog Manager proxy, lead capture, chat panel]]
+### Conversational engine (history)
+- [phase-5-voiceflow.md](./phase-5-voiceflow.md) — [[phase-5-voiceflow|legacy-engine proxy, lead capture, chat panel]] (historical — superseded by the native runtime)
 - [phase-6-conversation-storage.md](./phase-6-conversation-storage.md) — [[phase-6-conversation-storage|conversations + messages persistence]]
-- [phase-11-transcript-backfill.md](./phase-11-transcript-backfill.md) — [[phase-11-transcript-backfill|Voiceflow Transcripts API import]]
-- [phase-12-knowledge-base.md](./phase-12-knowledge-base.md) — Voiceflow KB API
+- [phase-11-transcript-backfill.md](./phase-11-transcript-backfill.md) — [[phase-11-transcript-backfill|legacy-engine transcript import]]
+- [phase-12-knowledge-base.md](./phase-12-knowledge-base.md) — legacy-engine KB API
 - [legal/README.md](./legal/README.md) — legal & compliance drafts: trust page + framework (GDPR + AI Act), claims-vs-reality honesty ledger
 - [../CONTRIBUTING.md](../CONTRIBUTING.md) — workflow conventions, [IF-*] assurance decisions, deferred items
 - [../PROJECT_ASSURANCE_STRATEGY.md](../PROJECT_ASSURANCE_STRATEGY.md) — the assurance spec (categories A–I); suites live in tests/{Wiring,Integrity,Security,Contracts,Snapshots,Performance}
 - [operations/pricing-audit.md](./operations/pricing-audit.md) — provider rates verified 2026-06-11, credit economics, margin matrix, standing invariants
 - [agent-lifecycle.md](./agent-lifecycle.md) — **operator guide**: the full signup → teach → publish → install → leads journey (mirrored by the dashboard setup checklist)
-- [runtime-native.md](./runtime-native.md) — **the current engine**: Flowstack-owned LLM runtime (Anthropic + RAG), the only engine; Voiceflow was removed
-- [phase-15-voiceflow-wrapper.md](./phase-15-voiceflow-wrapper.md) — full wrapper (typed subclients, evaluations, environments, session + org webhooks); supersedes Phase 5's ad-hoc client
-- [voiceflow/README.md](./voiceflow/README.md) — Voiceflow API reference dump (vendor docs, frozen)
+- [runtime-native.md](./runtime-native.md) — **the current engine**: Flowstack-owned LLM runtime (Anthropic + RAG), the only engine; the legacy engine was removed
+- [phase-15-voiceflow-wrapper.md](./phase-15-voiceflow-wrapper.md) — full legacy-engine wrapper (typed subclients, evaluations, environments, session + org webhooks); historical, superseded by the native runtime
+- [voiceflow/README.md](./voiceflow/README.md) — archived legacy-engine API reference dump (vendor docs, frozen — kept for historical reference)
 
 ### Pipeline + UX
 - [phase-3-leads.md](./phase-3-leads.md) — [[phase-3-leads|kanban board, live updates]]

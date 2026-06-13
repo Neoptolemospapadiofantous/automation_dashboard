@@ -14,7 +14,8 @@ Scaffold the application and all the plumbing later phases build on.
   zero-config local/CI runs. Switching is a one-line `.env` change
   (`DB_CONNECTION=mysql` + `DB_*`). Migrations are MySQL-compatible.
 - **Environment template** (`.env.example`) documenting Pusher, Reverb, MySQL
-  and [[phase-5-voiceflow|Voiceflow settings]]. Secrets stay out of git.
+  and [[phase-5-voiceflow|the legacy conversational-engine settings]]. Secrets stay
+  out of git.
 
 ## Key files
 

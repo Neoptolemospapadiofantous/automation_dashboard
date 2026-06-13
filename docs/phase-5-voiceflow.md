@@ -1,80 +1,64 @@
-# Phase 5 — Voiceflow agent (server-proxied Dialog Manager API)
+# Phase 5 — Legacy conversational-engine integration (superseded)
 
-Lead conversations are handled by a Voiceflow agent, proxied entirely
-server-side so the API key never reaches the browser. Captured fields become
-leads on the board live.
+> **Superseded history.** This phase built the platform's first integration
+> with a *third-party* conversational engine. That engine has since been
+> **fully removed** and replaced by the native runtime in `app/Runtime/`
+> (`AgentRuntime`, `FlowExecutor`, `LlmRouter`). This doc is kept as a
+> historical record of what the phase did and why. The third-party API/endpoint
+> detail it used to contain now lives only in the archived reference under
+> [[docs/voiceflow/README|docs/voiceflow/]].
 
-## What this phase delivers
+## What this phase delivered
 
-- **`VoiceflowService`** — a server-side client for the Dialog Manager
-  (Conversations) API: `launch`, `sendText`, low-level `interact`,
-  `getVariables`, plus `parseTraces` (text/choice/end) and `extractLeadFields`.
-  API key (prefix `VF.DM.*`) is read from config and never exposed.
-- **`VoiceflowController`** (`/chat/launch`, `/chat/interact`) — proxies the
-  conversation, parses traces into chat messages + quick-reply buttons, reads
-  the agent's session variables, and **[[phase-3-leads|upserts a team-scoped `Lead`]]** from the
-  captured fields. Broadcasts `LeadMessage` (live transcript) and `LeadSaved`
-  (board updates).
+Lead conversations were handled by a third-party conversational agent, proxied
+entirely **server-side** so the engine's API key never reached the browser.
+Fields captured during a conversation became leads on the board live.
 
-  > [[phase-14-public-stats|Routes were renamed from `agent.*` → `chat.*` in Phase 14]] to
-  > disambiguate from the agents-CRUD routes (`agents.*`). Same controller,
+- A **server-side engine client** — launched a conversation, sent user text,
+  read back the agent's traces (text / quick-reply choices / end) and session
+  variables, and extracted lead fields. The engine credentials were read from
+  config and never exposed to the client.
+- A **chat controller** (`/chat/launch`, `/chat/interact`) — proxied the
+  conversation, turned engine traces into chat messages + quick-reply buttons,
+  and **[[phase-3-leads|upserted a team-scoped `Lead`]]** from the captured
+  fields. Broadcast `LeadMessage` (live transcript) and `LeadSaved` (board
+  updates) on the private `team.{id}` channel.
+
+  > [[phase-14-public-stats|Routes were renamed from `agent.*` → `chat.*` in Phase 14]]
+  > to disambiguate from the agents-CRUD routes (`agents.*`). Same controller,
   > same behaviour, new URL + route name.
-- **`VoiceflowWebhookController`** (`POST /api/voiceflow/lead-captured/{agent:slug}`)
-  — an inbound webhook for Voiceflow **Custom Actions** to push a qualified
-  lead the instant it's captured, secured by a per-agent shared-secret header
+- An **inbound capture webhook** — let the engine push a qualified lead the
+  instant it was captured, secured by a per-agent shared-secret header
   (`X-Webhook-Secret` = `Agent::$webhook_secret`).
 
   > [[phase-13-multitenancy|Phase 13 made this per-agent (was app-wide in Phase 5)]].
-- **`LeadMessage`** broadcast event on the private `team.{id}` channel.
-- **[[docs/voiceflow/README|Vue chat panel]]** (`Pages/Chat/Index.vue`) — start a conversation, send
-  replies, tap quick-reply buttons, and watch captured lead fields populate
-  live with a link through to the board.
-- **"Chat" nav link**; feature tests with HTTP faking.
+- A **Vue chat panel** (`Pages/Chat/Index.vue`) — start a conversation, send
+  replies, tap quick-reply buttons, and watch captured lead fields populate live
+  with a link through to the board.
+- A **"Chat" nav link** and feature tests with HTTP faking.
 
-## Configuration
+## Why it mattered / what survived the swap
 
-```env
-VOICEFLOW_API_KEY=VF.DM.xxxxxxxx        # Voiceflow → agent settings → API key
-VOICEFLOW_PROJECT_ID=...                # agent settings (required for V4)
-VOICEFLOW_ENVIRONMENT=main              # V4 environment alias (was version id)
-VOICEFLOW_RUNTIME_URL=https://general-runtime.voiceflow.com
-VOICEFLOW_API_URL=https://api.voiceflow.com
-VOICEFLOW_WEBHOOK_SECRET=...            # also set on the agent's webhook header
-```
+The durable design idea from this phase was the **engine seam**: all
+third-party specifics (session handling, trace parsing, variable → lead-field
+mapping) sat behind one server-side client and one controller. Nothing in the
+lead pipeline, the board, or the broadcast layer knew which engine was behind
+the seam.
 
-Which session variables become lead fields is controlled by
-`config/services.php → voiceflow.lead_variables` (default: name, email, phone,
-company). Without an API key + project id the agent page shows a
-configured=false notice and the endpoints return 503.
+That abstraction is exactly what made the later migration cheap — the
+third-party engine was lifted out and the native runtime (`app/Runtime/`)
+dropped in behind the same seam, with the lead-capture contract unchanged. The
+legacy `voiceflow_*` DB columns from this era were renamed to `visitor_id` /
+`session_key` / `transcript_id` as part of that removal.
 
-## API contract used (V4 Conversations API)
+## Where the old detail went
 
-V4 is a **two-step** flow keyed on projectID + environment (alias `main`); the
-legacy `/state/user/...` + `versionID` endpoints are deprecated.
-
-1. **Start session:** `POST {runtime}/v4/project/{projectID}/environment/{env}/session`
-   with header `authorization: <VF.DM key>` and body `{ "userID": "..." }`
-   → returns `{ "sessionKey": "..." }`.
-2. **Interact:** `POST {runtime}/v4/interact` with header
-   `authorization: <sessionKey>` and body
-   `{ "action": { "type": "launch" | "text", "payload": ... }, "variables": {} }`
-   → returns `{ "traces": [...] }`.
-
-`VoiceflowService` caches the per-user `sessionKey` (1h) so multi-turn chats
-reuse the session; a `launch` resets it. `/chat/health` runs both steps and
-reports exactly which one fails.
-
-See <https://docs.voiceflow.com/api-reference/conversations-api/overview> and
-<https://docs.voiceflow.com/trace-types>.
-
-## Verify
-
-```bash
-php artisan test --filter=VoiceflowTest
-pnpm run build
-```
+The engine-specific API contract, session/interact flow, trace types, and
+configuration keys that this phase originally documented are preserved in the
+archived reference under [[docs/voiceflow/README|docs/voiceflow/]] for anyone
+who needs the historical specifics.
 
 ## Next
 
-[[phase-7-delegation|Phase 6: delegation engine (assignment rules, presence) and a Transcripts API backfill]]
+[[phase-7-delegation|Phase 6/7: delegation engine (assignment rules, presence) and a transcripts backfill]]
 for full conversation history/audit.

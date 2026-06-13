@@ -1,5 +1,3 @@
-> **HISTORICAL / Voiceflow-legacy.** The native runtime is the default engine since `runtime-native-l1` — see [docs/runtime-native.md](../runtime-native.md). Voiceflow specifics below apply only to legacy `runtime_mode=voiceflow` agents.
-
 ---
 type: runbook
 status: active
@@ -13,24 +11,25 @@ date: 2026-06-09
 
 Assumes:
 - You've finished local manual testing (you have)
-- Voiceflow account ready (yours: `neoptolemos.papadiofantous@gmail.com`)
-- Dashboard branch `voiceflow-wrapper-and-hermes-system` ready to deploy
+- Provider accounts ready (Anthropic + OpenAI; optionally a paid Google key)
+- Dashboard branch `runtime-native-l1` ready to deploy
 
-## Day 0 — Upgrade Voiceflow to Pro (15 min, $60/mo)
+## Day 0 — Fund the native-engine provider keys (15 min)
 
-URL: https://creator.voiceflow.com/profile/billing → upgrade to **Pro monthly** ($60/mo, not annual — keep optionality).
+Agents run on the Flowstack-owned native runtime
+([docs/runtime-native.md](../runtime-native.md)) — nothing external is
+provisioned per customer. You only need the platform-level provider keys
+funded before the first live chat:
 
-Unlocks:
-- 20 project quota (= up to 20 customers in managed mode)
-- **Workspace API key** (enables Evaluations / KB CRUD / transcripts)
-- Higher LLM credit allowance
+1. **Anthropic** — console.anthropic.com → API keys → create
+   `ANTHROPIC_API_KEY`; add ~$5 of credit (powers the Claude tiers).
+2. **OpenAI** — platform.openai.com → API keys → create `OPENAI_API_KEY`;
+   add ~$5 of credit (powers KB embeddings + the ChatGPT tier).
+3. *(Optional)* **Google** — aistudio.google.com/apikey → a **paid-tier**
+   `GEMINI_API_KEY` (free keys train on customer data) to unlock the Gemini tier.
+4. Set a monthly spend cap in each provider console as a backstop.
 
-Get the workspace API key:
-1. After upgrade, refresh https://creator.voiceflow.com/workspace-settings/api
-2. Generate a new key labeled "automation-dashboard-prod"
-3. Copy it once shown — Voiceflow only displays it once
-
-This goes into Railway env vars on Day 1.
+Copy each key once — they go into Railway env vars on Day 1.
 
 ## Day 1 — Production deploy on Railway (4-6 hours)
 
@@ -40,7 +39,7 @@ This goes into Railway env vars on Day 1.
 1. Sign up at https://railway.app  (GitHub login)
 2. New Project → Deploy from GitHub repo
 3. Pick this repo (automation_dashboard)
-4. Branch: voiceflow-wrapper-and-hermes-system
+4. Branch: runtime-native-l1
    (later: change to main once you merge)
 5. Railway detects Laravel via composer.json
 ```
@@ -72,13 +71,12 @@ LOG_LEVEL=warning
 DB_CONNECTION=pgsql
 # DATABASE_URL set by Railway PostgreSQL plugin
 
-# Voiceflow — your account + the workspace key from Day 0
+# Native engine providers — the funded keys from Day 0.
 # NEVER commit real keys to the repo. Paste your real values directly
 # into Railway's Variables panel; this runbook keeps placeholders only.
-VOICEFLOW_API_KEY=VF.DM.<your-dm-key>
-VOICEFLOW_PROJECT_ID=<your-24-hex-project-id>
-VOICEFLOW_WORKSPACE_API_KEY=<paste-the-new-workspace-key>
-VOICEFLOW_ENVIRONMENT=main
+ANTHROPIC_API_KEY=<your-anthropic-key>
+OPENAI_API_KEY=<your-openai-key>
+GEMINI_API_KEY=<optional-paid-google-key>
 
 # Mail (filled in Day 2)
 MAIL_MAILER=resend
@@ -90,11 +88,10 @@ MAIL_FROM_NAME=Flowstack
 CACHE_STORE=file
 SESSION_DRIVER=file
 QUEUE_CONNECTION=database
-
-# Voiceflow webhook secrets (optional — falls back to per-agent secrets)
-VOICEFLOW_ORG_WEBHOOK_SECRET=<generate-random-40-char-string>
-VOICEFLOW_SVIX_SECRET=                    # leave empty until Voiceflow configures Svix
 ```
+
+The native engine makes no outbound vendor calls and has no inbound engine
+webhooks, so there are no engine-side secrets to set here.
 
 ### Step 1.4 — Add a deploy hook for migrations + cache
 
@@ -244,7 +241,7 @@ Landing's "Try it for $99" button leads to your dashboard's register page.
 When someone signs up on your dashboard:
 1. They land on `/onboarding/intro` (existing flow)
 2. They click "Get started"
-3. Onboarding creates their team + sets `plan = Plan::Free` (no agent yet — pool not allocated)
+3. Onboarding creates their team + sets `plan = Plan::Free` (no agent yet — created on activation)
 4. They land on `/billing` which shows "your plan: Starter — pay $99/mo to activate"
 5. You get an email notification of the new signup (queue a `NewSignupNotification` to platform admins)
 
@@ -263,12 +260,14 @@ php artisan tinker
 $team = App\Models\Team::where('user_id', User::where('email', 'their@email.com')->first()->id)->first();
 $team->forceFill(['plan' => App\Billing\Plan::Free->value])->save();
 (new App\Billing\CreditMeter)->grantMonthlyRenewal($team->fresh());
-// Allocate pool entry → activates agent
+// Native engine: an agent is live the instant its row exists — nothing
+// external is provisioned. Create one if the team doesn't have one yet.
 $agent = $team->fresh()->currentAgent;
 if (!$agent) {
-    $entry = (new App\Provisioning\PoolAllocator)->allocate(
-        App\Models\Agent::factory()->for($team)->create(['status' => 'draft'])
-    );
+    App\Models\Agent::factory()->for($team)->create([
+        'runtime_mode' => 'native',
+        'status' => 'active',
+    ]);
 }
 ```
 
@@ -282,60 +281,42 @@ This is "good enough for first 10 customers." Automate after that.
 
 ---
 
-## Day 5 — Seed the Voiceflow pool (30 min)
+## Day 5 — Verify the native engine end-to-end (30 min)
 
-Pre-create 5 empty Voiceflow projects to allocate to your first 5 customers.
+No pool to seed — the native runtime provisions nothing per customer. Use
+this slot to confirm the funded provider keys actually drive a live turn.
 
-### Step 5.1 — Voiceflow project creation (browser)
-
-For each of 5 projects:
-1. https://creator.voiceflow.com → New project
-2. Template: "Start from scratch" or "Lead Qualification" (the latter has Capture blocks built in)
-3. Name: `flowstack-customer-001`, ..., `flowstack-customer-005`
-4. Get the DM API key (Settings → API)
-5. Get the project ID (from the URL)
-
-### Step 5.2 — Seed the pool
+### Step 5.1 — Confirm keys are loaded
 
 ```bash
-php artisan tinker
+# In Railway's web shell
+php artisan config:clear
+php artisan tinker --execute="echo (config('services.anthropic.key') ? 'anthropic ok' : 'anthropic MISSING'), PHP_EOL; echo (config('services.openai.key') ? 'openai ok' : 'openai MISSING'), PHP_EOL;"
 ```
+
+### Step 5.2 — Health-check an agent
 
 ```php
-$pool = [
-    ['id' => '...', 'dm' => 'VF.DM....'],
-    ['id' => '...', 'dm' => 'VF.DM....'],
-    ['id' => '...', 'dm' => 'VF.DM....'],
-    ['id' => '...', 'dm' => 'VF.DM....'],
-    ['id' => '...', 'dm' => 'VF.DM....'],
-];
-
-$workspaceKey = config('services.voiceflow.workspace_api_key');
-
-foreach ($pool as $p) {
-    App\Models\VoiceflowProjectPoolEntry::create([
-        'voiceflow_project_id' => $p['id'],
-        'voiceflow_api_key' => $p['dm'],
-        'voiceflow_workspace_api_key' => $workspaceKey,
-        'voiceflow_environment' => 'main',
-        'status' => 'available',
-    ]);
-}
-
-echo App\Models\VoiceflowProjectPoolEntry::where('status', 'available')->count() . ' available' . PHP_EOL;
+// php artisan tinker
+$agent = App\Models\Agent::where('status', 'active')->first();
+// → {ok: true, engine: 'native', llm_model, embedding_model}
+app(App\Runtime\Contracts\Runtime::class)->health($agent);
 ```
 
-### Step 5.3 — Verify
+A red health card or `ok: false` almost always means a provider key is
+missing or unfunded — top up the relevant console and re-clear config.
 
-```php
-App\Models\VoiceflowProjectPoolEntry::all()->each(fn($e) => print("{$e->voiceflow_project_id}: {$e->status}\n"));
-```
+### Step 5.3 — Drive one real turn
 
-Should print 5 rows, all `available`.
+Open `/chat` for that agent and send a message. The reply should stream
+back and `/billing` should show the turn debited at the agent's tier
+multiplier.
 
 ### Day 5 deliverable
 
-Pool is stocked. Next customer signup auto-allocates one entry (when you manually run the provisioning tinker line).
+A confirmed live chat turn on the native engine, billed correctly. Next
+customer signup needs only the Day 4 activation tinker line — no external
+provisioning.
 
 ---
 
@@ -346,9 +327,9 @@ Pretend to be a customer. Sign up at https://app.flowstack.com/register with a d
 1. ✅ Register → email verification (if enabled) → land on dashboard
 2. ✅ Onboarding wizard runs
 3. ✅ Manually invoice + pay yourself $99 via Stripe (test card `4242 4242 4242 4242`)
-4. ✅ Run the tinker provisioning line as if you were the operator
+4. ✅ Run the tinker activation line as if you were the operator
 5. ✅ Refresh dashboard → see your agent active
-6. ✅ Open /chat → have a real conversation with your "Auto" or test pool project
+6. ✅ Open /chat → have a real conversation with your agent on the native engine
 7. ✅ Capture a lead → see it on /leads
 8. ✅ Open /system/architecture → flowcharts render
 9. ✅ Verify credit-burn alert email arrives when balance hits 50% of grant
@@ -361,17 +342,18 @@ If anything's broken, fix it. Welcome to launch week.
 
 | Item | Cost |
 |---|---|
-| Voiceflow Pro upgrade | $60 / mo |
+| LLM providers (Anthropic + OpenAI usage) | ~$5-15 / customer / mo, pay-as-you-go |
 | Railway (hosting + Postgres) | ~$10-20 / mo |
 | Cloudflare domain | ~$10 / year |
 | Resend (transactional email) | Free up to 100/day |
 | Stripe | 2.9% + 30¢ per transaction (no fixed fee) |
-| **Total fixed monthly** | **~$71 / mo** |
-| Break-even | Customer #1 ($99 > $71) |
+| **Total fixed monthly** | **~$11-21 / mo** (no per-seat engine plan) |
+| Break-even | Customer #1 ($99 ≫ hosting + provider usage) |
 
-For the full math through Stages 1-3 (Pro → Business → Enterprise),
-including capacity ceilings, margin analysis at each customer count,
-and the upgrade triggers, see [[economics]].
+The native runtime has no per-project vendor plan — provider tokens are the
+only engine cost, billed straight through to credits. [[economics]] records
+the prior (legacy-engine) per-plan model for historical reference; a native
+cost-basis rewrite is pending.
 
 ## What's deferred to "later"
 
@@ -385,7 +367,7 @@ These are real gaps but don't block first revenue:
 - Mobile polish
 - Slack/HubSpot integrations
 - Onboarding checklist widget
-- Pool watermark alerts (eyeball weekly)
+- Provider-balance alerts (eyeball provider consoles weekly)
 - Email verification flow polish
 - Forgot-password flow polish
 

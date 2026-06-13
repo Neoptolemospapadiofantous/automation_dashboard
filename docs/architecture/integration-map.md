@@ -1,5 +1,3 @@
-> **HISTORICAL / Voiceflow-legacy.** The native runtime is the default engine since `runtime-native-l1` — see [docs/runtime-native.md](../runtime-native.md). Voiceflow specifics below apply only to legacy `runtime_mode=voiceflow` agents.
-
 # Architecture — integration map
 
 Where every product surface connects to every other, what's wired today,
@@ -27,8 +25,8 @@ interconnected" target, then maintained as we close gaps.
 /profile, /teams      Jetstream defaults
 ```
 
-Plus operator-facing artisan commands: `vf:pool:add`, `vf:pool:list`,
-`platform:set`.
+Plus operator-facing artisan commands: `platform:set`,
+`credits:reconcile`, `runtime:costs`.
 
 ## Cross-page links (what's wired)
 
@@ -79,31 +77,17 @@ data model — e.g. credit consumption in `/chat/interact` ripples into
 the credit history table the billing page renders). Solid arrows are
 explicit hyperlinks the operator clicks.
 
-## Voiceflow API coverage
+## Engine surface
 
-> **Note (auto-synced 2026-06-08):** Phase 15 (`docs/phase-15-voiceflow-wrapper.md`)
-> shipped typed subclients (`RuntimeClient`, `AnalyticsClient`,
-> `RealtimeClient`, `StreamingClient`) plus Evaluations + Environments UI
-> routes, a session-lifecycle inbound webhook, and an org-events inbound
-> webhook. The table + Tier 2/3/4 entries below were updated to reflect
-> the new shipped surface.
-
-| API group | Endpoints we ship | Surface |
-|---|---|---|
-| [[docs/voiceflow/conversations/README|Dialog Manager (Conversations)]] | `launch`, `interact`, `interact/stream`, session, getVariables | `/chat/*`, webhook |
-| [[docs/voiceflow/knowledge-base/README|Knowledge Base]] | list (+ type filter), create-url, create-file, create-text, get-with-chunks, delete, query, replace/patch (wrapper-only) | `/knowledge` |
-| [[docs/voiceflow/transcripts/README|Transcripts]] | search (paginated stream), get, end, delete, backfill | `php artisan voiceflow:backfill`, `ConversationController::endUpstream`/`deleteUpstream` |
-| [[docs/voiceflow/webhooks/README|Webhooks (inbound)]] | per-agent lead-captured, per-agent session-lifecycle, platform-level org-events | `/api/voiceflow/lead-captured/{agent:slug}`, `/api/voiceflow/webhooks/session/{agent:slug}`, `/api/voiceflow/webhooks/org` |
-| **Project Environments** | list, get, clone, publish, delete, export, traffic split | `/agents/environments*` |
-| **Evaluations** | list, get, create, run, queue, delete | `/agents/evaluations*` |
-| **Usage** | `safeUsageCount()` helper on `VoiceflowService` | wrapper-only (no UI surface yet) |
-| **Analytics** | wrapper methods on `AnalyticsClient` | wrapper-only (no UI surface yet) |
-| **Projects** | nothing yet | – |
-
-The remaining headroom is the Projects API (no public `POST /project` —
-see Phase K in [[phase-13-multitenancy|phase-13-multitenancy.md]] for why)
-plus dashboard surfaces for the Analytics + Usage wrappers that already
-ship as untyped helpers.
+Conversations run entirely on the native runtime
+([docs/runtime-native.md](../runtime-native.md)). Controllers call
+`AgentRuntime` directly — `launch` / `interact` (and stage-level streaming)
+on `/chat/*` and `/embed/*`, per-agent Knowledge Base CRUD + query on
+`/knowledge`, and conversation/transcript management on `/conversations`.
+There are no outbound vendor API calls and no inbound engine webhooks:
+lead capture, KB retrieval, and session lifecycle are all in-process. The
+archived reference for the removed third-party engine lives under
+[docs/voiceflow/](../voiceflow/README.md) for historical context only.
 
 ## Open interconnection gaps (ranked by leverage)
 
@@ -131,7 +115,7 @@ ship as untyped helpers.
 5. **No notification fan-out beyond lead capture.** The bell currently
    only fires for `lead.saved`. Other events worth notifying:
      - Agent health check failed (operator should know within minutes)
-     - Pool capacity below threshold (operator-only)
+     - Provider key missing / unfunded (tier greyed out, chat returns 503)
      - KB document failed to scrape (URL changed / 404)
      - Credit balance below 10% (push to upgrade or top up)
 
@@ -140,59 +124,41 @@ ship as untyped helpers.
    independently. A shared `PlatformMetrics` query object would
    eliminate the drift risk.
 
-## Voiceflow features to wire (prioritised)
+## Native engine follow-ups (prioritised)
+
+These build directly on the native runtime
+([docs/runtime-native.md](../runtime-native.md)); none depend on any
+external vendor.
 
 ### Tier 1 — direct revenue / billing value
 
-- **Usage API** (`POST /v2/query/usage`, name=`credit_usage`).
-  Voiceflow reports per-project credit spend. Wire into `/billing`
-  as "Voiceflow runtime cost (this period)" — distinct from our
-  message-credit count. Helps the operator see margins.
-  Doc: `docs/voiceflow/usage/query-usage.md`.
+- **Per-team runtime cost surface.** `runtime:costs` already prices each
+  team's `runtime_usage` at provider rates (ops-only today). Wire a
+  read-only "runtime cost (this period)" line into `/billing` — distinct
+  from the message-credit count — so the operator can eyeball margins.
 
 ### Tier 2 — agent quality + observability
 
-- **[[docs/voiceflow/analytics/README|Analytics API]] → Dashboard.** Per-agent breakdowns of:
-  `interactions`, `unique_users`, `top_intents`. Powers a richer
-  Dashboard with "what users actually ask" — currently the only
-  observability is raw message count. **Wrapper shipped in Phase 15
-  (`AnalyticsClient`); no dashboard surface consumes it yet.**
-  Doc: `docs/voiceflow/analytics/overview.md`.
+- **Analytics → Dashboard.** Per-agent breakdowns (interactions,
+  unique visitors, top topics) on the Dashboard, beyond today's raw
+  message count. Source data is already in `messages` + `runtime_usage`.
 
-- **Evaluations.** ✅ Shipped in Phase 15. `/agents/evaluations*`
-  pages + `EvaluationsController` + `AnalyticsClient` evaluation
-  methods (list / get / create / run / queue / delete).
-  Doc: `docs/voiceflow/evaluations/README.md`.
+- **Transcript evaluations.** Automated quality scoring of stored
+  transcripts (e.g. LLM-as-judge); currently the KB Q&A box is the only
+  retrieval check. Tracked as a deferred item in
+  [docs/runtime-native.md](../runtime-native.md).
 
-### Tier 3 — environment / lifecycle controls
+### Tier 3 — lifecycle controls
 
-- **Project Environments.** ✅ Shipped in Phase 15. `/agents/environments*`
-  pages + `EnvironmentsController` + `RealtimeClient` environment methods
-  (list / get / clone / publish / delete / export / traffic split).
-  Operator can clone `main → staging`, publish, and export.
-  Docs: `docs/voiceflow/projects/{list,get,publish,delete}-environment.md`.
-
-- **Org-events webhook** (Svix-signed). ✅ Shipped in Phase 15 as
-  `POST /api/voiceflow/webhooks/org` (`OrgEventsController`).
-  Auth is the platform-level `services.voiceflow.org_webhook_secret`
-  via `hash_equals`; Svix HMAC verification is wired through
-  `SvixVerifier` but the `svix/svix` composer dep is still pending —
-  until then the shared secret is the trust boundary. Reactively
-  retires `voiceflow_project_pool` rows on `organization.project.deleted`.
-  Doc: `docs/voiceflow/webhooks/org-events.md`.
+- **Per-agent flow selection.** Every agent runs `LeadCaptureFlow` today;
+  a `flow` column + template registry is the planned shape (see
+  [docs/runtime-native.md](../runtime-native.md) follow-ups).
 
 ### Tier 4 — channel expansion
 
-- **Session lifecycle webhook** (`runtime.call.start/end`,
-  `runtime.session.start/end`). ✅ Shipped in Phase 15 as
-  `POST /api/voiceflow/webhooks/session/{agent:slug}`
-  (`SessionLifecycleController`). Per-agent `X-Webhook-Secret`,
-  persists every event to `voiceflow_webhook_events` with idempotency
-  on `(agent_id, event_id)`, reactively updates
-  `Conversation.{started_at, ended_at, status, voiceflow_transcript_id}`.
-  Useful for a future phone-call channel — currently the dashboard
-  assumes web-chat only.
-  Doc: `docs/voiceflow/webhooks/session-lifecycle.md`.
+- **Phone / SMS channel.** The dashboard assumes web-chat only. Adding a
+  voice or SMS channel would feed the same `AgentRuntime` through a new
+  controller, reusing in-engine lead capture and session state.
 
 ## Operating principle
 

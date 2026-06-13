@@ -46,7 +46,7 @@ billed per turn
   snippet from `/install`; captured leads appear live on `/leads`.
 
 The conversational engine is **Flowstack-owned and native** (the prior
-Voiceflow integration was fully removed on 2026-06-11; the phase docs for
+third-party engine was fully removed on 2026-06-11; the phase docs for
 it remain as historical record). See [runtime-native.md](./runtime-native.md).
 
 ---
@@ -109,7 +109,7 @@ Controllers depend only on the `Runtime` contract
 — `launch / sendText / streamText / endSession / health`).
 `AgentRuntime` is bound to it as the only implementation; the interface is
 kept as the seam for any future engine (proven replaceable by actually
-deleting Voiceflow).
+deleting the legacy engine).
 
 Composition (`AgentRuntime`):
 

@@ -1,143 +1,75 @@
 ---
 type: phase
-tags: [voiceflow, wrapper, phase-15]
-status: shipped
+tags: [legacy-engine, wrapper, phase-15, superseded]
+status: superseded
 date: 2026-06-08
 supersedes: docs/phase-5-voiceflow.md
 ---
 
-# Phase 15 — Full Voiceflow Wrapper
+# Phase 15 — Legacy conversational-engine HTTP wrapper (superseded)
 
-Lifts Voiceflow integration coverage from ~19% (9 endpoints, 2 partial) to full coverage of the documented surface. Centralizes HTTP, adds retries everywhere, fixes pagination, adds streaming, inbound webhooks, evaluations, environment management.
+> **Superseded history.** This phase hardened the platform's integration with a
+> *third-party* conversational engine — the same engine introduced in
+> [[phase-5-voiceflow|Phase 5]]. That engine has since been **fully removed** and
+> replaced by the native runtime in `app/Runtime/` (`AgentRuntime`,
+> `FlowExecutor`, `LlmRouter`), so the wrapper described here no longer exists in
+> the codebase. This doc is kept only as a record of what was built and why. The
+> engine-specific endpoint/wrapper detail it used to contain now lives only in
+> the archived reference under [[docs/voiceflow/README|docs/voiceflow/]].
 
-## What shipped
+## What this phase delivered
 
-### `app/Services/Voiceflow/`
+Phase 5 shipped an ad-hoc client that covered only a small slice (~19%) of the
+third-party engine's documented surface. Phase 15 turned that into a full,
+production-grade HTTP wrapper:
 
-```
-Voiceflow/
-├── Client/
-│   ├── VoiceflowHttpClient.php   Central PendingRequest factory + ensureOk() → typed exceptions + structured logging
-│   ├── RuntimeClient.php         8 public methods — session, interact, state, KB query, 401 auto-recovery
-│   ├── AnalyticsClient.php       14 public methods — transcripts (search/get/end/delete/stream), evaluations (8), usage
-│   ├── RealtimeClient.php        19 public methods — KB CRUD (list/create/replace/patch/upload-table/delete/stream),
-│   │                              environments (list/get/clone/delete/publish/export/traffic split)
-│   └── StreamingClient.php       SSE wrapper for /v4/interact/stream
-├── Dto/
-│   └── Trace.php                 readonly value object for /v4/interact frames
-├── Exceptions/
-│   ├── VoiceflowException.php    abstract base, toLogContext()
-│   ├── AuthException.php         401 / 403
-│   ├── NotFoundException.php     404
-│   ├── RateLimitedException.php  429 + retryAfterSeconds
-│   ├── UpstreamException.php     5xx + connection failures
-│   └── MisconfiguredException.php never-sent-the-request
-```
+- **A central HTTP factory** — one place to set timeouts, retries, headers, and
+  structured logging, replacing per-method divergence. Every call to the engine
+  retried and logged consistently.
+- **Typed subclients per host** — runtime (sessions / interact / state / KB
+  query), analytics (transcript lifecycle, evaluations, usage), realtime (KB
+  CRUD, environment management), and an SSE streaming wrapper. The split
+  enforced credential separation by binding rather than convention.
+- **A typed exception hierarchy** — auth / not-found / rate-limited /
+  upstream / misconfigured — so controllers caught typed errors instead of
+  inspecting status codes.
+- **Pagination as generators** — no silent single-page truncation and no
+  full-list-in-memory.
+- **Inbound session-lifecycle webhook** — a per-agent, secret-verified handler
+  that persisted engine session events idempotently and reactively updated the
+  matching `Conversation` (`started_at` / `ended_at` / `status` /
+  `transcript_id`).
+- **Streaming, evaluations, and environment management** surfaced through the
+  wrapper and backed by feature tests, plus a frontend streaming integration in
+  `Chat/Index.vue` with capability detection and a non-streaming fallback.
+- **Backward-compatible legacy entry point** — the original Phase 5 service kept
+  its public signatures and delegated to the typed subclients, so existing tests
+  kept passing through the refactor.
 
-### `app/Providers/VoiceflowServiceProvider.php`
+## Why it mattered / what survived the swap
 
-- `VoiceflowHttpClient` — singleton
-- `RuntimeClient`, `AnalyticsClient`, `RealtimeClient`, `StreamingClient` — request-scoped, resolved against current Agent
-- `runtimeFor`, `analyticsFor`, `realtimeFor`, `streamingFor` static factories for CLI / jobs
+The lasting lesson here is the same **engine seam** principle from Phase 5,
+pushed further: by funnelling every third-party call through one typed,
+centrally-configured wrapper, the entire integration had a single, well-defined
+boundary. When the decision came to drop the third-party engine, there was one
+clearly-bounded layer to remove rather than scattered HTTP calls throughout the
+app — which is what made replacing it with the native runtime (`app/Runtime/`)
+tractable.
 
-### Inbound webhooks
+Two design choices that outlived this engine and informed the native runtime:
 
-- `POST /api/voiceflow/lead-captured/{agent:slug}` — existing Custom Action capture (unchanged)
-- `POST /api/voiceflow/webhooks/session/{agent:slug}` — **new** session-lifecycle handler (`runtime.session.*`, `runtime.call.*`). Per-agent `X-Webhook-Secret`, persists to `voiceflow_webhook_events` with idempotency on `(agent_id, event_id)`, reactively updates `Conversation.{started_at, ended_at, status, voiceflow_transcript_id}`
+- **Typed errors over status-code inspection** at the integration boundary.
+- **Generators for paginated reads** instead of either truncation or
+  load-everything.
 
-### Migrations
+The legacy `voiceflow_*` DB columns referenced by the webhook persistence here
+(e.g. the conversation's transcript id) were renamed to `visitor_id` /
+`session_key` / `transcript_id` when the engine was removed.
 
-- `2026_06_08_000001_create_voiceflow_webhook_events_table` — durable webhook log with composite indexes on `(agent_id, event_type, received_at)` for replay queries
+## Where the old detail went
 
-### Controllers
-
-- `ConversationController::endUpstream` — force-end stuck upstream sessions
-- `ConversationController::deleteUpstream` — GDPR delete (upstream + local cascade)
-- `KnowledgeBaseController::storeText` — text-paste KB document variant
-- `Voiceflow\SessionLifecycleController` — inbound webhook handler
-
-### Legacy `VoiceflowService`
-
-Delegates to typed subclients via `typedAnalytics()` + `typedRealtime()` helpers. Public signatures preserved — all 49 prior tests still pass.
-
-**Removed dead code**:
-- `apiClient()`
-- `statePath()`
-- `analyticsClient()`
-- `$apiUrl` property + `services.voiceflow.api_url` config key
-
-**Added**:
-- `endTranscript()`, `deleteTranscript()`, `queryUsage()`, `safeUsageCount()`
-- `createKbTextDocument()`, `uploadKbTable()`, `replaceKbDocument()`, `patchKbDocument()`, `patchKbChunk()`
-- 30-second cache on `getVariables()` — eliminates per-turn redundant round-trip
-
-### Hermes audit integration (`scripts/fleet_agents.json`)
-
-`voiceflow-surface-sentinel` now recursively reads `app/Services/Voiceflow/**` and `app/Http/Controllers/Voiceflow/**`. 4 new report tags: `UNTESTED_CLIENT_METHOD`, `WEAK_DTO`, `INCONSISTENT_EXCEPTION`, `WEBHOOK_MIDDLEWARE_GAP`.
-
-### `composer voiceflow:coverage`
-
-Generates `docs/voiceflow/coverage.md` — auto-built table of every wrapper method mapped to its upstream endpoint label. Regenerate after adding wrapper methods.
-
-## Test coverage
-
-Across phases A–E, **38 new tests** added:
-
-| Test | Phase | Covers |
-|---|---|---|
-| `VoiceflowHttpClientTest` (7) | A | Status → exception mapping, log context |
-| `VoiceflowAnalyticsClientTest` (4) | A | Pagination across 4 pages, 404→null |
-| `VoiceflowRealtimeClientTest` (4) | A | KB pagination, oversized + empty upload rejection |
-| `VoiceflowVariableCacheTest` (2) | A | 30s cache hit, project-scoped key |
-| `VoiceflowTranscriptLifecycleTest` (4) | B | End/delete upstream + cross-tenant block |
-| `VoiceflowKbTextTest` (2) | B | Text-paste KB document creation + validation |
-| `VoiceflowSessionLifecycleWebhookTest` (6) | C | Secret rejection, disabled-agent, persistence, idempotency, conversation updates |
-| `VoiceflowStreamingClientTest` (3) | C | Well-formed SSE, multi-line data, malformed-event skip |
-| `VoiceflowEvaluationsTest` (6) | D | Create/list/get/run/queue + 429 → `RateLimitedException` with `Retry-After` |
-| `VoiceflowEnvironmentsTest` (6) | E | List/get/clone/publish/export + traffic split read/write |
-
-All 49 prior Voiceflow tests still pass — no breaking changes.
-
-## Coverage delta
-
-| Before | After |
-|---|---|
-| 9 endpoints fully wrapped | **42** public methods across 4 typed subclients |
-| 2 partial (lossy state reduction, no streaming) | All canonical surfaces wrapped; lossy reductions retained as opt-in helpers |
-| 36 unwrapped | **~all wrapped** — exports, evaluations, traffic split, projects, streaming, lifecycle webhooks, KB metadata |
-| No retries except session-start | Retries on every Voiceflow call via `VoiceflowHttpClient` |
-| `file_get_contents` upload (10 MB into memory) | `fopen` stream + 10 MB cap enforced in client |
-| Session-key wedge: stale cache for 1h | 401 auto-recovery — `forgetSession + retry once` |
-| Per-turn `getVariables` round-trip | 30-second cache |
-| `searchTranscripts` / `listKbDocuments` truncate at one page | `transcriptStream()` / `kbDocumentStream()` generators paginate to completion |
-| No structured logging | `Log::channel('voiceflow').{debug|warning|error}` on every call |
-
-## Shipped in Phase G + H (originally listed as follow-ups)
-
-- ✅ **Frontend streaming integration** — `Chat/Index.vue` now uses `fetch + ReadableStream` against `/chat/interact/stream`, with capability detection and axios fallback (Phase G).
-- ✅ **Svix HMAC for org-events webhooks** — implemented in-house via `app/Services/Voiceflow/Webhooks/SvixVerifier.php` without taking the `svix/svix` composer dep; 5-min replay window + multi-signature header support for key rotation. See [[hermes/decisions/2026-06-08-no-svix-composer-dep|the decision note]] (Phase H).
-- ✅ **Evaluations + Environments UI pages** — `Pages/Agents/Evaluations.vue` + `Pages/Agents/Environments.vue` shipped (Phase H).
-
-## Still pending
-
-- **Per-agent stats panel** — `VoiceflowService::safeUsageCount` is wired; no UI widget consumes it yet. Right scope is a tile on `Agents/Show.vue` + `Dashboard.vue`.
-- **Webhook subscriptions** — Voiceflow has no public API for subscription management; must be configured in their dashboard.
-- **Webhook event admin surface** — `voiceflow_webhook_events` table fills up; no UI to inspect failed/unprocessed rows.
-- **Bulk evaluations + cost estimate UX** — `queueBatchEvaluation` + `estimateEvaluation` wrappers exist; UI exposes only single-transcript runs.
-- **Editable traffic split** — `setTrafficSplit` wrapper exists; UI shows read-only table.
-
-## Why this design
-
-- **Typed subclients per host** — DM-key vs workspace-key separation enforced by binding, not by convention
-- **Central HTTP factory** — single place to set timeouts, retries, headers, log context. No more divergent `15s vs 20s vs 30s` per method
-- **Public signature stability** — `VoiceflowService` is the legacy entry, retains all method signatures, delegates internally
-- **Exceptions over arrays** — controllers catch `AuthException` / `UpstreamException` / `RateLimitedException` instead of inspecting status codes
-- **Pagination as a generator** — no silent truncation, no full-list-in-memory either
-- **Cache invalidation on session reset** — `forgetSession()` clears both session key + 30s variables cache, no stale wedges
-
-## Where to look next
-
-- Coverage report: `docs/voiceflow/coverage.md`
-- Wrapper plan: `docs/voiceflow/wrapper-plan.md`
-- Architecture: `app/Services/Voiceflow/`
-- Public API docs reference: `docs/voiceflow/`
+The full per-method coverage map, the engine's endpoint catalogue, the wrapper
+plan, and the webhook event schema that this phase documented in detail are
+preserved in the archived reference under
+[[docs/voiceflow/README|docs/voiceflow/]] for anyone who needs the historical
+specifics.

@@ -1,6 +1,6 @@
 # Native runtime — the Flowstack-owned conversational engine
 
-> Status: **the only engine.** The entire Voiceflow surface (services,
+> Status: **the only engine.** The entire legacy-engine surface (services,
 > adapter, pool, webhooks, Environments/Evaluations pages, env vars,
 > schema) was deleted — git history keeps it recoverable.
 
@@ -22,14 +22,14 @@ Controller (chat / embed)                    bills credits AROUND the engine
 
 Key invariants:
 
-- **Credits are charged by controllers, never by the engine.** Same math both
-  engines: 1 + number of agent replies per turn.
+- **Credits are charged by controllers, never by the engine.** The math:
+  1 + number of agent replies per turn.
 - **Transitions are owned by FlowExecutor** via each state's `onToolSuccess`
   map / `autoNext`. Tools never write `flow_state`.
 - **Lead capture happens inside the engine** (`capture_lead` tool → leads
   table + `LeadSaved` broadcast). Controllers do no variable extraction.
-- Trace shape is Voiceflow-compatible (`{type:'text', payload:{message}}`) so
-  every existing UI renders unchanged.
+- Trace shape stays backwards-compatible with the legacy engine
+  (`{type:'text', payload:{message}}`) so every existing UI renders unchanged.
 
 ## Configuration
 
@@ -46,7 +46,7 @@ Key invariants:
 ## Operating it
 
 ```bash
-# Flip an existing agent to native
+# Activate an existing agent (every agent runs on the native engine)
 php artisan tinker --execute="\App\Models\Agent::where('slug','SLUG')->first()->forceFill(['runtime_mode'=>'native','status'=>'active'])->save();"
 
 # Health (also: the health button on /agents/{slug})
@@ -103,7 +103,8 @@ the session AND notifies the team owner (bell + email,
 
 ## Economics note
 
-`docs/operations/economics.md` predates this engine (Voiceflow-plan-based).
-Native cost basis: ~$0.005–0.01 per customer message (Haiku + embeddings) →
+`docs/operations/economics.md` predates this engine (it models the legacy
+engine's per-plan pricing). Native cost basis: ~$0.005–0.01 per customer
+message (Haiku + embeddings) →
 ~99% gross margin at the $99 Starter price. A rewrite of the economics doc is
 pending; until then treat it as historical.

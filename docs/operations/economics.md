@@ -1,18 +1,24 @@
-> **HISTORICAL / Voiceflow-legacy.** The native runtime is the default engine since `runtime-native-l1` — see [docs/runtime-native.md](../runtime-native.md). Voiceflow specifics below apply only to legacy `runtime_mode=voiceflow` agents.
+> **HISTORICAL / superseded cost model.** This doc models the economics of
+> the legacy third-party engine (a per-project SaaS plan billed to us on top
+> of LLM passthrough). That engine was removed; the native runtime
+> ([docs/runtime-native.md](../runtime-native.md)) bills only the underlying
+> provider tokens (~99% gross margin at the $99 Starter price). A rewrite of
+> the money math against the native cost basis is pending; until then, treat
+> the stages below as a record of the prior model, not current guidance.
 
 ---
 type: reference
-status: active
-tags: [operations, business, pricing, voiceflow]
+status: historical
+tags: [operations, business, pricing, legacy-engine]
 date: 2026-06-09
 ---
 
-# Flowstack — Unit Economics
+# Flowstack — Unit Economics (legacy-engine model)
 
-The full money math for Flowstack across the three Voiceflow plan stages
-(Pro → Business → Enterprise). Numbers reflect what's on
-flowstack.com/pricing and creator.voiceflow.com/pricing as of 2026-06-09.
-Updated when either changes.
+The full money math for Flowstack across the legacy engine's three vendor
+plan stages (Pro → Business → Enterprise), as it stood while that engine
+was in use. Numbers reflected flowstack.com/pricing and the vendor's
+published pricing as of 2026-06-09.
 
 For day-by-day setup, see [[ship-fast-plan]]. This doc only covers
 the money.
@@ -31,7 +37,7 @@ Per `app/Billing/Plan.php`. The credit allotment translates roughly to
 "2,500 / 25,000 conversation messages per month" — a comfortable
 allowance for normal usage with top-ups available on Starter + Operator.
 
-### What Voiceflow charges us
+### What the legacy engine charged us
 
 | Plan | Price | Project quota | Workspace API key | Editors |
 |---|---|---|---|---|
@@ -53,14 +59,14 @@ on usage volume + model choice.
 | **Resend (transactional email)** | Free → $20/mo | 100/day free; $20 covers 50k/mo |
 | **Stripe** | 2.9% + 30¢ per transaction | No fixed fee; comes off revenue |
 
-## Stage 1 — Voiceflow Pro ($60/mo)
+## Stage 1 — Legacy-engine Pro ($60/mo)
 
 **Capacity ceiling: 20 customers**
 
 ### Fixed monthly costs
 
 ```
-Voiceflow Pro              $60
+Legacy engine (Pro)        $60
 Railway                    $15  (mid-range estimate)
 Domain                     $1
 Resend (free tier)         $0
@@ -72,9 +78,9 @@ Total fixed                $76/mo
 
 Assumptions: 90% Starter ($99), 9% Operator ($399), 1% Custom (skip — project-based, not recurring).
 
-Voiceflow LLM passthrough ≈ $10/customer/month average.
+Legacy-engine LLM passthrough ≈ $10/customer/month average.
 
-| Customers | Mix (S/O) | Revenue | Voiceflow LLM | Net |
+| Customers | Mix (S/O) | Revenue | Engine LLM | Net |
 |---|---|---|---|---|
 | **1** | 1/0 | $99 | $10 | **+$13** ← break-even at customer #1 |
 | 5 | 5/0 | $495 | $50 | +$369 |
@@ -87,7 +93,7 @@ Voiceflow LLM passthrough ≈ $10/customer/month average.
 
 - Revenue: $2,580/mo
 - Fixed costs: $76/mo (3% of revenue)
-- Variable costs: $200/mo (8% — Voiceflow LLM passthrough)
+- Variable costs: $200/mo (8% — legacy-engine LLM passthrough)
 - Stripe: ~$75/mo (3% — 2.9% + 30¢ × 20 transactions)
 - **Net: ~$2,229/mo (86% gross margin)**
 - Annualized: ~$27k profit at 20 customers
@@ -98,15 +104,15 @@ Voiceflow LLM passthrough ≈ $10/customer/month average.
 could exhaust the pool. Book the Business upgrade (or Enterprise
 conversation) the day you cross 15 so the contract closes by 18.
 
-## Stage 2 — Voiceflow Business ($150/mo)
+## Stage 2 — Legacy-engine Business ($150/mo)
 
-**Capacity ceiling: unlimited Voiceflow projects (practical ceiling: a few
+**Capacity ceiling: unlimited engine projects (practical ceiling: a few
 hundred before your infrastructure becomes the next bottleneck).**
 
 ### Fixed monthly costs
 
 ```
-Voiceflow Business         $150
+Legacy engine (Business)   $150
 Railway                    $30   (slight upscale for higher traffic)
 Domain                     $1
 Resend                     $20   (paid tier, 50k emails)
@@ -121,7 +127,7 @@ in the noise.
 
 ### Revenue at customer count N (same mix assumption)
 
-| Customers | Mix (S/O) | Revenue | Voiceflow LLM | Net (post-Stripe) |
+| Customers | Mix (S/O) | Revenue | Engine LLM | Net (post-Stripe) |
 |---|---|---|---|---|
 | 25 | 22/3 | $3,375 | $250 | +$2,824 |
 | 50 | 45/5 | $6,450 | $500 | +$5,545 |
@@ -132,7 +138,7 @@ in the noise.
 
 - Revenue: $12,900/mo ($154,800 annualized)
 - Fixed costs: $201/mo (1.6% of revenue)
-- Voiceflow LLM passthrough: $1,000/mo (7.8%)
+- Legacy-engine LLM passthrough: $1,000/mo (7.8%)
 - Stripe fees: ~$405/mo (3.1%)
 - Customer support time: variable — assume 1 hour/month per 10 customers at $50/hr = $500
 - **Net: ~$10,754/mo (83% gross margin)**
@@ -142,7 +148,7 @@ in the noise.
 
 **Trigger: ~ when you need any of:**
 - Partner API for fully-automatic provisioning
-- Volume pricing on LLM tokens (Voiceflow can negotiate at Enterprise)
+- Volume pricing on LLM tokens (the vendor can negotiate at Enterprise)
 - Multi-workspace support (separate billing per customer segment)
 - SLA on the runtime API (so you can offer your customers an SLA)
 - Custom data retention beyond Business's "forever"
@@ -150,14 +156,14 @@ in the noise.
 Or pragmatically: when you have 100+ customers AND a specific reason
 that Business doesn't fit.
 
-## Stage 3 — Voiceflow Enterprise (Contact sales)
+## Stage 3 — Legacy-engine Enterprise (Contact sales)
 
 **Capacity: unlimited everything; the relationship becomes the asset.**
 
 ### Expected pricing
 
-Voiceflow doesn't publish Enterprise pricing. Comparable SaaS-on-SaaS
-arrangements suggest:
+The legacy-engine vendor didn't publish Enterprise pricing. Comparable
+SaaS-on-SaaS arrangements suggest:
 
 - **Floor**: ~$1,000/mo (probably the entry tier)
 - **Typical for a serious SaaS partner**: $2,500-5,000/mo
@@ -183,7 +189,7 @@ lead capture) is unaffected.
 - Customer 100+ AND signup velocity makes manual project creation a
   daily chore (not just weekly)
 - A specific customer or contract requires SLA / dedicated support
-- You want co-marketing or referral relationship with Voiceflow
+- You want a co-marketing or referral relationship with the engine vendor
 - Multi-channel use cases (voice/SMS/WhatsApp) need volume pricing
 - You're starting to lose deals because of LLM cost passthrough
 
@@ -193,7 +199,7 @@ signups, the partner API is a feature.
 
 ## Summary table
 
-| Stage | Voiceflow plan | Customer ceiling | Margin at ceiling | When to advance |
+| Stage | Legacy-engine plan | Customer ceiling | Margin at ceiling | When to advance |
 |---|---|---|---|---|
 | 1 — Pro | $60/mo | 20 | ~86% | At customer 18 |
 | 2 — Business | $150/mo | unlimited (operational cap ~100-300) | ~83% | When partner-API or volume pricing matters |
@@ -203,7 +209,7 @@ signups, the partner API is a feature.
 
 If you had $0 in the bank today and committed to Stage 1:
 
-- Month 0: invest $76 (Voiceflow Pro + Railway + domain)
+- Month 0: invest $76 (legacy-engine Pro + Railway + domain)
 - Month 1, customer 1: net +$13 — covered
 - Month 2, customer 2: net +$102 cumulative
 - ...
@@ -217,14 +223,16 @@ hit customer 18 in 4-6 months and be ready for Business by month 6.
 
 - Pricing config in code: `app/Billing/Plan.php`
 - Customer plan tiers documented: `docs/operations/ship-fast-plan.md`
-- Voiceflow plan facts: see your current creator.voiceflow.com/profile/billing
+- Current (native-engine) cost basis: `docs/runtime-native.md`
 - Architecture page (in-app, customer-facing): `/system/architecture`
 
 ## When this doc goes stale
 
-Update when any of these change:
-- Voiceflow plan pricing (Pro $60, Business $150, Enterprise unknown)
+This doc is historical (the legacy engine it models was removed). It is
+superseded once the native cost basis is written up; until then, leave it
+as a record. The figures that drove it were:
+- Legacy-engine plan pricing (Pro $60, Business $150, Enterprise unknown)
 - Our plan pricing on flowstack.com/pricing
-- Voiceflow's LLM token costs (passthrough estimate)
+- The legacy engine's LLM token costs (passthrough estimate)
 - Stripe fee structure (currently 2.9% + 30¢)
 - Hosting infrastructure costs

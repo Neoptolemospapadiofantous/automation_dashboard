@@ -9,8 +9,8 @@ board that updates live across every connected browser, broadcasting over the
 - **`LeadStatus` enum** — the lifecycle `new → engaging → qualified → assigned →
   won | lost`, with labels/colours for the board.
 - **`leads` table + `Lead` model** — team-scoped, assignable to a rep, with
-  `score`, `source`, free-form `notes`, and Voiceflow fields
-  (`voiceflow_user_id`, `captured` JSON) ready for Phase 4.
+  `score`, `source`, free-form `notes`, and conversation-capture fields
+  (`visitor_id`, `captured` JSON) ready for Phase 4.
 - **`LeadController`** — team-scoped index, store, update, drag-and-drop status
   change, and destroy. Every mutation **broadcasts** `LeadSaved` / `LeadDeleted`
   on a **private `team.{id}` channel** (only team members may subscribe).
@@ -47,5 +47,5 @@ cross-browser updates require Pusher credentials + a running `queue:work`.
 
 ## Next
 
-[[phase-5-voiceflow|Phase 4 adds the Voiceflow proxy]]: [[phase-5-voiceflow|conversations capture variables that
+[[phase-5-voiceflow|Phase 4 adds the conversational-engine proxy]]: [[phase-5-voiceflow|conversations capture variables that
 create/update leads]], which then tick onto this board live.

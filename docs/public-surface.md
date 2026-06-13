@@ -13,8 +13,8 @@ The dashboard's externally-reachable, non-session-authenticated routes.
 | `POST /webhooks/stripe` | Stripe signature (`whsec`, constant-time) | Inbound Stripe events (checkout, invoices, subscription lifecycle). Deliberately not IP-throttled — signature is the guard; throttling would drop renewal bursts |
 | `GET /` | none | Static framework Welcome page — serves no tenant data |
 
-> Historical note: the three `/api/voiceflow/*` webhook receivers were
-> removed with the Voiceflow engine (2026-06-11) — no inbound
+> Historical note: the three legacy inbound webhook receivers were
+> removed with the legacy engine (2026-06-11) — no inbound
 > engine webhooks exist on the native runtime.
 
 The rest of this document covers `/api/public/stats`, the only *anonymous*
