@@ -15,32 +15,35 @@ tags: [hermes, metrics, effectiveness]
 |---|---|---|---|
 | PHPStan baseline | `phpstan-baseline.neon` | **↓** | suppressed-debt shrinks as you fix it |
 | Debt density | baseline ÷ `app/*.php` | **↓** | **debt falls even while the code grows** — the real signal |
+| Escape rate | reactive prod bugfixes ÷ commits | **↓** | less firefighting per unit of work |
+| Catch ratio | catches ÷ (catches + escapes) | **↑** | the audit catches a bigger share of bugs pre-merge |
+| TODO/FIXME | markers in `app/` | **↓** | inline tech-debt paid down |
 | Test files | `tests/**/*Test.php` | **↑** | coverage grows with features |
 | Docs | `docs/**/*.md` | **↑** | the doc-coverage gate keeps it climbing |
-| Escape rate | reactive prod bugfixes ÷ commits | **↓** | less firefighting per unit of work |
 
 Headline test = **debt density**: suppressed issues per file falling while the code grows
-means the gates are net-positive. **Escape rate** is the lagging signal — the share of work
-that is fixing bugs in shipped code the audit *didn't* catch.
+means the gates are net-positive. **Catch ratio** answers the other half — *is the audit
+catching bugs before they ship?*
 
-> **On escape rate:** detected heuristically — a `fix`-type commit touching `app/`/`resources/`
-> that isn't attributed to the audit. Bugs the audit *found* pre-merge are counted as
-> **catches** (a positive), not escapes. Until releases are tagged this is really a
-> *reactive-fix / firefighting* rate; it becomes a true production-escape rate once there's a
-> release boundary. To force classification, mention the audit in a fix subject (→ catch).
+> **Escape vs catch:** a `fix`-type commit touching `app/`/`resources/` is an *escape* unless
+> it's attributed to the audit (`fix: audit-driven…`, 'surfaced by the audit') — those are
+> *catches* (a positive). Until releases are tagged, escape rate is a *firefighting* proxy,
+> not a true production-escape rate.
 
 ## Headline (2026-06-08 → 2026-06-14)
 
 | KPI | Start | Now | Δ |
 |---|---|---|---|
 | PHPStan baseline | 222 | 124 | **-44%** |
-| Debt density | 2.02 | 0.9 | **-55%** |
+| Debt density | 2.02 | 0.89 | **-56%** |
+| Escape rate (peak → now) | 11.4% | 5.0% | **-56%** |
+| Catch ratio | 0.0% | 36.4% | +36.4pp |
+| TODO/FIXME | 0 | 1 | +1 |
 | Test files | 25 | 95 | +280% |
 | Docs | 5 | 128 | +2460% |
-| Escape rate (peak → now) | 11.4% | 5.1% | **-55%** |
-| App PHP files | 33 | 138 | +318% |
+| App PHP files | 33 | 139 | +321% |
 
-Reactive prod bugfixes (escapes): **7** across 138 commits. Bugs the audit caught pre-merge (catches): **4**.
+Escapes: **7** · catches (audit-found pre-merge): **4** · untested subsystems: **1** (app/Runtime/Exceptions)
 
 ## Charts
 
@@ -57,7 +60,7 @@ xychart-beta
     title "Debt density — suppressed issues per app file  (down = better)"
     x-axis ["05-31", "06-01", "06-03", "06-04", "06-05", "06-08", "06-09", "06-10", "06-11", "06-12", "06-13", "06-14"]
     y-axis "density" 0 --> 3.02
-    line [0.0, 0.0, 0.0, 0.0, 0.0, 2.02, 1.74, 1.34, 1.05, 0.96, 0.9, 0.9]
+    line [0.0, 0.0, 0.0, 0.0, 0.0, 2.02, 1.74, 1.34, 1.05, 0.96, 0.9, 0.89]
 ```
 
 ```mermaid
@@ -65,7 +68,23 @@ xychart-beta
     title "Escape rate — reactive prod bugfixes per commit (%)  (down = better)"
     x-axis ["05-31", "06-01", "06-03", "06-04", "06-05", "06-08", "06-09", "06-10", "06-11", "06-12", "06-13", "06-14"]
     y-axis "esc_rate" 0 --> 12.4
-    line [0.0, 9.1, 11.4, 11.3, 11.1, 10.2, 7.9, 6.9, 6.9, 6.1, 5.2, 5.1]
+    line [0.0, 9.1, 11.4, 11.3, 11.1, 10.2, 7.9, 6.9, 6.9, 6.1, 5.2, 5.0]
+```
+
+```mermaid
+xychart-beta
+    title "Catch ratio — share of bugs the audit caught (%)  (up = better)"
+    x-axis ["05-31", "06-01", "06-03", "06-04", "06-05", "06-08", "06-09", "06-10", "06-11", "06-12", "06-13", "06-14"]
+    y-axis "catch_ratio" 0 --> 44.0
+    line [0.0, 0.0, 37.5, 40.0, 40.0, 40.0, 40.0, 40.0, 36.4, 36.4, 36.4, 36.4]
+```
+
+```mermaid
+xychart-beta
+    title "TODO/FIXME markers in app/  (down = better)"
+    x-axis ["05-31", "06-01", "06-03", "06-04", "06-05", "06-08", "06-09", "06-10", "06-11", "06-12", "06-13", "06-14"]
+    y-axis "todos" 0 --> 2
+    line [0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1]
 ```
 
 ```mermaid
@@ -90,18 +109,18 @@ xychart-beta
 
 ## Data
 
-| date | baseline | density | tests | docs | escapes | esc% | catches | app php |
-|---|---|---|---|---|---|---|---|---|
-| 2026-05-31 | 0 | 0.0 | 25 | 5 | 0 | 0.0% | 0 | 33 |
-| 2026-06-01 | 0 | 0.0 | 31 | 10 | 2 | 9.1% | 0 | 46 |
-| 2026-06-03 | 0 | 0.0 | 51 | 78 | 5 | 11.4% | 3 | 88 |
-| 2026-06-04 | 0 | 0.0 | 52 | 83 | 6 | 11.3% | 4 | 90 |
-| 2026-06-05 | 0 | 0.0 | 52 | 84 | 6 | 11.1% | 4 | 90 |
-| 2026-06-08 | 222 | 2.02 | 66 | 103 | 6 | 10.2% | 4 | 110 |
-| 2026-06-09 | 216 | 1.74 | 76 | 105 | 6 | 7.9% | 4 | 124 |
-| 2026-06-10 | 215 | 1.34 | 89 | 106 | 6 | 6.9% | 4 | 161 |
-| 2026-06-11 | 141 | 1.05 | 72 | 109 | 7 | 6.9% | 4 | 134 |
-| 2026-06-12 | 133 | 0.96 | 95 | 116 | 7 | 6.1% | 4 | 138 |
-| 2026-06-13 | 124 | 0.9 | 95 | 126 | 7 | 5.2% | 4 | 138 |
-| 2026-06-14 | 124 | 0.9 | 95 | 128 | 7 | 5.1% | 4 | 138 |
+| date | baseline | density | tests | docs | todos | escapes | esc% | catches | catch% | app php |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-05-31 | 0 | 0.0 | 25 | 5 | 0 | 0 | 0.0% | 0 | 0.0% | 33 |
+| 2026-06-01 | 0 | 0.0 | 31 | 10 | 0 | 2 | 9.1% | 0 | 0.0% | 46 |
+| 2026-06-03 | 0 | 0.0 | 51 | 78 | 0 | 5 | 11.4% | 3 | 37.5% | 88 |
+| 2026-06-04 | 0 | 0.0 | 52 | 83 | 1 | 6 | 11.3% | 4 | 40.0% | 90 |
+| 2026-06-05 | 0 | 0.0 | 52 | 84 | 1 | 6 | 11.1% | 4 | 40.0% | 90 |
+| 2026-06-08 | 222 | 2.02 | 66 | 103 | 1 | 6 | 10.2% | 4 | 40.0% | 110 |
+| 2026-06-09 | 216 | 1.74 | 76 | 105 | 0 | 6 | 7.9% | 4 | 40.0% | 124 |
+| 2026-06-10 | 215 | 1.34 | 89 | 106 | 0 | 6 | 6.9% | 4 | 40.0% | 161 |
+| 2026-06-11 | 141 | 1.05 | 72 | 109 | 1 | 7 | 6.9% | 4 | 36.4% | 134 |
+| 2026-06-12 | 133 | 0.96 | 95 | 116 | 1 | 7 | 6.1% | 4 | 36.4% | 138 |
+| 2026-06-13 | 124 | 0.9 | 95 | 126 | 1 | 7 | 5.2% | 4 | 36.4% | 138 |
+| 2026-06-14 | 124 | 0.89 | 95 | 128 | 1 | 7 | 5.0% | 4 | 36.4% | 139 |
 

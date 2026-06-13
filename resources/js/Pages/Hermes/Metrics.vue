@@ -119,9 +119,9 @@ const hasRegressions = computed(() => (props.metrics?.regressions?.length ?? 0) 
                     </div>
                 </div>
 
-                <!-- Escapes vs catches -->
+                <!-- Defects + coverage -->
                 <div class="rounded-none border border-border-line bg-bg p-4 shadow-sheet">
-                    <p class="font-mono text-xs uppercase tracking-wider text-ink-mute">Defects</p>
+                    <p class="font-mono text-xs uppercase tracking-wider text-ink-mute">Defects &amp; coverage</p>
                     <div class="mt-2 flex flex-wrap gap-6">
                         <div>
                             <span class="font-mono text-xl font-semibold text-ink">{{ metrics.escapes }}</span>
@@ -130,6 +130,15 @@ const hasRegressions = computed(() => (props.metrics?.regressions?.length ?? 0) 
                         <div>
                             <span class="font-mono text-xl font-semibold text-emerald-600">{{ metrics.catches }}</span>
                             <span class="ml-1.5 text-xs text-ink-dim">catches (bugs the audit found pre-merge)</span>
+                        </div>
+                        <div>
+                            <span
+                                class="font-mono text-xl font-semibold"
+                                :class="(metrics.untested?.length ?? 0) ? 'text-amber-600' : 'text-emerald-600'"
+                            >{{ metrics.untested?.length ?? 0 }}</span>
+                            <span class="ml-1.5 text-xs text-ink-dim">
+                                untested subsystems<template v-if="metrics.untested?.length"> ({{ metrics.untested.join(', ') }})</template>
+                            </span>
                         </div>
                     </div>
                 </div>
