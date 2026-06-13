@@ -27,7 +27,7 @@ const isActive = computed(() => {
         class="group flex items-center gap-2.5 rounded-none px-2 py-1.5 text-sm font-medium transition-colors"
         :class="isActive
             ? 'bg-surface-hi text-ink'
-            : 'text-ink-dim hover:bg-surface hover:text-ink'"
+            : 'text-ink-dim hover:bg-surface-hi hover:text-ink'"
     >
         <span v-if="$slots.icon" class="flex h-4 w-4 items-center justify-center text-ink-mute group-hover:text-ink-dim" :class="{ 'text-ink group-hover:text-ink': isActive }">
             <slot name="icon" />

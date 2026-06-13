@@ -85,7 +85,7 @@ const toneClass = (tone) => ({
 const colorBar = (color) => ({
     sky: 'bg-sky-400', amber: 'bg-amber-400', violet: 'bg-violet-400',
     blue: 'bg-blue-400', green: 'bg-green-400', rose: 'bg-rose-400',
-}[color] || 'bg-gray-300');
+}[color] || 'bg-ink-mute');
 
 const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)));
 </script>
@@ -132,7 +132,7 @@ const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)
                                 >
                                     {{ s.label }}
                                 </component>
-                                <p class="mt-0.5 text-[11px] leading-snug text-ink-mute">{{ s.hint }}</p>
+                                <p class="mt-0.5 text-[11px] leading-snug text-ink-dim">{{ s.hint }}</p>
                             </div>
                         </li>
                     </ul>

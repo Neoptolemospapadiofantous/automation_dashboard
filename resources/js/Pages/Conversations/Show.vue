@@ -103,7 +103,7 @@ const deleteUpstream = async () => {
                             <p class="mt-1 font-mono text-[10px] opacity-60">{{ fmt(m.sent_at) }}</p>
                         </div>
                     </div>
-                    <p v-if="!messages.length" class="py-8 text-center text-ink-mute">No messages recorded.</p>
+                    <p v-if="!messages.length" class="py-8 text-center text-ink-dim">No messages recorded.</p>
                 </div>
             </div>
         </div>

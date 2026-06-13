@@ -88,16 +88,20 @@
             font-size: 14px; outline: none;
             background: var(--bg); color: var(--ink);
         }
-        form input:focus { border-color: var(--ink); }
+        form input:focus { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink); }
         form button {
             padding: 10px 16px; border: 1px solid var(--ink); border-radius: 0;
             background: var(--ink); color: var(--bg);
             font-weight: 600; font-size: 12px; cursor: pointer;
             font-family: var(--font-mono);
             letter-spacing: 0.06em; text-transform: uppercase;
+            white-space: nowrap; flex-shrink: 0;
             transition: background .15s, color .15s;
         }
-        form button:hover:not(:disabled) { background: var(--bg); color: var(--ink); }
+        /* :active alongside :hover so touch devices get press feedback and
+           the inverted state doesn't "stick" after tap. */
+        form button:hover:not(:disabled),
+        form button:active:not(:disabled) { background: var(--bg); color: var(--ink); }
         form button:disabled { opacity: .5; cursor: not-allowed; }
         .typing {
             align-self: flex-start;

@@ -242,7 +242,7 @@ const description = computed(() => {
                                     @change="onFilePicked"
                                 />
                                 <InputError :message="fileForm.errors.file" />
-                                <p class="text-[11px] text-ink-mute">{{ fileHelp }} · max 10 MB.</p>
+                                <p class="text-[11px] text-ink-dim">{{ fileHelp }} · max 10 MB.</p>
                                 <PrimaryButton :disabled="fileForm.processing || !configured || !fileForm.file">
                                     {{ fileForm.processing ? 'Uploading…' : 'Upload file' }}
                                 </PrimaryButton>
@@ -263,12 +263,12 @@ const description = computed(() => {
                                     id="text-body"
                                     v-model="textForm.text"
                                     rows="3"
-                                    class="block w-full rounded-none border-border-hi bg-bg text-xs text-ink focus:border-ink focus:ring-0"
+                                    class="block w-full rounded-none border-border-hi bg-bg text-xs text-ink focus:border-ink focus:ring-2 focus:ring-ink focus:ring-offset-1"
                                     placeholder="Policy snippet, FAQ entry, short answer…"
                                     :disabled="!configured || textForm.processing"
                                 />
                                 <InputError :message="textForm.errors.text" />
-                                <p class="text-[11px] text-ink-mute">Plain text · max 200k chars.</p>
+                                <p class="text-[11px] text-ink-dim">Plain text · max 200k chars.</p>
                                 <PrimaryButton :disabled="textForm.processing || !configured || !textForm.name || !textForm.text">
                                     {{ textForm.processing ? 'Saving…' : 'Add text' }}
                                 </PrimaryButton>
@@ -291,7 +291,7 @@ const description = computed(() => {
                                     <div class="truncate font-medium text-ink">
                                         {{ d.data?.name || d.data?.url || d.documentID }}
                                     </div>
-                                    <div v-if="d.data?.url && d.data?.name !== d.data?.url" class="truncate text-xs text-ink-mute">
+                                    <div v-if="d.data?.url && d.data?.name !== d.data?.url" class="truncate text-xs text-ink-dim">
                                         {{ d.data.url }}
                                     </div>
                                 </div>
@@ -354,7 +354,7 @@ const description = computed(() => {
                                 <div class="truncate text-xs font-medium text-ink">
                                     {{ inspecting.data?.data?.name || inspecting.documentID }}
                                 </div>
-                                <div class="mt-1 font-mono text-[11px] text-ink-mute">
+                                <div class="mt-1 font-mono text-[11px] text-ink-dim">
                                     {{ (inspecting.chunks ?? []).length }} chunks ·
                                     last updated {{ inspecting.data?.updatedAt ? new Date(inspecting.data.updatedAt).toLocaleString() : '—' }}
                                 </div>
@@ -366,7 +366,7 @@ const description = computed(() => {
                                     >
                                         {{ c.content }}
                                     </div>
-                                    <p v-if="!(inspecting.chunks ?? []).length" class="text-xs text-ink-mute">
+                                    <p v-if="!(inspecting.chunks ?? []).length" class="text-xs text-ink-dim">
                                         No chunks yet — document may still be processing.
                                     </p>
                                 </div>

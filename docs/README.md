@@ -10,6 +10,7 @@ write a new phase doc that supersedes the prior one).
 
 ## Reading order for newcomers
 
+0. [project-overview.md](./project-overview.md) — **start here**: the whole system in one page (runtime, billing, public surface, compliance, brand, ops, current state)
 1. [phase-1-foundation.md](./phase-1-foundation.md) — [[phase-1-foundation|Laravel + Jetstream + Inertia base]]
 2. [phase-13-multitenancy.md](./phase-13-multitenancy.md) — [[phase-13-multitenancy|current tenancy model + lifecycle]] (read this if you're touching anything customer-facing)
 3. [public-surface.md](./public-surface.md) — the public API contract consumed by the marketing site
@@ -45,6 +46,7 @@ write a new phase doc that supersedes the prior one).
 - [architecture/landing-sse-pipeline.md](./architecture/landing-sse-pipeline.md) — landing-side SSE pipeline (Mermaid)
 
 ### Design
+- [design-system.md](./design-system.md) — **the brand reference + rules**: tokens, two sheets, component registers, the `text-ink-mute` contrast rule, semantic-color exception
 - [theme-unification.md](./theme-unification.md) — landing↔dashboard↔embed shared tokens ("two sheets, one ink"). Phases 1–2 built; Phase 3 (Tailwind v4) planned
 
 ### Infra + ops

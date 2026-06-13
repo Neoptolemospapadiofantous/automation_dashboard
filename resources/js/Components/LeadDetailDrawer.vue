@@ -121,22 +121,22 @@ const capturedRows = computed(() => {
                 <h3 class="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">Contact</h3>
                 <dl class="mt-3 space-y-1.5 text-sm">
                     <div v-if="lead.email" class="flex items-center justify-between gap-2">
-                        <dt class="text-xs text-ink-mute">Email</dt>
+                        <dt class="text-xs text-ink-dim">Email</dt>
                         <dd>
                             <a :href="`mailto:${lead.email}`" class="text-ink underline hover:text-ink-dim">{{ lead.email }}</a>
                         </dd>
                     </div>
                     <div v-if="lead.phone" class="flex items-center justify-between gap-2">
-                        <dt class="text-xs text-ink-mute">Phone</dt>
+                        <dt class="text-xs text-ink-dim">Phone</dt>
                         <dd>
                             <a :href="`tel:${lead.phone}`" class="text-ink underline hover:text-ink-dim">{{ lead.phone }}</a>
                         </dd>
                     </div>
                     <div v-if="lead.company" class="flex items-center justify-between gap-2">
-                        <dt class="text-xs text-ink-mute">Company</dt>
+                        <dt class="text-xs text-ink-dim">Company</dt>
                         <dd class="text-ink-dim">{{ lead.company }}</dd>
                     </div>
-                    <p v-if="!lead.email && !lead.phone && !lead.company" class="text-xs italic text-ink-mute">
+                    <p v-if="!lead.email && !lead.phone && !lead.company" class="text-xs italic text-ink-dim">
                         No contact info captured yet.
                     </p>
                 </dl>
@@ -186,7 +186,7 @@ const capturedRows = computed(() => {
                 <textarea
                     v-model="notesDraft"
                     rows="6"
-                    class="mt-2 block w-full rounded-none border-border-hi bg-bg text-sm text-ink focus:border-ink focus:ring-0"
+                    class="mt-2 block w-full rounded-none border-border-hi bg-bg text-sm text-ink focus:border-ink focus:ring-2 focus:ring-ink focus:ring-offset-1"
                     placeholder="Follow-up context, next action, what they care about…"
                     @input="scheduleSave"
                     @blur="saveNotes"

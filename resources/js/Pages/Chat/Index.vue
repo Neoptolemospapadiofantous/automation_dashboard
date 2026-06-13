@@ -234,7 +234,7 @@ const capturedEntries = () => Object.entries(captured.value);
                             </div>
 
                             <div v-if="busy && started" class="flex justify-start">
-                                <div class="rounded-none bg-surface-hi px-4 py-2 text-sm text-ink-mute">…</div>
+                                <div class="rounded-none bg-surface-hi px-4 py-2 text-sm text-ink-dim">…</div>
                             </div>
                         </div>
 
@@ -260,7 +260,7 @@ const capturedEntries = () => Object.entries(captured.value);
                             <TextInput v-model="input" type="text" class="flex-1" placeholder="Type a message…" :disabled="busy" />
                             <PrimaryButton :disabled="busy || !input.trim()">Send</PrimaryButton>
                         </form>
-                        <div v-else-if="ended" class="border-t border-border-line p-3 text-center text-sm text-ink-mute">
+                        <div v-else-if="ended" class="border-t border-border-line p-3 text-center text-sm text-ink-dim">
                             Conversation ended.
                         </div>
                     </div>
@@ -276,7 +276,7 @@ const capturedEntries = () => Object.entries(captured.value);
                                 <dd class="truncate font-medium text-ink">{{ v }}</dd>
                             </div>
                         </dl>
-                        <p v-else class="text-sm text-ink-mute">
+                        <p v-else class="text-sm text-ink-dim">
                             Lead fields captured during the conversation will appear here and sync to the board live.
                         </p>
 

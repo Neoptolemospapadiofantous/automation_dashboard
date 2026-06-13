@@ -25,7 +25,11 @@
         + '  font-family: ui-monospace, "JetBrains Mono", monospace;'
         + '  transition: background .15s, color .15s;'
         + '}'
-        + '#fs-embed-btn:hover { background: ' + BG + '; color: ' + INK + '; }'
+        // Invert on hover/active. Guard hover behind (hover: hover) so touch
+        // devices don't get a "stuck" inverted button after tap; :active gives
+        // them press feedback instead.
+        + '@media (hover: hover) { #fs-embed-btn:hover { background: ' + BG + '; color: ' + INK + '; } }'
+        + '#fs-embed-btn:active { background: ' + BG + '; color: ' + INK + '; }'
         + '#fs-embed-btn svg { width: 24px; height: 24px; }'
         + '#fs-embed-frame-wrap {'
         + '  position: fixed; bottom: 96px; right: 24px;'

@@ -106,7 +106,7 @@ function onAssignChange(e) {
         <!-- Delegation: assign to a rep or auto round-robin -->
         <div class="mt-2 border-t border-border-line pt-2" @mousedown.stop @dragstart.stop>
             <select
-                class="w-full rounded-none border-border-hi bg-bg py-1 text-xs text-ink-dim focus:border-ink focus:ring-0"
+                class="w-full rounded-none border-border-hi bg-bg py-1 text-xs text-ink-dim focus:border-ink focus:ring-2 focus:ring-ink focus:ring-offset-1"
                 :value="lead.assigned_to ?? ''"
                 aria-label="Assign lead"
                 @change="onAssignChange"

@@ -78,13 +78,13 @@ const dirty = computed(() => form.isDirty);
                     <span v-if="published" class="font-mono text-xs text-ink-mute">
                         Live now: v{{ published.version }} · published {{ fmt(published.published_at) }}
                     </span>
-                    <span v-else class="text-xs text-ink-mute">Nothing published yet — the agent runs on defaults.</span>
+                    <span v-else class="text-xs text-ink-dim">Nothing published yet — the agent runs on defaults.</span>
                 </div>
 
                 <div class="space-y-4">
                     <div>
                         <InputLabel for="instructions" value="Custom instructions" />
-                        <p class="mt-0.5 text-xs text-ink-mute">
+                        <p class="mt-0.5 text-xs text-ink-dim">
                             Added to the agent's system prompt on every turn. Tone, what to emphasize, things to avoid, qualification criteria…
                         </p>
                         <textarea
@@ -92,7 +92,7 @@ const dirty = computed(() => form.isDirty);
                             v-model="form.instructions"
                             rows="7"
                             maxlength="4000"
-                            class="mt-2 block w-full rounded-none border-border-hi bg-bg text-sm text-ink focus:border-ink focus:ring-0"
+                            class="mt-2 block w-full rounded-none border-border-hi bg-bg text-sm text-ink focus:border-ink focus:ring-2 focus:ring-ink focus:ring-offset-1"
                             placeholder="e.g. We sell to dental clinics. Always ask about practice size. Never discuss competitor pricing. If they mention enterprise, prioritize booking a call over email capture."
                         />
                         <InputError :message="form.errors.instructions" class="mt-1" />
@@ -100,13 +100,13 @@ const dirty = computed(() => form.isDirty);
 
                     <div>
                         <InputLabel for="greeting" value="Greeting guidance (optional)" />
-                        <p class="mt-0.5 text-xs text-ink-mute">Shapes only the first message of each conversation.</p>
+                        <p class="mt-0.5 text-xs text-ink-dim">Shapes only the first message of each conversation.</p>
                         <input
                             id="greeting"
                             v-model="form.greeting"
                             type="text"
                             maxlength="500"
-                            class="mt-2 block w-full rounded-none border-border-hi bg-bg text-sm text-ink focus:border-ink focus:ring-0"
+                            class="mt-2 block w-full rounded-none border-border-hi bg-bg text-sm text-ink focus:border-ink focus:ring-2 focus:ring-ink focus:ring-offset-1"
                             placeholder="e.g. Mention our March webinar in the greeting."
                         />
                         <InputError :message="form.errors.greeting" class="mt-1" />
@@ -114,7 +114,7 @@ const dirty = computed(() => form.isDirty);
 
                     <div>
                         <InputLabel for="model_tier" value="Response quality" />
-                        <p class="mt-0.5 text-xs text-ink-mute">
+                        <p class="mt-0.5 text-xs text-ink-dim">
                             Smarter answers cost more credits per message. Applies to this agent only, from the moment you publish.
                         </p>
                         <div class="mt-2 grid gap-3 sm:grid-cols-3">
@@ -151,7 +151,7 @@ const dirty = computed(() => form.isDirty);
                         <PrimaryButton :disabled="form.processing || publishForm.processing" @click="publish">
                             {{ publishForm.processing ? 'Publishing…' : 'Publish' }}
                         </PrimaryButton>
-                        <p class="text-xs text-ink-mute">Publishing goes live on the very next message — no deploy.</p>
+                        <p class="text-xs text-ink-dim">Publishing goes live on the very next message — no deploy.</p>
                     </div>
                 </div>
             </div>
@@ -181,7 +181,7 @@ const dirty = computed(() => form.isDirty);
                             <p class="mt-0.5 truncate text-xs text-ink-dim">
                                 {{ v.config?.instructions ? v.config.instructions.slice(0, 110) : '(no custom instructions)' }}
                             </p>
-                            <p class="mt-0.5 font-mono text-[10px] text-ink-mute">
+                            <p class="mt-0.5 font-mono text-[10px] text-ink-dim">
                                 {{ v.status === 'published' ? 'published ' + fmt(v.published_at) : 'updated ' + fmt(v.updated_at) }}
                             </p>
                         </div>

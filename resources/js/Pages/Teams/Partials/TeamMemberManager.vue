@@ -239,13 +239,13 @@ const displayableRole = (role) => {
                                 <!-- Manage Team Member Role -->
                                 <button
                                     v-if="userPermissions.canUpdateTeamMembers && availableRoles.length"
-                                    class="ms-2 text-sm text-ink-mute underline"
+                                    class="ms-2 text-sm text-ink-dim underline"
                                     @click="manageRole(user)"
                                 >
                                     {{ displayableRole(user.membership.role) }}
                                 </button>
 
-                                <div v-else-if="availableRoles.length" class="ms-2 text-sm text-ink-mute">
+                                <div v-else-if="availableRoles.length" class="ms-2 text-sm text-ink-dim">
                                     {{ displayableRole(user.membership.role) }}
                                 </div>
 
