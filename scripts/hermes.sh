@@ -24,6 +24,7 @@ done
 
 mkdir -p "$LOG_DIR"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+START_EPOCH=$(date +%s)  # wall-clock start, for per-run duration
 
 pass=0; fail=0; warn=0
 declare -a findings=()
@@ -211,6 +212,8 @@ overall="PASS"
 [[ $fail -gt 0 ]] && overall="FAIL"
 [[ $fail -eq 0 && $warn -gt 0 ]] && overall="WARN"
 
+DURATION=$(( $(date +%s) - START_EPOCH ))  # seconds this run took
+
 joined=$(IFS=,; echo "${findings[*]:-}")
 cat > "$FINDINGS" <<EOF
 {
@@ -220,12 +223,13 @@ cat > "$FINDINGS" <<EOF
   "fail": $fail,
   "warn": $warn,
   "fast": $FAST,
+  "duration_s": $DURATION,
   "findings": [$joined]
 }
 EOF
 
-log "=== SUMMARY: $overall ($pass PASS / $fail FAIL / $warn WARN) ==="
-echo "$TS  $overall  $pass/$fail/$warn  fast=$FAST" >> "$LOG"
+log "=== SUMMARY: $overall ($pass PASS / $fail FAIL / $warn WARN) in ${DURATION}s ==="
+echo "$TS  $overall  $pass/$fail/$warn  fast=$FAST  dur=${DURATION}s" >> "$LOG"
 
 # ── 7b. Enrich findings with manifest context (the trunk) ─────────────────────
 # Attaches each finding to the manifest nodes its check covers + their edges

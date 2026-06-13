@@ -7,7 +7,14 @@ import PageHeader from '@/Components/PageHeader.vue';
 const props = defineProps({
     // null until `composer hermes-metrics` has been run (writes data/hermes_metrics.json)
     metrics: { type: Object, default: null },
+    // live per-run log, parsed from data/logs/hermes_session.log (newest first)
+    runs: { type: Array, default: () => [] },
+    ops: { type: Object, default: null },
 });
+
+function verdictClass(v) {
+    return v === 'PASS' ? 'text-emerald-600' : v === 'WARN' ? 'text-amber-600' : 'text-rose-600';
+}
 
 const W = 280;
 const H = 64;
@@ -64,14 +71,61 @@ const hasRegressions = computed(() => (props.metrics?.regressions?.length ?? 0) 
         <div class="mx-auto max-w-6xl space-y-6 px-4 pb-12 pt-8 sm:px-6">
             <!-- Empty state -->
             <div
-                v-if="!metrics"
+                v-if="!metrics && !ops"
                 class="bg-grid bg-grid-fade rounded-none border border-dashed border-border-line bg-bg p-10 text-center"
             >
-                <h3 class="text-sm font-medium text-ink-dim">No metrics yet</h3>
-                <p class="mt-1 font-mono text-xs text-ink-dim">Run <span class="bg-surface-hi px-1">composer hermes-metrics</span> to generate the report.</p>
+                <h3 class="text-sm font-medium text-ink-dim">Nothing yet</h3>
+                <p class="mt-1 font-mono text-xs text-ink-dim">Run <span class="bg-surface-hi px-1">composer hermes-fast</span> (run log) + <span class="bg-surface-hi px-1">composer hermes-metrics</span> (KPIs).</p>
             </div>
 
-            <template v-else>
+            <!-- Run log — per iteration (live, from the session log) -->
+            <div v-if="ops" class="space-y-3">
+                <h2 class="font-mono text-xs uppercase tracking-wider text-ink-mute">Run log — per iteration</h2>
+                <div class="grid gap-4 sm:grid-cols-4">
+                    <div class="bp-node rounded-none p-3 shadow-sheet">
+                        <p class="font-mono text-[10px] uppercase tracking-wider text-ink-mute">Last run</p>
+                        <p class="mt-0.5 font-mono text-xs text-ink">{{ ops.last_ts }}</p>
+                        <p class="font-mono text-[11px] font-semibold" :class="verdictClass(ops.last_overall)">{{ ops.last_overall }}<template v-if="ops.last_dur != null"> · {{ ops.last_dur }}s</template></p>
+                    </div>
+                    <div class="bp-node rounded-none p-3 shadow-sheet">
+                        <p class="font-mono text-[10px] uppercase tracking-wider text-ink-mute">Pass streak</p>
+                        <p class="mt-0.5 font-mono text-2xl font-semibold leading-none" :class="ops.streak > 0 ? 'text-emerald-600' : 'text-ink'">{{ ops.streak }}</p>
+                    </div>
+                    <div class="bp-node rounded-none p-3 shadow-sheet">
+                        <p class="font-mono text-[10px] uppercase tracking-wider text-ink-mute">Pass rate</p>
+                        <p class="mt-0.5 font-mono text-2xl font-semibold leading-none text-ink">{{ ops.pass_rate }}%</p>
+                        <p class="font-mono text-[10px] text-ink-mute">{{ ops.total }} runs</p>
+                    </div>
+                    <div class="bp-node rounded-none p-3 shadow-sheet">
+                        <p class="font-mono text-[10px] uppercase tracking-wider text-ink-mute">Avg duration</p>
+                        <p class="mt-0.5 font-mono text-2xl font-semibold leading-none text-ink">{{ ops.avg_dur != null ? ops.avg_dur + 's' : '—' }}</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto rounded-none border border-border-line bg-bg shadow-sheet">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="border-b border-border-line font-mono text-[10px] uppercase tracking-wider text-ink-mute">
+                                <th class="px-3 py-2">time (UTC)</th>
+                                <th class="px-3 py-2">verdict</th>
+                                <th class="px-3 py-2">pass/fail/warn</th>
+                                <th class="px-3 py-2">mode</th>
+                                <th class="px-3 py-2">duration</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(r, i) in runs" :key="i" class="border-b border-border-line last:border-0">
+                                <td class="px-3 py-1.5 font-mono text-ink-dim">{{ r.ts }}</td>
+                                <td class="px-3 py-1.5 font-mono font-semibold" :class="verdictClass(r.overall)">{{ r.overall }}</td>
+                                <td class="px-3 py-1.5 font-mono text-ink-dim">{{ r.pass }}/{{ r.fail }}/{{ r.warn }}</td>
+                                <td class="px-3 py-1.5 font-mono text-ink-mute">{{ r.fast ? 'fast' : 'full' }}</td>
+                                <td class="px-3 py-1.5 font-mono text-ink-dim">{{ r.dur != null ? r.dur + 's' : '—' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <template v-if="metrics">
                 <!-- Regression banner -->
                 <div
                     class="rounded-none border p-4"
