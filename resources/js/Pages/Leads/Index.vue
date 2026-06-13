@@ -219,7 +219,7 @@ function submit() {
                             v-model="search"
                             type="search"
                             placeholder="Search name, email, company, phone…"
-                            class="w-full rounded-none border-border-line pl-8 text-sm focus:border-ink focus:ring-ink"
+                            class="w-full rounded-none border-border-hi bg-bg pl-8 text-sm text-ink focus:border-ink focus:ring-ink"
                             @input="onSearchInput"
                         />
                         <svg class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-mute" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -229,7 +229,7 @@ function submit() {
 
                     <select
                         :value="filters.status ?? ''"
-                        class="rounded-none border-border-line py-1.5 text-xs text-ink-dim"
+                        class="rounded-none border-border-hi bg-bg py-1.5 text-xs text-ink-dim focus:border-ink focus:ring-ink"
                         @change="applyFilters({ status: $event.target.value || null })"
                     >
                         <option value="">All statuses</option>
@@ -239,7 +239,7 @@ function submit() {
                     <select
                         v-if="sources.length"
                         :value="filters.source ?? ''"
-                        class="rounded-none border-border-line py-1.5 text-xs text-ink-dim"
+                        class="rounded-none border-border-hi bg-bg py-1.5 text-xs text-ink-dim focus:border-ink focus:ring-ink"
                         @change="applyFilters({ source: $event.target.value || null })"
                     >
                         <option value="">All sources</option>
@@ -248,7 +248,7 @@ function submit() {
 
                     <select
                         :value="filters.assignee ?? ''"
-                        class="rounded-none border-border-line py-1.5 text-xs text-ink-dim"
+                        class="rounded-none border-border-hi bg-bg py-1.5 text-xs text-ink-dim focus:border-ink focus:ring-ink"
                         @change="applyFilters({ assignee: $event.target.value ? Number($event.target.value) : null })"
                     >
                         <option value="">Anyone assigned</option>
@@ -257,7 +257,7 @@ function submit() {
 
                     <select
                         :value="filters.min_score ?? ''"
-                        class="rounded-none border-border-line py-1.5 text-xs text-ink-dim"
+                        class="rounded-none border-border-hi bg-bg py-1.5 text-xs text-ink-dim focus:border-ink focus:ring-ink"
                         @change="applyFilters({ min_score: $event.target.value ? Number($event.target.value) : null })"
                     >
                         <option value="">Any score</option>

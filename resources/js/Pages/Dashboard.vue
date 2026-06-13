@@ -150,9 +150,9 @@ const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)
                         class="bp-node relative rounded-none p-4 shadow-sheet transition-colors hover:border-ink"
                         :class="c.tone === 'violet' ? 'border-violet' : ''"
                     >
-                        <span class="bp-ref absolute right-2 top-2">DASH/{{ String(i + 1).padStart(2, '0') }}</span>
+                        <span class="bp-ref absolute bottom-2 right-2">DASH/{{ String(i + 1).padStart(2, '0') }}</span>
                         <p class="font-mono text-xs uppercase tracking-wider text-ink-mute">{{ c.label }}</p>
-                        <p class="mt-1 font-mono text-2xl font-semibold" :class="c.tone === 'violet' ? 'text-violet' : toneClass(c.tone)">{{ c.value }}</p>
+                        <p class="mt-2 pr-10 font-mono text-2xl font-semibold leading-none" :class="c.tone === 'violet' ? 'text-violet' : toneClass(c.tone)">{{ c.value }}</p>
                     </div>
                 </div>
 
