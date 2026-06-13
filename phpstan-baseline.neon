@@ -415,12 +415,6 @@ parameters:
 			path: app/Lifecycle/StateMachine.php
 
 		-
-			message: '#^Unused App\\Lifecycle\\StateMachine\:\:name$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Lifecycle/StateMachine.php
-
-		-
 			message: '#^Method App\\Models\\Agent\:\:conversations\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
 			count: 1
@@ -493,12 +487,6 @@ parameters:
 			path: app/Models/Conversation.php
 
 		-
-			message: '#^Unused App\\Models\\Conversation\:\:isEnded$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Models/Conversation.php
-
-		-
 			message: '#^Method App\\Models\\CreditTransaction\:\:agent\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
 			count: 1
@@ -507,18 +495,6 @@ parameters:
 		-
 			message: '#^Method App\\Models\\CreditTransaction\:\:team\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
-			count: 1
-			path: app/Models/CreditTransaction.php
-
-		-
-			message: '#^Unused App\\Models\\CreditTransaction\:\:REASON_ADJUSTMENT$#'
-			identifier: shipmonk.deadConstant
-			count: 1
-			path: app/Models/CreditTransaction.php
-
-		-
-			message: '#^Unused App\\Models\\CreditTransaction\:\:REASON_REFUND$#'
-			identifier: shipmonk.deadConstant
 			count: 1
 			path: app/Models/CreditTransaction.php
 
@@ -566,12 +542,6 @@ parameters:
 
 		-
 			message: '#^Method App\\Models\\LeadAssignment\:\:assignee\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/LeadAssignment.php
-
-		-
-			message: '#^Method App\\Models\\LeadAssignment\:\:assigner\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
 			count: 1
 			path: app/Models/LeadAssignment.php
@@ -749,30 +719,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: database/factories/MessageFactory.php
-
-		-
-			message: '#^Unused Database\\Factories\\MessageFactory\:\:fromAgent$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: database/factories/MessageFactory.php
-
-		-
-			message: '#^Unused Database\\Factories\\MessageFactory\:\:fromUser$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: database/factories/MessageFactory.php
-
-		-
-			message: '#^Unused Database\\Factories\\TeamFactory\:\:onPlan$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: database/factories/TeamFactory.php
-
-		-
-			message: '#^Unused Database\\Factories\\TeamFactory\:\:outOfCredits$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: database/factories/TeamFactory.php
 
 		-
 			message: '#^Parameter \#1 \$state of method Illuminate\\Database\\Eloquent\\Factories\\Factory\<App\\Models\\Team\>\:\:state\(\) expects array\<string, mixed\>\|\(callable\(array\<string, mixed\>, Illuminate\\Database\\Eloquent\\Model\|null\)\: array\<string, mixed\>\), Closure\(array, App\\Models\\User\)\: array\{name\: non\-falsy\-string, user_id\: int, personal_team\: true\} given\.$#'

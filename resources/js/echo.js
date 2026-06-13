@@ -31,5 +31,3 @@ if (key) {
 }
 
 window.Echo = echo;
-
-export default echo;

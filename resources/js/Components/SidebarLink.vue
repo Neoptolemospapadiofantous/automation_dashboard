@@ -3,8 +3,7 @@ import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 
 /**
- * Navigation link styled for the persistent sidebar. Visually distinct from
- * the older top-nav NavLink (which has an underline-on-active treatment).
+ * Navigation link styled for the persistent sidebar.
  *
  * Active state via Ziggy `route().current(pattern)` — accept the pattern as a
  * prop so the layout can express "highlight under any conversations.* route".

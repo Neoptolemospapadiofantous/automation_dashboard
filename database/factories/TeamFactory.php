@@ -31,17 +31,4 @@ class TeamFactory extends Factory
             'credits_renewed_at' => now(),
         ];
     }
-
-    public function outOfCredits(): self
-    {
-        return $this->state(['credit_balance' => 0]);
-    }
-
-    public function onPlan(Plan $plan): self
-    {
-        return $this->state([
-            'plan' => $plan->value,
-            'credit_balance' => $plan->monthlyCredits(),
-        ]);
-    }
 }

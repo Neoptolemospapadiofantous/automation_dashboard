@@ -37,8 +37,6 @@ export default {
                 // is the brand token, `bg-violet-600` is still Tailwind's.
                 violet: { DEFAULT: 'var(--violet)' },
                 'violet-soft': 'var(--violet-soft)',
-                cyan: { DEFAULT: 'var(--cyan)' },
-                'cyan-soft': 'var(--cyan-soft)',
                 success: 'var(--success)',
                 warn: 'var(--warn)',
                 danger: 'var(--danger)',

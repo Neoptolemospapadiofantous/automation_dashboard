@@ -161,6 +161,21 @@ if [[ $FAST -eq 0 ]]; then
   fi
 fi
 
+# ── 6c. Frontend dead code (knip) ──────────────────────────────────────────────
+# Mirrors the PHP side: phpstan + shipmonk/dead-code-detector gate dead PHP;
+# knip gates dead Vue/JS (unused files + exports). Runs in fast mode too — it's
+# cheap and only needs node_modules present.
+log "=== KNIP (frontend dead code) ==="
+if [[ -x node_modules/.bin/knip ]]; then
+  if node_modules/.bin/knip --include files,exports > "$LOG_DIR/knip.log" 2>&1; then
+    record PASS knip "no unused frontend files/exports"
+  else
+    record FAIL knip "unused frontend code — see data/logs/knip.log"
+  fi
+else
+  record WARN knip "knip not installed — run pnpm install"
+fi
+
 # ── 7. Write findings JSON ─────────────────────────────────────────────────────
 overall="PASS"
 [[ $fail -gt 0 ]] && overall="FAIL"

@@ -109,9 +109,4 @@ abstract class StateMachine
 
         return null;
     }
-
-    protected function name(BackedEnum|string $state): string
-    {
-        return $state instanceof BackedEnum ? (string) $state->value : $state;
-    }
 }

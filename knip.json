@@ -1,0 +1,20 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "resources/js/app.js",
+    "resources/js/Pages/**/*.vue"
+  ],
+  "project": ["resources/js/**/*.{js,vue}"],
+  "paths": {
+    "@/*": ["resources/js/*"]
+  },
+  "ignoreDependencies": [
+    "@tailwindcss/forms",
+    "@tailwindcss/typography",
+    "@tailwindcss/vite",
+    "autoprefixer",
+    "postcss",
+    "tailwindcss"
+  ],
+  "ignoreBinaries": []
+}

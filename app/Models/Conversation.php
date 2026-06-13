@@ -70,11 +70,6 @@ class Conversation extends Model
         return $this->hasMany(Message::class);
     }
 
-    public function isEnded(): bool
-    {
-        return $this->status === 'ended';
-    }
-
     /**
      * Restrict to a single agent — see Lead::scopeForAgent for semantics.
      * Null agentId returns no rows.

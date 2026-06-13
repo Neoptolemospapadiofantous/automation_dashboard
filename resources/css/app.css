@@ -19,13 +19,11 @@
 .sheet-white {
     --violet: #5145E5;
     --violet-soft: #6D63F0;
-    --cyan: #0E7C86;
     --elevation: 6px 6px 0 rgba(0, 0, 0, 0.06);
 }
 .sheet-black {
     --violet: #9A8FFF;
     --violet-soft: #7E73F5;
-    --cyan: #4FD3DE;
     --elevation: 6px 6px 0 rgba(255, 255, 255, 0.05);
 }
 

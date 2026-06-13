@@ -18,10 +18,6 @@ class CreditTransaction extends Model
 
     public const REASON_CONSUME_MESSAGE = 'consume_message';
 
-    public const REASON_REFUND = 'refund';
-
-    public const REASON_ADJUSTMENT = 'adjustment';
-
     // Leftover monthly credits wiped at renewal — recorded so the ledger
     // always sums to the live balances (asserted by credits:reconcile).
     public const REASON_EXPIRE_MONTHLY = 'expire_monthly';

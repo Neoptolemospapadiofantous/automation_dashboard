@@ -29,14 +29,4 @@ class MessageFactory extends Factory
             'sent_at' => now(),
         ];
     }
-
-    public function fromUser(): self
-    {
-        return $this->state(['role' => 'user']);
-    }
-
-    public function fromAgent(): self
-    {
-        return $this->state(['role' => 'agent']);
-    }
 }

@@ -32,7 +32,7 @@ Local CI + audit tooling for automation_dashboard. No scheduled execution; all i
 
 | Path | Purpose |
 |---|---|
-| `scripts/hermes.sh` | Vendor + pint + PHPStan + tests + config + routes + migrations + composer audit [+ vite + pnpm audit] |
+| `scripts/hermes.sh` | Vendor + pint + PHPStan + tests + config + routes + migrations + composer audit + knip (frontend dead code) [+ vite + pnpm audit] |
 | `scripts/fleet_agents.json` | 5 specialist agent definitions (route-auditor, inertia-page-scanner, migration-watcher, voiceflow-surface-sentinel, doc-syncer) — consumed by `.claude/commands/hermes-fleet.md` |
 | `scripts/agents/audit_sentinel.sh` | No-LLM collector — writes `data/agents/audit-sentinel/findings.json` (security/risk scan) |
 | `scripts/agents/update_inspector.sh` | No-LLM collector — writes `data/agents/update-inspector/findings.json` (composer + pnpm outdated) |
@@ -50,6 +50,17 @@ Local CI + audit tooling for automation_dashboard. No scheduled execution; all i
 | `data/hermes_findings.json` | Latest run's machine-readable status (gitignored) |
 | `data/logs/` | Per-step logs (gitignored) |
 | `docs/hermes/FLEET-*.md` | Fleet run notes — agent reports, actions taken, carry-forward items |
+
+## Dead-code policy (both stacks gated)
+
+Dead code is gated on **both** sides of the app, so it can't accumulate:
+
+| Stack | Tool | Catches | Gate |
+|---|---|---|---|
+| PHP | `shipmonk/dead-code-detector` (via PHPStan) | unused methods/constants/properties/enum cases, Laravel-aware | phpstan check (baseline-tracked) |
+| Vue/JS | `knip` (`knip.json`, `pnpm run knip`) | unused files + exports (Inertia pages + the `@/` alias are configured as entries) | `knip` check — **FAIL on any finding** |
+
+knip has no baseline: the frontend is kept at **zero** unused files/exports, so any new dead module breaks the build. PHP uses the `phpstan-baseline.neon` ratchet (shrink it as you delete). After removing dead code, regenerate: `vendor/bin/phpstan analyse --generate-baseline --memory-limit=2G` and confirm the diff is removal-only.
 
 ## Static-analysis policy
 
