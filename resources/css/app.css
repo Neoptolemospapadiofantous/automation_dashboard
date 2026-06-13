@@ -1,10 +1,33 @@
 /* Flowstack brand tokens — vendored from automation-landing/branding/tokens.css.
-   The dashboard renders the WHITE sheet: <html class="sheet-white"> (app.blade.php). */
+   Sheet class is set per-request by app.blade.php (light = white, dark = black). */
 @import './tokens.css';
+/* Blueprint motif utilities (.bp-node, .bp-ref, .ins-stamp, .bg-grid, …). */
+@import './motifs.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Dashboard accent + depth ───────────────────────────────────────────
+   The shared tokens.css keeps --violet/--cyan resolved to ink (the marketing
+   site stays pure mono). The DASHBOARD layers a real accent over them here,
+   tuned per sheet so it reads on both grounds: dark-violet on the white sheet,
+   light-violet on the black sheet. Because the accent is dark-on-light and
+   light-on-dark while --bg flips with it, an accent fill always pairs with
+   `text-bg` for correct contrast on either sheet.
+   --elevation drives .shadow-sheet (depth that survives dark mode). */
+.sheet-white {
+    --violet: #5145E5;
+    --violet-soft: #6D63F0;
+    --cyan: #0E7C86;
+    --elevation: 6px 6px 0 rgba(0, 0, 0, 0.06);
+}
+.sheet-black {
+    --violet: #9A8FFF;
+    --violet-soft: #7E73F5;
+    --cyan: #4FD3DE;
+    --elevation: 6px 6px 0 rgba(255, 255, 255, 0.05);
+}
 
 /* Focus-ring offset follows the active sheet, so the 2px offset gap reads as
    the page ground on both the white and the black sheet (Tailwind defaults it
