@@ -160,9 +160,9 @@ Grouped by area, alphabetical within each group.
   doc-coverage, frontend build…). Writes `data/hermes_findings.json`,
   exit 1 on FAIL. See `docs/hermes/`.
 - **Doc-coverage gate** — A Hermes check (`scripts/doc_coverage.py`): every
-  `app/` directory holding PHP must be registered in `docs/coverage.json`
-  with a `doc` pointer or an explicit `waived` reason. Adding a subsystem
-  fails CI until it's documented or waived.
+  `app/` directory holding PHP must be registered in the Hermes manifest
+  (`docs/hermes/manifest.json`) with a `docs` pointer or an explicit `waived`
+  reason. Adding a subsystem fails CI until it's documented or waived.
 - **Domain events** — Internal facts dispatched on every lifecycle change
   (`app/Events/Domain/`, e.g. `LeadQualified`, `AgentCreated`). Plain PHP,
   **no broadcasting, intentionally unlistened** — a seam for future audit

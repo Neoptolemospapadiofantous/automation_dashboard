@@ -3,7 +3,7 @@
 Doc-coverage gate (Hermes check).
 
 Rule: every directory under app/ that directly contains PHP files must be
-registered in docs/coverage.json — either pointing at a doc that explains it
+registered in docs/hermes/manifest.json — either pointing at a doc that explains it
 (`"doc"`) or explicitly waived with a reason (`"waived"`). This keeps the
 docs honest as the app grows: add a new subsystem and CI fails until you
 either document it or consciously waive it.
@@ -21,7 +21,7 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(REPO)
 
-with open("docs/coverage.json") as f:
+with open("docs/hermes/manifest.json") as f:
     coverage = json.load(f)
 registry = coverage["subsystems"]
 documents = coverage.get("documents", [])
@@ -38,20 +38,21 @@ for root, _dirs, files in os.walk("app"):
 for path in sorted(actual):
     if path not in registry:
         problems.append(
-            f"UNREGISTERED  {path} — add to docs/coverage.json (a \"doc\" path, or \"waived\" with a reason)"
+            f"UNREGISTERED  {path} — add a node to docs/hermes/manifest.json (\"docs\": [...] or \"waived\")"
         )
 
 for path, entry in sorted(registry.items()):
     if path not in actual:
-        problems.append(f"STALE         {path} — no longer a php subsystem; remove from docs/coverage.json")
+        problems.append(f"STALE         {path} — no longer a php subsystem; remove from docs/hermes/manifest.json")
         continue
-    doc = entry.get("doc")
-    if doc:
-        docfile = doc.split("#")[0]
-        if not os.path.exists(docfile):
-            problems.append(f"MISSING DOC   {path} -> {docfile} (registered doc does not exist)")
+    docs = entry.get("docs")
+    if docs:
+        for doc in docs:
+            docfile = doc.split("#")[0]
+            if not os.path.exists(docfile):
+                problems.append(f"MISSING DOC   {path} -> {docfile} (registered doc does not exist)")
     elif "waived" not in entry:
-        problems.append(f"INVALID       {path} — entry needs either \"doc\" or \"waived\"")
+        problems.append(f"INVALID       {path} — node needs either \"docs\": [...] or \"waived\"")
 
 # ── Part 2: canonical project docs ─────────────────────────────────────────
 # Each must exist AND be linked from the docs index (docs/README.md), so the

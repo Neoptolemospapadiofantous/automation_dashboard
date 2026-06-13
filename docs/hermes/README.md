@@ -33,8 +33,9 @@ Local CI + audit tooling for automation_dashboard. No scheduled execution; all i
 | Path | Purpose |
 |---|---|
 | `scripts/hermes.sh` | Vendor + pint + PHPStan + tests + config + routes + migrations + composer audit + knip (frontend dead code) + doc-coverage [+ vite + pnpm audit] |
-| `scripts/doc_coverage.py` | Doc-coverage gate — every `app/` subsystem must be registered in `docs/coverage.json` (a doc, or waived) |
-| `docs/coverage.json` | The doc-coverage registry consumed by the gate |
+| `scripts/doc_coverage.py` | Doc-coverage gate — every `app/` subsystem + every canonical doc must be registered in the manifest |
+| `scripts/hermes_graph.py` | Manifest visualizer — prints the domain tree + each node's context (`--node app/X` for the connection view) |
+| `docs/hermes/manifest.json` | **The trunk** — the project graph every Hermes check reads from (subsystems → docs/tests/checks/edges, + canonical docs) |
 | `scripts/fleet_agents.json` | 5 specialist agent definitions (route-auditor, inertia-page-scanner, migration-watcher, voiceflow-surface-sentinel, doc-syncer) — consumed by `.claude/commands/hermes-fleet.md` |
 | `scripts/agents/audit_sentinel.sh` | No-LLM collector — writes `data/agents/audit-sentinel/findings.json` (security/risk scan) |
 | `scripts/agents/update_inspector.sh` | No-LLM collector — writes `data/agents/update-inspector/findings.json` (composer + pnpm outdated) |
@@ -64,14 +65,23 @@ Dead code is gated on **both** sides of the app, so it can't accumulate:
 
 knip has no baseline: the frontend is kept at **zero** unused files/exports, so any new dead module breaks the build. PHP uses the `phpstan-baseline.neon` ratchet (shrink it as you delete). After removing dead code, regenerate: `vendor/bin/phpstan analyse --generate-baseline --memory-limit=2G` and confirm the diff is removal-only.
 
-## Doc-coverage policy
+## The manifest (the trunk) + doc-coverage policy
 
-`scripts/doc_coverage.py` (the `doc-coverage` check) enforces that **every
-`app/` directory containing PHP is registered in `docs/coverage.json`** —
-either pointing at a doc that explains it, or explicitly `waived` with a
-reason. Add a new subsystem (`app/Foo/Bar.php`) and CI fails until you make a
-documentation decision. This is how the doc set stays in step with the code as
-it grows. Run it directly with `python3 scripts/doc_coverage.py`.
+`docs/hermes/manifest.json` is the **project graph** — the single source every
+Hermes check reads from. Each `app/` subsystem is a node carrying its
+`domain`, `docs`, `tests`, `checks`, `edges` (the links to other nodes that
+give findings context), and `criticality`; a `documents` list tracks the
+canonical project docs. Visualize it with `python3 scripts/hermes_graph.py`
+(add `--node app/Billing` for one node's connection view).
+
+`scripts/doc_coverage.py` (the `doc-coverage` check) enforces the manifest:
+**every `app/` dir with PHP must be a node** (`docs: [...]` or `waived`), and
+**every canonical doc must exist and be linked from `docs/README.md`**. Add a
+subsystem or delete a source-of-truth doc and CI fails until you make a
+documentation decision. This is Increment 1 of the tree-structured Hermes
+design (see the "tree with shared context" section): the trunk is real;
+later increments thread live findings through these nodes so each split-out
+Hermes reads/writes its slice with full cross-domain context.
 
 ## Static-analysis policy
 

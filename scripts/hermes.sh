@@ -177,7 +177,7 @@ else
 fi
 
 # ── 6d. Doc coverage ───────────────────────────────────────────────────────────
-# Every app/ subsystem (a dir with PHP) must be registered in docs/coverage.json
+# Every app/ subsystem (a dir with PHP) must be registered in docs/hermes/manifest.json
 # — pointing at a doc or explicitly waived. New undocumented code fails here.
 log "=== DOC COVERAGE ==="
 if command -v python3 >/dev/null 2>&1; then
