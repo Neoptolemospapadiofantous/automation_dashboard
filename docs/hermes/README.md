@@ -35,6 +35,7 @@ Local CI + audit tooling for automation_dashboard. No scheduled execution; all i
 | `scripts/hermes.sh` | Vendor + pint + PHPStan + tests + config + routes + migrations + composer audit + knip (frontend dead code) + doc-coverage [+ vite + pnpm audit] |
 | `scripts/doc_coverage.py` | Doc-coverage gate — every `app/` subsystem + every canonical doc must be registered in the manifest |
 | `scripts/hermes_graph.py` | Manifest visualizer — prints the domain tree + each node's context (`--node app/X` for the connection view) |
+| `scripts/hermes_findings.py` | Findings enricher — joins raw findings × manifest into a node-aware graph (status rollup per node/domain + blast radius) |
 | `docs/hermes/manifest.json` | **The trunk** — the project graph every Hermes check reads from (subsystems → docs/tests/checks/edges, + canonical docs) |
 | `scripts/fleet_agents.json` | 5 specialist agent definitions (route-auditor, inertia-page-scanner, migration-watcher, voiceflow-surface-sentinel, doc-syncer) — consumed by `.claude/commands/hermes-fleet.md` |
 | `scripts/agents/audit_sentinel.sh` | No-LLM collector — writes `data/agents/audit-sentinel/findings.json` (security/risk scan) |
@@ -78,10 +79,20 @@ canonical project docs. Visualize it with `python3 scripts/hermes_graph.py`
 **every `app/` dir with PHP must be a node** (`docs: [...]` or `waived`), and
 **every canonical doc must exist and be linked from `docs/README.md`**. Add a
 subsystem or delete a source-of-truth doc and CI fails until you make a
-documentation decision. This is Increment 1 of the tree-structured Hermes
-design (see the "tree with shared context" section): the trunk is real;
-later increments thread live findings through these nodes so each split-out
-Hermes reads/writes its slice with full cross-domain context.
+documentation decision.
+
+This is the tree-structured Hermes design taking shape. **Increment 1** built
+the trunk (the manifest + `hermes_graph.py`). **Increment 2** wired findings
+into it: after each run, `hermes_findings.py` joins the raw
+`{check, status, detail}` findings against the manifest and rewrites
+`data/hermes_findings.json` as a graph — every finding tagged with the nodes
+its check covers, their `domains`, `related` nodes (the blast radius) and doc
+`refs`, plus a per-node and per-domain status rollup. So a failure shows *what
+it threatens* (which domains, which neighbouring nodes), not just "tests
+failed". The per-node rollup also lists `checks_pending` — granular checks a
+node declares (e.g. `margin-invariant`) still folded into a broad check, i.e.
+the work the upcoming split will make standalone. Later increments add a tree
+runner and an LLM synthesis node over this same graph.
 
 ## Static-analysis policy
 

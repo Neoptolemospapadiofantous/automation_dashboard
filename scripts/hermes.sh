@@ -211,6 +211,15 @@ EOF
 log "=== SUMMARY: $overall ($pass PASS / $fail FAIL / $warn WARN) ==="
 echo "$TS  $overall  $pass/$fail/$warn  fast=$FAST" >> "$LOG"
 
+# ── 7b. Enrich findings with manifest context (the trunk) ─────────────────────
+# Attaches each finding to the manifest nodes its check covers + their edges
+# (blast radius) + doc refs, and rolls status up per node/domain. Pure
+# annotation — never changes the verdict.
+if command -v python3 >/dev/null 2>&1 && [[ -f docs/hermes/manifest.json ]]; then
+  log "=== FINDINGS GRAPH ==="
+  python3 scripts/hermes_findings.py 2>&1 | tee -a "$LOG" || true
+fi
+
 # ── 8. Markdown summary (human-readable, printed to stdout) ───────────────────
 echo ""
 echo "# Hermes — automation_dashboard"
