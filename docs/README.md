@@ -68,7 +68,8 @@ write a new phase doc that supersedes the prior one).
 - [typesense-setup.md](./typesense-setup.md) — conversation search backend
 
 ### Hermes — CI + agent audits
-- [hermes/README.md](./hermes/README.md) — [[hermes/README|operational doc, commands, billing context]]
+- [hermes/README.md](./hermes/README.md) — [[hermes/README|operational doc, commands, billing context]] — the tree architecture (manifest trunk → checks → enrich → synthesize → split)
+- [hermes/effectiveness.md](./hermes/effectiveness.md) — **is it working?** generated quality-KPI trend + regression check (`composer hermes-metrics`)
 - [hermes/index.md](./hermes/index.md) — [[hermes/index|chronological index of agent session notes]]
 
 ## Conventions

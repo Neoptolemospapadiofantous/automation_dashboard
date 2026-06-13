@@ -81,6 +81,8 @@ flowchart LR
 | `composer hermes` | any shell | free | full CI gate before pushing |
 | `composer hermes-fast` | any shell | free | quick local heartbeat (skips vite + pnpm audit) |
 | `composer hermes-tree` | any shell | free | granular per-node checks scoped by node/domain (`scripts/hermes_tree.py --domain billing`) |
+| `composer hermes-domain` | any shell | free | run one domain as its own Hermes (`scripts/hermes_domain.py --domain billing`) |
+| `composer hermes-metrics` | any shell | free | effectiveness report — quality KPI trend + regression check → `docs/hermes/effectiveness.md` |
 | `composer hermes-audit` | any shell | free | security/risk surface scan (CVEs, .env drift, debug routes, throttle gaps) |
 | `composer hermes-update` | any shell | free | outdated PHP + JS deps (counts + per-package current/latest) |
 | `composer hermes-system` | any shell | free | runtime health (disk, logs, queue, DB, Typesense, scheduler) |
@@ -108,6 +110,8 @@ flowchart LR
 | `scripts/hermes_tree.py` | Tree runner — runs the manifest's granular per-node checks scoped to a node/domain/all (`composer hermes-tree`; `--domain billing` / `--node app/X`) |
 | `scripts/hermes_synthesis.py` | Root synthesis — ranks the findings graph by criticality + blast radius, surfaces coverage gaps, writes the brief + LLM prompt (consumed by `/hermes-synthesis`) |
 | `scripts/hermes_domain.py` | The split — runs one domain as its own Hermes (`composer hermes-domain` lists; `--domain billing` runs that slice + shows its cross-domain blast radius) |
+| `scripts/hermes_metrics.py` | Effectiveness report — mines git history for direction-aware quality KPIs + flags regressions; writes `docs/hermes/effectiveness.md` (`composer hermes-metrics`) |
+| `docs/hermes/effectiveness.md` | Generated "is Hermes working?" report — KPI charts + regression check |
 | `docs/hermes/manifest.json` | **The trunk** — the project graph every Hermes check reads from (subsystems → docs/tests/checks/edges, + canonical docs) |
 | `scripts/fleet_agents.json` | 5 specialist agent definitions (route-auditor, inertia-page-scanner, migration-watcher, voiceflow-surface-sentinel, doc-syncer) — consumed by `.claude/commands/hermes-fleet.md` |
 | `scripts/agents/audit_sentinel.sh` | No-LLM collector — writes `data/agents/audit-sentinel/findings.json` (security/risk scan) |
