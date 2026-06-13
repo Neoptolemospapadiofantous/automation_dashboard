@@ -4,6 +4,9 @@
 > widget + chat iframe + auth surface + the full dashboard interior
 > (~67 Vue files) on-brand. Phase 3 (Tailwind v4 unification) remains
 > planned — see below.
+>
+> Related: [[design-system]] (the living brand reference + rules) ·
+> [[project-overview]] (where this fits the whole system).
 
 ## The problem
 

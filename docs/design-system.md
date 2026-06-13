@@ -225,5 +225,6 @@ decoration** · **`shadow-[…rgba(0,0,0,…)]` (invisible in dark — use
 - `resources/views/app.blade.php` — no-FOUC theme bootstrap + font links
 - `resources/js/Components/{PrimaryButton,SecondaryButton,DangerButton,TextInput,InputLabel,AuthenticationCard,ApplicationLogo,ApplicationMark}.vue` — registers
 - `resources/views/embed/{chat,widget}.blade.php` + `app/Http/Controllers/EmbedController.php` — embed surface
-- [theme-unification.md](./theme-unification.md) — phased build history
-- [project-overview.md](./project-overview.md) — where this fits the whole system
+- [[theme-unification]] — phased build history
+- [[project-overview]] — where this fits the whole system
+- [[public-surface]] — the embed surface this brand also styles

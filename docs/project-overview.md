@@ -307,8 +307,9 @@ corrections for the `source/*.docx` masters, and the honesty ledger.
 
 ## 7. Brand & UI
 
-Design doc: [theme-unification.md](./theme-unification.md). (A consolidated
-`docs/design-system.md` is a planned forward-reference — not yet written.)
+Design docs: [[design-system]] — the brand reference + rules (tokens, the
+two sheets, dark mode, the accent, motifs); [[theme-unification]] — the
+phased build history.
 
 **"Two sheets, one ink."** One funnel (landing → register → dashboard →
 embed) historically had three visual identities. The fix shares one token
