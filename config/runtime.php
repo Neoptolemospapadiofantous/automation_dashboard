@@ -5,8 +5,7 @@
  * models and RAG defaults without code changes.
  *
  * See app/Runtime/ for the implementation — the native engine is the only
- * engine (Voiceflow was fully removed); agents.runtime_mode remains as the
- * seam for any future engine.
+ * engine; agents.runtime_mode remains as the seam for any future engine.
  */
 
 return [

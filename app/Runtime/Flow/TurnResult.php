@@ -5,7 +5,7 @@ namespace App\Runtime\Flow;
 /**
  * Outcome of one executed turn.
  *
- * traces     — Voiceflow-compatible display traces
+ * traces     — display traces
  *              ([{type:'text', payload:{message}}]) so the embed chat UI
  *              renders them without changes
  * finalState — flow_state after transitions were applied

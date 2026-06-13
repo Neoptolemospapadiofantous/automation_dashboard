@@ -165,7 +165,7 @@ class ConversationController extends Controller
                 ->where('agent_id', $agentId)
                 ->take(50)
                 ->get()
-                ->load('conversation:id,lead_id,voiceflow_user_id');
+                ->load('conversation:id,lead_id,visitor_id');
         } else {
             $messages = Message::query()
                 ->where('team_id', $teamId)
@@ -173,7 +173,7 @@ class ConversationController extends Controller
                 ->where('text', 'like', '%'.$query.'%')
                 ->latest('sent_at')
                 ->limit(50)
-                ->with('conversation:id,lead_id,voiceflow_user_id')
+                ->with('conversation:id,lead_id,visitor_id')
                 ->get();
         }
 

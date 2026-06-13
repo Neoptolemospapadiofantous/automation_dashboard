@@ -36,7 +36,7 @@ class Lead extends Model
         'source',
         'status',
         'score',
-        'voiceflow_user_id',
+        'visitor_id',
         'captured',
         'notes',
         'last_contacted_at',

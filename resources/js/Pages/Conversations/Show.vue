@@ -14,7 +14,7 @@ const props = defineProps({
 
 const fmt = (d) => (d ? new Date(d).toLocaleString() : '');
 
-const hasTranscript = computed(() => !!props.conversation.voiceflow_transcript_id);
+const hasTranscript = computed(() => !!props.conversation.transcript_id);
 const isEnded = computed(() => !!props.conversation.ended_at);
 
 const endUpstream = async () => {
@@ -47,9 +47,9 @@ const deleteUpstream = async () => {
         <PageHeader
             :breadcrumbs="[
                 { label: 'Conversations', href: route('conversations.index') },
-                { label: conversation.lead?.name || conversation.voiceflow_user_id }
+                { label: conversation.lead?.name || conversation.visitor_id }
             ]"
-            :title="conversation.lead?.name || conversation.voiceflow_user_id"
+            :title="conversation.lead?.name || conversation.visitor_id"
             :description="`Started ${fmt(conversation.started_at)} · ${conversation.message_count} messages`"
         >
             <template #actions>
@@ -76,7 +76,7 @@ const deleteUpstream = async () => {
                         v-if="hasTranscript && !isEnded"
                         type="button"
                         @click="endUpstream"
-                        :title="'End the upstream session for transcript ' + conversation.voiceflow_transcript_id"
+                        :title="'End the upstream session for transcript ' + conversation.transcript_id"
                     >
                         End upstream
                     </SecondaryButton>

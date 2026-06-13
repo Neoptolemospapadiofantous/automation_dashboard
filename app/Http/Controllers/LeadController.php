@@ -160,7 +160,7 @@ class LeadController extends Controller
                 'id' => $c->getAttribute('id'),
                 'started_at' => $c->getAttribute('started_at')?->toIso8601String(),
                 'message_count' => $c->getAttribute('message_count'),
-                'voiceflow_transcript_id' => $c->getAttribute('voiceflow_transcript_id'),
+                'transcript_id' => $c->getAttribute('transcript_id'),
             ];
         }
 

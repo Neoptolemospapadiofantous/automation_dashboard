@@ -15,8 +15,8 @@ use Tests\TestCase;
  * Category D (Integrity) — model casts/fillable ↔ schema coherence.
  *
  * Every $fillable key and every cast key must exist as a real column.
- * This is the test that would have caught the dropped-voiceflow-columns
- * bug: the migration dropped columns the models (and seeder) still wrote.
+ * This is the test that would have caught the dropped-columns bug: a
+ * migration dropped columns the models (and seeder) still wrote.
  */
 class CastsCoherenceTest extends TestCase
 {

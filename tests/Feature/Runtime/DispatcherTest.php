@@ -11,9 +11,8 @@ use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
- * The Runtime contract resolves to the native engine — the only engine
- * since the Voiceflow surface was deleted. The contract stays as the
- * seam for any future engine.
+ * The Runtime contract resolves to the native engine — the only engine.
+ * The contract stays as the seam for any future engine.
  */
 class DispatcherTest extends TestCase
 {

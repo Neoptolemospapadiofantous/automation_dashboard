@@ -68,7 +68,7 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
                                 @click="router.visit(route('conversations.show', c.id))"
                             >
                                 <td class="px-4 py-3 font-medium text-ink">
-                                    {{ c.lead?.name || c.voiceflow_user_id }}
+                                    {{ c.lead?.name || c.visitor_id }}
                                 </td>
                                 <td class="px-4 py-3 text-ink-dim">{{ c.channel }}</td>
                                 <td class="px-4 py-3 font-mono text-ink-dim">{{ c.message_count }}</td>

@@ -24,9 +24,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Runtime contract → the native engine. AgentRuntime is the only
-        // engine since the Voiceflow surface was deleted; the contract
-        // stays as the seam for any future engine (bind a dispatcher
-        // again the day a second engine exists).
+        // engine; the contract stays as the seam for any future engine
+        // (bind a dispatcher again the day a second engine exists).
         $this->app->singleton(Runtime::class, AgentRuntime::class);
 
         // Native runtime wiring: the RAG store and the tool registry with

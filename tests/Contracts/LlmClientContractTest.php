@@ -18,7 +18,7 @@ use Tests\TestCase;
  * same CompletionResult semantics in, same canonical contentBlocks out,
  * regardless of how each provider's wire format differs.
  *
- * This is the modern replacement for the obsolete Voiceflow↔Local parity
+ * This is the modern replacement for the obsolete legacy-engine parity
  * gate (Category C of PROJECT_ASSURANCE_STRATEGY.md): the parity that
  * matters now is BETWEEN PROVIDERS, so an agent switched from Claude to
  * GPT to Gemini mid-conversation keeps a replayable history and the

@@ -16,9 +16,9 @@ use Inertia\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 /**
- * Versioned agent behavior — the native successor to the old (Voiceflow)
- * Environments page, rebuilt around the job it actually did: stage a
- * change, publish it to live traffic, keep history, roll back.
+ * Versioned agent behavior — the native successor to the old Environments
+ * page, rebuilt around the job it actually did: stage a change, publish
+ * it to live traffic, keep history, roll back.
  *
  * Edit the DRAFT (instructions + greeting guidance) → Publish makes it
  * the live version the engine injects into every turn → previous live

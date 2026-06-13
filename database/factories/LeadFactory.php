@@ -24,7 +24,7 @@ class LeadFactory extends Factory
             'source' => fake()->randomElement(['manual', 'chat', 'web', 'import']),
             'status' => fake()->randomElement(LeadStatus::cases()),
             'score' => fake()->numberBetween(0, 100),
-            'voiceflow_user_id' => null,
+            'visitor_id' => null,
             'captured' => null,
             'notes' => fake()->optional()->sentence(),
             'last_contacted_at' => fake()->optional()->dateTimeThisMonth(),

@@ -69,7 +69,7 @@ class ChatController extends Controller
         ]);
 
         $lead = $this->resolveLead($request, $data['lead_id'] ?? null);
-        $userId = $lead?->voiceflow_user_id ?: 'web-'.Str::uuid()->toString();
+        $userId = $lead?->visitor_id ?: 'web-'.Str::uuid()->toString();
 
         try {
             $traces = $this->runtime->launch($agent, $userId);
@@ -79,9 +79,9 @@ class ChatController extends Controller
             return response()->json(['error' => 'The agent is temporarily unavailable.'], 503);
         }
 
-        // Continuity: the lead's external chat id (column name is historical).
-        if ($lead && $lead->voiceflow_user_id !== $userId) {
-            $lead->update(['voiceflow_user_id' => $userId]);
+        // Continuity: persist the lead's external chat (visitor) id.
+        if ($lead && $lead->visitor_id !== $userId) {
+            $lead->update(['visitor_id' => $userId]);
         }
 
         return $this->respond($request, $agent, $userId, $lead, $traces);
@@ -360,7 +360,7 @@ class ChatController extends Controller
 
             return $this->recorder->resolve(
                 teamId: $team->id,
-                voiceflowUserId: $userId,
+                visitorId: $userId,
                 leadId: $leadId,
                 agentId: $team->current_agent_id,
             );

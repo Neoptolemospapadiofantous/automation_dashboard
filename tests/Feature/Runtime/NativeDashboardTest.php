@@ -14,8 +14,7 @@ use Tests\TestCase;
 
 /**
  * The dashboard surfaces (Chat page endpoints, Knowledge page, agent
- * health, signup) running on the native engine — the full Voiceflow
- * replacement at the controller layer.
+ * health, signup) running on the native engine at the controller layer.
  */
 class NativeDashboardTest extends TestCase
 {
@@ -107,7 +106,7 @@ class NativeDashboardTest extends TestCase
 
     // ── Knowledge page native branch ────────────────────────────────────────
 
-    public function test_knowledge_index_lists_native_documents_in_voiceflow_shape(): void
+    public function test_knowledge_index_lists_native_documents_in_native_shape(): void
     {
         $this->fakeEmbeddings();
 
