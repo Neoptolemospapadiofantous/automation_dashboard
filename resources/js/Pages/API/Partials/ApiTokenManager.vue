@@ -76,6 +76,8 @@ const deleteApiToken = () => {
     <div>
         <!-- Generate API Token -->
         <FormSection @submitted="createApiToken">
+            <template #ref>API/TOKENS</template>
+
             <template #title>
                 Create API Token
             </template>
@@ -106,7 +108,7 @@ const deleteApiToken = () => {
                         <div v-for="permission in availablePermissions" :key="permission">
                             <label class="flex items-center">
                                 <Checkbox v-model:checked="createApiTokenForm.permissions" :value="permission" />
-                                <span class="ms-2 text-sm text-ink-dim">{{ permission }}</span>
+                                <span class="ms-2 text-sm" :class="createApiTokenForm.permissions.includes(permission) ? 'text-violet font-medium' : 'text-ink-dim'">{{ permission }}</span>
                             </label>
                         </div>
                     </div>
@@ -118,7 +120,7 @@ const deleteApiToken = () => {
                     Created.
                 </ActionMessage>
 
-                <PrimaryButton :class="{ 'opacity-25': createApiTokenForm.processing }" :disabled="createApiTokenForm.processing">
+                <PrimaryButton class="bg-violet border-violet text-bg hover:bg-bg hover:text-violet focus:ring-violet" :class="{ 'opacity-25': createApiTokenForm.processing }" :disabled="createApiTokenForm.processing">
                     Create
                 </PrimaryButton>
             </template>
@@ -130,6 +132,8 @@ const deleteApiToken = () => {
             <!-- Manage API Tokens -->
             <div class="mt-10 sm:mt-0">
                 <ActionSection>
+                    <template #ref>API/MANAGE</template>
+
                     <template #title>
                         Manage API Tokens
                     </template>
@@ -140,8 +144,8 @@ const deleteApiToken = () => {
 
                     <!-- API Token List -->
                     <template #content>
-                        <div class="space-y-6">
-                            <div v-for="token in tokens" :key="token.id" class="flex items-center justify-between">
+                        <div class="space-y-2">
+                            <div v-for="token in tokens" :key="token.id" class="flex items-center justify-between border border-transparent border-b-border-line px-2 py-2 transition-colors hover:border-ink">
                                 <div class="break-all">
                                     {{ token.name }}
                                 </div>
@@ -204,7 +208,7 @@ const deleteApiToken = () => {
                     <div v-for="permission in availablePermissions" :key="permission">
                         <label class="flex items-center">
                             <Checkbox v-model:checked="updateApiTokenForm.permissions" :value="permission" />
-                            <span class="ms-2 text-sm text-ink-dim">{{ permission }}</span>
+                            <span class="ms-2 text-sm" :class="updateApiTokenForm.permissions.includes(permission) ? 'text-violet font-medium' : 'text-ink-dim'">{{ permission }}</span>
                         </label>
                     </div>
                 </div>

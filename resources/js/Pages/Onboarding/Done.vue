@@ -60,14 +60,16 @@ async function copy() {
     <div class="min-h-screen bg-bg-elev">
         <div class="mx-auto max-w-2xl px-4 py-12">
             <div class="mb-8 flex items-center justify-between text-xs">
-                <ol class="flex items-center gap-2 font-mono font-medium text-ink-dim">
-                    <li class="text-ink-mute">✓ 1. Set up agent</li>
-                    <li>→</li>
-                    <li class="text-ink">2. Done</li>
+                <ol class="flex items-center gap-3 font-mono font-medium text-ink-dim">
+                    <li class="text-ink-dim">✓ 1. Set up agent</li>
+                    <li class="bp-wire inline-block w-8" aria-hidden="true" />
+                    <li class="flex items-center gap-2 text-ink"><span class="bp-dot" />2. Done</li>
                 </ol>
+                <span class="bp-ref">SETUP/DONE</span>
             </div>
 
-            <div class="rounded-none border border-border-line bg-bg p-8 text-center shadow-[8px_8px_0_rgba(0,0,0,0.06)]">
+            <div class="bp-node shadow-sheet relative rounded-none p-8 text-center">
+                <span class="ins-stamp absolute right-5 top-5 text-green-600" aria-hidden="true">Live</span>
                 <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-none bg-green-100">
                     <svg class="h-7 w-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
@@ -82,14 +84,18 @@ async function copy() {
                     <Link :href="route('chat.index')">
                         <PrimaryButton>Start chatting</PrimaryButton>
                     </Link>
-                    <Link :href="route('dashboard')" class="text-sm text-ink-dim hover:text-ink">Go to dashboard →</Link>
+                    <Link :href="route('dashboard')" class="text-sm font-medium text-violet hover:underline">Go to dashboard →</Link>
                 </div>
             </div>
 
             <!-- One-line install snippet. Featured prominently because this
                  is the single highest-value action — once the script is on
                  the customer's website, conversations + leads start flowing. -->
-            <div v-if="snippet" class="mt-8 overflow-hidden rounded-none border border-ink bg-bg p-6 shadow-[8px_8px_0_rgba(0,0,0,0.06)]">
+            <div v-if="snippet" class="bp-node shadow-sheet mt-8 overflow-hidden rounded-none p-6">
+                <div class="mb-4 flex items-center justify-between">
+                    <span class="bp-ref">INSTALL/EMBED</span>
+                    <span class="bp-annot">snippet · 1 line</span>
+                </div>
                 <div class="flex items-start gap-4">
                     <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-none bg-ink text-sm font-semibold text-bg">
                         ➜

@@ -39,6 +39,8 @@ const updatePassword = () => {
 
 <template>
     <FormSection @submitted="updatePassword">
+        <template #ref>PROFILE/SECURITY</template>
+
         <template #title>
             Update Password
         </template>
@@ -92,7 +94,7 @@ const updatePassword = () => {
                 Saved.
             </ActionMessage>
 
-            <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+            <PrimaryButton class="bg-violet border-violet text-bg hover:bg-bg hover:text-violet focus:ring-violet" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
                 Save
             </PrimaryButton>
         </template>

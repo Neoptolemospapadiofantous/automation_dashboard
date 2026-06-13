@@ -20,6 +20,8 @@ const createTeam = () => {
 
 <template>
     <FormSection @submitted="createTeam">
+        <template #ref>TEAM/NEW</template>
+
         <template #title>
             Team Details
         </template>
@@ -58,7 +60,7 @@ const createTeam = () => {
         </template>
 
         <template #actions>
-            <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+            <PrimaryButton class="bg-violet border-violet text-bg hover:bg-bg hover:text-violet focus:ring-violet" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
                 Create
             </PrimaryButton>
         </template>

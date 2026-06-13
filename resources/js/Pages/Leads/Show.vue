@@ -71,6 +71,14 @@ const currentStatusLabel = computed(() => {
     const s = props.statuses.find((x) => x.value === props.lead.status);
     return s?.label ?? props.lead.status;
 });
+
+// Semantic score tier — kept as a status hue (not the accent).
+const scoreColor = computed(() => {
+    const s = props.lead.score ?? 0;
+    if (s >= 70) return 'text-green-600';
+    if (s >= 40) return 'text-amber-600';
+    return 'text-ink';
+});
 </script>
 
 <template>
@@ -81,6 +89,7 @@ const currentStatusLabel = computed(() => {
             :description="lead.company ? `at ${lead.company}` : 'No company recorded'"
         >
             <template #actions>
+                <span class="bp-ref hidden sm:inline">LEAD / {{ String(lead.id).padStart(2, '0') }}</span>
                 <DangerButton type="button" @click="destroy">Delete lead</DangerButton>
             </template>
         </PageHeader>
@@ -115,27 +124,30 @@ const currentStatusLabel = computed(() => {
                     <div class="rounded-none border border-border-line bg-bg p-4">
                         <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Score</div>
                         <div class="mt-2 flex items-baseline gap-2">
-                            <span class="font-mono text-2xl font-semibold text-ink">{{ lead.score ?? '—' }}</span>
+                            <span class="font-mono text-2xl font-semibold" :class="scoreColor">{{ lead.score ?? '—' }}</span>
                             <span class="text-xs text-ink-mute">/ 100</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Contact -->
-                <div class="rounded-none border border-border-line bg-bg p-5">
-                    <h3 class="text-sm font-semibold text-ink-dim">Contact</h3>
+                <div class="bp-node shadow-sheet rounded-none p-5">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-ink-dim">Contact</h3>
+                        <span class="bp-ref">CONTACT</span>
+                    </div>
                     <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
                         <div>
                             <dt class="text-xs text-ink-mute">Email</dt>
                             <dd class="mt-0.5 text-ink-dim">
-                                <a v-if="lead.email" :href="`mailto:${lead.email}`" class="text-ink underline hover:text-ink-dim">{{ lead.email }}</a>
+                                <a v-if="lead.email" :href="`mailto:${lead.email}`" class="text-violet underline hover:text-ink-dim">{{ lead.email }}</a>
                                 <span v-else class="text-ink-mute">—</span>
                             </dd>
                         </div>
                         <div>
                             <dt class="text-xs text-ink-mute">Phone</dt>
                             <dd class="mt-0.5 text-ink-dim">
-                                <a v-if="lead.phone" :href="`tel:${lead.phone}`" class="text-ink underline hover:text-ink-dim">{{ lead.phone }}</a>
+                                <a v-if="lead.phone" :href="`tel:${lead.phone}`" class="text-violet underline hover:text-ink-dim">{{ lead.phone }}</a>
                                 <span v-else class="text-ink-mute">—</span>
                             </dd>
                         </div>

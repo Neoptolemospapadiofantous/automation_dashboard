@@ -52,14 +52,6 @@ function makeCurrent(agent) {
     });
 }
 
-function statusClass(status) {
-    return {
-        active: 'bg-green-50 text-green-700',
-        draft: 'bg-amber-50 text-amber-700',
-        disabled: 'bg-surface-hi text-ink-dim',
-    }[status] ?? 'bg-surface-hi text-ink-dim';
-}
-
 // "5 min ago" style for the last-check column — way easier to scan than full
 // localised timestamps when most rows checked in the last hour.
 function relativeTime(iso) {
@@ -129,7 +121,7 @@ function relativeTime(iso) {
                     </Link>
                 </div>
 
-                <div class="overflow-hidden rounded-none border border-border-line bg-bg">
+                <div class="overflow-hidden rounded-none border border-border-line bg-bg shadow-sheet">
                     <table class="min-w-full divide-y divide-border-line text-sm">
                         <thead class="bg-bg-elev">
                             <tr>
@@ -140,18 +132,31 @@ function relativeTime(iso) {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border-line bg-bg">
-                            <tr v-for="agent in agents" :key="agent.id" class="hover:bg-surface-hi">
+                            <tr
+                                v-for="(agent, i) in agents"
+                                :key="agent.id"
+                                class="hover:bg-surface-hi"
+                                :class="agent.is_current ? 'border-l-2 border-violet' : 'border-l-2 border-transparent'"
+                            >
                                 <td class="px-4 py-3">
-                                    <Link :href="route('agents.show', agent.slug)" class="font-medium text-ink hover:underline">
-                                        {{ agent.name }}
-                                    </Link>
-                                    <span v-if="agent.is_current" class="ml-2 inline-flex rounded-none bg-ink px-2 py-0.5 font-mono text-xs font-medium text-bg">
-                                        Current
-                                    </span>
+                                    <div class="flex flex-col gap-0.5">
+                                        <span class="bp-ref">AGENT/{{ String(i + 1).padStart(2, '0') }}</span>
+                                        <div>
+                                            <Link :href="route('agents.show', agent.slug)" class="font-medium text-ink hover:underline">
+                                                {{ agent.name }}
+                                            </Link>
+                                            <span v-if="agent.is_current" class="ml-2 inline-flex rounded-none bg-ink px-2 py-0.5 font-mono text-xs font-medium text-bg">
+                                                Current
+                                            </span>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <span class="inline-flex rounded-none px-2 py-0.5 font-mono text-xs font-medium" :class="statusClass(agent.status)">
-                                        {{ agent.status }}
+                                    <span
+                                        class="ins-stamp"
+                                        :class="agent.status === 'active' ? 'text-green-600' : 'text-ink-dim'"
+                                    >
+                                        {{ agent.status === 'active' ? 'Live' : agent.status }}
                                     </span>
                                     <span v-if="!agent.is_configured" class="ml-2 text-xs text-amber-600">Needs credentials</span>
                                     <span v-else-if="!agent.last_health_ok" class="ml-2 text-xs text-rose-600">Health check failing</span>

@@ -159,6 +159,7 @@ const description = computed(() => {
     <AppLayout title="Knowledge Base">
         <PageHeader title="Knowledge Base" :description="description">
             <template #actions>
+                <span class="bp-ref">KB/SOURCES</span>
                 <span v-if="agent" class="inline-flex items-center gap-1.5 rounded-none bg-surface-hi px-2.5 py-1 font-mono text-xs font-medium text-ink">
                     <span class="inline-block h-1.5 w-1.5 rounded-full bg-ink" />
                     {{ agent.name }}
@@ -177,7 +178,7 @@ const description = computed(() => {
 
                 <div class="grid gap-6 lg:grid-cols-3">
                     <!-- Documents panel (left, wider) -->
-                    <div class="lg:col-span-2 rounded-none border border-border-line bg-bg p-5">
+                    <div class="shadow-sheet lg:col-span-2 rounded-none border border-border-line bg-bg p-5">
                         <div class="flex items-center justify-between gap-3 border-b border-border-line pb-3">
                             <h3 class="text-sm font-semibold text-ink">Documents</h3>
                             <!-- Type filter -->
@@ -204,8 +205,9 @@ const description = computed(() => {
                         </div>
 
                         <!-- Add forms (three: URL / file / text-paste) -->
-                        <div class="mt-4 grid gap-4 sm:grid-cols-3">
-                            <form class="space-y-2 rounded-none border border-dashed border-border-hi p-3" @submit.prevent="addUrl">
+                        <p class="bp-annot mt-4">// add a source — url, file, or pasted text</p>
+                        <div class="mt-2 grid gap-4 sm:grid-cols-3">
+                            <form class="space-y-2 rounded-none border border-dashed border-border-hi bg-grid p-3" @submit.prevent="addUrl">
                                 <InputLabel for="url" value="Add a URL" />
                                 <TextInput
                                     id="url"
@@ -230,7 +232,7 @@ const description = computed(() => {
                                 </PrimaryButton>
                             </form>
 
-                            <form class="space-y-2 rounded-none border border-dashed border-border-hi p-3" @submit.prevent="uploadFile">
+                            <form class="space-y-2 rounded-none border border-dashed border-border-hi bg-grid p-3" @submit.prevent="uploadFile">
                                 <InputLabel for="file" value="Upload a file" />
                                 <input
                                     id="file"
@@ -248,7 +250,7 @@ const description = computed(() => {
                                 </PrimaryButton>
                             </form>
 
-                            <form class="space-y-2 rounded-none border border-dashed border-border-hi p-3" @submit.prevent="addText">
+                            <form class="space-y-2 rounded-none border border-dashed border-border-hi bg-grid p-3" @submit.prevent="addText">
                                 <InputLabel for="text-name" value="Paste text" />
                                 <TextInput
                                     id="text-name"
@@ -282,7 +284,7 @@ const description = computed(() => {
                             <li
                                 v-for="d in documents"
                                 :key="d.documentID"
-                                class="group flex items-start gap-3 py-2.5 text-sm hover:bg-surface-hi"
+                                class="group flex items-start gap-3 border-l-2 border-transparent py-2.5 pl-2 text-sm transition-colors hover:border-ink hover:bg-surface-hi"
                             >
                                 <span class="rounded-none px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider" :class="typeBadge(d.data?.type)">
                                     {{ d.data?.type || '?' }}
@@ -323,7 +325,7 @@ const description = computed(() => {
                     <!-- Right column: Ask + Inspect panels -->
                     <div class="space-y-6">
                         <!-- Ask the KB -->
-                        <div class="rounded-none border border-border-line bg-bg p-5">
+                        <div class="shadow-sheet rounded-none border border-border-line bg-bg p-5">
                             <h3 class="mb-3 text-sm font-semibold text-ink">Ask the knowledge base</h3>
                             <form class="flex gap-2" @submit.prevent="ask">
                                 <TextInput v-model="question" type="text" class="flex-1" placeholder="e.g. What is your pricing?" :disabled="!configured" />

@@ -59,10 +59,14 @@ const handleMobileNavClick = (event) => {
             <!-- ───────────────────────── Sidebar (desktop) ───────────────────────── -->
             <aside class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-60 lg:flex-col lg:border-r lg:border-border-line lg:bg-bg">
                 <!-- Logo -->
-                <div class="flex h-16 items-center border-b border-border-line px-5">
+                <div class="flex h-16 items-center justify-between border-b border-border-line px-5">
                     <Link :href="route('dashboard')" class="flex items-center gap-2">
                         <ApplicationMark class="block h-8 w-auto" />
                     </Link>
+                    <span class="flex items-center gap-1.5 bp-ref">
+                        <span class="bp-dot pulse-glow text-violet" aria-hidden="true" />
+                        Flowstack
+                    </span>
                 </div>
 
                 <!-- Agent picker (workspace switcher) -->

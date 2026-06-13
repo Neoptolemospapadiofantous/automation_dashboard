@@ -88,7 +88,7 @@ const capturedRows = computed(() => {
             <!-- Header -->
             <div class="flex items-start justify-between border-b border-border-line px-5 py-4">
                 <div class="min-w-0">
-                    <p class="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">Lead</p>
+                    <p class="bp-ref">LEAD / {{ String(lead.id).padStart(2, '0') }}</p>
                     <h2 class="mt-1 truncate text-lg font-semibold text-ink">{{ lead.name }}</h2>
                     <p v-if="lead.company" class="truncate text-sm text-ink-dim">{{ lead.company }}</p>
                 </div>
@@ -121,19 +121,19 @@ const capturedRows = computed(() => {
                 <h3 class="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">Contact</h3>
                 <dl class="mt-3 space-y-1.5 text-sm">
                     <div v-if="lead.email" class="flex items-center justify-between gap-2">
-                        <dt class="text-xs text-ink-dim">Email</dt>
+                        <dt class="flex items-center gap-2 text-xs text-ink-dim"><span class="bp-dot" />Email</dt>
                         <dd>
-                            <a :href="`mailto:${lead.email}`" class="text-ink underline hover:text-ink-dim">{{ lead.email }}</a>
+                            <a :href="`mailto:${lead.email}`" class="text-violet underline hover:text-ink-dim">{{ lead.email }}</a>
                         </dd>
                     </div>
                     <div v-if="lead.phone" class="flex items-center justify-between gap-2">
-                        <dt class="text-xs text-ink-dim">Phone</dt>
+                        <dt class="flex items-center gap-2 text-xs text-ink-dim"><span class="bp-dot" />Phone</dt>
                         <dd>
-                            <a :href="`tel:${lead.phone}`" class="text-ink underline hover:text-ink-dim">{{ lead.phone }}</a>
+                            <a :href="`tel:${lead.phone}`" class="text-violet underline hover:text-ink-dim">{{ lead.phone }}</a>
                         </dd>
                     </div>
                     <div v-if="lead.company" class="flex items-center justify-between gap-2">
-                        <dt class="text-xs text-ink-dim">Company</dt>
+                        <dt class="flex items-center gap-2 text-xs text-ink-dim"><span class="bp-dot" />Company</dt>
                         <dd class="text-ink-dim">{{ lead.company }}</dd>
                     </div>
                     <p v-if="!lead.email && !lead.phone && !lead.company" class="text-xs italic text-ink-dim">
@@ -159,7 +159,7 @@ const capturedRows = computed(() => {
                 <div class="mt-2 flex flex-col gap-1.5 text-sm">
                     <Link
                         :href="route('leads.show', lead.id)"
-                        class="inline-flex items-center gap-1 text-ink underline hover:text-ink-dim"
+                        class="inline-flex items-center gap-1 text-violet underline hover:text-ink-dim"
                     >
                         📄 Open full lead page →
                     </Link>

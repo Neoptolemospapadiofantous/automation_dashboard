@@ -31,6 +31,11 @@ const submit = () => {
             <AuthenticationCardLogo />
         </template>
 
+        <div class="mb-5 flex items-center gap-2">
+            <span class="bp-ref">ACCESS/NEW</span>
+            <span class="bp-dim flex-1" aria-hidden="true" />
+        </div>
+
         <form @submit.prevent="submit">
             <div>
                 <InputLabel for="name" value="Name" />
@@ -103,7 +108,7 @@ const submit = () => {
                     Already registered?
                 </Link>
 
-                <PrimaryButton class="ms-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+                <PrimaryButton class="ms-4 !border-violet !bg-violet !text-bg hover:!bg-violet-soft hover:!text-bg" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
                     Register
                 </PrimaryButton>
             </div>

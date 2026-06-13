@@ -106,6 +106,8 @@ const disableTwoFactorAuthentication = () => {
 
 <template>
     <ActionSection>
+        <template #ref>PROFILE/2FA</template>
+
         <template #title>
             Two Factor Authentication
         </template>
@@ -115,6 +117,11 @@ const disableTwoFactorAuthentication = () => {
         </template>
 
         <template #content>
+            <div class="mb-5">
+                <span v-if="twoFactorEnabled && ! confirming" class="ins-stamp text-violet">2FA Enabled</span>
+                <span v-else class="ins-stamp">2FA Disabled</span>
+            </div>
+
             <h3 v-if="twoFactorEnabled && ! confirming" class="text-lg font-medium text-ink">
                 You have enabled two factor authentication.
             </h3>

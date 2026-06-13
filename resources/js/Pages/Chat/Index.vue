@@ -196,13 +196,24 @@ const capturedEntries = () => Object.entries(captured.value);
 
 <template>
     <AppLayout title="Chat">
-        <PageHeader title="Chat" description="Talk to your current agent the way a lead would — replies are AI-generated. Captured fields appear on the right and sync to the board live." />
+        <PageHeader title="Chat" description="Talk to your current agent the way a lead would — replies are AI-generated. Captured fields appear on the right and sync to the board live.">
+            <template #actions>
+                <span class="inline-flex items-center gap-2 font-mono text-xs text-ink-dim">
+                    <span
+                        class="inline-block h-1.5 w-1.5 rounded-full"
+                        :class="configured ? 'bg-green-500 pulse-glow text-green-500' : 'bg-ink-mute'"
+                    />
+                    {{ configured ? 'Runtime ready' : 'Not configured' }}
+                </span>
+                <span class="bp-ref">CHAT / RUNTIME</span>
+            </template>
+        </PageHeader>
 
         <div class="py-8">
             <div class="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
                 <!-- Conversation -->
                 <div class="lg:col-span-2">
-                    <div class="flex h-[32rem] flex-col overflow-hidden rounded-none border border-border-line bg-bg">
+                    <div class="flex h-[32rem] flex-col overflow-hidden rounded-none border border-border-line bg-bg shadow-sheet">
                         <div v-if="!configured" class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-700">
                             Your agent isn't set up yet.
                             <Link :href="route('agents.index')" class="font-medium underline">Finish onboarding</Link>
@@ -268,8 +279,11 @@ const capturedEntries = () => Object.entries(captured.value);
 
                 <!-- Captured lead -->
                 <div>
-                    <div class="rounded-none border border-border-line bg-bg p-4">
-                        <h3 class="mb-3 text-sm font-semibold text-ink-dim">Captured lead</h3>
+                    <div class="bp-node shadow-sheet rounded-none p-4">
+                        <div class="mb-3 flex items-center justify-between">
+                            <h3 class="text-sm font-semibold text-ink-dim">Captured lead</h3>
+                            <span class="bp-ref">CAPTURE</span>
+                        </div>
                         <dl v-if="capturedEntries().length" class="space-y-2">
                             <div v-for="[k, v] in capturedEntries()" :key="k" class="flex justify-between gap-2 text-sm">
                                 <dt class="capitalize text-ink-dim">{{ k }}</dt>
@@ -283,7 +297,7 @@ const capturedEntries = () => Object.entries(captured.value);
                         <a
                             v-if="leadId"
                             :href="route('leads.index')"
-                            class="mt-4 inline-block text-sm font-medium text-ink underline hover:text-ink-dim"
+                            class="mt-4 inline-block text-sm font-medium text-violet underline hover:text-ink-dim"
                         >
                             View on the board →
                         </a>

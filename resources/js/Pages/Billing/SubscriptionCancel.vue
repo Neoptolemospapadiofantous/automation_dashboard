@@ -8,7 +8,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
         <Head title="Subscription canceled" />
         <div class="flex min-h-[60vh] items-center justify-center px-4">
             <div class="max-w-md text-center">
-                <p class="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-mute">CANCELED</p>
+                <p class="bp-ref">BILLING/CANCELED</p>
                 <h1 class="mt-3 text-3xl font-semibold tracking-tight text-ink">No payment taken</h1>
                 <p class="mt-3 text-sm text-ink-dim">
                     You backed out of checkout — no charge was made. You can try
@@ -18,7 +18,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
                 <div class="mt-8 flex items-center justify-center gap-3">
                     <Link
                         href="/billing"
-                        class="rounded-none border border-ink bg-ink px-4 py-2 text-sm font-medium text-bg hover:bg-bg hover:text-ink"
+                        class="rounded-none border border-violet bg-violet px-4 py-2 text-sm font-medium text-bg transition-colors hover:bg-bg hover:text-violet"
                     >
                         Back to billing
                     </Link>

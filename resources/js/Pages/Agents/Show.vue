@@ -97,10 +97,14 @@ async function destroy() {
                 <!-- Activity counters: pulse-check + cross-links to the
                      relevant lists. Counters are click-throughs so the
                      operator can pivot from "what's going on" to "show me." -->
+                <div class="flex items-center justify-between">
+                    <span class="bp-ref">AGENT/RUNTIME</span>
+                    <span class="bp-annot">live activity · click any counter to drill in</span>
+                </div>
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <Link
                         :href="route('leads.index')"
-                        class="rounded-none border border-border-line bg-bg p-4 transition hover:border-ink"
+                        class="rounded-none border border-border-line bg-bg p-4 shadow-sheet transition hover:border-ink"
                     >
                         <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Leads</div>
                         <div class="mt-1 flex items-baseline gap-1.5">
@@ -138,11 +142,12 @@ async function destroy() {
                             7/30/90-day trends · funnel · top sources · hourly activity heatmap
                         </p>
                     </div>
-                    <span class="text-sm text-ink underline">View →</span>
+                    <span class="text-sm text-violet underline">View →</span>
                 </Link>
 
-                <form class="rounded-none border border-border-line bg-bg p-6" @submit.prevent="save">
-                    <h3 class="text-base font-semibold text-ink">Agent details</h3>
+                <form class="rounded-none border border-border-line bg-bg p-6 shadow-sheet" @submit.prevent="save">
+                    <span class="bp-ref">AGENT/CONFIG</span>
+                    <h3 class="mt-1 text-base font-semibold text-ink">Agent details</h3>
                     <p class="mt-1 text-sm text-ink-dim">
                         Your agent is set up and running. You can rename it here; everything else is managed for you.
                     </p>
@@ -177,10 +182,16 @@ async function destroy() {
                     </div>
                 </div>
 
+                <!-- Section divider into the install / embed block -->
+                <div class="flex items-center gap-3 py-1">
+                    <span class="bp-ref shrink-0">AGENT/INSTALL</span>
+                    <div class="bp-dim flex-1" />
+                </div>
+
                 <!-- Embed snippet — the HTML the customer pastes into their own
                      website's <head> or before </body>. Renders the floating
                      chat widget that opens an iframe to /embed/{slug}. -->
-                <div class="rounded-none border border-border-line bg-bg p-6">
+                <div class="bp-node relative rounded-none p-6 shadow-sheet">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <h3 class="text-base font-semibold text-ink">Embed on your website</h3>

@@ -115,7 +115,11 @@ async function copy() {
                     </div>
 
                     <!-- Snippet block -->
-                    <div class="rounded-none border border-border-line bg-bg p-6 shadow-[8px_8px_0_rgba(0,0,0,0.06)]">
+                    <div class="bp-node shadow-sheet rounded-none p-6">
+                        <div class="mb-4 flex items-center justify-between">
+                            <span class="bp-ref">INSTALL/EMBED</span>
+                            <span class="bp-annot">{{ agent.slug }}</span>
+                        </div>
                         <p class="text-sm text-ink-dim">
                             {{ installVariants.find((v) => v.id === activeVariant)?.description }}
                         </p>
@@ -132,7 +136,7 @@ async function copy() {
                                 :href="previewUrl"
                                 target="_blank"
                                 rel="noopener"
-                                class="text-xs text-ink underline hover:text-ink-dim"
+                                class="text-xs font-medium text-violet underline hover:no-underline"
                             >
                                 Live preview ↗
                             </a>
@@ -149,7 +153,12 @@ async function copy() {
 
                     <!-- Step-by-step install -->
                     <div class="rounded-none border border-border-line bg-bg p-6">
-                        <h3 class="text-base font-semibold text-ink">Install in 3 steps</h3>
+                        <div class="mb-4 flex items-center justify-between gap-3">
+                            <h3 class="text-base font-semibold text-ink">Install in 3 steps</h3>
+                            <span class="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">
+                                <span class="bp-dot" />paste<span class="bp-wire inline-block w-6" aria-hidden="true" /><span class="bp-dot" />live
+                            </span>
+                        </div>
                         <ol class="mt-4 space-y-4">
                             <li class="flex gap-4">
                                 <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-none border border-ink bg-bg font-mono text-xs font-semibold text-ink">1</span>

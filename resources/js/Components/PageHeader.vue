@@ -20,12 +20,16 @@ defineProps({
     title: { type: String, default: null },
     description: { type: String, default: null },
     breadcrumbs: { type: Array, default: () => [] },
+    // Optional mono sheet-reference label shown to the left of the title
+    // (e.g. "DASH/01"). Falls back to a generic decorative ref.
+    refLabel: { type: String, default: 'FS' },
 });
 </script>
 
 <template>
-    <header class="border-b border-border-line bg-bg">
-        <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+    <header class="relative overflow-hidden border-b border-border-line bg-bg">
+        <div class="bg-grid bg-grid-fade pointer-events-none absolute inset-0 opacity-50" aria-hidden="true" />
+        <div class="relative mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
             <nav v-if="breadcrumbs.length" class="mb-2 flex" aria-label="Breadcrumb">
                 <ol class="flex items-center gap-1.5 font-mono text-xs tracking-wider text-ink-dim">
                     <li v-for="(crumb, i) in breadcrumbs" :key="i" class="flex items-center gap-1.5">
@@ -49,11 +53,15 @@ defineProps({
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0 flex-1">
                     <slot name="title">
-                        <h1 v-if="title" class="truncate text-xl font-semibold leading-7 text-ink">
-                            {{ title }}
-                        </h1>
+                        <div v-if="title" class="flex items-center gap-2.5">
+                            <span v-if="refLabel" class="bp-ref flex-shrink-0">{{ refLabel }}</span>
+                            <h1 class="truncate text-xl font-semibold leading-7 text-ink">
+                                {{ title }}
+                            </h1>
+                        </div>
                     </slot>
-                    <p v-if="description" class="mt-0.5 text-sm text-ink-dim">
+                    <div v-if="title" class="bp-dim mt-2 max-w-[7rem]" aria-hidden="true" />
+                    <p v-if="description" class="mt-2 text-sm text-ink-dim">
                         {{ description }}
                     </p>
                 </div>

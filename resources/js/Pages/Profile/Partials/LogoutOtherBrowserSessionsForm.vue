@@ -44,6 +44,8 @@ const closeModal = () => {
 
 <template>
     <ActionSection>
+        <template #ref>PROFILE/SESSIONS</template>
+
         <template #title>
             Browser Sessions
         </template>

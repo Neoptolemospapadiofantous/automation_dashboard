@@ -155,7 +155,10 @@ function openPortal() {
                          which Stripe Price ID the redirect uses. -->
                     <div class="rounded-none border border-border-line bg-bg p-5 sm:col-span-2 lg:col-span-2">
                         <div class="flex flex-wrap items-baseline justify-between gap-2">
-                            <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Subscription tiers</div>
+                            <div class="flex items-baseline gap-2.5">
+                                <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Subscription tiers</div>
+                                <span class="bp-ref">BILLING/PLANS</span>
+                            </div>
 
                             <!-- Monthly / Annual cycle toggle. Only renders when
                                  at least one tier has annual pricing configured. -->
@@ -163,7 +166,7 @@ function openPortal() {
                                 <button
                                     type="button"
                                     class="rounded-none px-3 py-1 text-xs font-medium transition"
-                                    :class="cycle === 'monthly' ? 'bg-ink text-bg' : 'text-ink-dim'"
+                                    :class="cycle === 'monthly' ? 'bg-violet text-bg' : 'text-ink-dim'"
                                     @click="cycle = 'monthly'"
                                 >
                                     Monthly
@@ -171,7 +174,7 @@ function openPortal() {
                                 <button
                                     type="button"
                                     class="flex items-center gap-1 rounded-none px-3 py-1 text-xs font-medium transition"
-                                    :class="cycle === 'annual' ? 'bg-ink text-bg' : 'text-ink-dim'"
+                                    :class="cycle === 'annual' ? 'bg-violet text-bg' : 'text-ink-dim'"
                                     @click="cycle = 'annual'"
                                 >
                                     Annual
@@ -187,8 +190,8 @@ function openPortal() {
                                 v-for="p in plan_catalog"
                                 :key="p.key"
                                 type="button"
-                                class="flex flex-col items-start rounded-none border p-3 text-left transition hover:border-ink hover:bg-surface-hi"
-                                :class="billing?.plan_label === p.label ? 'border-ink bg-surface-hi' : 'border-border-line bg-bg'"
+                                class="shadow-sheet flex flex-col items-start rounded-none border p-3 text-left transition hover:border-ink hover:bg-surface-hi"
+                                :class="billing?.plan_label === p.label ? 'border-violet ring-1 ring-violet bg-surface-hi' : 'border-border-line bg-bg'"
                                 :disabled="!billing?.is_owner"
                                 @click="subscribe(p.key)"
                             >
@@ -251,7 +254,11 @@ function openPortal() {
                             <div class="font-mono text-xs tabular-nums text-ink-dim">{{ usedPercent }}%</div>
                         </div>
                         <div class="mt-2 h-2 w-full overflow-hidden rounded-none bg-surface-hi">
-                            <div class="h-full bg-ink transition-all" :style="{ width: usedPercent + '%' }" />
+                            <div
+                                class="h-full transition-all"
+                                :class="usedPercent >= 90 ? 'bg-rose-500' : usedPercent >= 75 ? 'bg-amber-500' : 'bg-violet'"
+                                :style="{ width: usedPercent + '%' }"
+                            />
                         </div>
                         <div class="mt-2 flex items-baseline justify-between text-sm">
                             <div class="text-ink-dim">

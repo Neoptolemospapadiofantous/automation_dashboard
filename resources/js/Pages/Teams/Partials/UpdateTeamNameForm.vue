@@ -26,6 +26,8 @@ const updateTeamName = () => {
 
 <template>
     <FormSection @submitted="updateTeamName">
+        <template #ref>TEAM/INFO</template>
+
         <template #title>
             Team Name
         </template>
@@ -72,7 +74,7 @@ const updateTeamName = () => {
                 Saved.
             </ActionMessage>
 
-            <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+            <PrimaryButton class="bg-violet border-violet text-bg hover:bg-bg hover:text-violet focus:ring-violet" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
                 Save
             </PrimaryButton>
         </template>

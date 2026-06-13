@@ -27,7 +27,7 @@ const tone = computed(() => {
 const barClass = computed(() => ({
     rose: 'bg-rose-500',
     amber: 'bg-amber-500',
-    indigo: 'bg-ink',
+    indigo: 'bg-violet',
 }[tone.value]));
 
 const textClass = computed(() => ({

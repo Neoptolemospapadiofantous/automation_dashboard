@@ -29,7 +29,7 @@ function onAssignChange(e) {
 
 <template>
     <div
-        class="group cursor-grab rounded-none border border-border-line bg-bg p-3 active:cursor-grabbing"
+        class="group cursor-grab rounded-none border border-border-line bg-bg p-3 shadow-sheet transition-colors hover:border-ink active:cursor-grabbing"
         draggable="true"
         @dragstart="$event.dataTransfer.setData('text/lead-id', String(lead.id))"
     >

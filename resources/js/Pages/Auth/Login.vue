@@ -37,6 +37,11 @@ const submit = () => {
             <AuthenticationCardLogo />
         </template>
 
+        <div class="mb-5 flex items-center gap-2">
+            <span class="bp-ref">ACCESS/LOGIN</span>
+            <span class="bp-dim flex-1" aria-hidden="true" />
+        </div>
+
         <div v-if="status" class="mb-4 font-medium text-sm text-green-600">
             {{ status }}
         </div>
@@ -81,7 +86,7 @@ const submit = () => {
                     Forgot your password?
                 </Link>
 
-                <PrimaryButton class="ms-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+                <PrimaryButton class="ms-4 !border-violet !bg-violet !text-bg hover:!bg-violet-soft hover:!text-bg" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
                     Log in
                 </PrimaryButton>
             </div>

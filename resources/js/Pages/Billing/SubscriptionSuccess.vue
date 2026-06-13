@@ -26,7 +26,10 @@ setTimeout(refresh, 2500);
         <Head title="Subscription activated" />
         <div class="flex min-h-[60vh] items-center justify-center px-4">
             <div class="max-w-md text-center">
-                <p class="font-mono text-[10px] uppercase tracking-[0.3em] text-emerald-600">PAYMENT CONFIRMED</p>
+                <div class="mb-5 flex items-center justify-center">
+                    <span class="ins-stamp text-emerald-600">Paid</span>
+                </div>
+                <p class="bp-ref">BILLING/SUBSCRIBED</p>
                 <h1 class="mt-3 text-3xl font-semibold tracking-tight text-ink">You're subscribed</h1>
                 <p class="mt-3 text-sm text-ink-dim">
                     Thanks. Your subscription is processing — credits and plan tier usually
@@ -36,7 +39,7 @@ setTimeout(refresh, 2500);
                 <div class="mt-8 flex items-center justify-center gap-3">
                     <Link
                         href="/billing"
-                        class="rounded-none border border-ink bg-ink px-4 py-2 text-sm font-medium text-bg hover:bg-bg hover:text-ink"
+                        class="rounded-none border border-violet bg-violet px-4 py-2 text-sm font-medium text-bg transition-colors hover:bg-bg hover:text-violet"
                     >
                         See your plan
                     </Link>

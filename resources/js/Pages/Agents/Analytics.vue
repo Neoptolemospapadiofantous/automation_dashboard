@@ -91,8 +91,12 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
             <div class="mx-auto max-w-6xl space-y-6 px-4 sm:px-6 lg:px-8">
 
                 <!-- Headline counters with sparklines -->
+                <div class="flex items-center justify-between">
+                    <span class="bp-ref">AGENT/METRICS</span>
+                    <span class="bp-annot">last {{ window.days }} days</span>
+                </div>
                 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <div class="rounded-none border border-border-line bg-bg p-4">
+                    <div class="rounded-none border border-border-line bg-bg p-4 shadow-sheet">
                         <div class="flex items-baseline justify-between">
                             <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Conversations</div>
                             <div class="font-mono text-xs text-ink-mute">{{ window.days }}d</div>
@@ -102,7 +106,7 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
                             <polyline :points="convoSparkline" fill="none" stroke="#6366f1" stroke-width="1.5" />
                         </svg>
                     </div>
-                    <div class="rounded-none border border-border-line bg-bg p-4">
+                    <div class="rounded-none border border-border-line bg-bg p-4 shadow-sheet">
                         <div class="flex items-baseline justify-between">
                             <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Messages</div>
                             <div class="font-mono text-xs text-ink-mute">{{ window.days }}d</div>
@@ -112,7 +116,7 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
                             <polyline :points="messagesSparkline" fill="none" stroke="#0ea5e9" stroke-width="1.5" />
                         </svg>
                     </div>
-                    <div class="rounded-none border border-border-line bg-bg p-4">
+                    <div class="rounded-none border border-border-line bg-bg p-4 shadow-sheet">
                         <div class="flex items-baseline justify-between">
                             <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Leads</div>
                             <div class="font-mono text-xs text-ink-mute">{{ window.days }}d</div>
@@ -122,7 +126,7 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
                             <polyline :points="leadsSparkline" fill="none" stroke="#10b981" stroke-width="1.5" />
                         </svg>
                     </div>
-                    <div class="rounded-none border border-border-line bg-bg p-4">
+                    <div class="rounded-none border border-border-line bg-bg p-4 shadow-sheet">
                         <div class="flex items-baseline justify-between">
                             <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Credits spent</div>
                             <div class="font-mono text-xs text-ink-mute">{{ window.days }}d</div>
@@ -136,9 +140,9 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
 
                 <!-- Conversion rates -->
                 <div class="grid gap-3 sm:grid-cols-3">
-                    <div class="rounded-none border border-border-line bg-bg p-5">
+                    <div class="rounded-none border border-violet bg-bg p-5 shadow-sheet">
                         <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">Capture rate</p>
-                        <p class="mt-2 font-mono text-3xl font-semibold text-ink">{{ totals.capture_rate }}%</p>
+                        <p class="mt-2 font-mono text-3xl font-semibold text-violet">{{ totals.capture_rate }}%</p>
                         <p class="mt-1 text-xs text-ink-dim">
                             of {{ fmt(totals.conversations) }} conversations produced a lead
                         </p>

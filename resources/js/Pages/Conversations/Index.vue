@@ -21,7 +21,11 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
 
 <template>
     <AppLayout title="Conversations">
-        <PageHeader title="Conversations" description="Every chat that's happened with your agents." />
+        <PageHeader title="Conversations" description="Every chat that's happened with your agents.">
+            <template #actions>
+                <span class="bp-ref">CONV / LOG</span>
+            </template>
+        </PageHeader>
 
 
         <div class="py-8">
@@ -45,7 +49,7 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
                     <PrimaryButton>Search</PrimaryButton>
                 </form>
 
-                <div class="overflow-hidden rounded-none border border-border-line bg-bg">
+                <div class="overflow-hidden rounded-none border border-border-line bg-bg shadow-sheet">
                     <table class="min-w-full divide-y divide-border-line text-sm">
                         <thead class="bg-bg-elev text-left font-mono text-xs uppercase tracking-wider text-ink-dim">
                             <tr>
@@ -60,7 +64,7 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
                             <tr
                                 v-for="c in conversations.data"
                                 :key="c.id"
-                                class="cursor-pointer hover:bg-surface-hi"
+                                class="cursor-pointer transition-colors hover:bg-surface-hi"
                                 @click="router.visit(route('conversations.show', c.id))"
                             >
                                 <td class="px-4 py-3 font-medium text-ink">

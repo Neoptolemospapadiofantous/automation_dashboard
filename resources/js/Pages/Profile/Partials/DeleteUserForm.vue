@@ -39,6 +39,8 @@ const closeModal = () => {
 
 <template>
     <ActionSection>
+        <template #ref><span class="text-red-600">PROFILE/DELETE</span></template>
+
         <template #title>
             Delete Account
         </template>

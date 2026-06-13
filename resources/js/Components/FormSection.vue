@@ -19,7 +19,11 @@ const hasActions = computed(() => !! useSlots().actions);
         </SectionTitle>
 
         <div class="mt-5 md:mt-0 md:col-span-2">
-            <form @submit.prevent="$emit('submitted')">
+            <div v-if="!! $slots.ref" class="mb-1.5 flex items-center gap-2">
+                <span class="bp-ref"><slot name="ref" /></span>
+                <span class="bp-dim flex-1" aria-hidden="true" />
+            </div>
+            <form class="shadow-sheet" @submit.prevent="$emit('submitted')">
                 <div
                     class="px-4 py-5 bg-bg sm:p-6 border border-border-line"
                     :class="hasActions ? 'border-b-0' : ''"

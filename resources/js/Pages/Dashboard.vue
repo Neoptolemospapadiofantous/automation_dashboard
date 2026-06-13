@@ -98,18 +98,22 @@ const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)
                     class="inline-flex items-center gap-1.5 rounded-none bg-surface-hi px-2.5 py-1 font-mono text-xs font-medium text-ink-dim"
                     :title="connected ? 'Live' : 'Offline — set PUSHER_* to enable live updates'"
                 >
-                    <span class="inline-block h-1.5 w-1.5 rounded-full" :class="connected ? 'bg-green-500 animate-pulse' : 'bg-ink-mute'" />
+                    <span class="inline-block h-1.5 w-1.5 rounded-full" :class="connected ? 'bg-green-500 pulse-glow text-green-500' : 'bg-ink-mute'" />
                     {{ connected ? 'Live' : 'Offline' }}
                 </span>
             </template>
         </PageHeader>
 
-        <div class="py-8">
-            <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+        <div class="relative py-8">
+            <div class="pointer-events-none absolute inset-x-0 top-0 h-64 bg-grid bg-grid-fade" aria-hidden="true" />
+            <div class="relative mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                 <!-- Setup checklist — self-completing, hidden once done -->
-                <div v-if="!setup.complete" class="rounded-none border border-border-line bg-bg-elev p-5">
+                <div v-if="!setup.complete" class="rounded-none border border-border-line bg-bg-elev p-5 shadow-sheet">
                     <div class="mb-3 flex items-center justify-between">
-                        <h2 class="text-sm font-semibold text-ink">Finish setting up your agent</h2>
+                        <div class="flex items-center gap-2.5">
+                            <span class="bp-ref">DASH/SETUP</span>
+                            <h2 class="text-sm font-semibold text-ink">Finish setting up your agent</h2>
+                        </div>
                         <span class="font-mono text-xs text-ink-dim">{{ setupDone }}/{{ setupSteps.length }} done</span>
                     </div>
                     <ul class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -132,7 +136,7 @@ const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)
                                 >
                                     {{ s.label }}
                                 </component>
-                                <p class="mt-0.5 text-[11px] leading-snug text-ink-dim">{{ s.hint }}</p>
+                                <p class="bp-annot mt-0.5 leading-snug">{{ s.hint }}</p>
                             </div>
                         </li>
                     </ul>
@@ -140,16 +144,25 @@ const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)
 
                 <!-- Stat cards -->
                 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-                    <div v-for="c in cards" :key="c.label" class="rounded-none border border-border-line bg-bg p-4">
+                    <div
+                        v-for="(c, i) in cards"
+                        :key="c.label"
+                        class="bp-node relative rounded-none p-4 shadow-sheet transition-colors hover:border-ink"
+                        :class="c.tone === 'violet' ? 'border-violet' : ''"
+                    >
+                        <span class="bp-ref absolute right-2 top-2">DASH/{{ String(i + 1).padStart(2, '0') }}</span>
                         <p class="font-mono text-xs uppercase tracking-wider text-ink-mute">{{ c.label }}</p>
-                        <p class="mt-1 font-mono text-2xl font-semibold" :class="toneClass(c.tone)">{{ c.value }}</p>
+                        <p class="mt-1 font-mono text-2xl font-semibold" :class="c.tone === 'violet' ? 'text-violet' : toneClass(c.tone)">{{ c.value }}</p>
                     </div>
                 </div>
 
                 <div class="grid gap-6 lg:grid-cols-2">
                     <!-- Funnel -->
-                    <div class="rounded-none border border-border-line bg-bg p-5">
-                        <h3 class="mb-4 text-sm font-semibold text-ink-dim">Pipeline funnel</h3>
+                    <div class="rounded-none border border-border-line bg-bg p-5 shadow-sheet">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h3 class="text-sm font-semibold text-ink-dim">Pipeline funnel</h3>
+                            <span class="bp-ref">DASH/FUNNEL</span>
+                        </div>
                         <div class="space-y-2">
                             <div v-for="f in funnel" :key="f.value" class="flex items-center gap-3">
                                 <span class="w-20 text-xs text-ink-dim">{{ f.label }}</span>
@@ -166,8 +179,11 @@ const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)
                     </div>
 
                     <!-- Rep load -->
-                    <div class="rounded-none border border-border-line bg-bg p-5">
-                        <h3 class="mb-4 text-sm font-semibold text-ink-dim">Open leads per rep</h3>
+                    <div class="rounded-none border border-border-line bg-bg p-5 shadow-sheet">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h3 class="text-sm font-semibold text-ink-dim">Open leads per rep</h3>
+                            <span class="bp-ref">DASH/LOAD</span>
+                        </div>
                         <ul v-if="rep_load.length" class="space-y-2">
                             <li v-for="(r, i) in rep_load" :key="i" class="flex items-center justify-between text-sm">
                                 <span class="text-ink-dim">{{ r.name }}</span>
@@ -176,7 +192,7 @@ const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)
                                 </span>
                             </li>
                         </ul>
-                        <p v-else class="text-sm text-ink-mute">No assigned leads yet.</p>
+                        <p v-else class="bp-annot">No assigned leads yet.</p>
 
                         <div class="mt-4 border-t border-border-line pt-3 text-xs text-ink-dim">
                             <span class="font-mono font-medium text-ink">{{ stats.active_conversations }}</span> active ·

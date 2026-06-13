@@ -24,16 +24,23 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '');
             :breadcrumbs="[{ label: 'Conversations', href: route('conversations.index') }, { label: 'Search' }]"
             title="Search conversations"
             description="Find messages by keyword or meaning (semantic search powered by Typesense when configured)."
-        />
+        >
+            <template #actions>
+                <span class="bp-ref">CONV / SEARCH</span>
+            </template>
+        </PageHeader>
 
         <div class="py-8">
             <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
                 <form class="mb-6 flex gap-2" @submit.prevent="search">
-                    <TextInput v-model="q" type="search" class="flex-1" placeholder="Search by keyword or meaning…" autofocus />
+                    <TextInput v-model="q" type="search" class="flex-1 focus:border-violet" placeholder="Search by keyword or meaning…" autofocus />
                     <PrimaryButton>Search</PrimaryButton>
                 </form>
 
                 <p v-if="q && !results.length" class="text-ink-mute">No matches for “{{ q }}”.</p>
+                <p v-else-if="results.length" class="mb-3 font-mono text-xs text-ink-dim">
+                    <span class="text-violet">{{ results.length }}</span> {{ results.length === 1 ? 'match' : 'matches' }} for “{{ q }}”
+                </p>
 
                 <ul class="space-y-2">
                     <li

@@ -53,17 +53,18 @@ function continueOn() {
 
 <template>
     <Head title="Welcome — Set up your agent" />
-    <div class="min-h-screen bg-bg-elev">
+    <div class="min-h-screen bg-bg-elev bg-grid bg-grid-fade">
         <div class="mx-auto max-w-2xl px-4 py-12">
             <div class="mb-8 flex items-center justify-between text-xs">
-                <ol class="flex items-center gap-2 font-mono font-medium text-ink-dim">
-                    <li class="text-ink">1. Set up agent</li>
-                    <li>→</li>
-                    <li>2. Done</li>
+                <ol class="flex items-center gap-3 font-mono font-medium text-ink-dim">
+                    <li class="flex items-center gap-2 text-ink"><span class="bp-dot" />1. Set up agent</li>
+                    <li class="bp-wire inline-block w-8" aria-hidden="true" />
+                    <li class="flex items-center gap-2"><span class="bp-dot" />2. Done</li>
                 </ol>
+                <span class="bp-ref">SETUP/01</span>
             </div>
 
-            <div class="rounded-none border border-border-line bg-bg p-8 shadow-[8px_8px_0_rgba(0,0,0,0.06)]">
+            <div class="bp-node shadow-sheet rounded-none p-8">
                 <h1 class="text-2xl font-semibold text-ink">Welcome to {{ team.name }}.</h1>
                 <p class="mt-2 text-ink-dim">
                     A couple of quick questions to tailor your setup. None are required —
@@ -80,7 +81,7 @@ function continueOn() {
                                 :key="uc.value"
                                 class="flex cursor-pointer flex-col rounded-none border p-3 text-left transition"
                                 :class="form.use_case === uc.value
-                                    ? 'border-ink bg-surface-hi ring-1 ring-ink'
+                                    ? 'border-violet bg-surface-hi ring-1 ring-violet'
                                     : 'border-border-line bg-bg hover:border-ink'"
                             >
                                 <input v-model="form.use_case" :value="uc.value" type="radio" class="sr-only" />
@@ -127,7 +128,7 @@ function continueOn() {
                                 class="flex items-start gap-2.5 rounded-none border p-3 text-sm transition"
                                 :class="[
                                     t.available === false ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
-                                    form.model_tier === t.key ? 'border-ink bg-surface-hi ring-1 ring-ink' : 'border-border-line hover:border-border-hi',
+                                    form.model_tier === t.key ? 'border-violet bg-surface-hi ring-1 ring-violet' : 'border-border-line hover:border-border-hi',
                                 ]"
                             >
                                 <input v-model="form.model_tier" type="radio" :value="t.key" :disabled="t.available === false" class="mt-0.5 text-ink focus:ring-ink" />

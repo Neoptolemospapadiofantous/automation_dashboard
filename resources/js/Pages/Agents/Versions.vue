@@ -72,8 +72,9 @@ const dirty = computed(() => form.isDirty);
 
         <div class="mx-auto max-w-5xl space-y-6 px-4 pb-12 sm:px-6">
             <!-- Editor -->
-            <div class="rounded-none border border-border-line bg-bg p-5">
-                <div class="mb-4 flex items-center justify-between">
+            <div class="rounded-none border border-border-line bg-bg p-5 shadow-sheet">
+                <span class="bp-ref">AGENT/VERSIONS</span>
+                <div class="mb-4 mt-1 flex items-center justify-between">
                     <h2 class="text-base font-medium text-ink">Behavior draft</h2>
                     <span v-if="published" class="font-mono text-xs text-ink-mute">
                         Live now: v{{ published.version }} · published {{ fmt(published.published_at) }}
@@ -168,10 +169,18 @@ const dirty = computed(() => form.isDirty);
 
                 <ul v-else class="divide-y divide-border-line">
                     <li v-for="v in versions" :key="v.version" class="flex items-center justify-between gap-4 py-3">
-                        <div class="min-w-0">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="bp-dot mt-1.5 shrink-0" :class="v.status === 'published' ? '' : 'opacity-40'" aria-hidden="true" />
+                            <div class="min-w-0">
                             <div class="flex items-center gap-2">
                                 <span class="font-mono text-sm font-semibold text-ink">v{{ v.version }}</span>
-                                <span class="rounded-none px-2 py-0.5 font-mono text-[10px] font-medium" :class="statusTone(v.status)">
+                                <span
+                                    v-if="v.status === 'published'"
+                                    class="ins-stamp text-emerald-600"
+                                >
+                                    Published
+                                </span>
+                                <span v-else class="rounded-none px-2 py-0.5 font-mono text-[10px] font-medium" :class="statusTone(v.status)">
                                     {{ v.status }}
                                 </span>
                                 <span class="rounded-none bg-surface-hi px-2 py-0.5 font-mono text-[10px] font-medium text-ink-dim">
@@ -184,6 +193,7 @@ const dirty = computed(() => form.isDirty);
                             <p class="mt-0.5 font-mono text-[10px] text-ink-dim">
                                 {{ v.status === 'published' ? 'published ' + fmt(v.published_at) : 'updated ' + fmt(v.updated_at) }}
                             </p>
+                            </div>
                         </div>
                         <div class="flex shrink-0 gap-2">
                             <a

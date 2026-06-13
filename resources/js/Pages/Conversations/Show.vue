@@ -54,6 +54,7 @@ const deleteUpstream = async () => {
         >
             <template #actions>
                 <div class="flex flex-wrap items-center gap-2">
+                    <span class="bp-ref mr-1">CONV / {{ conversation.id }}</span>
                     <!-- Cross-link to the lead's other conversations + back to
                          the kanban. Lets the operator pivot from a single
                          transcript to the lead's full footprint in one click. -->
@@ -88,7 +89,7 @@ const deleteUpstream = async () => {
 
         <div class="py-8">
             <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-                <div class="space-y-3 rounded-none border border-border-line bg-bg p-4">
+                <div class="space-y-3 rounded-none border border-border-line bg-bg p-4 shadow-sheet">
                     <div
                         v-for="m in messages"
                         :key="m.id"
@@ -103,7 +104,9 @@ const deleteUpstream = async () => {
                             <p class="mt-1 font-mono text-[10px] opacity-60">{{ fmt(m.sent_at) }}</p>
                         </div>
                     </div>
-                    <p v-if="!messages.length" class="py-8 text-center text-ink-dim">No messages recorded.</p>
+                    <div v-if="!messages.length" class="bg-grid bg-grid-fade rounded-none border border-dashed border-border-line py-12 text-center">
+                        <span class="bp-annot">No messages recorded.</span>
+                    </div>
                 </div>
             </div>
         </div>
