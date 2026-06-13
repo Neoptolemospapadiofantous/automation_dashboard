@@ -60,7 +60,7 @@ const createTeam = () => {
         </template>
 
         <template #actions>
-            <PrimaryButton class="bg-violet border-violet text-bg hover:bg-bg hover:text-violet focus:ring-violet" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+            <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
                 Create
             </PrimaryButton>
         </template>

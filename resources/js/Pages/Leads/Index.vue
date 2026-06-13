@@ -184,7 +184,7 @@ function submit() {
             <template #title>
                 <div class="flex items-center gap-3">
                     <h1 class="truncate text-xl font-semibold leading-7 text-ink">Leads</h1>
-                    <span class="bp-ref">LEADS / PIPELINE</span>
+                    <span class="bp-ref">LEADS/PIPELINE</span>
                 </div>
             </template>
             <template #actions>

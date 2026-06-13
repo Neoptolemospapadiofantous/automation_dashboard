@@ -89,7 +89,7 @@ const scoreColor = computed(() => {
             :description="lead.company ? `at ${lead.company}` : 'No company recorded'"
         >
             <template #actions>
-                <span class="bp-ref hidden sm:inline">LEAD / {{ String(lead.id).padStart(2, '0') }}</span>
+                <span class="bp-ref hidden sm:inline">LEAD/{{ String(lead.id).padStart(2, '0') }}</span>
                 <DangerButton type="button" @click="destroy">Delete lead</DangerButton>
             </template>
         </PageHeader>
@@ -108,7 +108,7 @@ const scoreColor = computed(() => {
                         >
                             <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
                         </select>
-                        <div class="mt-1 text-[11px] text-ink-mute">Currently: {{ currentStatusLabel }}</div>
+                        <div class="mt-1 text-[11px] text-ink-dim">Currently: {{ currentStatusLabel }}</div>
                     </div>
                     <div class="rounded-none border border-border-line bg-bg p-4">
                         <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Assigned to</div>
@@ -134,37 +134,37 @@ const scoreColor = computed(() => {
                 <div class="bp-node shadow-sheet rounded-none p-5">
                     <div class="flex items-center justify-between">
                         <h3 class="text-sm font-semibold text-ink-dim">Contact</h3>
-                        <span class="bp-ref">CONTACT</span>
+                        <span class="bp-ref">LEAD/CONTACT</span>
                     </div>
                     <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
                         <div>
-                            <dt class="text-xs text-ink-mute">Email</dt>
+                            <dt class="text-xs text-ink-dim">Email</dt>
                             <dd class="mt-0.5 text-ink-dim">
                                 <a v-if="lead.email" :href="`mailto:${lead.email}`" class="text-violet underline hover:text-ink-dim">{{ lead.email }}</a>
                                 <span v-else class="text-ink-mute">—</span>
                             </dd>
                         </div>
                         <div>
-                            <dt class="text-xs text-ink-mute">Phone</dt>
+                            <dt class="text-xs text-ink-dim">Phone</dt>
                             <dd class="mt-0.5 text-ink-dim">
                                 <a v-if="lead.phone" :href="`tel:${lead.phone}`" class="text-violet underline hover:text-ink-dim">{{ lead.phone }}</a>
                                 <span v-else class="text-ink-mute">—</span>
                             </dd>
                         </div>
                         <div>
-                            <dt class="text-xs text-ink-mute">Company</dt>
+                            <dt class="text-xs text-ink-dim">Company</dt>
                             <dd class="mt-0.5 text-ink-dim">{{ lead.company ?? '—' }}</dd>
                         </div>
                         <div>
-                            <dt class="text-xs text-ink-mute">Source</dt>
+                            <dt class="text-xs text-ink-dim">Source</dt>
                             <dd class="mt-0.5 text-ink-dim">{{ lead.source ?? '—' }}</dd>
                         </div>
                         <div>
-                            <dt class="text-xs text-ink-mute">Captured</dt>
+                            <dt class="text-xs text-ink-dim">Captured</dt>
                             <dd class="mt-0.5 text-ink-dim">{{ fmt(lead.created_at) }}</dd>
                         </div>
                         <div>
-                            <dt class="text-xs text-ink-mute">Last updated</dt>
+                            <dt class="text-xs text-ink-dim">Last updated</dt>
                             <dd class="mt-0.5 text-ink-dim">{{ fmt(lead.updated_at) }}</dd>
                         </div>
                     </dl>
@@ -174,7 +174,7 @@ const scoreColor = computed(() => {
                 <div class="rounded-none border border-border-line bg-bg p-5">
                     <div class="flex items-baseline justify-between">
                         <h3 class="text-sm font-semibold text-ink-dim">Notes</h3>
-                        <span class="text-[11px] text-ink-mute">
+                        <span class="text-[11px] text-ink-dim">
                             {{ notesForm.processing ? 'Saving…' : (notesForm.recentlySuccessful ? 'Saved' : '') }}
                         </span>
                     </div>
@@ -200,7 +200,7 @@ const scoreColor = computed(() => {
                         >
                             <div class="flex flex-col">
                                 <span class="font-medium text-ink">Conversation #{{ c.id }}</span>
-                                <span class="text-[11px] text-ink-mute">{{ fmt(c.started_at) }}</span>
+                                <span class="text-[11px] text-ink-dim">{{ fmt(c.started_at) }}</span>
                             </div>
                             <div class="flex items-center gap-3 text-xs text-ink-dim">
                                 <span>{{ c.message_count }} msg</span>
@@ -208,7 +208,7 @@ const scoreColor = computed(() => {
                             </div>
                         </Link>
                     </div>
-                    <p v-else class="mt-3 text-xs italic text-ink-mute">No conversations on file.</p>
+                    <p v-else class="mt-3 text-xs italic text-ink-dim">No conversations on file.</p>
                 </div>
 
                 <Link :href="route('leads.index')" class="block text-center text-xs text-ink underline hover:text-ink-dim">

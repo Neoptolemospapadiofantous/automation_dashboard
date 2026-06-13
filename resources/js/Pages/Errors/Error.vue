@@ -59,13 +59,13 @@ const meta = computed(() => {
             <div class="mt-8 flex items-center justify-center gap-3">
                 <Link
                     href="/dashboard"
-                    class="rounded-none border border-ink bg-ink px-4 py-2 text-sm font-medium text-bg hover:bg-bg hover:text-ink"
+                    class="rounded-none border border-ink bg-ink px-4 py-2 text-sm font-medium text-bg hover:bg-bg hover:text-ink active:bg-bg active:text-ink"
                 >
                     Back to dashboard
                 </Link>
                 <a
                     href="https://flowstack.com"
-                    class="rounded-none border border-border-hi bg-bg px-4 py-2 text-sm font-medium text-ink-dim hover:bg-surface-hi"
+                    class="rounded-none border border-border-hi bg-bg px-4 py-2 text-sm font-medium text-ink-dim hover:bg-surface-hi active:bg-surface-hi"
                 >
                     Visit flowstack.com
                 </a>

@@ -93,7 +93,7 @@ const alignmentClasses = computed(() => {
         >
             <div
                 v-show="open"
-                class="absolute z-50 rounded-none shadow-[8px_8px_0_rgba(0,0,0,0.06)]"
+                class="absolute z-50 rounded-none shadow-sheet"
                 :class="[widthClass, placementClass, alignmentClasses]"
                 style="display: none;"
                 @click="open = false"

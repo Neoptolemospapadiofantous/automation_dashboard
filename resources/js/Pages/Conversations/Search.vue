@@ -26,7 +26,7 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '');
             description="Find messages by keyword or meaning (semantic search powered by Typesense when configured)."
         >
             <template #actions>
-                <span class="bp-ref">CONV / SEARCH</span>
+                <span class="bp-ref">CONV/SEARCH</span>
             </template>
         </PageHeader>
 

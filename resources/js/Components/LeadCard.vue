@@ -77,7 +77,7 @@ function onAssignChange(e) {
 
         <div class="mt-1.5 flex items-center justify-between">
             <div class="flex items-center gap-1.5">
-                <span class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-mute">
+                <span class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-dim">
                     {{ lead.source }}
                 </span>
                 <Link

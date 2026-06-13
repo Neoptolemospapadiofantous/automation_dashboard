@@ -54,7 +54,7 @@ const deleteUpstream = async () => {
         >
             <template #actions>
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="bp-ref mr-1">CONV / {{ conversation.id }}</span>
+                    <span class="bp-ref mr-1">CONV/{{ conversation.id }}</span>
                     <!-- Cross-link to the lead's other conversations + back to
                          the kanban. Lets the operator pivot from a single
                          transcript to the lead's full footprint in one click. -->

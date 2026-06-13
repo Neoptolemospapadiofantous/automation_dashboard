@@ -23,7 +23,7 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
     <AppLayout title="Conversations">
         <PageHeader title="Conversations" description="Every chat that's happened with your agents.">
             <template #actions>
-                <span class="bp-ref">CONV / LOG</span>
+                <span class="bp-ref">CONV/LOG</span>
             </template>
         </PageHeader>
 

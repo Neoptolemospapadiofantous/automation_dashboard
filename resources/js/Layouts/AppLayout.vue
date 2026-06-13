@@ -338,7 +338,7 @@ const handleMobileNavClick = (event) => {
                                     >
                                         {{ n.message }}
                                     </Link>
-                                    <p v-if="!notifications.length" class="border-t border-border-line px-4 py-6 text-center text-sm text-ink-mute">
+                                    <p v-if="!notifications.length" class="border-t border-border-line px-4 py-6 text-center text-sm text-ink-dim">
                                         You're all caught up.
                                     </p>
                                 </div>
@@ -388,7 +388,7 @@ const handleMobileNavClick = (event) => {
             <!-- ───────────────────────── Mobile sidebar (overlay) ───────────────────────── -->
             <div v-if="showMobileNav" class="fixed inset-0 z-40 lg:hidden">
                 <div class="fixed inset-0 bg-ink/40" @click="showMobileNav = false" />
-                <div class="fixed inset-y-0 left-0 flex w-72 flex-col bg-bg border-r border-border-line shadow-[8px_8px_0_rgba(0,0,0,0.06)]">
+                <div class="fixed inset-y-0 left-0 flex w-72 flex-col bg-bg border-r border-border-line shadow-sheet">
                     <div class="flex h-16 items-center justify-between border-b border-border-line px-5">
                         <Link :href="route('dashboard')" @click="showMobileNav = false">
                             <ApplicationMark class="block h-8 w-auto" />

@@ -21,19 +21,19 @@ const tone = computed(() => {
     const p = percent.value;
     if (p >= 100) return 'rose';
     if (p >= 80) return 'amber';
-    return 'indigo';
+    return 'normal';
 });
 
 const barClass = computed(() => ({
     rose: 'bg-rose-500',
     amber: 'bg-amber-500',
-    indigo: 'bg-violet',
+    normal: 'bg-ink-dim',
 }[tone.value]));
 
 const textClass = computed(() => ({
     rose: 'text-rose-700',
     amber: 'text-amber-700',
-    indigo: 'text-ink-dim',
+    normal: 'text-ink-dim',
 }[tone.value]));
 </script>
 
@@ -51,7 +51,7 @@ const textClass = computed(() => ({
             <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-none bg-surface-hi">
                 <div class="h-full rounded-none transition-all" :class="barClass" :style="{ width: percent + '%' }" />
             </div>
-            <div class="mt-1 font-mono text-[10px] text-ink-mute">
+            <div class="mt-1 font-mono text-[10px] text-ink-dim">
                 {{ billing.credits_used.toLocaleString() }} / {{ billing.credits_total.toLocaleString() }} monthly used<span v-if="billing.topup_balance > 0"> · +{{ billing.topup_balance.toLocaleString() }} top-up</span>
                 <span v-if="billing.max_agents < 1000"> · {{ billing.agents_count }} / {{ billing.max_agents }} agents</span>
             </div>

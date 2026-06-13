@@ -88,7 +88,7 @@ const capturedRows = computed(() => {
             <!-- Header -->
             <div class="flex items-start justify-between border-b border-border-line px-5 py-4">
                 <div class="min-w-0">
-                    <p class="bp-ref">LEAD / {{ String(lead.id).padStart(2, '0') }}</p>
+                    <p class="bp-ref">LEAD/{{ String(lead.id).padStart(2, '0') }}</p>
                     <h2 class="mt-1 truncate text-lg font-semibold text-ink">{{ lead.name }}</h2>
                     <p v-if="lead.company" class="truncate text-sm text-ink-dim">{{ lead.company }}</p>
                 </div>
@@ -113,7 +113,7 @@ const capturedRows = computed(() => {
                 <span class="rounded-none bg-ink px-2 py-0.5 font-mono font-medium text-bg">
                     {{ lead.status }}
                 </span>
-                <span class="ml-auto font-mono text-ink-mute">{{ lead.source }}</span>
+                <span class="ml-auto font-mono text-ink-dim">{{ lead.source }}</span>
             </div>
 
             <!-- Contact -->
@@ -147,7 +147,7 @@ const capturedRows = computed(() => {
                 <h3 class="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">Captured fields</h3>
                 <dl class="mt-3 space-y-1.5 text-xs">
                     <div v-for="row in capturedRows" :key="row.key" class="flex items-start justify-between gap-3">
-                        <dt class="shrink-0 font-mono text-ink-mute">{{ row.key }}</dt>
+                        <dt class="shrink-0 font-mono text-ink-dim">{{ row.key }}</dt>
                         <dd class="truncate text-right text-ink-dim">{{ row.value }}</dd>
                     </div>
                 </dl>
@@ -194,7 +194,7 @@ const capturedRows = computed(() => {
             </section>
 
             <!-- Footer -->
-            <div class="border-t border-border-line px-5 py-3 font-mono text-xs text-ink-mute">
+            <div class="border-t border-border-line px-5 py-3 font-mono text-xs text-ink-dim">
                 Captured {{ fmtDate(lead.created_at) }}
             </div>
         </aside>

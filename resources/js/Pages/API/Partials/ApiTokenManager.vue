@@ -120,7 +120,7 @@ const deleteApiToken = () => {
                     Created.
                 </ActionMessage>
 
-                <PrimaryButton class="bg-violet border-violet text-bg hover:bg-bg hover:text-violet focus:ring-violet" :class="{ 'opacity-25': createApiTokenForm.processing }" :disabled="createApiTokenForm.processing">
+                <PrimaryButton :class="{ 'opacity-25': createApiTokenForm.processing }" :disabled="createApiTokenForm.processing">
                     Create
                 </PrimaryButton>
             </template>

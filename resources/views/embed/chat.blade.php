@@ -74,7 +74,7 @@
         }
         .msg.system {
             align-self: center;
-            background: transparent; color: var(--ink-mute);
+            background: transparent; color: var(--ink-dim);
             font-size: 11px; font-family: var(--font-mono);
         }
         form {
@@ -105,7 +105,7 @@
         form button:disabled { opacity: .5; cursor: not-allowed; }
         .typing {
             align-self: flex-start;
-            background: var(--surface); color: var(--ink-mute);
+            background: var(--surface); color: var(--ink-dim);
             border: 1px solid var(--border-line);
             padding: 10px 12px; border-radius: 0;
             font-size: 13px;

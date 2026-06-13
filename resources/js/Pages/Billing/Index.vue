@@ -96,7 +96,7 @@ function openPortal() {
     <AppLayout title="Billing">
         <PageHeader title="Billing" description="Your plan, credit usage, and transaction history." />
 
-        <div v-if="!billing" class="py-12 text-center text-sm text-ink-mute">
+        <div v-if="!billing" class="py-12 text-center text-sm text-ink-dim">
             No billing context — make sure you're on a team.
         </div>
         <div v-else class="py-8">
@@ -142,7 +142,7 @@ function openPortal() {
                         >
                             ⚙ Manage subscription
                         </button>
-                        <p v-else-if="!billing?.is_owner" class="mt-3 text-xs text-ink-mute">
+                        <p v-else-if="!billing?.is_owner" class="mt-3 text-xs text-ink-dim">
                             Only the team owner can change billing.
                         </p>
                     </div>
@@ -256,7 +256,7 @@ function openPortal() {
                         <div class="mt-2 h-2 w-full overflow-hidden rounded-none bg-surface-hi">
                             <div
                                 class="h-full transition-all"
-                                :class="usedPercent >= 90 ? 'bg-rose-500' : usedPercent >= 75 ? 'bg-amber-500' : 'bg-violet'"
+                                :class="usedPercent >= 90 ? 'bg-rose-500' : usedPercent >= 75 ? 'bg-amber-500' : 'bg-ink'"
                                 :style="{ width: usedPercent + '%' }"
                             />
                         </div>
@@ -342,7 +342,7 @@ function openPortal() {
                         </div>
                     </button>
                 </div>
-                <p class="mt-4 text-xs text-ink-mute">
+                <p class="mt-4 text-xs text-ink-dim">
                     Top-ups are priced above subscription rates on purpose — if you top up often, upgrading to Operator is the cheaper path. Custom plans have negotiated budgets.
                 </p>
             </template>

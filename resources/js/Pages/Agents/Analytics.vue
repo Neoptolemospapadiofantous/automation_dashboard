@@ -206,7 +206,7 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
                                 <div class="w-10 text-right font-mono text-ink-dim tabular-nums">{{ fmt(src.count) }}</div>
                             </div>
                         </div>
-                        <p v-else class="mt-4 text-xs italic text-ink-mute">No leads captured in this window.</p>
+                        <p v-else class="mt-4 text-xs italic text-ink-dim">No leads captured in this window.</p>
                     </div>
                 </div>
 
