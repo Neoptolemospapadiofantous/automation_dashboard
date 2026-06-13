@@ -190,6 +190,22 @@ else
   record WARN doc-coverage "python3 not on PATH"
 fi
 
+# ── 6e. Tree checks (granular, node-scoped) ───────────────────────────────────
+# Runs the manifest's per-node checks (margin-invariant, llm-contract, security,
+# route-smoke, schedule, snapshots) as first-class findings, so a failure
+# localizes to the exact subsystem in the findings graph instead of only
+# tripping the broad `tests` gate. ~3s; the same runner does scoped dev runs
+# (scripts/hermes_tree.py --domain <d> / --node <n>).
+log "=== TREE CHECKS ==="
+if command -v python3 >/dev/null 2>&1 && [[ -f docs/hermes/manifest.json ]]; then
+  while IFS=$'\t' read -r tstatus tcheck tdetail; do
+    [[ -z "$tcheck" ]] && continue
+    record "$tstatus" "$tcheck" "$tdetail"
+  done < <(python3 scripts/hermes_tree.py --emit 2>>"$LOG")
+else
+  record WARN tree-checks "python3 or manifest missing"
+fi
+
 # ── 7. Write findings JSON ─────────────────────────────────────────────────────
 overall="PASS"
 [[ $fail -gt 0 ]] && overall="FAIL"

@@ -11,6 +11,16 @@
     "platform": { "title": "Cross-cutting wiring — providers, notifications, scaffold", "primary_doc": "docs/project-overview.md" }
   },
 
+  "_checks_comment": "Granular, node-scoped check definitions run by the tree runner (scripts/hermes_tree.py). Each maps a check name used in a node's 'checks' to how to run it. type 'test' → php artisan test <target>. The broad checks (phpstan/tests/doc-coverage/pint/…) run repo-wide via hermes.sh and are NOT defined here.",
+  "checks": {
+    "margin-invariant": { "type": "test", "target": "tests/Feature/BillingInvariantsTest.php", "desc": "credit pricing preserves margin by construction" },
+    "llm-contract":      { "type": "test", "target": "tests/Contracts/LlmClientContractTest.php", "desc": "every provider honours the canonical message contract" },
+    "security":          { "type": "test", "target": "tests/Security", "desc": "headers, tenant isolation, throttle, redaction, exception-leak" },
+    "route-smoke":       { "type": "test", "target": "tests/Integrity/RouteSmokeTest.php", "desc": "every route boots without error" },
+    "schedule":          { "type": "test", "target": "tests/Integrity/SchedulerTest.php", "desc": "scheduled commands resolve + register" },
+    "snapshots":         { "type": "test", "target": "tests/Snapshots/DialogPathTest.php", "desc": "dialog-path fixtures stay stable" }
+  },
+
   "subsystems": {
     "app/Runtime":            { "domain": "runtime", "docs": ["docs/runtime-native.md"], "tests": ["tests/Feature/Runtime/AgentRuntimeTest.php", "tests/Wiring/InjectableGraphTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Runtime/Flow", "app/Runtime/Session", "app/Http/Controllers"], "criticality": "high" },
     "app/Runtime/Contracts":  { "domain": "runtime", "docs": ["docs/runtime-native.md"], "tests": ["tests/Feature/Runtime/DispatcherTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Runtime", "app/Providers"], "criticality": "medium" },

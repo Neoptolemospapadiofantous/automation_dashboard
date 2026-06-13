@@ -66,6 +66,9 @@
         "hermes-fast": [
             "bash scripts/hermes.sh --fast"
         ],
+        "hermes-tree": [
+            "python3 scripts/hermes_tree.py"
+        ],
         "hermes-audit": [
             "bash scripts/agents/audit_sentinel.sh"
         ],

@@ -13,6 +13,7 @@ Local CI + audit tooling for automation_dashboard. No scheduled execution; all i
 |---|---|---|---|
 | `composer hermes` | any shell | free | full CI gate before pushing |
 | `composer hermes-fast` | any shell | free | quick local heartbeat (skips vite + pnpm audit) |
+| `composer hermes-tree` | any shell | free | granular per-node checks scoped by node/domain (`scripts/hermes_tree.py --domain billing`) |
 | `composer hermes-audit` | any shell | free | security/risk surface scan (CVEs, .env drift, debug routes, throttle gaps) |
 | `composer hermes-update` | any shell | free | outdated PHP + JS deps (counts + per-package current/latest) |
 | `composer hermes-system` | any shell | free | runtime health (disk, logs, queue, DB, Typesense, scheduler) |
@@ -36,6 +37,7 @@ Local CI + audit tooling for automation_dashboard. No scheduled execution; all i
 | `scripts/doc_coverage.py` | Doc-coverage gate — every `app/` subsystem + every canonical doc must be registered in the manifest |
 | `scripts/hermes_graph.py` | Manifest visualizer — prints the domain tree + each node's context (`--node app/X` for the connection view) |
 | `scripts/hermes_findings.py` | Findings enricher — joins raw findings × manifest into a node-aware graph (status rollup per node/domain + blast radius) |
+| `scripts/hermes_tree.py` | Tree runner — runs the manifest's granular per-node checks scoped to a node/domain/all (`composer hermes-tree`; `--domain billing` / `--node app/X`) |
 | `docs/hermes/manifest.json` | **The trunk** — the project graph every Hermes check reads from (subsystems → docs/tests/checks/edges, + canonical docs) |
 | `scripts/fleet_agents.json` | 5 specialist agent definitions (route-auditor, inertia-page-scanner, migration-watcher, voiceflow-surface-sentinel, doc-syncer) — consumed by `.claude/commands/hermes-fleet.md` |
 | `scripts/agents/audit_sentinel.sh` | No-LLM collector — writes `data/agents/audit-sentinel/findings.json` (security/risk scan) |
@@ -89,10 +91,17 @@ into it: after each run, `hermes_findings.py` joins the raw
 its check covers, their `domains`, `related` nodes (the blast radius) and doc
 `refs`, plus a per-node and per-domain status rollup. So a failure shows *what
 it threatens* (which domains, which neighbouring nodes), not just "tests
-failed". The per-node rollup also lists `checks_pending` — granular checks a
-node declares (e.g. `margin-invariant`) still folded into a broad check, i.e.
-the work the upcoming split will make standalone. Later increments add a tree
-runner and an LLM synthesis node over this same graph.
+failed". **Increment 3** added the **tree runner** (`scripts/hermes_tree.py`,
+`composer hermes-tree`): the manifest's granular per-node checks
+(`margin-invariant`, `llm-contract`, `security`, `route-smoke`, `schedule`,
+`snapshots`) now run as first-class findings, each attached to the exact node
+that declares it — so a failure localizes (`margin-invariant` → `app/Billing`)
+instead of only tripping the broad `tests` gate. The same runner does scoped
+dev runs: `python3 scripts/hermes_tree.py --domain billing` or
+`--node app/Runtime/LLM` runs just that slice's deep checks (~seconds). That
+scoping is the primitive the split is built on — a future `hermes:billing` is
+just `hermes_tree.py --domain billing`. Later increments add an LLM synthesis
+node over the findings graph, then the split itself.
 
 ## Static-analysis policy
 
