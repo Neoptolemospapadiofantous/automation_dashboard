@@ -52,6 +52,16 @@ class BillingController extends Controller
             'topup_packs' => $team->planObject()->allowsTopUps()
                 ? TopUpPack::catalog()
                 : [],
+            // Custom top-up (customer-chosen € amount). Null when the plan
+            // can't top up or the custom price isn't configured — the UI
+            // hides the custom card in that case.
+            'topup_custom' => $team->planObject()->allowsTopUps() && $this->customTopUpAvailable()
+                ? [
+                    'min_eur' => (int) config('billing.topup_custom.min_eur'),
+                    'max_eur' => (int) config('billing.topup_custom.max_eur'),
+                    'credits_per_eur' => (int) config('billing.topup_custom.credits_per_eur'),
+                ]
+                : null,
             // Plan catalog — surfaces price, max agents, monthly credit
             // grant, AND whether annual is available so the UI can show
             // the monthly/annual toggle and the savings %.
@@ -64,8 +74,8 @@ class BillingController extends Controller
 
     /**
      * @return array{
-     *   key: string, value: string, label: string, monthly_usd: int,
-     *   annual_equivalent_monthly_usd: ?int, annual_savings_pct: int,
+     *   key: string, value: string, label: string, monthly_eur: int,
+     *   annual_equivalent_monthly_eur: ?int, annual_savings_pct: int,
      *   annual_available: bool, max_agents: int, monthly_credits: int
      * }
      */
@@ -75,8 +85,8 @@ class BillingController extends Controller
             'key' => $key,
             'value' => $plan->value,
             'label' => $plan->label(),
-            'monthly_usd' => (int) $plan->priceUsd(),
-            'annual_equivalent_monthly_usd' => $plan->annualEquivalentMonthlyUsd(),
+            'monthly_eur' => (int) $plan->priceEur(),
+            'annual_equivalent_monthly_eur' => $plan->annualEquivalentMonthlyEur(),
             'annual_savings_pct' => $plan->annualSavingsPct(),
             'annual_available' => $plan->stripePriceId(BillingCycle::Annual) !== null,
             'max_agents' => $plan->maxAgents(),
@@ -93,8 +103,12 @@ class BillingController extends Controller
     {
         $this->requireOwner($request, 'buy credit top-ups');
 
+        // 'custom' is a valid pack id alongside the fixed packs — it maps to
+        // the custom_unit_amount Stripe price where the customer types their
+        // own € amount on the hosted page.
+        $allowed = array_merge(array_map(fn ($p) => $p->value, TopUpPack::cases()), ['custom']);
         $data = $request->validate([
-            'pack' => ['required', 'string', 'in:'.implode(',', array_map(fn ($p) => $p->value, TopUpPack::cases()))],
+            'pack' => ['required', 'string', 'in:'.implode(',', $allowed)],
         ]);
 
         $team = $request->user()->currentTeam;
@@ -105,11 +119,22 @@ class BillingController extends Controller
 
         abort_unless($plan->allowsTopUps(), 403, "Top-ups aren't available on the {$plan->label()} plan.");
 
-        $pack = TopUpPack::from($data['pack']);
-        $priceId = $pack->stripePriceId();
+        // Resolve price id + metadata for either a fixed pack or the custom
+        // amount. Fixed packs carry their credit count in metadata; the custom
+        // amount is unknown until the customer enters it on Stripe, so the
+        // webhook derives credits from amount_total instead.
+        if ($data['pack'] === 'custom') {
+            $priceId = $this->customTopUpPriceId();
+            $metadata = ['pack' => 'custom'];
+        } else {
+            $pack = TopUpPack::from($data['pack']);
+            $priceId = $pack->stripePriceId();
+            $metadata = ['pack' => $pack->value, 'credits' => (string) $pack->credits()];
+        }
+
         if ($priceId === null) {
             return back()->withErrors([
-                'pack' => 'This top-up pack is not yet available for purchase.',
+                'pack' => 'This top-up option is not yet available for purchase.',
             ]);
         }
 
@@ -118,14 +143,26 @@ class BillingController extends Controller
             priceId: $priceId,
             successUrl: route('billing.index').'?topup=success',
             cancelUrl: route('billing.index').'?topup=canceled',
-            metadata: [
-                'pack' => $pack->value,
-                'credits' => (string) $pack->credits(),
-            ],
+            metadata: $metadata,
         );
 
         // Inertia POST → away-redirect to Stripe. The frontend follows.
         return redirect()->away($session->url);
+    }
+
+    /**
+     * The configured custom top-up Stripe price id, or null when unset.
+     */
+    protected function customTopUpPriceId(): ?string
+    {
+        $value = config('billing.topup_custom.price_id');
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    protected function customTopUpAvailable(): bool
+    {
+        return $this->customTopUpPriceId() !== null;
     }
 
     /**

@@ -87,6 +87,26 @@ class StripeWebhookTest extends TestCase
         $this->assertSame(1, CreditTransaction::query()->where('reason', 'grant_topup')->count());
     }
 
+    public function test_custom_topup_grants_credits_derived_from_amount_paid(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $team = $user->currentTeam;
+        $team->forceFill(['plan' => Plan::Free->value, 'credit_balance' => 100])->save();
+
+        // €50 paid (5000 cents) × 50 credits/€ = 2,500 credits. No `credits`
+        // in metadata — the handler must read amount_total.
+        $this->fakeWebhook($this->customTopupCompletedEvent(
+            teamId: (string) $team->id,
+            sessionId: 'cs_test_custom_1',
+            amountTotalCents: 5_000,
+        ));
+
+        $fresh = $team->fresh();
+        $this->assertSame(100, $fresh->credit_balance);
+        $this->assertSame(2_500, $fresh->topup_balance);
+        $this->assertSame(1, CreditTransaction::query()->where('reason', 'grant_topup')->count());
+    }
+
     public function test_invoice_payment_failed_marks_team_past_due(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
@@ -165,6 +185,26 @@ class StripeWebhookTest extends TestCase
                         'team_id' => $teamId,
                         'pack' => 'medium',
                         'credits' => (string) $credits,
+                    ],
+                ],
+            ],
+        ]);
+    }
+
+    private function customTopupCompletedEvent(string $teamId, string $sessionId, int $amountTotalCents): Event
+    {
+        return Event::constructFrom([
+            'id' => 'evt_'.uniqid(),
+            'type' => 'checkout.session.completed',
+            'data' => [
+                'object' => [
+                    'id' => $sessionId,
+                    'mode' => 'payment',
+                    'amount_total' => $amountTotalCents,
+                    'currency' => 'eur',
+                    'metadata' => [
+                        'team_id' => $teamId,
+                        'pack' => 'custom',
                     ],
                 ],
             ],

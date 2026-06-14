@@ -19,18 +19,20 @@ namespace App\Billing;
  * NOTE on enum case names: cases stayed `free`/`pro`/`business` because the
  * `teams.plan` column persists the string value — renaming would need a
  * data migration. The offer was rebranded in the Starter / Operator /
- * Custom direction (see priceUsd() + label() + features); future Phase H
+ * Custom direction (see priceEur() + label() + features); future Phase H
  * Stripe wiring can introduce new case names + migration as needed.
  *
  * Offer tiers (aligned with flowstack.com/pricing as of 2026-06-09):
- *   - Starter  ($99/mo)  — 1 agent, 2,500 credits, "try the product"
- *   - Operator ($399/mo) — up to 5 agents, 25,000 credits, top-ups enabled
+ *   - Starter  (€99/mo)  — 1 agent, 2,500 credits, "try the product"
+ *   - Operator (€399/mo) — up to 5 agents, 25,000 credits, top-ups enabled
  *   - Custom   (scoped 4-6 week project) — bespoke flows, custom integrations
+ *
+ * Pricing is EUR throughout — we sell in Europe.
  *
  * Credits are sized so a typical team comfortably stays inside its
  * monthly allotment at normal usage; top-up packs cover the spike weeks.
  *
- * No free trial — product decision 2026-06-09. The $99 Starter tier IS
+ * No free trial — product decision 2026-06-09. The €99 Starter tier IS
  * the entry point; cancel anytime via the Stripe Billing Portal. Do
  * not add Stripe Checkout `trial_period_days` to subscription sessions.
  */
@@ -70,11 +72,11 @@ enum Plan: string
     }
 
     /**
-     * Monthly recurring price in USD. Returned as int so display code
+     * Monthly recurring price in EUR. Returned as int so display code
      * can format consistently. Null on Custom — that tier is project-based
      * (scoped 4-6 week build) rather than recurring SaaS.
      */
-    public function priceUsd(): ?int
+    public function priceEur(): ?int
     {
         return match ($this) {
             self::Free => 99,
@@ -133,9 +135,9 @@ enum Plan: string
      * alongside the actual monthly for the side-by-side comparison.
      * Null when no monthly price (Custom).
      */
-    public function annualEquivalentMonthlyUsd(): ?int
+    public function annualEquivalentMonthlyEur(): ?int
     {
-        $monthly = $this->priceUsd();
+        $monthly = $this->priceEur();
         if ($monthly === null) {
             return null;
         }

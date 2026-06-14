@@ -64,6 +64,47 @@ class BillingTopUpTest extends TestCase
         $this->assertSame(1_000, $team->fresh()->credit_balance);
     }
 
+    public function test_custom_amount_redirects_to_stripe_checkout(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $team = $user->currentTeam;
+        $team->forceFill(['plan' => Plan::Free->value, 'credit_balance' => 500])->save();
+
+        config(['billing.topup_custom.price_id' => 'price_test_custom']);
+
+        // The custom price id must be the one passed to Stripe; credits are
+        // NOT in metadata (the customer picks the amount on Stripe's page).
+        $sessionStub = Session::constructFrom(['id' => 'cs_test_custom', 'url' => 'https://checkout.stripe.com/c/pay/cs_test_custom']);
+        $this->mock(StripeClient::class, function (Mockery\MockInterface $mock) use ($sessionStub): void {
+            $mock->shouldReceive('createOneOffCheckout')
+                ->once()
+                ->withArgs(fn ($team, $priceId, $s, $c, $metadata) => $priceId === 'price_test_custom'
+                    && ($metadata['pack'] ?? null) === 'custom'
+                    && ! array_key_exists('credits', $metadata))
+                ->andReturn($sessionStub);
+        });
+
+        $this->actingAs($user->fresh())
+            ->post(route('billing.topup'), ['pack' => 'custom'])
+            ->assertRedirect('https://checkout.stripe.com/c/pay/cs_test_custom');
+
+        $this->assertSame(500, $team->fresh()->credit_balance);
+    }
+
+    public function test_custom_amount_without_price_configured_returns_friendly_error(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $user->currentTeam->forceFill(['plan' => Plan::Free->value])->save();
+
+        config(['billing.topup_custom.price_id' => null]);
+
+        $this->actingAs($user->fresh())
+            ->from(route('billing.index'))
+            ->post(route('billing.topup'), ['pack' => 'custom'])
+            ->assertRedirect(route('billing.index'))
+            ->assertSessionHasErrors(['pack']);
+    }
+
     public function test_custom_plan_rejects_topup(): void
     {
         // Custom is project-based — credits are negotiated, not self-served.

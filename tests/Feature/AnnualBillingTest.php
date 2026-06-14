@@ -50,12 +50,12 @@ class AnnualBillingTest extends TestCase
 
     public function test_annual_equivalent_monthly_applies_savings(): void
     {
-        // Starter is $99/mo; 17% off → ~$82/mo equivalent.
-        $this->assertSame(82, Plan::Free->annualEquivalentMonthlyUsd());
-        // Operator is $399/mo; 17% off → ~$331/mo equivalent.
-        $this->assertSame(331, Plan::Pro->annualEquivalentMonthlyUsd());
+        // Starter is €99/mo; 17% off → ~€82/mo equivalent.
+        $this->assertSame(82, Plan::Free->annualEquivalentMonthlyEur());
+        // Operator is €399/mo; 17% off → ~€331/mo equivalent.
+        $this->assertSame(331, Plan::Pro->annualEquivalentMonthlyEur());
         // Business has no monthly price → null.
-        $this->assertNull(Plan::Business->annualEquivalentMonthlyUsd());
+        $this->assertNull(Plan::Business->annualEquivalentMonthlyEur());
     }
 
     public function test_subscribe_with_annual_cycle_uses_annual_price(): void
@@ -142,13 +142,13 @@ class AnnualBillingTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->has('plan_catalog.starter', fn ($p) => $p
                     ->where('annual_available', true)
-                    ->where('monthly_usd', 99)
-                    ->where('annual_equivalent_monthly_usd', 82)
+                    ->where('monthly_eur', 99)
+                    ->where('annual_equivalent_monthly_eur', 82)
                     ->etc()
                 )
                 ->has('plan_catalog.operator', fn ($p) => $p
                     ->where('annual_available', false)
-                    ->where('monthly_usd', 399)
+                    ->where('monthly_eur', 399)
                     ->etc()
                 )
             );

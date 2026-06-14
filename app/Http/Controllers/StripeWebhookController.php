@@ -139,8 +139,18 @@ class StripeWebhookController extends Controller
         /** @var array<string, mixed> $metadata */
         $metadata = (array) ($session['metadata'] ?? []);
         $packKey = (string) ($metadata['pack'] ?? '');
-        $credits = (int) ($metadata['credits'] ?? 0);
         $sessionId = (string) ($session['id'] ?? '');
+
+        if ($packKey === 'custom') {
+            // Custom amount: the customer chose the € amount on Stripe's
+            // hosted page, so credits aren't in metadata — derive them from
+            // what was actually paid. amount_total is in cents (EUR).
+            $amountTotalCents = (int) ($session['amount_total'] ?? 0);
+            $creditsPerEur = (int) config('billing.topup_custom.credits_per_eur');
+            $credits = intdiv($amountTotalCents * $creditsPerEur, 100);
+        } else {
+            $credits = (int) ($metadata['credits'] ?? 0);
+        }
 
         if ($credits <= 0) {
             Log::warning('Stripe topup completed without resolvable credit amount', [

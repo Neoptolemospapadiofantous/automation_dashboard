@@ -70,4 +70,29 @@ return [
         'topup_large' => env('STRIPE_PRICE_TOPUP_LARGE'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Custom top-up (customer-chosen amount)
+    |--------------------------------------------------------------------------
+    |
+    | Alongside the fixed packs, a customer can buy a custom credit amount.
+    | This maps to a single Stripe Price created with `custom_unit_amount`
+    | enabled — Stripe's hosted Checkout page renders an amount field and
+    | enforces the min/max itself (set on the Price, mirrored here for the
+    | UI copy). The chosen € amount comes back on the webhook as
+    | `amount_total`, and we grant credits = amount_eur × credits_per_eur.
+    |
+    | credits_per_eur = 50 → €0.0200/credit, identical to the Large pack and
+    | the BEST self-serve rate. It MUST stay above Operator's €0.01596/credit
+    | floor or it goes margin-negative (BillingInvariantsTest guards this).
+    |
+    | Currency is EUR throughout — we sell in Europe.
+    */
+    'topup_custom' => [
+        'price_id' => env('STRIPE_PRICE_TOPUP_CUSTOM'),
+        'min_eur' => 10,
+        'max_eur' => 2_000,
+        'credits_per_eur' => 50,
+    ],
+
 ];

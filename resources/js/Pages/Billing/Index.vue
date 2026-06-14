@@ -11,6 +11,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 const props = defineProps({
     transactions: { type: Array, required: true },
     topup_packs: { type: Array, default: () => [] },
+    topup_custom: { type: Object, default: null },
     plan_catalog: { type: Object, default: () => ({}) },
 });
 
@@ -48,8 +49,18 @@ function openTopup() {
 }
 
 function buy(pack) {
-    selectedPack.value = pack.id;
-    topupForm.pack = pack.id;
+    submitTopup(pack.id);
+}
+
+// Custom amount: the customer enters the actual € figure on Stripe's hosted
+// page (custom_unit_amount), so we just post pack=custom and redirect.
+function buyCustom() {
+    submitTopup('custom');
+}
+
+function submitTopup(packId) {
+    selectedPack.value = packId;
+    topupForm.pack = packId;
     topupForm.post(route('billing.topup'), {
         preserveScroll: true,
         onSuccess: () => {
@@ -201,10 +212,10 @@ function openPortal() {
                                         v-if="cycle === 'annual' && p.annual_available"
                                         class="font-mono text-sm font-semibold text-ink"
                                     >
-                                        — ${{ p.annual_equivalent_monthly_usd }}/mo
+                                        — €{{ p.annual_equivalent_monthly_eur }}/mo
                                     </span>
                                     <span v-else class="font-mono text-sm font-semibold text-ink">
-                                        — ${{ p.monthly_usd }}/mo
+                                        — €{{ p.monthly_eur }}/mo
                                     </span>
                                 </div>
                                 <div class="mt-1 text-[11px] text-ink-dim">
@@ -215,7 +226,7 @@ function openPortal() {
                                     v-if="cycle === 'annual' && p.annual_available"
                                     class="mt-1 text-[10px] text-emerald-700"
                                 >
-                                    Billed yearly · ${{ (p.annual_equivalent_monthly_usd * 12).toLocaleString() }} / yr
+                                    Billed yearly · €{{ (p.annual_equivalent_monthly_eur * 12).toLocaleString() }} / yr
                                 </div>
                                 <div
                                     v-else-if="cycle === 'annual' && !p.annual_available"
@@ -336,12 +347,37 @@ function openPortal() {
                             <span class="font-mono text-2xl font-semibold text-ink">{{ pack.credits.toLocaleString() }}</span>
                             <span class="text-xs text-ink-dim">credits</span>
                         </div>
-                        <div class="mt-1 font-mono text-sm font-medium text-ink">${{ pack.price_usd }}</div>
+                        <div class="mt-1 font-mono text-sm font-medium text-ink">€{{ pack.price_eur }}</div>
                         <div class="mt-1 font-mono text-[10px] text-ink-mute tabular-nums">
-                            ${{ (pack.price_usd / pack.credits).toFixed(4) }} / credit
+                            €{{ (pack.price_eur / pack.credits).toFixed(4) }} / credit
                         </div>
                     </button>
                 </div>
+
+                <!-- Custom amount: redirects to Stripe's hosted page where the
+                     customer types any € figure between min and max. -->
+                <button
+                    v-if="topup_custom"
+                    type="button"
+                    class="mt-3 flex w-full items-center justify-between rounded-none border p-4 text-left transition"
+                    :class="selectedPack === 'custom'
+                        ? 'border-ink bg-surface-hi ring-2 ring-ink'
+                        : 'border-border-line hover:border-ink hover:bg-surface-hi'"
+                    :disabled="topupForm.processing"
+                    @click="buyCustom"
+                >
+                    <div>
+                        <div class="font-mono text-xs font-semibold uppercase tracking-wider text-ink-dim">Custom amount</div>
+                        <div class="mt-1 text-sm text-ink">
+                            Choose your own — €{{ topup_custom.min_eur }} to €{{ topup_custom.max_eur.toLocaleString() }}
+                        </div>
+                        <div class="mt-1 font-mono text-[10px] text-ink-mute tabular-nums">
+                            {{ topup_custom.credits_per_eur }} credits / €1 · you'll enter the amount on the next screen
+                        </div>
+                    </div>
+                    <span class="font-mono text-lg text-ink-dim">→</span>
+                </button>
+
                 <p class="mt-4 text-xs text-ink-dim">
                     Top-ups are priced above subscription rates on purpose — if you top up often, upgrading to Operator is the cheaper path. Custom plans have negotiated budgets.
                 </p>

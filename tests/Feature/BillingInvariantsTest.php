@@ -26,17 +26,32 @@ class BillingInvariantsTest extends TestCase
         // The upgrade-pressure mechanism AND the margin floor: tier credit
         // prices are calibrated against Operator's $/credit; any pack below
         // it can turn tiers margin-negative.
-        $operatorPerCredit = Plan::Pro->priceUsd() / Plan::Pro->monthlyCredits();
+        $operatorPerCredit = Plan::Pro->priceEur() / Plan::Pro->monthlyCredits();
 
         foreach (TopUpPack::cases() as $pack) {
-            $packPerCredit = $pack->priceUsd() / $pack->credits();
+            $packPerCredit = $pack->priceEur() / $pack->credits();
 
             $this->assertGreaterThan(
                 $operatorPerCredit,
                 $packPerCredit,
-                "{$pack->label()} (\${$packPerCredit}/credit) undercuts Operator (\${$operatorPerCredit}/credit) — margin-negative risk.",
+                "{$pack->label()} (€{$packPerCredit}/credit) undercuts Operator (€{$operatorPerCredit}/credit) — margin-negative risk.",
             );
         }
+    }
+
+    public function test_custom_topup_rate_beats_the_operator_floor(): void
+    {
+        // The custom amount grants credits at billing.topup_custom.credits_per_eur.
+        // Its €/credit MUST stay strictly above Operator's floor, same as the
+        // fixed packs — otherwise a big custom buy goes margin-negative.
+        $operatorPerCredit = Plan::Pro->priceEur() / Plan::Pro->monthlyCredits();
+        $customPerCredit = 1 / (int) config('billing.topup_custom.credits_per_eur');
+
+        $this->assertGreaterThan(
+            $operatorPerCredit,
+            $customPerCredit,
+            "Custom top-up (€{$customPerCredit}/credit) undercuts Operator (€{$operatorPerCredit}/credit) — margin-negative risk.",
+        );
     }
 
     public function test_every_tier_is_margin_positive_at_high_usage_on_the_cheapest_credits(): void
@@ -44,9 +59,9 @@ class BillingInvariantsTest extends TestCase
         // HIGH scenario: 2 LLM calls × (8k in / 800 out) per visitor turn.
         // Worst revenue source = cheapest $/credit across plans and packs.
         // Embed bills (1 + replies) ≈ 2 × multiplier per turn.
-        $sources = [Plan::Free->priceUsd() / Plan::Free->monthlyCredits(), Plan::Pro->priceUsd() / Plan::Pro->monthlyCredits()];
+        $sources = [Plan::Free->priceEur() / Plan::Free->monthlyCredits(), Plan::Pro->priceEur() / Plan::Pro->monthlyCredits()];
         foreach (TopUpPack::cases() as $pack) {
-            $sources[] = $pack->priceUsd() / $pack->credits();
+            $sources[] = $pack->priceEur() / $pack->credits();
         }
         $worstPerCredit = min($sources);
 

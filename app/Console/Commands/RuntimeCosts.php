@@ -78,7 +78,7 @@ class RuntimeCosts extends Command
             // Phantom-revenue guard: teams default to a plan value at signup
             // without ever paying — only count revenue for live subscriptions.
             $hasActiveSub = $team !== null && $team->getAttribute('stripe_subscription_status') === 'active';
-            $revenue = $hasActiveSub ? (float) ($plan?->priceUsd() ?? 0) : 0.0;
+            $revenue = $hasActiveSub ? (float) ($plan?->priceEur() ?? 0) : 0.0;
 
             $creditsUsed = (int) abs(CreditTransaction::query()
                 ->where('team_id', $teamId)
