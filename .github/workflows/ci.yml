@@ -68,7 +68,10 @@ jobs:
         with:
           php-version: '8.3'
 
-      - run: composer install --no-interaction --prefer-dist --no-scripts
+      # --ignore-platform-reqs: this job's bare PHP lacks some runtime
+      # extensions, but we only need the vendor files (Ziggy's JS), not a
+      # working PHP runtime.
+      - run: composer install --no-interaction --prefer-dist --no-scripts --ignore-platform-reqs
 
       - uses: pnpm/action-setup@v4
 

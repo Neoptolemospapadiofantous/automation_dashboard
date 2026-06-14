@@ -1,14 +1,18 @@
-# gitleaks config. CI scans full history (fetch-depth: 0), so historical
-# fixtures surface even after the file is deleted. Extend the default
-# ruleset and allowlist one known dummy value.
+# gitleaks config. CI scans full history (fetch-depth: 0), so fixtures and a
+# since-removed/rotated key surface even after the files are cleaned up.
+# Extend the default ruleset and allowlist the known-safe values BY PATH
+# (we deliberately don't embed the real key value here).
 [extend]
 useDefault = true
 
 [allowlist]
-description = "Dummy test webhook secret 'sek-1234567890' in the deleted Voiceflow lifecycle webhook test — a fixture, never a real credential."
+description = "Historical test fixtures + a removed/rotated Voiceflow key in old commits — none are live credentials."
 regexes = [
   '''sek-1234567890''',
+  '''test-key-bytes-32-long-padding-aa''',
 ]
 paths = [
   '''tests/Feature/VoiceflowSessionLifecycleWebhookTest\.php''',
+  '''tests/Feature/VoiceflowSvixVerificationTest\.php''',
+  '''docs/operations/ship-fast-plan\.md''',
 ]
