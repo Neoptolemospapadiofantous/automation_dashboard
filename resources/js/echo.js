@@ -4,28 +4,25 @@ import Pusher from 'pusher-js';
 window.Pusher = Pusher;
 
 /**
- * Laravel Echo bootstrap.
+ * Laravel Echo bootstrap — self-hosted Laravel Reverb (Pusher-protocol, so
+ * pusher-js is still the client transport).
  *
- * We use the Pusher protocol, which is spoken by BOTH the managed Pusher
- * cloud and the self-hosted Laravel Reverb server. That means switching from
- * Pusher to Reverb later is purely an env change here — no frontend rewrite.
- *
- * Echo is only initialised when a key is actually present, so the app boots
- * cleanly in environments without real-time credentials (e.g. local/CI).
+ * Echo is only initialised when a key is present, so the app boots cleanly
+ * where real-time isn't configured (CI, or before the Reverb server is
+ * provisioned): useEcho() reports connected:false and the UI shows "Offline".
  */
-const key = import.meta.env.VITE_PUSHER_APP_KEY;
+const key = import.meta.env.VITE_REVERB_APP_KEY;
 
 let echo = null;
 
 if (key) {
     echo = new Echo({
-        broadcaster: 'pusher',
+        broadcaster: 'reverb',
         key,
-        cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER ?? 'mt1',
-        wsHost: import.meta.env.VITE_PUSHER_HOST || undefined,
-        wsPort: import.meta.env.VITE_PUSHER_PORT ?? 80,
-        wssPort: import.meta.env.VITE_PUSHER_PORT ?? 443,
-        forceTLS: (import.meta.env.VITE_PUSHER_SCHEME ?? 'https') === 'https',
+        wsHost: import.meta.env.VITE_REVERB_HOST,
+        wsPort: Number(import.meta.env.VITE_REVERB_PORT ?? 80),
+        wssPort: Number(import.meta.env.VITE_REVERB_PORT ?? 443),
+        forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
         enabledTransports: ['ws', 'wss'],
     });
 }

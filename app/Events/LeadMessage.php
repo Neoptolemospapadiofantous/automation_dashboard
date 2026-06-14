@@ -12,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 /**
  * Broadcast a single conversation message so an open lead/board view shows the
  * chat exchange ticking in live.
- * Queued so the Pusher HTTP call doesn't add latency to each chat turn.
+ * Queued so the broadcast call doesn't add latency to each chat turn.
  */
 class LeadMessage implements ShouldBroadcast, ShouldQueue
 {

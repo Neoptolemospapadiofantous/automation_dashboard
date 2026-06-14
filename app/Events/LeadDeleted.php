@@ -11,7 +11,7 @@ use Illuminate\Queue\SerializesModels;
 
 /**
  * Broadcast when a lead is removed so connected boards drop the card live.
- * Queued (after-commit) so the Pusher round-trip doesn't block the
+ * Queued (after-commit) so the broadcast round-trip doesn't block the
  * deletion request and never fires for rolled-back deletes.
  */
 class LeadDeleted implements ShouldBroadcast, ShouldQueue

@@ -91,7 +91,7 @@ const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)
             <template #actions>
                 <span
                     class="inline-flex items-center gap-1.5 rounded-none bg-surface-hi px-2.5 py-1 font-mono text-xs font-medium text-ink-dim"
-                    :title="connected ? 'Live' : 'Offline — set PUSHER_* to enable live updates'"
+                    :title="connected ? 'Live' : 'Offline — start the Reverb server for live updates'"
                 >
                     <span class="inline-block h-1.5 w-1.5 rounded-full" :class="connected ? 'bg-green-500 pulse-glow text-green-500' : 'bg-ink-mute'" />
                     {{ connected ? 'Live' : 'Offline' }}

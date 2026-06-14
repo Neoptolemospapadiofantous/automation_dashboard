@@ -14,7 +14,7 @@ use Illuminate\Queue\SerializesModels;
  * Broadcast whenever a lead is created or updated so every board connected to
  * the owning team patches that card in place — no reload, no polling.
  *
- * ShouldQueue: the Pusher HTTP round-trip happens on the queue worker
+ * ShouldQueue: the broadcast round-trip happens on the queue worker
  * rather than blocking the request thread (matches the README's "queue
  * worker required" guidance). $afterCommit defers dispatch until the
  * surrounding DB transaction commits, so subscribers never see a row

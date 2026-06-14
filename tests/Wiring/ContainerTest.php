@@ -41,6 +41,10 @@ class ContainerTest extends TestCase
         'cache.psr6',                               // needs symfony/cache adapter
         'Illuminate\Bus\DynamoBatchRepository',     // needs AWS DynamoDB config ("region")
         'redis.connection',                         // needs ext-redis (phpredis)
+        // Reverb registers its pub/sub provider for the scaling layer; it's
+        // only instantiable inside `reverb:start` (it needs the server's
+        // incoming-message handler), never in a normal request/test container.
+        'Laravel\Reverb\Servers\Reverb\Contracts\PubSubProvider',
     ];
 
     public function test_every_registered_binding_resolves(): void

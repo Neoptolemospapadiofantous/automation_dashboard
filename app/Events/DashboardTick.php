@@ -16,7 +16,7 @@ use Illuminate\Queue\SerializesModels;
  * receives an instant tick without authentication. Later phases broadcast
  * domain events (LeadCreated, LeadAssigned, ...) on private/presence channels.
  *
- * Queued so the Pusher HTTP call doesn't block the request.
+ * Queued so the broadcast call doesn't block the request.
  */
 class DashboardTick implements ShouldBroadcast, ShouldQueue
 {
