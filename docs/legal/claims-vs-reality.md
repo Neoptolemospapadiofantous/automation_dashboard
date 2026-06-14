@@ -2,7 +2,9 @@
 
 > The honesty ledger. A claim may appear in customer-facing legal copy
 > ONLY when its row here is ✅. Audit date: 2026-06-12, against branch
-> `runtime-native-l1`.
+> `runtime-native-l1`. Billing addendum: 2026-06-14 — pricing moved to
+> euro (EUR), annual subscription cycle added, and a customer-chosen
+> custom top-up alongside the fixed packs.
 
 ## ✅ True today — safe to claim
 
@@ -12,6 +14,7 @@
 | LLM API keys server-side only, never exposed to browsers | Platform-level env keys; no per-customer keys exist at all |
 | End-users never reach the model provider directly | All traffic through ChatController/EmbedController proxies |
 | Per-customer usage metering + limits + suspension at exhaustion | CreditMeter, per-team buckets, 402 paths — tested |
+| Subscriptions billed monthly or annually in EUR; top-ups as fixed packs or a customer-chosen amount, all via Stripe Checkout | SubscribeController + BillingController; idempotent webhook grants (StripeWebhookController) — tested + verified end-to-end against Stripe test mode (2026-06-14) |
 | Credit ledger reconciles against balances | `credits:reconcile` daily; ledger sum-consistency tested |
 | Provider spend monitored against a daily ceiling | `runtime:spend-check` daily |
 | Rate limiting on public + abuse-prone endpoints | ThrottleTest pins 5 endpoints + Fortify group throttle |

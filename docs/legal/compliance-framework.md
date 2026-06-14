@@ -27,12 +27,14 @@ instructs the assistant never to invent facts, prices, or policies.
 
 ### A2. Commercial model
 
-Clients purchase a subscription (monthly credit allowance) and optional
-top-up credit packs (which roll over until used). The Platform meters
-every message, enforces per-Client limits, suspends on exhaustion, and
-maintains an append-only credit ledger reconciled daily against live
-balances. Provider usage is metered per-model-tier and monitored
-against a daily spend ceiling.
+Clients purchase a subscription — billed monthly or annually (the annual
+cycle carries a discount equivalent to two free months) — which grants a
+monthly credit allowance, plus optional top-up credits (fixed packs or a
+customer-chosen amount) that roll over until used. All prices are in euro
+(EUR). The Platform meters every message, enforces per-Client limits,
+suspends on exhaustion, and maintains an append-only credit ledger
+reconciled daily against live balances. Provider usage is metered
+per-model-tier and monitored against a daily spend ceiling.
 
 ### A3. Information security (implemented measures only)
 
@@ -109,10 +111,11 @@ table). [Counsel to complete all three.]
   through the assistant [until consent tooling ships].
 - **AI transparency**: Platform-rendered disclosure; Client must not
   remove it or present the assistant as human.
-- **Fees**: subscription allowance resets each cycle (no rollover);
-  purchased top-ups roll over until used; model-tier multipliers per
-  the published pricing page; suspension on exhaustion/non-payment
-  with notice.
+- **Fees**: subscriptions are billed monthly or annually in euro (EUR);
+  the monthly credit allowance resets each cycle (no rollover);
+  purchased top-ups — fixed packs or a customer-chosen amount — roll
+  over until used; model-tier multipliers per the published pricing
+  page; suspension on exhaustion/non-payment with notice.
 - **Accuracy disclaimer**: AI-generated responses may contain errors
   and are not professional advice.
 - **Liability cap** [e.g. 12-month fees]; indirect-loss exclusion;

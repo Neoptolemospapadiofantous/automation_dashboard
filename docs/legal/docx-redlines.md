@@ -1,6 +1,8 @@
 # Redlines for the v2 .docx masters (`source/`)
 
-> Reviewed 2026-06-12 against branch `runtime-native-l1`. The v2 drafts'
+> Reviewed 2026-06-12 against branch `runtime-native-l1`; billing model
+> refreshed 2026-06-14 (euro pricing, monthly/annual cycle, custom
+> top-up). The v2 drafts'
 > multi-sector regulatory work is good and is now the master framing.
 > Two defect classes remain in ALL FOUR documents: (1) they describe the
 > deleted Voiceflow architecture, (2) they claim controls that aren't
@@ -57,11 +59,14 @@ subscription plus a shared, usage-based credit pool…".
 **REPLACE WITH:**
 
 > "Model usage is billed to the Platform per token by each provider.
-> The Platform operates its own credit ledger for Clients: monthly
-> subscription allowances, roll-over top-up packs, per-message metering
-> with model-tier multipliers, per-Client limits with suspension on
-> exhaustion, and daily reconciliation of the ledger against live
-> balances and of token spend against a platform ceiling."
+> The Platform operates its own credit ledger for Clients: subscriptions
+> billed monthly or annually in euro (the annual cycle carries a
+> two-months-free discount), each granting a monthly credit allowance;
+> roll-over top-up credits, available as fixed packs or a customer-chosen
+> amount; per-message metering with model-tier multipliers; per-Client
+> limits with suspension on exhaustion; and daily reconciliation of the
+> ledger against live balances and of token spend against a platform
+> ceiling."
 
 (Every clause in that replacement is implemented and tested.)
 
