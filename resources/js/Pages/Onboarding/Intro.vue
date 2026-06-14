@@ -64,7 +64,7 @@ function continueOn() {
                 <span class="bp-ref">SETUP/01</span>
             </div>
 
-            <div class="bp-node shadow-sheet rounded-none p-8">
+            <div class="bp-node rounded-none p-8">
                 <h1 class="text-2xl font-semibold text-ink">Welcome to {{ team.name }}.</h1>
                 <p class="mt-2 text-ink-dim">
                     A couple of quick questions to tailor your setup. None are required —
