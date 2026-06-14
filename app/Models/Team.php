@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Billing\CreditMeter;
 use App\Billing\Plan;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,6 +17,21 @@ class Team extends JetstreamTeam
 {
     /** @use HasFactory<TeamFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        // DEV/TEST convenience (config/billing.php → grant_on_signup, default
+        // OFF). Production grants credits via the Stripe lifecycle
+        // (invoice.paid webhook + credits:grant-renewals); without Stripe wired
+        // up that never fires, so a fresh signup would dead-end at 0 credits.
+        // When enabled, hand the team its plan allotment on creation. Stays off
+        // in prod + the test suite, where it would mint unpaid-for credits.
+        static::created(function (Team $team): void {
+            if (config('billing.grant_on_signup') && $team->planObject()->monthlyCredits() > 0) {
+                app(CreditMeter::class)->grantMonthlyRenewal($team, ['source' => 'signup:dev-auto-grant']);
+            }
+        });
+    }
 
     /**
      * The attributes that are mass assignable.

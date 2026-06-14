@@ -48,6 +48,10 @@
         <env name="DB_USERNAME" value="flowstack"/>
         <env name="DB_PASSWORD" value="flowstack"/>
         <env name="DB_URL" value=""/>
+        <!-- Tests exercise the real Stripe credit lifecycle; the dev signup
+             auto-grant (BILLING_GRANT_ON_SIGNUP, true in local .env) must be
+             OFF here or it mints credits behind credit-balance assertions. -->
+        <env name="BILLING_GRANT_ON_SIGNUP" value="false"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

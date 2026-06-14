@@ -28,6 +28,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Grant monthly credits on team creation (DEV/TEST convenience)
+    |--------------------------------------------------------------------------
+    |
+    | In production, a team's credits are granted by the Stripe lifecycle
+    | (invoice.paid webhook + the credits:grant-renewals safety-net), so a
+    | fresh signup legitimately has 0 until it subscribes. That lifecycle
+    | never fires without Stripe configured — so locally every test signup
+    | dead-ends at "0 remaining". When this flag is true, a team's plan
+    | allotment is granted on creation so test accounts are usable.
+    |
+    | MUST stay false in production (and is off by default + in the test
+    | suite) — there it would hand out credits no one paid for.
+    */
+    'grant_on_signup' => env('BILLING_GRANT_ON_SIGNUP', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Stripe price IDs per plan + topup pack
     |--------------------------------------------------------------------------
     |
