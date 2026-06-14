@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Billing\Plan;
 use App\Models\Agent;
+use App\Models\PlatformSetting;
 use App\Models\Team;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -58,6 +59,18 @@ class HandleInertiaRequests extends Middleware
                         'created_at' => $n->created_at->toIso8601String(),
                     ])->values()
                 : [],
+
+            // Latest product-news headline for the top bar. Hand-managed
+            // via PlatformSetting (key `latest_headline`, optional
+            // `latest_headline_url`); null hides the line. Cheap key/value
+            // read — PlatformSetting caches.
+            'latestHeadline' => function () {
+                $text = PlatformSetting::value('latest_headline');
+
+                return is_string($text) && $text !== ''
+                    ? ['text' => $text, 'url' => PlatformSetting::value('latest_headline_url')]
+                    : null;
+            },
 
             // Agent picker data for the nav. Shared on every Inertia request
             // so the picker stays in sync without each page re-querying.

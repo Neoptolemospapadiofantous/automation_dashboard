@@ -21,6 +21,9 @@ const page = usePage();
 const notifications = computed(() => page.props.notifications ?? []);
 const currentAgent = computed(() => page.props.currentAgent ?? null);
 const teamAgents = computed(() => page.props.teamAgents ?? []);
+// Latest product-news headline shown in the top bar (where the page title
+// used to be). Shared globally via HandleInertiaRequests; null hides it.
+const latestHeadline = computed(() => page.props.latestHeadline ?? null);
 const showMobileNav = ref(false);
 
 const markNotificationsRead = () => {
@@ -283,12 +286,22 @@ const handleMobileNavClick = (event) => {
                         </svg>
                     </button>
 
-                    <!-- Inline page title: gives the top bar purpose and lets us
-                         shrink the PageHeader on simple pages. Pages that want a
-                         richer header still get one via the PageHeader component. -->
-                    <div v-if="props.title" class="hidden min-w-0 flex-1 lg:flex lg:items-center lg:gap-2">
-                        <span class="truncate text-sm font-medium text-ink">{{ props.title }}</span>
-                    </div>
+                    <!-- Latest news headline — sits where the page title was,
+                         left-aligned with the PageHeader content below. Hidden
+                         on mobile (the hamburger owns the left there). Falls
+                         back to a spacer when there's no headline. -->
+                    <component
+                        :is="latestHeadline.url ? 'a' : 'div'"
+                        v-if="latestHeadline"
+                        :href="latestHeadline.url || undefined"
+                        class="hidden min-w-0 flex-1 lg:flex lg:items-center lg:gap-2"
+                    >
+                        <span class="bp-ref flex-shrink-0">NEWS</span>
+                        <span
+                            class="truncate text-sm font-medium text-ink"
+                            :class="latestHeadline.url ? 'hover:underline' : ''"
+                        >{{ latestHeadline.text }}</span>
+                    </component>
                     <div v-else class="hidden flex-1 lg:block"><!-- spacer --></div>
 
                     <div class="flex items-center gap-2">
