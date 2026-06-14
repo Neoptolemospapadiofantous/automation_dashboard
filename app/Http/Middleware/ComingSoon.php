@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
  *   - api/*       — health probe + the public stats the landing site reads
  *   - webhooks/*  — Stripe delivery
  *   - up          — Laravel's health route
+ *   - waitlist    — the coming-soon page's email capture POST
  *
  * Flip COMING_SOON=false (Forge env) to open the app at launch.
  */
@@ -22,7 +23,7 @@ class ComingSoon
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (config('app.coming_soon') && ! $request->is('api/*', 'webhooks/*', 'up')) {
+        if (config('app.coming_soon') && ! $request->is('api/*', 'webhooks/*', 'up', 'waitlist')) {
             return response()->view('coming-soon', status: 200);
         }
 

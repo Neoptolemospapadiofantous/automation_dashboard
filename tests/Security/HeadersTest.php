@@ -33,7 +33,8 @@ class HeadersTest extends TestCase
 
     public function test_guest_page_has_security_headers(): void
     {
-        $this->get('/')
+        // Root now redirects; use the login page as the guest 200 surface.
+        $this->get('/login')
             ->assertOk()
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
