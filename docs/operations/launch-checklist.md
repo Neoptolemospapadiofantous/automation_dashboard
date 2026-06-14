@@ -1,147 +1,190 @@
-# Launch checklist — live testing → production
+# Launch checklist — flowstack.run → production
 
-Status as of 2026-06-10: **code complete, environment unconfigured.**
-382 tests passing · Hermes watchdog PASS 8/0/0 · all migrations applied.
+Status as of 2026-06-14: **code complete, merged to `main`, CI green, audit PASS.**
+441 tests passing · deployed to **app.flowstack.run** via Laravel Forge ·
+prod DB = `automation`. Remaining work is **environment/service wiring**, below.
 
-Work through this top-to-bottom. Each section says what breaks if you skip it.
+Domains: landing = `flowstack.run` · dashboard app = **`app.flowstack.run`** ·
+realtime websocket = `ws.flowstack.run`.
+
+Work top-to-bottom. Each section says what breaks if you skip it. Secrets go
+into **Forge → Site → Environment** (web panel); nothing here needs a terminal
+except the verification commands.
 
 ---
 
-## 0. Pre-flight (2 min)
+## 0. Pre-flight
 
-- [ ] Pick a branch and stay on it during testing:
-  - `runtime-native-l1` — the native engine branch (the only engine; the legacy engine was deleted)
-- [ ] Unlock pre-verification users. Email verification is now enforced; users
-      created before it was enabled have `email_verified_at = null` and will
-      hit the verify wall:
-
+- [ ] `main` is the live branch (the `runtime-native-l1` work is merged).
+- [ ] Unlock any pre-verification users (email verification is enforced):
   ```bash
   php artisan tinker --execute="\App\Models\User::whereNull('email_verified_at')->update(['email_verified_at' => now()]);"
   ```
 
 ---
 
-## 1. Native runtime keys (2 min) — BLOCKING
+## 1. App basics — BLOCKING
+**Skip symptom:** debug info leaks; wrong links in emails/embeds.
 
+- [ ] `APP_ENV=production`
+- [ ] `APP_DEBUG=false`
+- [ ] `APP_URL=https://app.flowstack.run`
+- [ ] `APP_NAME=Flowstack`
+- [ ] `APP_KEY` is set (generated)
+
+---
+
+## 2. Native runtime keys — BLOCKING
 **Skip symptom:** agent health card red; chat/embed return 503.
 
-New agents run on the Flowstack-owned engine. Two keys are required;
-a third is optional:
-
-- [ ] `ANTHROPIC_API_KEY` — console.anthropic.com → API keys (Claude tiers)
-- [ ] `OPENAI_API_KEY` — platform.openai.com → API keys (KB embeddings + the ChatGPT tier)
-- [ ] `GEMINI_API_KEY` — OPTIONAL, aistudio.google.com/apikey (unlocks the Gemini
-      tier; must be a PAID-tier key — free keys train on your customers data)
-- [ ] Set monthly spend caps in each provider console (platform-level backstop)
-- [ ] `php artisan config:clear`
+- [ ] `ANTHROPIC_API_KEY` — https://console.anthropic.com → API keys (the chat loop)
+- [ ] `OPENAI_API_KEY` — https://platform.openai.com/api-keys (KB embeddings)
+- [ ] `GEMINI_API_KEY` — OPTIONAL, https://aistudio.google.com/apikey (unlocks the
+      Gemini tier; must be a **paid-tier** key — free keys train on customer data)
+- [ ] Set a monthly spend cap in each provider console (platform backstop)
 - [ ] Verify: agent page → health button → `engine: native, ok: true`
 
 ---
 
-## 2. Stripe TEST mode (15 min) — BLOCKING
+## 3. Stripe LIVE — BLOCKING for billing
+**Skip symptom:** Subscribe / Top-up / Manage-subscription → error.
+Pricing is **EUR**. Test mode is already wired; this is the LIVE setup.
 
-**Skip symptom:** Subscribe / Top-up / Manage-subscription buttons → error.
-
-- [ ] dashboard.stripe.com/test/apikeys → copy `pk_test_*` + `sk_test_*`
-- [ ] dashboard.stripe.com/test/products → create:
-  - [ ] Starter — recurring $99/mo → copy `price_*`
-  - [ ] Starter annual — $948/yr on the same product → copy `price_*` (optional; toggle hides without it)
-  - [ ] Operator — recurring $399/mo → copy `price_*`
-  - [ ] Operator annual — $3,828/yr → copy `price_*` (optional)
-  - [ ] Top-up Small — one-time $29 (1,000 credits) → copy `price_*`
-  - [ ] Top-up Medium — one-time $119 (5,000 credits) → copy `price_*`
-  - [ ] Top-up Large — one-time $399 (20,000 credits) → copy `price_*`
-        (packs MUST price above Operator's $0.016/credit — enforced by
-        BillingInvariantsTest; see docs/operations/pricing-audit.md)
-- [ ] dashboard.stripe.com/test/settings/billing/portal → **Activate test link**
-      (without this, "Manage subscription" shows the friendly fallback error)
-- [ ] Install Stripe CLI → `stripe login` → `stripe listen --forward-to localhost:8000/webhooks/stripe`
-      → copy the `whsec_*` it prints; **keep this terminal open while testing**
-- [ ] Paste into `.env`:
-
+- [ ] Activate live mode (business details) → https://dashboard.stripe.com/apikeys
+      → copy `pk_live_*` + `sk_live_*`
+- [ ] https://dashboard.stripe.com/products (live) → create, copy each `price_*`:
+  - [ ] Starter — recurring **€99/mo**
+  - [ ] Starter annual — **€990/yr** on the same product (optional; toggle hides without it)
+  - [ ] Operator — recurring **€399/mo**
+  - [ ] Operator annual — **€3,990/yr** (optional)
+  - [ ] Top-up Small — one-time **€29** (1,000 credits)
+  - [ ] Top-up Medium — one-time **€119** (5,000 credits)
+  - [ ] Top-up Large — one-time **€399** (20,000 credits)
+  - [ ] Custom top-up — one price with **`custom_unit_amount`** enabled,
+        min €10 / max €2,000 (credits = amount × 50, i.e. €0.02/credit)
+  - Packs/custom MUST price above Operator's **€0.01596/credit** — enforced by
+    `BillingInvariantsTest`; see `docs/operations/pricing-audit.md`.
+- [ ] https://dashboard.stripe.com/settings/billing/portal → activate the portal
+      (else "Manage subscription" shows the fallback error)
+- [ ] Webhook: https://dashboard.stripe.com/webhooks → Add endpoint →
+      **`https://app.flowstack.run/webhooks/stripe`** → select events:
+      `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`,
+      `customer.subscription.updated`, `customer.subscription.deleted` → copy `whsec_*`
+- [ ] Forge `.env`:
   ```bash
-  STRIPE_KEY=pk_test_...
-  STRIPE_SECRET=sk_test_...
+  STRIPE_KEY=pk_live_...
+  STRIPE_SECRET=sk_live_...
   STRIPE_WEBHOOK_SECRET=whsec_...
   STRIPE_PRICE_STARTER=price_...
   STRIPE_PRICE_OPERATOR=price_...
-  STRIPE_PRICE_STARTER_ANNUAL=price_...   # optional
-  STRIPE_PRICE_OPERATOR_ANNUAL=price_...  # optional
+  STRIPE_PRICE_STARTER_ANNUAL=price_...    # optional
+  STRIPE_PRICE_OPERATOR_ANNUAL=price_...   # optional
   STRIPE_PRICE_TOPUP_SMALL=price_...
   STRIPE_PRICE_TOPUP_MEDIUM=price_...
   STRIPE_PRICE_TOPUP_LARGE=price_...
+  STRIPE_PRICE_TOPUP_CUSTOM=price_...
   ```
 
-Test card: `4242 4242 4242 4242`, any future expiry, any CVC.
-Failed-payment card (for the past-due banner): `4000 0000 0000 0341`.
-
 ---
 
-## 3. Pusher (5 min) — degrades gracefully
+## 4. Mail — Zoho (transactional), domain `flowstack.run`
+**Skip symptom:** verification + password-reset + lead/handoff/credit emails
+never arrive (they fall back to the log).
 
-**Skip symptom:** kanban / chat don't live-update (no errors, just no realtime).
+AWS SES is **not** needed — the app only sends transactional mail. (SES would
+only be for bulk/marketing, which this app doesn't do.)
 
-- [ ] dashboard.pusher.com → Channels → Create app → copy app_id / key / secret / cluster
-- [ ] Paste the four `PUSHER_*` values into `.env`
-- [ ] OR, to test without realtime: `BROADCAST_CONNECTION=log`
-
----
-
-## 4. Mail (AWS SES) — start now, finishes in ~24h
-
-**Skip symptom:** verification + lead-assigned + billing emails land in
-`storage/logs/laravel.log` instead of inboxes. **Local testing works anyway** —
-grab the signed verification URL from the log.
-
-- [ ] AWS SES → Verified identities → Create domain identity → add the 3 CNAME records to DNS
-- [ ] SES → Account dashboard → Request production access (~24h to clear; sandbox sends only to verified addresses)
-- [ ] IAM → user with `AmazonSESFullAccess` → create access key
-- [ ] `.env`: `MAIL_MAILER=ses`, `MAIL_FROM_ADDRESS=hello@<verified-domain>`, AWS keys
+- [ ] Zoho Mail Admin (EU) → https://mailadmin.zoho.eu → add + verify `flowstack.run`
+- [ ] Add DNS records at the registrar (values from the Zoho panel):
+  - MX: `mx.zoho.eu` (10), `mx2.zoho.eu` (20), `mx3.zoho.eu` (50)
+  - SPF (TXT `@`): `v=spf1 include:zohomail.eu ~all`
+  - DKIM (TXT `zmail._domainkey`): key from the panel
+  - Verification TXT + optional DMARC (`_dmarc`: `v=DMARC1; p=none; rua=mailto:hello@flowstack.run`)
+- [ ] Create mailbox `hello@flowstack.run`
+- [ ] App password: https://accounts.zoho.eu/home#security/app-passwords (needs 2FA)
+- [ ] Forge `.env`:
+  ```bash
+  MAIL_MAILER=smtp
+  MAIL_HOST=smtp.zoho.eu
+  MAIL_PORT=465
+  MAIL_SCHEME=smtps
+  MAIL_USERNAME=hello@flowstack.run
+  MAIL_PASSWORD=<app password>
+  MAIL_FROM_ADDRESS=hello@flowstack.run
+  MAIL_FROM_NAME="Flowstack"
+  ```
 - [ ] Verify: `php artisan mail:test you@example.com`
 
 ---
 
-## 5. Apply config (1 min)
+## 5. Realtime — Laravel Reverb (self-hosted)
+**Skip symptom:** kanban / dashboard don't live-update; "Offline" pill (no errors).
+We use Reverb (first-party, self-hosted) — no Pusher account.
 
-- [ ] `php artisan config:clear`
-- [ ] `pnpm run build`
-- [ ] Restart dev server + Stripe CLI listener
+- [ ] Forge `.env` — set BEFORE the deploy build (the `VITE_REVERB_*` bake into JS):
+  ```bash
+  BROADCAST_CONNECTION=reverb
+  REVERB_APP_ID=...            # any unique id
+  REVERB_APP_KEY=...           # generate (or reuse reverb:install output)
+  REVERB_APP_SECRET=...
+  REVERB_HOST=ws.flowstack.run
+  REVERB_PORT=443
+  REVERB_SCHEME=https
+  REVERB_SERVER_HOST=0.0.0.0
+  REVERB_SERVER_PORT=8080
+  ```
+- [ ] DNS: `ws.flowstack.run` → the app server
+- [ ] nginx: a `ws.flowstack.run` site with TLS proxying to `127.0.0.1:8080`,
+      passing the websocket upgrade headers (`Upgrade` / `Connection`)
+- [ ] Forge daemon: `php artisan reverb:start` (auto-restart)
+- [ ] Needs the queue worker (§6) — broadcasts are queued.
 
 ---
 
-## 6. The 10-step lifecycle test
+## 6. Forge daemons & scheduler — BLOCKING for background work
+**Skip symptom:** no credit renewals/reconcile/spend-check/audit; no emails on
+queued events; no live broadcasts; search index never updates.
 
-Run as a brand-new user in a fresh browser/incognito session:
+- [ ] **Scheduler**: enable Forge's scheduler (`* * * * * php artisan schedule:run`).
+      Gates: `credits:grant-renewals`, `credits:reconcile`, `runtime:spend-check`,
+      `runtime:prune-sessions`, the daily **audit sentinel**, weekly update inspector.
+- [ ] **Queue worker** daemon: `php artisan queue:work` (with `QUEUE_CONNECTION=database`,
+      `SCOUT_QUEUE=true`). Processes broadcasts, queued mail, scout indexing.
+- [ ] **Reverb daemon** (§5).
+- [ ] Confirm `BILLING_GRANT_ON_SIGNUP=false` in prod.
 
-1. [ ] **Register** → verification email (inbox, or `storage/logs/laravel.log`) → click link → land on dashboard
-2. [ ] **Onboard** → answer the 4 profile questions → agent provisions on the native engine (no pool) → Done page shows install snippet
-3. [ ] **Embed**: copy snippet from `/install` → paste into a local HTML file → floating button appears → chat works
-4. [ ] **Subscribe**: `/billing` → Starter → Stripe Checkout with `4242…` → return → plan shows Starter, 2,500 credits
+---
+
+## 7. Apply config + deploy
+- [ ] Deploy on Forge (Quick Deploy or "Deploy Now") — runs `composer install`,
+      `migrate --force`, `pnpm build`.
+- [ ] Forge's deploy script handles `config:cache` / `config:clear`.
+
+---
+
+## 8. Lifecycle smoke test (LIVE)
+Run as a brand-new user in a fresh/incognito session against `app.flowstack.run`:
+
+1. [ ] **Register** → verification email arrives (real inbox now) → click → dashboard
+2. [ ] **Onboard** → 4 profile questions → agent provisions on the native engine → install snippet shown
+3. [ ] **Embed**: copy snippet from `/install` → paste into a test page → floating widget chats
+4. [ ] **Subscribe**: `/billing` → Starter → Stripe Checkout → plan = Starter, 2,500 credits
 5. [ ] **Chat** in the dashboard → credits decrement per turn
-6. [ ] **Top-up** → Checkout → webhook fires (watch the `stripe listen` terminal) → balance increases
-7. [ ] **Cancel**: ⚙ Manage subscription → Stripe portal → cancel → return → `/billing` shows downgrade to free tier
-8. [ ] **Leads**: trigger a capture via chat (or create manually) → appears on `/leads` → assign to a rep → rep gets bell + email
-9. [ ] **Leads detail**: open the captured lead → notes autosave + conversation links work
-10. [ ] **Analytics**: `/agents/{slug}/analytics` → counters, sparklines, funnel, heatmap populate
-11. [ ] **Model tiers**: `/agents/versions` → switch the tier (e.g. Haiku → ChatGPT) → Publish → chat again; the reply style changes and the turn debits the new multiplier (verify in /billing history)
+6. [ ] **Top-up** (a pack **and** the custom €-amount) → webhook fires → balance increases
+7. [ ] **Annual toggle** → Subscribe annual → €990/yr price used
+8. [ ] **Cancel**: ⚙ Manage subscription → Stripe portal → cancel → downgrade to Free
+9. [ ] **Leads**: capture via chat → appears on `/leads` (live, via Reverb) → assign → rep gets bell + email
+10. [ ] **Model tiers**: `/agents/versions` → switch tier → Publish → reply style + credit multiplier change
+- [ ] RBAC: invite an Editor → confirm they cannot top-up / delete the agent / open the billing portal
+- [ ] Past-due banner: subscribe with `4000 0000 0000 0341` → invoice fails → amber banner on `/billing`
 
-Bonus checks:
-- [ ] RBAC: invite a second user as Editor → confirm they cannot top-up / delete the agent / open the billing portal
-- [ ] Past-due banner: subscribe with `4000 0000 0000 0341` → next invoice fails → amber banner on `/billing`
+Test cards (only meaningful before live): `4242 4242 4242 4242` (ok),
+`4000 0000 0000 0341` (fails on renewal).
 
 ---
-
-## 7. Going to production (after the test pass)
-
-- [ ] Stripe LIVE mode: new keys, re-create the 7 products, add a webhook
-      endpoint at dashboard.stripe.com/webhooks (no CLI in prod)
-- [ ] SES production access approved
-- [ ] Deploy (Railway/Fly/etc.) with the same `.env` shape; run `php artisan migrate`
-- [ ] Point the domain; confirm `APP_URL` matches (embed snippets bake it in)
-- [ ] Merge the working branch to `main`
 
 ## Out of scope for this launch (by decision or phase)
-
-- Free trial (product decision: none — $99 Starter is the entry point)
-- Slack notifier, 2FA, audit log, CRM sync, transcript export (backlog)
-- Legacy third-party engine: fully deleted (git history keeps it recoverable)
+- Free trial (product decision: none — €99 Starter is the entry point)
+- AWS SES / S3 (not used — Zoho covers mail; KB uploads parse to text, no file storage)
+- Slack notifier, general action audit log, DSR intake, consent records, transcript export (backlog)
+- Typesense search (optional — DB `LIKE` fallback ships by default)
