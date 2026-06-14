@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -21,11 +22,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Column already exists as a non-null string; no schema change needed
-        // here — just a one-time value rewrite.
-        if (! Schema::hasTable('agents')) {
+        // The column may already be gone on servers that ran the later
+        // voiceflow-schema drop; nothing to do then.
+        if (! Schema::hasTable('agents') || ! Schema::hasColumn('agents', 'webhook_secret')) {
             return;
         }
+
+        // The encrypted envelope is ~5x the cleartext length and overflows the
+        // original VARCHAR(255) ("Data too long for column 'webhook_secret'").
+        // Widen to TEXT before rewriting values. (A later migration drops this
+        // column entirely; doing the widen here keeps the encrypt step from
+        // breaking deploys on servers that still hold real data.)
+        Schema::table('agents', function (Blueprint $table): void {
+            $table->text('webhook_secret')->nullable()->change();
+        });
 
         $rows = DB::table('agents')->select(['id', 'webhook_secret'])->get();
 
