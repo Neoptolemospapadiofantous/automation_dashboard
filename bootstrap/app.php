@@ -2,6 +2,7 @@
 
 use App\Billing\Exceptions\OutOfCredits;
 use App\Billing\Exceptions\PlanLimitExceeded;
+use App\Http\Middleware\ComingSoon;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
 use App\Lifecycle\InvalidTransition;
@@ -20,6 +21,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Pre-launch gate — runs first so login/register/UI all hit the
+        // "coming soon" page when COMING_SOON=true. Machine endpoints are
+        // allowlisted inside the middleware.
+        $middleware->web(prepend: [
+            ComingSoon::class,
+        ]);
+
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
