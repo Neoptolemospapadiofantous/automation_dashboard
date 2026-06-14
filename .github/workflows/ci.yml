@@ -20,7 +20,7 @@ jobs:
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
           coverage: pcov
 
       - run: composer install --no-interaction --prefer-dist
@@ -66,7 +66,7 @@ jobs:
       # Composer vendor dir must exist before the vite build resolves it.
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
 
       # --ignore-platform-reqs: this job's bare PHP lacks some runtime
       # extensions, but we only need the vendor files (Ziggy's JS), not a
