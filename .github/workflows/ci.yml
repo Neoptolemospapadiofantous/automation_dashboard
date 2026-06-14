@@ -9,6 +9,23 @@ on: [push, pull_request]
 jobs:
   quality:
     runs-on: ubuntu-latest
+    # Tests + boot checks run on MariaDB (the dev/test DB was migrated off
+    # SQLite). Match phpunit.xml: db automation_dashboard_test, flowstack/flowstack.
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: automation_dashboard_test
+          MARIADB_USER: flowstack
+          MARIADB_PASSWORD: flowstack
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,6 +39,7 @@ jobs:
         with:
           php-version: '8.4'
           coverage: pcov
+          extensions: pdo_mysql
 
       - run: composer install --no-interaction --prefer-dist
 
@@ -33,25 +51,27 @@ jobs:
 
       - run: vendor/bin/phpstan analyse --no-progress --memory-limit=2G
 
-      # Tests run on SQLite in-memory (phpunit.xml env wins over .env), but
-      # the app still needs a base .env + APP_KEY to boot.
+      # Tests use the MariaDB service (phpunit.xml env wins over .env); the
+      # app still needs a base .env + APP_KEY to boot.
       - name: Prepare environment
         run: |
           cp .env.example .env
           php artisan key:generate
 
-      # NOT --parallel: SQLite :memory: + RefreshDatabase.
+      # NOT --parallel: RefreshDatabase on a single shared MariaDB connection.
       - run: php artisan test
 
       # Boot checks, mirroring hermes: config cacheable, routes register,
-      # migrations run cleanly on a fresh database. config:cache runs AFTER
-      # the tests — cached config would override phpunit.xml env vars.
+      # migrations run cleanly. config:cache runs AFTER the tests — cached
+      # config would override phpunit.xml env vars. Point migrate at the test
+      # DB the service already provisioned.
       - name: Boot checks
+        env:
+          DB_DATABASE: automation_dashboard_test
         run: |
           php artisan config:cache
           php artisan route:list -q
           php artisan config:clear
-          touch database/database.sqlite
           php artisan migrate --force
 
       - name: Doc coverage
