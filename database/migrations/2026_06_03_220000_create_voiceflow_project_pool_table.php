@@ -44,9 +44,10 @@ return new class extends Migration
             //               (KB / conversation state are still in the VF project)
             $table->string('status')->default('available');
 
+            // (declared right after `status`; no ->after() — that's an ALTER-only
+            // clause and MariaDB rejects it inside CREATE TABLE.)
             $table->foreignId('assigned_to_agent_id')
                 ->nullable()
-                ->after('status')
                 ->constrained('agents')
                 ->nullOnDelete();
             $table->timestamp('assigned_at')->nullable();

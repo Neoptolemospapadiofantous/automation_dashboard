@@ -228,10 +228,16 @@ class AgentAnalyticsController extends Controller
      */
     protected function hourlyActivity(int $agentId, CarbonImmutable $start, CarbonImmutable $end): array
     {
+        // Hour-of-day extraction differs by engine: SQLite has strftime(),
+        // MySQL/MariaDB has hour(). Both yield 0-23 (cast to int below).
+        $hourExpr = (new Conversation)->getConnection()->getDriverName() === 'sqlite'
+            ? 'strftime("%H", started_at)'
+            : 'hour(started_at)';
+
         $rows = Conversation::query()
             ->where('agent_id', $agentId)
             ->whereBetween('started_at', [$start, $end])
-            ->selectRaw('strftime("%H", started_at) as h, count(*) as c')
+            ->selectRaw("{$hourExpr} as h, count(*) as c")
             ->groupBy('h')
             ->pluck('c', 'h');
 

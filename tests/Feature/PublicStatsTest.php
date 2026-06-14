@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\PublicStatsController;
 use App\Models\Agent;
 use App\Models\Lead;
 use App\Models\Message;
@@ -108,47 +109,40 @@ class PublicStatsTest extends TestCase
 
     public function test_display_buckets_snap_to_marketing_tiers(): void
     {
-        // Drive teams_count up across bucket boundaries and verify the
-        // display label snaps DOWN to the bucket rather than rounding.
-        // The bucket ladder is 10, 25, 50, 100, 250, 500, 1k, 2.5k, …
-        // so 12 → "10+", 60 → "50+", 1234 → "1k+".
-        $cases = [
-            0 => null,
-            9 => null,
-            10 => '10+',
-            24 => '10+',
-            25 => '25+',
-            49 => '25+',
-            50 => '50+',
-            99 => '50+',
-            100 => '100+',
-            249 => '100+',
-            250 => '250+',
-            1234 => '1k+',
-            2499 => '1k+',
-            2500 => '2.5k+',
-            10_000 => '10k+',
-            1_234_567 => '1M+',
+        // The bucket ladder snaps a raw count DOWN to a marketing tier
+        // (10, 25, 50, 100, 250, 500, 1k, 2.5k, …) so 12 → "10+", 1234 → "1k+".
+        // This is a pure function of the count — assert it directly across the
+        // whole ladder rather than materializing up to 1.2M real rows just to
+        // drive COUNT(*) (which on MariaDB is minutes of row-by-row inserts).
+        $bucket = new \ReflectionMethod(PublicStatsController::class, 'bucket');
+        $bucket->setAccessible(true);
+        $controller = new PublicStatsController;
+
+        $ladder = [
+            0 => null, 9 => null, 10 => '10+', 24 => '10+', 25 => '25+',
+            49 => '25+', 50 => '50+', 99 => '50+', 100 => '100+', 249 => '100+',
+            250 => '250+', 1234 => '1k+', 2499 => '1k+', 2500 => '2.5k+',
+            10_000 => '10k+', 1_234_567 => '1M+',
         ];
-
-        foreach ($cases as $n => $expected) {
-            Cache::flush();
-            // Seed exactly $n teams (cheaper than $n full User factories).
-            \DB::table('teams')->truncate();
-            for ($i = 0; $i < $n; $i++) {
-                \DB::table('teams')->insert([
-                    'user_id' => 1,
-                    'name' => "t-$i",
-                    'personal_team' => true,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-
-            $this->getJson(route('public.stats'))
-                ->assertOk()
-                ->assertJsonPath('display.teams_count', $expected, "teams_count=$n should bucket to ".var_export($expected, true));
+        foreach ($ladder as $n => $expected) {
+            $this->assertSame($expected, $bucket->invoke($controller, $n), "bucket($n)");
         }
+
+        // End-to-end wiring on the real DB: a genuine COUNT(*) flows through to
+        // display.* via the endpoint. 250 real rows is enough to prove the path.
+        \Schema::withoutForeignKeyConstraints(fn () => \DB::table('teams')->delete());
+        \DB::table('teams')->insert(array_map(fn ($i) => [
+            'user_id' => 1,
+            'name' => "t-$i",
+            'personal_team' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], range(0, 249)));
+        Cache::flush();
+
+        $this->getJson(route('public.stats'))
+            ->assertOk()
+            ->assertJsonPath('display.teams_count', '250+');
     }
 
     public function test_endpoint_sets_cors_headers_for_landing_site(): void
