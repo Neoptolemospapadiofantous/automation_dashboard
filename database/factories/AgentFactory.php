@@ -20,37 +20,19 @@ class AgentFactory extends Factory
             'team_id' => Team::factory(),
             'name' => $this->faker->company().' Agent',
             'slug' => 'agent-'.Str::lower(Str::random(10)),
-            'voiceflow_api_key' => 'VF.DM.'.Str::random(20),
-            'voiceflow_project_id' => Str::lower(Str::random(24)),
-            'voiceflow_environment' => 'main',
-            'voiceflow_workspace_api_key' => null,
-            'webhook_secret' => Str::random(40),
             'status' => Agent::STATUS_ACTIVE,
+            'mode' => Agent::MODE_MANAGED,
+            'runtime_mode' => Agent::RUNTIME_NATIVE,
             'last_health_check_at' => null,
             'last_health_ok' => false,
         ];
     }
 
+    /**
+     * @api consumed by the test suite (outside phpstan's scanned paths).
+     */
     public function draft(): self
     {
         return $this->state(['status' => Agent::STATUS_DRAFT]);
-    }
-
-    public function disabled(): self
-    {
-        return $this->state(['status' => Agent::STATUS_DISABLED]);
-    }
-
-    /**
-     * No credentials set — the "user just created an agent but hasn't
-     * pasted the keys yet" state.
-     */
-    public function unconfigured(): self
-    {
-        return $this->state([
-            'status' => Agent::STATUS_DRAFT,
-            'voiceflow_api_key' => null,
-            'voiceflow_project_id' => null,
-        ]);
     }
 }

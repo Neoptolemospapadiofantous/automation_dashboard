@@ -14,17 +14,17 @@ use Illuminate\Support\Facades\DB;
 class ConversationRecorder
 {
     /**
-     * Find or start the conversation for a Voiceflow user within a team.
+     * Find or start the conversation for a visitor within a team.
      *
      * Optional $agentId is stamped on creation and back-filled on existing
      * rows that pre-date multi-tenancy. The match is intentionally
-     * (team_id, voiceflow_user_id) — adding agent_id would split a single
-     * Voiceflow session across rows if the team switched agents mid-chat.
+     * (team_id, visitor_id) — adding agent_id would split a single visitor
+     * session across rows if the team switched agents mid-chat.
      */
-    public function resolve(int $teamId, string $voiceflowUserId, ?int $leadId = null, string $channel = 'agent', ?int $agentId = null): Conversation
+    public function resolve(int $teamId, string $visitorId, ?int $leadId = null, string $channel = 'agent', ?int $agentId = null): Conversation
     {
         $conversation = Conversation::firstOrCreate(
-            ['team_id' => $teamId, 'voiceflow_user_id' => $voiceflowUserId],
+            ['team_id' => $teamId, 'visitor_id' => $visitorId],
             [
                 'agent_id' => $agentId,
                 'channel' => $channel,

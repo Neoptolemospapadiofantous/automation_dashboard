@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Billing\CreditMeter;
 use App\Billing\Plan;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,6 +18,21 @@ class Team extends JetstreamTeam
     /** @use HasFactory<TeamFactory> */
     use HasFactory;
 
+    protected static function booted(): void
+    {
+        // DEV/TEST convenience (config/billing.php → grant_on_signup, default
+        // OFF). Production grants credits via the Stripe lifecycle
+        // (invoice.paid webhook + credits:grant-renewals); without Stripe wired
+        // up that never fires, so a fresh signup would dead-end at 0 credits.
+        // When enabled, hand the team its plan allotment on creation. Stays off
+        // in prod + the test suite, where it would mint unpaid-for credits.
+        static::created(function (Team $team): void {
+            if (config('billing.grant_on_signup') && $team->planObject()->monthlyCredits() > 0) {
+                app(CreditMeter::class)->grantMonthlyRenewal($team, ['source' => 'signup:dev-auto-grant']);
+            }
+        });
+    }
+
     /**
      * The attributes that are mass assignable.
      *
@@ -28,9 +44,17 @@ class Team extends JetstreamTeam
         'current_agent_id',
         'plan',
         'credit_balance',
+        'topup_balance',
         'credits_renewed_at',
+        'alert_thresholds_fired',
+        'stripe_customer_id',
+        'stripe_subscription_id',
+        'stripe_subscription_status',
+        'stripe_current_period_end',
+        'profile',
     ];
 
+    /** @return HasMany<Agent, $this> */
     public function agents(): HasMany
     {
         return $this->hasMany(Agent::class);
@@ -78,7 +102,17 @@ class Team extends JetstreamTeam
             'personal_team' => 'boolean',
             'plan' => Plan::class,
             'credit_balance' => 'integer',
+            'topup_balance' => 'integer',
             'credits_renewed_at' => 'datetime',
+            // List of stringified percent thresholds already fired this
+            // billing period — e.g. ["50","80"]. CreditBurnAlerts uses
+            // this for idempotency.
+            'alert_thresholds_fired' => 'array',
+            'stripe_current_period_end' => 'datetime',
+            // Onboarding profile (industry/use_case/team_size/etc.)
+            // captured at signup. Free-form JSON; the wizard validates
+            // the shape on the way in. See OnboardingController::startAgent.
+            'profile' => 'array',
         ];
     }
 
@@ -94,7 +128,17 @@ class Team extends JetstreamTeam
      */
     public function hasCredits(int $atLeast = 1): bool
     {
-        return $this->credit_balance >= $atLeast;
+        // Both buckets count: the monthly allowance plus rolled-over
+        // purchased top-ups (see CreditMeter for the consume order).
+        return $this->totalCredits() >= $atLeast;
+    }
+
+    /**
+     * Monthly allowance + purchased top-up credits combined.
+     */
+    public function totalCredits(): int
+    {
+        return (int) $this->credit_balance + (int) $this->topup_balance;
     }
 
     /**

@@ -3,8 +3,8 @@
 How `/api/public/stats` answers a request. Reference for changes to the
 controller, cache strategy, or `platform_settings` schema.
 
-> Contract: [../public-surface.md](../public-surface.md)
-> Landing-side companion: [./landing-sse-pipeline.md](./landing-sse-pipeline.md)
+> Contract: [[public-surface|../public-surface.md]]
+> Landing-side companion: [[landing-sse-pipeline|./landing-sse-pipeline.md]]
 
 ## High-level
 
@@ -58,8 +58,12 @@ sequenceDiagram
   M->>DB: Lead::count()
   M->>DB: Lead::where(status=qualified)->count()
   M->>DB: Message::count()
+  M->>DB: Message::where(created_at >= now-24h)->count()
+  Note over M: time_saved_hours derived from messages_handled (no extra query)
+  M->>DB: Lead::where(status=qualified)->latest()->value(created_at)
   M->>B: for each count → bucket(n)
   B-->>M: "10+" | "100+" | ... | null
+  Note over M: last_activity_at passes through un-bucketed
   M-->>K: assembled payload
   K-->>R: payload
   R-->>C: 200 JSON + CORS + Cache-Control
@@ -106,17 +110,20 @@ visitors see those changes on the next 5-min boundary.
 
 ## Why these counts and not others
 
-The five exposed counts (`teams_count`, `agents_active`, `leads_total`,
-`leads_qualified`, `messages_handled`) were chosen because:
+The exposed counts (`teams_count`, `agents_active`, `leads_total`,
+`leads_qualified`, `messages_handled`, `messages_last_24h`,
+`time_saved_hours`) plus the un-bucketed `last_activity_at` recency
+field were chosen because:
 
-- They tell a coherent funnel story (signups → agents → leads → qualified → engagement)
-- Each is a single indexed `COUNT(*)` — cheap to compute on every cache miss
+- They tell a coherent funnel story (signups → agents → leads → qualified → engagement) plus recency / "is it being used right now" signals
+- Each is a single indexed `COUNT(*)` or a `latest()->value()` — cheap to compute on every cache miss
+- `time_saved_hours` is purely derived from `messages_handled` (no extra query)
 - None contain per-tenant detail
-- Bucketing masks small early-stage values automatically
+- Bucketing masks small early-stage values automatically; `last_activity_at` is rendered as relative time on the landing client so a single recent timestamp is not identifying
 
 Candidates intentionally NOT exposed:
 - `users.count()` — duplicates `teams_count` for our model (each user gets a personal team on signup)
 - `conversations.count()` — engagement signal is better served by `messages_handled`
-- `voiceflow_project_pool` availability — operational signal, not public
+- Provider/runtime cost figures — operational signal, not public
 
 To add another: see [../public-surface.md#adding-a-new-computed-field](../public-surface.md#adding-a-new-computed-field).

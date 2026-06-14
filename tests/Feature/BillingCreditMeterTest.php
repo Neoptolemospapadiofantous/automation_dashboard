@@ -20,14 +20,15 @@ class BillingCreditMeterTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function fakeV4(): void
+    private function fakeLlm(): void
     {
+        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
         Http::fake([
-            'general-runtime.voiceflow.com/v4/project/*/session' => Http::response(['sessionKey' => 's'], 200),
-            'general-runtime.voiceflow.com/v4/interact' => Http::response(['traces' => [
-                ['type' => 'text', 'payload' => ['message' => 'Hi!']],
-            ]], 200),
-            'general-runtime.voiceflow.com/state/user/*' => Http::response(['variables' => []], 200),
+            'api.anthropic.com/*' => Http::response([
+                'content' => [['type' => 'text', 'text' => 'Hi!']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 5, 'output_tokens' => 5],
+            ], 200),
         ]);
     }
 
@@ -36,7 +37,7 @@ class BillingCreditMeterTest extends TestCase
         $team = User::factory()->withPersonalTeam()->create()->currentTeam;
         $start = $team->credit_balance;
 
-        (new CreditMeter())->consume($team, 3, agentId: null, meta: ['source' => 'test']);
+        (new CreditMeter)->consume($team, 3, agentId: null, meta: ['source' => 'test']);
 
         $this->assertSame($start - 3, $team->fresh()->credit_balance);
         $this->assertDatabaseHas('credit_transactions', [
@@ -52,16 +53,14 @@ class BillingCreditMeterTest extends TestCase
         $team->forceFill(['credit_balance' => 2])->save();
 
         $this->expectException(OutOfCredits::class);
-        (new CreditMeter())->consume($team, 3);
+        (new CreditMeter)->consume($team, 3);
     }
 
     public function test_interact_endpoint_returns_402_when_team_is_dry(): void
     {
-        $this->fakeV4();
+        $this->fakeLlm();
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create([
-            'voiceflow_api_key' => 'VF.DM.k',
-            'voiceflow_project_id' => 'p',
         ]);
         $user->currentTeam->forceFill([
             'current_agent_id' => $agent->id,
@@ -76,11 +75,9 @@ class BillingCreditMeterTest extends TestCase
 
     public function test_interact_decrements_credits_per_message(): void
     {
-        $this->fakeV4();
+        $this->fakeLlm();
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create([
-            'voiceflow_api_key' => 'VF.DM.k',
-            'voiceflow_project_id' => 'p',
         ]);
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
         $start = $user->currentTeam->credit_balance;
@@ -93,21 +90,46 @@ class BillingCreditMeterTest extends TestCase
         $this->assertSame($start - 2, $user->currentTeam->fresh()->credit_balance);
     }
 
-    public function test_grant_monthly_renewal_resets_balance_no_rollover(): void
+    public function test_renewal_resets_monthly_but_topups_roll_over(): void
     {
         $team = User::factory()->withPersonalTeam()->create()->currentTeam;
-        // User burned through most of the month but didn't use all credits.
-        $team->forceFill(['credit_balance' => 12])->save();
+        // Burned most of the month; 800 PURCHASED credits still unspent.
+        $team->forceFill(['credit_balance' => 12, 'topup_balance' => 800])->save();
 
-        (new CreditMeter())->grantMonthlyRenewal($team);
+        (new CreditMeter)->grantMonthlyRenewal($team);
 
-        // Hard reset to plan allotment — the 12 leftover credits are gone.
-        $this->assertSame(Plan::Free->monthlyCredits(), $team->fresh()->credit_balance);
+        $fresh = $team->fresh();
+        // Monthly bucket: hard reset, the 12 leftovers are gone.
+        $this->assertSame(Plan::Free->monthlyCredits(), $fresh->credit_balance);
+        // Paid bucket: untouched — customers keep what they bought.
+        $this->assertSame(800, $fresh->topup_balance);
+        $this->assertSame(Plan::Free->monthlyCredits() + 800, $fresh->totalCredits());
         $this->assertDatabaseHas('credit_transactions', [
             'team_id' => $team->id,
             'amount' => Plan::Free->monthlyCredits(),
             'reason' => 'grant_renewal',
         ]);
+    }
+
+    public function test_consume_drains_monthly_before_topups(): void
+    {
+        $team = User::factory()->withPersonalTeam()->create()->currentTeam;
+        $team->forceFill(['credit_balance' => 3, 'topup_balance' => 10])->save();
+
+        (new CreditMeter)->consume($team, 5);
+
+        $fresh = $team->fresh();
+        $this->assertSame(0, $fresh->credit_balance);  // monthly emptied first
+        $this->assertSame(8, $fresh->topup_balance);   // then 2 from the paid bucket
+    }
+
+    public function test_has_credits_counts_both_buckets(): void
+    {
+        $team = User::factory()->withPersonalTeam()->create()->currentTeam;
+        $team->forceFill(['credit_balance' => 0, 'topup_balance' => 4])->save();
+
+        $this->assertTrue($team->fresh()->hasCredits(4));
+        $this->assertFalse($team->fresh()->hasCredits(5));
     }
 
     public function test_grant_topup_is_additive_for_paid_plans(): void
@@ -118,9 +140,13 @@ class BillingCreditMeterTest extends TestCase
             'credit_balance' => 100,
         ])->save();
 
-        (new CreditMeter())->grantTopUp($team, 500, ['stripe_invoice' => 'inv_xxx']);
+        (new CreditMeter)->grantTopUp($team, 500, ['stripe_invoice' => 'inv_xxx']);
 
-        $this->assertSame(600, $team->fresh()->credit_balance);
+        $fresh = $team->fresh();
+        // Purchased credits land in the rollover bucket, not the monthly one.
+        $this->assertSame(100, $fresh->credit_balance);
+        $this->assertSame(500, $fresh->topup_balance);
+        $this->assertSame(600, $fresh->totalCredits());
     }
 
     public function test_grant_topup_refuses_custom_plan(): void
@@ -133,6 +159,6 @@ class BillingCreditMeterTest extends TestCase
         $team->forceFill(['plan' => Plan::Business->value])->save();
 
         $this->expectException(\RuntimeException::class);
-        (new CreditMeter())->grantTopUp($team, 500);
+        (new CreditMeter)->grantTopUp($team, 500);
     }
 }

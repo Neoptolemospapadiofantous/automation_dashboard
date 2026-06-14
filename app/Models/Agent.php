@@ -13,37 +13,38 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 /**
- * One row per Voiceflow project a team has configured. A team can have many
- * agents (sales bot, support bot, …) and switches between them via
- * Team::current_agent_id.
+ * One conversational agent. A team can have many agents (sales bot,
+ * support bot, …) and switches between them via Team::current_agent_id.
  *
- * Credential columns use the `encrypted` cast so API keys are never stored
- * in cleartext at rest. Reading them through the model is transparent —
- * downstream services (VoiceflowService) take the decrypted string as-is.
+ * Agents run on the native Flowstack runtime (app/Runtime) — there are no
+ * per-agent credentials; the engine's keys are platform-level
+ * (ANTHROPIC_API_KEY / OPENAI_API_KEY).
  */
 class Agent extends Model
 {
     /** @use HasFactory<AgentFactory> */
     use HasFactory;
+
     use HasLifecycle;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_DISABLED = 'disabled';
 
     /**
-     * Provisioning mode (Phase J).
-     *
-     * byok    — user pastes their own Voiceflow VF.DM key + project id.
-     *           Default for existing rows; the original Phase 13 behaviour.
-     * managed — we own the Voiceflow workspace + master project. On signup,
-     *           CreateAgent clones the template environment via the Project
-     *           API into a fresh per-tenant env. The agent row stores only
-     *           the cloned environment id — auth + project_id come from
-     *           .env at request time via VoiceflowService::forAgent.
+     * Provisioning mode. 'managed' is the only mode — the platform owns
+     * all engine infrastructure. The column persists for historical rows.
      */
-    public const MODE_BYOK = 'byok';
     public const MODE_MANAGED = 'managed';
+
+    /**
+     * runtime_mode — which conversational engine answers for this agent.
+     * 'native' (the Flowstack-owned runtime) is the only engine; the
+     * column remains as the seam for any future engine.
+     */
+    public const RUNTIME_NATIVE = 'native';
 
     public function stateMachine(): StateMachine
     {
@@ -54,30 +55,16 @@ class Agent extends Model
         'team_id',
         'name',
         'slug',
-        'voiceflow_api_key',
-        'voiceflow_project_id',
-        'voiceflow_environment',
-        'voiceflow_workspace_api_key',
-        'webhook_secret',
         'status',
         'mode',
+        'runtime_mode',
         'last_health_check_at',
         'last_health_ok',
-    ];
-
-    protected $hidden = [
-        // Never let credentials end up in Inertia props by accident. UI code
-        // that needs to expose them must call ->only(...) explicitly.
-        'voiceflow_api_key',
-        'voiceflow_workspace_api_key',
-        'webhook_secret',
     ];
 
     protected function casts(): array
     {
         return [
-            'voiceflow_api_key' => 'encrypted',
-            'voiceflow_workspace_api_key' => 'encrypted',
             'last_health_check_at' => 'datetime',
             'last_health_ok' => 'boolean',
         ];
@@ -87,7 +74,6 @@ class Agent extends Model
     {
         static::creating(function (Agent $agent) {
             $agent->slug ??= self::generateSlug($agent->team_id);
-            $agent->webhook_secret ??= Str::random(40);
         });
     }
 
@@ -121,37 +107,20 @@ class Agent extends Model
     }
 
     /**
-     * Whether this agent has the minimum credentials to make API calls.
-     *
-     * Post-Phase-K, managed and BYOK agents look identical at the row
-     * level: both store voiceflow_api_key + voiceflow_project_id. The
-     * only difference is who set them — the user (BYOK) vs. the pool
-     * allocator (managed). The earlier managed-specific branch (read
-     * api_key + project_id from .env config) was a workaround for the
-     * removed env-clone design.
+     * Whether this agent can serve conversations. Native agents carry no
+     * per-row credentials — the platform keys' presence is reported by
+     * AgentRuntime::health — so the row itself is always "configured".
+     * Kept as a method because the lifecycle guard (disabled→active) and
+     * the chat page both key on it.
      */
     public function isConfigured(): bool
     {
-        return ! empty($this->voiceflow_api_key) && ! empty($this->voiceflow_project_id);
-    }
-
-    public function isManaged(): bool
-    {
-        return $this->mode === self::MODE_MANAGED;
-    }
-
-    /**
-     * Whether the workspace API (Transcripts/Analytics/KB) is enabled.
-     */
-    public function hasWorkspaceApi(): bool
-    {
-        return ! empty($this->voiceflow_workspace_api_key) && ! empty($this->voiceflow_project_id);
+        return true;
     }
 
     public function getRouteKeyName(): string
     {
-        // Webhook URL contains the slug, not the numeric id. Route binding
-        // resolves /api/voiceflow/lead-captured/{agent:slug} via this.
+        // Public embed URLs contain the slug, not the numeric id.
         return 'slug';
     }
 }

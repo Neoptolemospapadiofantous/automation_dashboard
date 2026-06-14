@@ -62,8 +62,6 @@ class StateMachineTest extends TestCase
         // Configured but last_health_ok = false → guard rejects.
         $agent = Agent::factory()->create([
             'status' => Agent::STATUS_DRAFT,
-            'voiceflow_api_key' => 'VF.DM.k',
-            'voiceflow_project_id' => 'p',
             'last_health_ok' => false,
         ]);
 
@@ -73,26 +71,12 @@ class StateMachineTest extends TestCase
         $agent->transitionTo(Agent::STATUS_ACTIVE);
     }
 
-    public function test_agent_draft_to_active_blocked_when_unconfigured(): void
-    {
-        // No credentials, but pretend health is ok — guard still rejects
-        // because the agent has no keys to actually call Voiceflow with.
-        $agent = Agent::factory()->unconfigured()->create([
-            'status' => Agent::STATUS_DRAFT,
-            'last_health_ok' => true,
-        ]);
-
-        $this->assertFalse($agent->canTransitionTo(Agent::STATUS_ACTIVE));
-    }
-
     public function test_agent_draft_to_active_succeeds_with_creds_and_health(): void
     {
         Event::fake([AgentActivated::class]);
 
         $agent = Agent::factory()->create([
             'status' => Agent::STATUS_DRAFT,
-            'voiceflow_api_key' => 'VF.DM.k',
-            'voiceflow_project_id' => 'p',
             'last_health_ok' => true,
         ]);
 
@@ -102,12 +86,15 @@ class StateMachineTest extends TestCase
         Event::assertDispatched(AgentActivated::class);
     }
 
-    public function test_agent_disabled_to_active_requires_credentials(): void
+    public function test_agent_disabled_to_active_re_enables(): void
     {
-        $agent = Agent::factory()->unconfigured()->create(['status' => Agent::STATUS_DISABLED]);
+        // Native agents carry no credentials — re-enabling a paused agent
+        // must always work (the old credential guard locked agents out).
+        $agent = Agent::factory()->create(['status' => Agent::STATUS_DISABLED]);
 
-        $this->expectException(InvalidArgumentException::class);
         $agent->transitionTo(Agent::STATUS_ACTIVE);
+
+        $this->assertSame(Agent::STATUS_ACTIVE, $agent->fresh()->status);
     }
 
     public function test_conversation_can_only_end(): void

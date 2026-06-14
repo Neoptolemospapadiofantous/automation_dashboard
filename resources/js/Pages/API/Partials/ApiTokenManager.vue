@@ -76,6 +76,8 @@ const deleteApiToken = () => {
     <div>
         <!-- Generate API Token -->
         <FormSection @submitted="createApiToken">
+            <template #ref>API/TOKENS</template>
+
             <template #title>
                 Create API Token
             </template>
@@ -106,7 +108,7 @@ const deleteApiToken = () => {
                         <div v-for="permission in availablePermissions" :key="permission">
                             <label class="flex items-center">
                                 <Checkbox v-model:checked="createApiTokenForm.permissions" :value="permission" />
-                                <span class="ms-2 text-sm text-gray-600">{{ permission }}</span>
+                                <span class="ms-2 text-sm" :class="createApiTokenForm.permissions.includes(permission) ? 'text-violet font-medium' : 'text-ink-dim'">{{ permission }}</span>
                             </label>
                         </div>
                     </div>
@@ -130,6 +132,8 @@ const deleteApiToken = () => {
             <!-- Manage API Tokens -->
             <div class="mt-10 sm:mt-0">
                 <ActionSection>
+                    <template #ref>API/MANAGE</template>
+
                     <template #title>
                         Manage API Tokens
                     </template>
@@ -140,20 +144,20 @@ const deleteApiToken = () => {
 
                     <!-- API Token List -->
                     <template #content>
-                        <div class="space-y-6">
-                            <div v-for="token in tokens" :key="token.id" class="flex items-center justify-between">
+                        <div class="space-y-2">
+                            <div v-for="token in tokens" :key="token.id" class="flex items-center justify-between border border-transparent border-b-border-line px-2 py-2 transition-colors hover:border-ink">
                                 <div class="break-all">
                                     {{ token.name }}
                                 </div>
 
                                 <div class="flex items-center ms-2">
-                                    <div v-if="token.last_used_ago" class="text-sm text-gray-400">
+                                    <div v-if="token.last_used_ago" class="text-sm text-ink-dim">
                                         Last used {{ token.last_used_ago }}
                                     </div>
 
                                     <button
                                         v-if="availablePermissions.length > 0"
-                                        class="cursor-pointer ms-6 text-sm text-gray-400 underline"
+                                        class="cursor-pointer ms-6 text-sm text-ink-dim underline"
                                         @click="manageApiTokenPermissions(token)"
                                     >
                                         Permissions
@@ -181,7 +185,7 @@ const deleteApiToken = () => {
                     Please copy your new API token. For your security, it won't be shown again.
                 </div>
 
-                <div v-if="$page.props.jetstream.flash.token" class="mt-4 bg-gray-100 px-4 py-2 rounded font-mono text-sm text-gray-500 break-all">
+                <div v-if="$page.props.jetstream.flash.token" class="mt-4 bg-surface-hi px-4 py-2 rounded-none font-mono text-sm text-ink-dim break-all">
                     {{ $page.props.jetstream.flash.token }}
                 </div>
             </template>
@@ -204,7 +208,7 @@ const deleteApiToken = () => {
                     <div v-for="permission in availablePermissions" :key="permission">
                         <label class="flex items-center">
                             <Checkbox v-model:checked="updateApiTokenForm.permissions" :value="permission" />
-                            <span class="ms-2 text-sm text-gray-600">{{ permission }}</span>
+                            <span class="ms-2 text-sm" :class="updateApiTokenForm.permissions.includes(permission) ? 'text-violet font-medium' : 'text-ink-dim'">{{ permission }}</span>
                         </label>
                     </div>
                 </div>

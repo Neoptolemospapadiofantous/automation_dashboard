@@ -1,53 +1,45 @@
-# Phase 11 — Voiceflow transcript backfill
+# Phase 11 — Legacy-engine transcript backfill
 
-Pull conversations that happened **inside Voiceflow** (the preview chat, the
-embedded widget, or anything before local storage existed) into the local
-conversation store via Voiceflow's Transcript (Analytics) API.
+Pull conversations that happened **inside the legacy engine** (its preview
+chat, the embedded widget, or anything before local storage existed) into the
+[[phase-6-conversation-storage|local conversation store]] via the legacy
+engine's transcript/analytics API (legacy-engine specifics; see the archived
+reference under [[docs/voiceflow/transcripts/README|docs/voiceflow/]]).
 
 ## What shipped
 
-- **Transcript API client** in `VoiceflowService`:
-  - `searchTranscripts($take, $skip, $filters)` →
-    `POST {analytics}/v1/transcript/project/{projectID}`
-  - `getTranscript($id)` → `GET {analytics}/v1/transcript/{id}?filterConversation=true`
+- **Transcript API client** in the legacy-engine client (since replaced by
+  the native runtime in `app/Runtime/`):
+  - `searchTranscripts($take, $skip, $filters)` — search a project's transcripts
+  - `getTranscript($id)` — fetch one filtered transcript
   - `transcriptMessages($transcript)` → flattens a transcript's `logs`
     (`action` = user text, `trace` of type text/speak = agent) into messages.
-  - The Analytics API lives on a **separate host**
-    (`analytics-api.voiceflow.com`), authed with the raw `VF.DM` key.
-- **`voiceflow:backfill` command** — searches recent transcripts, fetches each,
-  and creates `conversations` + `messages` via `ConversationRecorder`.
-  **Idempotent**: keyed on `voiceflow_transcript_id`, so re-runs only add new
-  ones.
-- `VOICEFLOW_ANALYTICS_URL` config/env.
+  - The analytics API lived on a **separate host** from the main engine,
+    authed with the engine's raw API key.
+- **The transcript-backfill command** (since removed with the legacy
+  engine) — searched recent transcripts, fetched each, and created
+  `conversations` + `messages` via `ConversationRecorder`.
+  **Idempotent**: keyed on `transcript_id`, so re-runs only added new ones.
+- Analytics-host config/env.
 - Tests (HTTP-faked): log→message parsing, import, idempotency.
 
-## Usage
+## Usage (historical)
 
-```bash
-# Single team (auto-detected if only one), 50 most recent transcripts:
-php artisan voiceflow:backfill --team=1 --take=50 --skip=0
-```
+The command took `--team`, `--take`, and `--skip` options (e.g. the most
+recent 50 transcripts for a single team) and could be scheduled hourly in
+`routes/console.php` to keep the local store in sync.
 
-> Note: Voiceflow transcripts are **not auto-saved** — only conversations that
-> were ended/persisted on Voiceflow's side appear in the search. Conversations
-> already captured live through `/agent` are skipped (matched by transcript id).
-
-## Scheduling (optional)
-
-To keep the local store in sync automatically, schedule it in
-`routes/console.php` or `app/Console/Kernel.php`:
-
-```php
-Schedule::command('voiceflow:backfill --team=1')->hourly();
-```
+> Note: legacy-engine transcripts were **not auto-saved** — only conversations
+> that were ended/persisted on the engine's side appeared in the search.
+> [[phase-5-voiceflow|Conversations already captured live through `/chat`]] were
+> skipped (matched by transcript id).
+> ([[phase-14-public-stats|`/agent` was renamed to `/chat` in Phase 14]].)
 
 ## API contract used
 
-| Call | Endpoint |
-| ---- | -------- |
-| Search | `POST https://analytics-api.voiceflow.com/v1/transcript/project/{projectID}?take=&skip=&order=DESC` |
-| Get | `GET https://analytics-api.voiceflow.com/v1/transcript/{transcriptID}?filterConversation=true` |
-
-Auth: `authorization: <VF.DM key>` (raw, no Bearer).
-See <https://docs.voiceflow.com/api-reference/transcript/search-transcripts> and
-<https://docs.voiceflow.com/api-reference/transcript/get-transcript>.
+The backfill spoke to the legacy engine's analytics host: a search call
+(`POST .../transcript/project/{projectID}`, paged via `take`/`skip`) and a
+get call (`GET .../transcript/{transcriptID}`), both authed with the engine's
+raw API key in the `authorization` header (no Bearer). Full endpoint shapes
+are legacy-engine specifics; see the archived reference under
+[[docs/voiceflow/transcripts/README|docs/voiceflow/]].

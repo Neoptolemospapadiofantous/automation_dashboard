@@ -1,8 +1,9 @@
 <script setup>
+import { computed, ref } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 
-defineProps({
+const props = defineProps({
     agent: { type: Object, required: true },
 });
 
@@ -30,28 +31,52 @@ const nextSteps = [
         href: 'leads.index',
     },
 ];
+
+// Install snippet for the agent the wizard just provisioned. We highlight
+// this prominently because shipping the widget onto the customer's website
+// is the single highest-value action they can take right now.
+const widgetUrl = computed(() =>
+    props.agent?.slug ? `${window.location.origin}/widget/${props.agent.slug}.js` : null,
+);
+const snippet = computed(() =>
+    widgetUrl.value ? `<script src="${widgetUrl.value}" defer><\/script>` : '',
+);
+
+const copyState = ref('idle');
+async function copy() {
+    if (!snippet.value) return;
+    try {
+        await navigator.clipboard.writeText(snippet.value);
+        copyState.value = 'copied';
+        setTimeout(() => (copyState.value = 'idle'), 2000);
+    } catch (e) {
+        copyState.value = 'idle';
+    }
+}
 </script>
 
 <template>
     <Head title="You're set" />
-    <div class="min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-bg-elev">
         <div class="mx-auto max-w-2xl px-4 py-12">
             <div class="mb-8 flex items-center justify-between text-xs">
-                <ol class="flex items-center gap-2 font-medium text-gray-500">
-                    <li class="text-gray-400">✓ 1. Set up agent</li>
-                    <li>→</li>
-                    <li class="text-indigo-600">2. Done</li>
+                <ol class="flex items-center gap-3 font-mono font-medium text-ink-dim">
+                    <li class="text-ink-dim">✓ 1. Set up agent</li>
+                    <li class="bp-wire inline-block w-8" aria-hidden="true" />
+                    <li class="flex items-center gap-2 text-ink"><span class="bp-dot" />2. Done</li>
                 </ol>
+                <span class="bp-ref">SETUP/DONE</span>
             </div>
 
-            <div class="rounded-2xl bg-white p-8 text-center shadow-sm ring-1 ring-black/5">
-                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+            <div class="bp-node shadow-sheet relative rounded-none p-8 text-center">
+                <span class="ins-stamp absolute right-5 top-5 text-green-600" aria-hidden="true">Live</span>
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-none bg-green-100">
                     <svg class="h-7 w-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                 </div>
-                <h1 class="mt-4 text-2xl font-semibold text-gray-900">You're live.</h1>
-                <p class="mt-2 text-gray-600">
+                <h1 class="mt-4 text-2xl font-semibold text-ink">You're live.</h1>
+                <p class="mt-2 text-ink-dim">
                     <span class="font-medium">{{ agent.name }}</span> is connected and answering.
                 </p>
 
@@ -59,7 +84,43 @@ const nextSteps = [
                     <Link :href="route('chat.index')">
                         <PrimaryButton>Start chatting</PrimaryButton>
                     </Link>
-                    <Link :href="route('dashboard')" class="text-sm text-gray-500 hover:text-gray-700">Go to dashboard →</Link>
+                    <Link :href="route('dashboard')" class="text-sm font-medium text-violet hover:underline">Go to dashboard →</Link>
+                </div>
+            </div>
+
+            <!-- One-line install snippet. Featured prominently because this
+                 is the single highest-value action — once the script is on
+                 the customer's website, conversations + leads start flowing. -->
+            <div v-if="snippet" class="bp-node shadow-sheet mt-8 overflow-hidden rounded-none p-6">
+                <div class="mb-4 flex items-center justify-between">
+                    <span class="bp-ref">INSTALL/EMBED</span>
+                    <span class="bp-annot">snippet · 1 line</span>
+                </div>
+                <div class="flex items-start gap-4">
+                    <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-none bg-ink text-sm font-semibold text-bg">
+                        ➜
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-mono text-xs font-semibold uppercase tracking-wider text-ink">Final step</p>
+                        <h2 class="mt-1 text-lg font-semibold text-ink">Drop this on your website</h2>
+                        <p class="mt-1 text-sm text-ink-dim">
+                            One line of HTML. Anywhere before <code class="rounded-none bg-surface-hi px-1 py-0.5 font-mono text-[11px]">&lt;/body&gt;</code>.
+                            A floating chat button appears bottom-right; clicking it opens your agent.
+                        </p>
+
+                        <div class="mt-4 overflow-hidden rounded-none border border-border-line bg-bg-elev p-3 font-mono text-[12px] leading-relaxed text-ink-dim">
+                            <pre class="whitespace-pre-wrap break-all">{{ snippet }}</pre>
+                        </div>
+
+                        <div class="mt-3 flex flex-wrap items-center gap-2">
+                            <PrimaryButton type="button" @click="copy">
+                                {{ copyState === 'copied' ? '✓ Copied' : 'Copy snippet' }}
+                            </PrimaryButton>
+                            <Link :href="route('install.index')" class="text-sm text-ink underline hover:text-ink-dim">
+                                Full install guide →
+                            </Link>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -67,20 +128,20 @@ const nextSteps = [
                  surfaces that need at least one touch for the product to
                  feel like it's running, not sitting. -->
             <div class="mt-10">
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Next 60 seconds</p>
+                <p class="font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Next 60 seconds</p>
                 <ul class="mt-3 space-y-3">
                     <li
                         v-for="(step, i) in nextSteps"
                         :key="step.href"
-                        class="flex gap-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-black/5"
+                        class="flex gap-4 rounded-none border border-border-line bg-bg p-4"
                     >
-                        <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-600">
+                        <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-none bg-surface-hi font-mono text-xs font-semibold text-ink">
                             {{ i + 1 }}
                         </span>
                         <div class="flex-1">
-                            <p class="font-medium text-gray-900">{{ step.title }}</p>
-                            <p class="mt-0.5 text-sm text-gray-500">{{ step.body }}</p>
-                            <Link :href="route(step.href)" class="mt-2 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-500">
+                            <p class="font-medium text-ink">{{ step.title }}</p>
+                            <p class="mt-0.5 text-sm text-ink-dim">{{ step.body }}</p>
+                            <Link :href="route(step.href)" class="mt-2 inline-block text-sm font-medium text-ink underline hover:text-ink-dim">
                                 {{ step.cta }} →
                             </Link>
                         </div>

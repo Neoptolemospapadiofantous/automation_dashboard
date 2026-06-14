@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Conversation;
+use App\Models\Lead;
 use App\Models\Message;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -23,7 +25,7 @@ class ConversationController extends Controller
         // current team + agent (no cross-tenant peek via URL guessing).
         $leadFilter = null;
         if ($request->filled('lead_id')) {
-            $leadFilter = \App\Models\Lead::query()
+            $leadFilter = Lead::query()
                 ->where('team_id', $team->id)
                 ->forAgent($team->current_agent_id)
                 ->find($request->integer('lead_id'));
@@ -78,6 +80,41 @@ class ConversationController extends Controller
     }
 
     /**
+     * Force-end a conversation (marks it ended locally; for native-runtime
+     * sessions the engine's flow_state is the source of truth and the next
+     * launch resets it anyway).
+     */
+    public function endUpstream(
+        Request $request,
+        Conversation $conversation,
+    ): RedirectResponse {
+        $team = $request->user()->currentTeam;
+        abort_unless($conversation->team_id === $team->id, 403);
+        abort_unless($conversation->agent_id === $team->current_agent_id, 404);
+
+        $conversation->forceFill(['ended_at' => now(), 'status' => 'ended'])->save();
+
+        return back();
+    }
+
+    /**
+     * GDPR-grade delete: drop the conversation + its messages. Irreversible.
+     */
+    public function deleteUpstream(
+        Request $request,
+        Conversation $conversation,
+    ): RedirectResponse {
+        $team = $request->user()->currentTeam;
+        abort_unless($conversation->team_id === $team->id, 403);
+        abort_unless($conversation->agent_id === $team->current_agent_id, 404);
+
+        $conversation->messages()->delete();
+        $conversation->delete();
+
+        return redirect()->route('conversations.index');
+    }
+
+    /**
      * Search messages across the team's conversations.
      *
      * Uses Scout (Typesense hybrid keyword + semantic search) when configured;
@@ -128,7 +165,7 @@ class ConversationController extends Controller
                 ->where('agent_id', $agentId)
                 ->take(50)
                 ->get()
-                ->load('conversation:id,lead_id,voiceflow_user_id');
+                ->load('conversation:id,lead_id,visitor_id');
         } else {
             $messages = Message::query()
                 ->where('team_id', $teamId)
@@ -136,7 +173,7 @@ class ConversationController extends Controller
                 ->where('text', 'like', '%'.$query.'%')
                 ->latest('sent_at')
                 ->limit(50)
-                ->with('conversation:id,lead_id,voiceflow_user_id')
+                ->with('conversation:id,lead_id,visitor_id')
                 ->get();
         }
 

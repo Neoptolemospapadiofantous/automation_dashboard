@@ -4,11 +4,16 @@ namespace App\Notifications;
 
 use App\Models\Lead;
 use Illuminate\Bus\Queueable;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Sent to a rep when a lead is delegated to them. Stored in the database so the
- * rep can see their pending leads; the bell UI polls/refreshes via Inertia.
+ * Sent to a rep when a lead is delegated to them.
+ *
+ * Channels:
+ *  - database: feeds the bell icon UI for in-app awareness
+ *  - mail:     reps live in Gmail; speed-to-lead matters more than
+ *              waiting for them to refresh the dashboard
  */
 class LeadAssignedNotification extends Notification
 {
@@ -21,7 +26,36 @@ class LeadAssignedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail'];
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        $score = $this->lead->score ?? null;
+        $name = $this->lead->name ?? '(no name)';
+
+        $mail = (new MailMessage)
+            ->subject("New lead assigned: {$name}")
+            ->greeting("Hi {$notifiable->name},")
+            ->line("You've been assigned a new lead in Flowstack.");
+
+        if ($score !== null) {
+            $mail->line("**Score: {$score}/100**");
+        }
+
+        if ($this->lead->company) {
+            $mail->line("**Company:** {$this->lead->company}");
+        }
+        if ($this->lead->email) {
+            $mail->line("**Email:** {$this->lead->email}");
+        }
+        if ($this->lead->phone) {
+            $mail->line("**Phone:** {$this->lead->phone}");
+        }
+
+        return $mail
+            ->action('Open in dashboard', url('/leads?focus='.$this->lead->id))
+            ->line('Reach out fast — leads contacted within 5 minutes are 7x more likely to qualify.');
     }
 
     /**

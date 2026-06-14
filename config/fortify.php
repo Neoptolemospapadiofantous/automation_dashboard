@@ -101,7 +101,11 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    // throttle:30,1 guards the PUBLIC auth endpoints (register,
+    // forgot/reset-password) against spam + mail-bombing — audit-sentinel
+    // finding 2026-06-12. Login additionally has Fortify's own
+    // LoginRateLimiter on top. 30/min/IP is generous for humans.
+    'middleware' => ['web', 'throttle:30,1'],
 
     /*
     |--------------------------------------------------------------------------
@@ -164,7 +168,7 @@ return [
     'features' => [
         Features::registration(),
         Features::resetPasswords(),
-        // Features::emailVerification(),
+        Features::emailVerification(),
         Features::updateProfileInformation(),
         Features::updatePasswords(),
         Features::twoFactorAuthentication([
@@ -172,9 +176,14 @@ return [
             'confirmPassword' => true,
             // 'window' => 0,
         ]),
-        Features::passkeys([
-            'confirmPassword' => true,
-        ]),
+        // Passkeys DISABLED: the feature was enabled by the Jetstream
+        // scaffold but User never implemented the PasskeyUser contract, so
+        // /passkeys/confirm/options 500'd for every authenticated user
+        // (caught by the Wiring route-smoke suite, 2026-06-12). Re-enable
+        // only together with the HasPasskeys trait + contract on User.
+        // Features::passkeys([
+        //     'confirmPassword' => true,
+        // ]),
     ],
 
 ];

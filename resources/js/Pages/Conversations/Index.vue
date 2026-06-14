@@ -21,7 +21,11 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
 
 <template>
     <AppLayout title="Conversations">
-        <PageHeader title="Conversations" description="Every chat that's happened with your agents." />
+        <PageHeader title="Conversations" description="Every chat that's happened with your agents.">
+            <template #actions>
+                <span class="bp-ref">CONV/LOG</span>
+            </template>
+        </PageHeader>
 
 
         <div class="py-8">
@@ -29,13 +33,13 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
                 <!-- Cross-link filter banner — landed here via a LeadCard's
                      conversation-count chip. Clear button strips ?lead_id
                      and returns to the full list. -->
-                <div v-if="filter_lead" class="mb-4 flex items-center justify-between gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+                <div v-if="filter_lead" class="mb-4 flex items-center justify-between gap-3 rounded-none border border-border-hi bg-bg-elev px-4 py-3 text-sm text-ink">
                     <div>
                         Showing conversations for
                         <Link :href="route('leads.index')" class="font-semibold underline">{{ filter_lead.name }}</Link>
-                        <span v-if="filter_lead.email" class="text-indigo-700"> · {{ filter_lead.email }}</span>
+                        <span v-if="filter_lead.email" class="text-ink-dim"> · {{ filter_lead.email }}</span>
                     </div>
-                    <Link :href="route('conversations.index')" class="text-xs font-medium text-indigo-700 underline hover:text-indigo-900">
+                    <Link :href="route('conversations.index')" class="text-xs font-medium text-ink underline hover:text-ink-dim">
                         Clear filter ✕
                     </Link>
                 </div>
@@ -45,9 +49,9 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
                     <PrimaryButton>Search</PrimaryButton>
                 </form>
 
-                <div class="overflow-hidden rounded-xl bg-white shadow">
-                    <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+                <div class="overflow-hidden rounded-none border border-border-line bg-bg shadow-sheet">
+                    <table class="min-w-full divide-y divide-border-line text-sm">
+                        <thead class="bg-bg-elev text-left font-mono text-xs uppercase tracking-wider text-ink-dim">
                             <tr>
                                 <th class="px-4 py-3">Lead</th>
                                 <th class="px-4 py-3">Channel</th>
@@ -56,29 +60,40 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
                                 <th class="px-4 py-3">Last activity</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100">
+                        <tbody class="divide-y divide-border-line">
                             <tr
                                 v-for="c in conversations.data"
                                 :key="c.id"
-                                class="cursor-pointer hover:bg-gray-50"
+                                class="cursor-pointer transition-colors hover:bg-surface-hi"
                                 @click="router.visit(route('conversations.show', c.id))"
                             >
-                                <td class="px-4 py-3 font-medium text-gray-900">
-                                    {{ c.lead?.name || c.voiceflow_user_id }}
+                                <td class="px-4 py-3 font-medium text-ink">
+                                    {{ c.lead?.name || c.visitor_id }}
                                 </td>
-                                <td class="px-4 py-3 text-gray-500">{{ c.channel }}</td>
-                                <td class="px-4 py-3 text-gray-500">{{ c.message_count }}</td>
+                                <td class="px-4 py-3 text-ink-dim">{{ c.channel }}</td>
+                                <td class="px-4 py-3 font-mono text-ink-dim">{{ c.message_count }}</td>
                                 <td class="px-4 py-3">
                                     <span
-                                        class="rounded-full px-2 py-0.5 text-xs"
-                                        :class="c.status === 'ended' ? 'bg-gray-100 text-gray-600' : 'bg-green-100 text-green-700'"
+                                        class="rounded-none px-2 py-0.5 font-mono text-xs"
+                                        :class="c.status === 'ended' ? 'bg-surface-hi text-ink-dim' : 'bg-green-100 text-green-700'"
                                     >{{ c.status }}</span>
                                 </td>
-                                <td class="px-4 py-3 text-gray-500">{{ fmt(c.last_message_at) }}</td>
+                                <td class="px-4 py-3 font-mono text-ink-dim">{{ fmt(c.last_message_at) }}</td>
                             </tr>
                             <tr v-if="!conversations.data.length">
-                                <td colspan="5" class="px-4 py-10 text-center text-gray-400">
-                                    No conversations yet. Start one from the Agent page.
+                                <td colspan="5" class="px-4 py-14 text-center">
+                                    <div class="flex flex-col items-center gap-3">
+                                        <svg class="h-10 w-10 text-ink-mute" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.068.157 2.148.279 3.238.364.466.037.893.281 1.153.671L12 21l2.652-3.978c.26-.39.687-.634 1.153-.67 1.09-.086 2.17-.208 3.238-.365 1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+                                        </svg>
+                                        <div>
+                                            <p class="text-sm font-medium text-ink-dim">No conversations yet</p>
+                                            <p class="mt-1 text-xs text-ink-mute">Conversations appear here as soon as someone chats with your agent.</p>
+                                        </div>
+                                        <Link :href="route('chat.index')" class="text-xs font-medium text-ink underline hover:text-ink-dim">
+                                            Try the chat panel →
+                                        </Link>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -91,13 +106,14 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
                         v-for="link in conversations.links"
                         :key="link.label"
                         :href="link.url || ''"
-                        class="rounded px-3 py-1 text-sm"
+                        class="rounded-none px-3 py-1 font-mono text-sm"
                         :class="[
-                            link.active ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-100',
+                            link.active ? 'bg-ink text-bg' : 'bg-bg text-ink-dim hover:bg-surface-hi',
                             !link.url && 'pointer-events-none opacity-40',
                         ]"
                         v-html="link.label"
                     />
+                    <!-- @hermes-keep: Laravel paginator labels are server-controlled HTML entities (&laquo; / &raquo;), not user input. See .hermes/suppressions.yaml -->
                 </div>
             </div>
         </div>

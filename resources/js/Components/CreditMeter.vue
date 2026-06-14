@@ -21,38 +21,38 @@ const tone = computed(() => {
     const p = percent.value;
     if (p >= 100) return 'rose';
     if (p >= 80) return 'amber';
-    return 'indigo';
+    return 'normal';
 });
 
 const barClass = computed(() => ({
     rose: 'bg-rose-500',
     amber: 'bg-amber-500',
-    indigo: 'bg-indigo-500',
+    normal: 'bg-ink-dim',
 }[tone.value]));
 
 const textClass = computed(() => ({
     rose: 'text-rose-700',
     amber: 'text-amber-700',
-    indigo: 'text-gray-600',
+    normal: 'text-ink-dim',
 }[tone.value]));
 </script>
 
 <template>
-    <div v-if="billing" class="border-t border-gray-100 p-3">
-        <Link :href="route('billing.index')" class="block rounded-md px-2 py-2 hover:bg-gray-50">
+    <div v-if="billing" class="border-t border-border-line p-3">
+        <Link :href="route('billing.index')" class="block rounded-none px-2 py-2 hover:bg-surface-hi">
             <div class="flex items-center justify-between text-xs">
-                <span class="font-semibold uppercase tracking-wide text-gray-400">
+                <span class="font-mono font-semibold uppercase tracking-wider text-ink-mute">
                     {{ billing.plan_label }} plan
                 </span>
-                <span class="font-medium tabular-nums" :class="textClass">
+                <span class="font-mono font-medium tabular-nums" :class="textClass">
                     {{ billing.credits_remaining.toLocaleString() }} left
                 </span>
             </div>
-            <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-                <div class="h-full rounded-full transition-all" :class="barClass" :style="{ width: percent + '%' }" />
+            <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-none bg-surface-hi">
+                <div class="h-full rounded-none transition-all" :class="barClass" :style="{ width: percent + '%' }" />
             </div>
-            <div class="mt-1 text-[10px] text-gray-400">
-                {{ billing.credits_used.toLocaleString() }} / {{ billing.credits_total.toLocaleString() }} credits used
+            <div class="mt-1 font-mono text-[10px] text-ink-dim">
+                {{ billing.credits_used.toLocaleString() }} / {{ billing.credits_total.toLocaleString() }} monthly used<span v-if="billing.topup_balance > 0"> · +{{ billing.topup_balance.toLocaleString() }} top-up</span>
                 <span v-if="billing.max_agents < 1000"> · {{ billing.agents_count }} / {{ billing.max_agents }} agents</span>
             </div>
         </Link>

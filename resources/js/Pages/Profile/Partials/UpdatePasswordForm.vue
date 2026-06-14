@@ -39,6 +39,8 @@ const updatePassword = () => {
 
 <template>
     <FormSection @submitted="updatePassword">
+        <template #ref>PROFILE/SECURITY</template>
+
         <template #title>
             Update Password
         </template>

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Actions\Agents\CreateAgent;
 use App\Lifecycle\OnboardingState;
 use App\Models\Agent;
+use App\Models\AgentConfigVersion;
+use App\Runtime\LLM\LlmRouter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,17 +15,9 @@ use Inertia\Response;
 /**
  * The (now single-step) onboarding wizard.
  *
- * Phase 14 collapsed the wizard from 3 steps (intro → connect → done)
- * to 2 (intro → done) when BYOK was removed from the product surface.
- * The wizard is now always managed: user clicks "Set up my agent",
- * CreateAgent allocates from the Voiceflow project pool, marks the
- * agent active, redirects to Done.
- *
- * The dormant pieces (credentialRules, credentialMessages,
- * UpdateAgentCredentials action) stay because ops uses them via
- * tinker for one-off Custom-tier BYOK setups. They're not reachable
- * via any user-facing route — the Connect + saveCredentials methods
- * were deleted in Phase 14.
+ * Two-step wizard (intro → done): the user clicks "Set up my agent",
+ * CreateAgent provisions a native-runtime agent instantly (nothing
+ * external to allocate), redirects to Done.
  */
 class OnboardingController extends Controller
 {
@@ -37,8 +31,20 @@ class OnboardingController extends Controller
             return $jump;
         }
 
+        $tiers = [];
+        foreach ((array) config('runtime.tiers') as $key => $tier) {
+            $tiers[] = [
+                'key' => $key,
+                'label' => (string) ($tier['label'] ?? ucfirst($key)),
+                'description' => (string) ($tier['description'] ?? ''),
+                'credits_per_message' => (int) ($tier['credits_per_message'] ?? 1),
+                'available' => LlmRouter::providerAvailable((string) ($tier['provider'] ?? 'anthropic')),
+            ];
+        }
+
         return Inertia::render('Onboarding/Intro', [
             'team' => ['id' => $request->user()->currentTeam->id, 'name' => $request->user()->currentTeam->name],
+            'tiers' => $tiers,
         ]);
     }
 
@@ -46,9 +52,32 @@ class OnboardingController extends Controller
     {
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
+            // Onboarding profile capture — segments customers for
+            // marketing + lets us tailor in-app prompts. All optional;
+            // unanswered questions stay null in team.profile.
+            'industry' => ['nullable', 'string', 'in:saas,ecommerce,agency,services,real_estate,healthcare,education,other'],
+            'use_case' => ['nullable', 'string', 'in:lead_capture,customer_support,scheduling,qualification,faq,other'],
+            'team_size' => ['nullable', 'string', 'in:solo,2-5,6-20,21-100,100+'],
+            'website' => ['nullable', 'url', 'max:255'],
+            // Quality tier — couples model to credit price (see runtime.tiers).
+            'model_tier' => ['nullable', 'string', 'in:'.implode(',', $this->availableTierKeys())],
         ]);
 
         $team = $request->user()->currentTeam;
+
+        // Save profile alongside provisioning. Skip when all fields are
+        // empty (returning user re-clicking start) so we don't overwrite
+        // an already-saved profile with nulls.
+        $profile = [];
+        foreach (['industry', 'use_case', 'team_size', 'website'] as $field) {
+            if (isset($data[$field]) && $data[$field] !== '') {
+                $profile[$field] = $data[$field];
+            }
+        }
+        if ($profile !== []) {
+            $existing = is_array($team->getAttribute('profile')) ? $team->getAttribute('profile') : [];
+            $team->forceFill(['profile' => array_merge($existing, $profile)])->save();
+        }
 
         // Re-click protection. If the user double-submits, pick up the
         // already-created agent rather than burning another pool slot.
@@ -58,7 +87,23 @@ class OnboardingController extends Controller
             ->whereIn('status', [Agent::STATUS_DRAFT, Agent::STATUS_ACTIVE])
             ->latest()
             ->first();
-        $existing ?: (new CreateAgent())->execute($team, $data['name'] ?? 'Default agent');
+        $agent = $existing ?: (new CreateAgent)->execute($team, $data['name'] ?? 'Default agent');
+
+        // Seed the quality tier chosen in the wizard. Only for NON-standard
+        // picks on a freshly created agent: standard is the default anyway,
+        // and seeding an empty published config would falsely tick the
+        // dashboard checklist's 'Publish behavior' step. Re-clicks never
+        // overwrite an existing agent's config.
+        $tier = (string) ($data['model_tier'] ?? AgentConfigVersion::DEFAULT_TIER);
+        if ($existing === null && $tier !== AgentConfigVersion::DEFAULT_TIER) {
+            AgentConfigVersion::create([
+                'agent_id' => $agent->id,
+                'version' => 1,
+                'status' => AgentConfigVersion::STATUS_PUBLISHED,
+                'config' => ['instructions' => '', 'greeting' => '', 'model_tier' => $tier],
+                'published_at' => now(),
+            ]);
+        }
 
         // Managed signups are activated atomically by CreateAgent — no
         // credential-paste step. Go straight to Done.
@@ -76,44 +121,30 @@ class OnboardingController extends Controller
         $agent = $request->user()->currentTeam->currentAgent;
 
         return Inertia::render('Onboarding/Done', [
-            'agent' => ['id' => $agent->id, 'name' => $agent->name],
+            'agent' => [
+                'id' => $agent->id,
+                'name' => $agent->name,
+                // slug powers the featured install snippet block on the Done
+                // page. Without it the snippet computed property is empty and
+                // the whole "Drop this on your website" callout silently hides.
+                'slug' => $agent->slug,
+            ],
         ]);
     }
 
     /**
-     * Voiceflow credential validation, shared with AgentController so the
-     * (now ops-only) BYOK path enforces identical formats. Strict regexes
-     * catch the "I pasted my email by accident" class of error before we
-     * even round-trip Voiceflow.
-     *
-     * Kept public + static even though the only call site is the dormant
-     * BYOK update path — ops calls it from tinker.
-     *
-     * @return array<string, array<int, string>>
+     * @return list<string>
      */
-    public static function credentialRules(bool $required): array
+    protected function availableTierKeys(): array
     {
-        $base = $required ? ['required'] : ['nullable'];
+        $keys = [];
+        foreach ((array) config('runtime.tiers') as $key => $tier) {
+            if (LlmRouter::providerAvailable((string) ($tier['provider'] ?? 'anthropic'))) {
+                $keys[] = $key;
+            }
+        }
 
-        return [
-            'voiceflow_api_key' => array_merge($base, ['string', 'max:255', 'regex:/^VF\.DM\.[A-Za-z0-9]+\.[A-Za-z0-9]+$/']),
-            'voiceflow_project_id' => array_merge($base, ['string', 'max:255', 'regex:/^[a-f0-9]{24}$/i']),
-            'voiceflow_environment' => ['nullable', 'string', 'max:64', 'regex:/^[A-Za-z0-9_\-]{2,32}$/'],
-            'voiceflow_workspace_api_key' => ['nullable', 'string', 'max:255', 'regex:/^VF\..+/'],
-        ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public static function credentialMessages(): array
-    {
-        return [
-            'voiceflow_api_key.regex' => 'API key should look like VF.DM.xxxxxxxx.yyyy (Voiceflow Dialog Manager key).',
-            'voiceflow_project_id.regex' => 'Project ID should be a 24-character hex string from your Voiceflow URL (e.g. 64f8a1b2c3d4e5f6a7b8c9d0).',
-            'voiceflow_environment.regex' => 'Environment should be a short alphanumeric label (e.g. main, development).',
-            'voiceflow_workspace_api_key.regex' => 'Workspace key should start with VF. (it is the broader workspace token, not the DM key).',
-        ];
+        return $keys;
     }
 
     /**

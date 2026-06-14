@@ -6,7 +6,6 @@ use App\Http\Middleware\RequireAgent;
 use App\Models\Agent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class OnboardingWizardTest extends TestCase
@@ -39,8 +38,6 @@ class OnboardingWizardTest extends TestCase
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create([
             'status' => Agent::STATUS_ACTIVE,
-            'voiceflow_api_key' => 'VF.DM.k',
-            'voiceflow_project_id' => 'p',
             'last_health_ok' => true,
         ]);
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
@@ -69,14 +66,10 @@ class OnboardingWizardTest extends TestCase
         $this->actingAs($user)->get(route('agents.index'))->assertOk();
     }
 
-    public function test_intro_post_provisions_a_managed_agent_and_jumps_to_done(): void
+    public function test_intro_post_provisions_a_native_agent_and_jumps_to_done(): void
     {
-        // Phase 14: the wizard collapsed to a single step. POSTing to
-        // onboarding.start now allocates from the pool, marks the agent
-        // active, and redirects straight to Done. No Connect step exists.
-        \App\Models\VoiceflowProjectPoolEntry::factory()->create();
-        config()->set('services.voiceflow.managed.enabled', true);
-
+        // Single-step wizard: POSTing to onboarding.start provisions a
+        // native-runtime agent (nothing external) and redirects to Done.
         $user = User::factory()->withPersonalTeam()->create();
 
         $this->actingAs($user)->post(route('onboarding.start'), ['name' => 'My first agent'])

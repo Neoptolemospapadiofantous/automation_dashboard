@@ -20,6 +20,8 @@ const createTeam = () => {
 
 <template>
     <FormSection @submitted="createTeam">
+        <template #ref>TEAM/NEW</template>
+
         <template #title>
             Team Details
         </template>
@@ -36,8 +38,8 @@ const createTeam = () => {
                     <img class="object-cover size-12 rounded-full" :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user.name">
 
                     <div class="ms-4 leading-tight">
-                        <div class="text-gray-900">{{ $page.props.auth.user.name }}</div>
-                        <div class="text-sm text-gray-700">
+                        <div class="text-ink">{{ $page.props.auth.user.name }}</div>
+                        <div class="text-sm text-ink-dim">
                             {{ $page.props.auth.user.email }}
                         </div>
                     </div>

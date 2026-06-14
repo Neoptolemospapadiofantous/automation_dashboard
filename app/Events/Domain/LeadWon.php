@@ -2,6 +2,4 @@
 
 namespace App\Events\Domain;
 
-class LeadWon extends StateChanged
-{
-}
+class LeadWon extends StateChanged {}

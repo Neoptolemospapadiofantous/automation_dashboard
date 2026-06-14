@@ -3,10 +3,11 @@
 namespace Database\Factories;
 
 use App\Models\Conversation;
+use App\Models\Message;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<\App\Models\Message>
+ * @extends Factory<Message>
  */
 class MessageFactory extends Factory
 {
@@ -27,15 +28,5 @@ class MessageFactory extends Factory
             'sequence' => 1,
             'sent_at' => now(),
         ];
-    }
-
-    public function fromUser(): self
-    {
-        return $this->state(['role' => 'user']);
-    }
-
-    public function fromAgent(): self
-    {
-        return $this->state(['role' => 'agent']);
     }
 }

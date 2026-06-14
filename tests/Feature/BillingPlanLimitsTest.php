@@ -24,11 +24,11 @@ class BillingPlanLimitsTest extends TestCase
         $user = User::factory()->withPersonalTeam()->create();
         // Team is on Free (factory default). Free's maxAgents = 1.
         // Create the first agent — should succeed.
-        (new CreateAgent())->execute($user->currentTeam, 'First');
+        (new CreateAgent)->execute($user->currentTeam, 'First');
 
         // Second one should throw.
         $this->expectException(PlanLimitExceeded::class);
-        (new CreateAgent())->execute($user->currentTeam, 'Second');
+        (new CreateAgent)->execute($user->currentTeam, 'Second');
     }
 
     public function test_pro_plan_caps_at_five(): void
@@ -37,11 +37,11 @@ class BillingPlanLimitsTest extends TestCase
         $user->currentTeam->forceFill(['plan' => Plan::Pro->value])->save();
 
         for ($i = 1; $i <= 5; $i++) {
-            (new CreateAgent())->execute($user->currentTeam->fresh(), "Agent {$i}");
+            (new CreateAgent)->execute($user->currentTeam->fresh(), "Agent {$i}");
         }
 
         $this->expectException(PlanLimitExceeded::class);
-        (new CreateAgent())->execute($user->currentTeam->fresh(), 'Agent 6');
+        (new CreateAgent)->execute($user->currentTeam->fresh(), 'Agent 6');
     }
 
     public function test_business_plan_does_not_cap(): void
@@ -52,7 +52,7 @@ class BillingPlanLimitsTest extends TestCase
         // Just confirm creating many doesn't throw — we won't actually
         // make 1000 to keep the test fast.
         for ($i = 1; $i <= 10; $i++) {
-            (new CreateAgent())->execute($user->currentTeam->fresh(), "Agent {$i}");
+            (new CreateAgent)->execute($user->currentTeam->fresh(), "Agent {$i}");
         }
 
         $this->assertSame(10, $user->currentTeam->agents()->count());
@@ -82,7 +82,7 @@ class BillingPlanLimitsTest extends TestCase
         Agent::factory()->for($user->currentTeam)->create();
 
         try {
-            (new CreateAgent())->execute($user->currentTeam->fresh(), 'Second');
+            (new CreateAgent)->execute($user->currentTeam->fresh(), 'Second');
             $this->fail('Expected PlanLimitExceeded');
         } catch (PlanLimitExceeded $e) {
             $this->assertSame('agents', $e->resource);

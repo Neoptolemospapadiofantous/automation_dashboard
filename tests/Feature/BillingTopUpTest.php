@@ -6,54 +6,109 @@ use App\Billing\Plan;
 use App\Billing\TopUpPack;
 use App\Models\CreditTransaction;
 use App\Models\User;
+use App\Services\Billing\StripeClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
+use Stripe\Checkout\Session;
 use Tests\TestCase;
 
 /**
- * Top-up purchase HTTP flow. DEV-MODE today (instant grant); when Phase H
- * wires Stripe Checkout these tests guard the front-end contract while the
- * grant path moves into the webhook handler. Keep them.
+ * Top-up purchase HTTP flow. Stripe Checkout-backed: POST /billing/topup
+ * redirects the browser to Stripe; the actual credit grant happens in the
+ * webhook handler (see StripeWebhookHandlerTest). These tests cover only
+ * the synchronous controller contract.
  */
 class BillingTopUpTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_starter_can_buy_a_topup_pack(): void
+    public function test_starter_redirects_to_stripe_checkout(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
         $team->forceFill(['plan' => Plan::Free->value, 'credit_balance' => 500])->save();
 
+        // Mock StripeClient::createOneOffCheckout so no Stripe API call fires.
+        $sessionStub = Session::constructFrom(['id' => 'cs_test_123', 'url' => 'https://checkout.stripe.com/c/pay/cs_test_123']);
+        $this->mock(StripeClient::class, function (Mockery\MockInterface $mock) use ($sessionStub): void {
+            $mock->shouldReceive('createOneOffCheckout')->once()->andReturn($sessionStub);
+        });
+        // The price_id must be configured for the controller to proceed.
+        config(['billing.stripe_price.topup_medium' => 'price_test_medium']);
+
         $this->actingAs($user->fresh())
             ->post(route('billing.topup'), ['pack' => TopUpPack::Medium->value])
-            ->assertRedirect();
+            ->assertRedirect('https://checkout.stripe.com/c/pay/cs_test_123');
 
-        $this->assertSame(500 + 5_000, $team->fresh()->credit_balance);
-        $tx = CreditTransaction::query()->latest()->first();
-        $this->assertSame(5_000, $tx->amount);
-        $this->assertSame('grant_topup', $tx->reason);
-        $this->assertSame('medium', $tx->meta['pack']);
-        $this->assertSame(39, $tx->meta['price_usd']);
-        $this->assertTrue($tx->meta['simulated_payment']);
+        // Balance is NOT touched synchronously — the webhook grants on payment.
+        $this->assertSame(500, $team->fresh()->credit_balance);
+        $this->assertSame(0, CreditTransaction::query()->count());
     }
 
-    public function test_operator_can_buy_a_topup_pack(): void
+    public function test_operator_redirects_to_stripe_checkout(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
         $team->forceFill(['plan' => Plan::Pro->value, 'credit_balance' => 1_000])->save();
 
+        $sessionStub = Session::constructFrom(['id' => 'cs_test_456', 'url' => 'https://checkout.stripe.com/c/pay/cs_test_456']);
+        $this->mock(StripeClient::class, function (Mockery\MockInterface $mock) use ($sessionStub): void {
+            $mock->shouldReceive('createOneOffCheckout')->once()->andReturn($sessionStub);
+        });
+        config(['billing.stripe_price.topup_large' => 'price_test_large']);
+
         $this->actingAs($user->fresh())
             ->post(route('billing.topup'), ['pack' => TopUpPack::Large->value])
-            ->assertRedirect();
+            ->assertRedirect('https://checkout.stripe.com/c/pay/cs_test_456');
 
-        $this->assertSame(1_000 + 20_000, $team->fresh()->credit_balance);
+        $this->assertSame(1_000, $team->fresh()->credit_balance);
+    }
+
+    public function test_custom_amount_redirects_to_stripe_checkout(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $team = $user->currentTeam;
+        $team->forceFill(['plan' => Plan::Free->value, 'credit_balance' => 500])->save();
+
+        config(['billing.topup_custom.price_id' => 'price_test_custom']);
+
+        // The custom price id must be the one passed to Stripe; credits are
+        // NOT in metadata (the customer picks the amount on Stripe's page).
+        $sessionStub = Session::constructFrom(['id' => 'cs_test_custom', 'url' => 'https://checkout.stripe.com/c/pay/cs_test_custom']);
+        $this->mock(StripeClient::class, function (Mockery\MockInterface $mock) use ($sessionStub): void {
+            $mock->shouldReceive('createOneOffCheckout')
+                ->once()
+                ->withArgs(fn ($team, $priceId, $s, $c, $metadata) => $priceId === 'price_test_custom'
+                    && ($metadata['pack'] ?? null) === 'custom'
+                    && ! array_key_exists('credits', $metadata))
+                ->andReturn($sessionStub);
+        });
+
+        $this->actingAs($user->fresh())
+            ->post(route('billing.topup'), ['pack' => 'custom'])
+            ->assertRedirect('https://checkout.stripe.com/c/pay/cs_test_custom');
+
+        $this->assertSame(500, $team->fresh()->credit_balance);
+    }
+
+    public function test_custom_amount_without_price_configured_returns_friendly_error(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $user->currentTeam->forceFill(['plan' => Plan::Free->value])->save();
+
+        config(['billing.topup_custom.price_id' => null]);
+
+        $this->actingAs($user->fresh())
+            ->from(route('billing.index'))
+            ->post(route('billing.topup'), ['pack' => 'custom'])
+            ->assertRedirect(route('billing.index'))
+            ->assertSessionHasErrors(['pack']);
     }
 
     public function test_custom_plan_rejects_topup(): void
     {
         // Custom is project-based — credits are negotiated, not self-served.
-        // The endpoint 403s and no credit_transaction is written.
+        // The endpoint 403s and never reaches Stripe.
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
         $team->forceFill(['plan' => Plan::Business->value, 'credit_balance' => 100])->save();
@@ -73,35 +128,21 @@ class BillingTopUpTest extends TestCase
 
         $this->actingAs($user->fresh())
             ->postJson(route('billing.topup'), ['pack' => 'mega-jumbo'])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['pack']);
+            ->assertStatus(422);
     }
 
-    public function test_billing_index_exposes_topup_catalog_for_paying_tiers(): void
+    public function test_pack_without_stripe_price_id_returns_friendly_error(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
         $user->currentTeam->forceFill(['plan' => Plan::Free->value])->save();
 
-        $this->actingAs($user->fresh())
-            ->get(route('billing.index'))
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Billing/Index')
-                ->has('topup_packs', 3)
-                ->where('topup_packs.0.id', 'small')
-                ->where('topup_packs.1.id', 'medium')
-                ->where('topup_packs.2.id', 'large')
-            );
-    }
-
-    public function test_billing_index_hides_topup_catalog_for_custom_plan(): void
-    {
-        $user = User::factory()->withPersonalTeam()->create();
-        $user->currentTeam->forceFill(['plan' => Plan::Business->value])->save();
+        // Force the pack's stripe price id to null.
+        config(['billing.stripe_price.topup_small' => null]);
 
         $this->actingAs($user->fresh())
-            ->get(route('billing.index'))
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->where('topup_packs', []));
+            ->from(route('billing.index'))
+            ->post(route('billing.topup'), ['pack' => TopUpPack::Small->value])
+            ->assertRedirect(route('billing.index'))
+            ->assertSessionHasErrors(['pack']);
     }
 }

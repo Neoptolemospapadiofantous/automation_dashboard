@@ -19,10 +19,10 @@ original goal.
   - **manual** — an explicit target member.
   - Updates the lead, auto-advances status to `assigned`, records the audit row,
     all in one transaction.
-- **Auto-delegation**: the Voiceflow capture webhook round-robins a freshly
+- **Auto-delegation**: the [[phase-5-voiceflow|conversational-engine capture webhook]] round-robins a freshly
   **qualified, unassigned** lead the instant the agent qualifies it.
-- **`POST /leads/{lead}/assign`** endpoint (team-scoped, broadcasts `LeadSaved`).
-- **Board UI**: each card has an assignee dropdown (Unassigned / ⟳ Auto-assign /
+- **`POST /leads/{lead}/assign`** endpoint (team-scoped, [[phase-3-leads|broadcasts `LeadSaved`]]).
+- **[[phase-3-leads|Board UI]]**: each card has an assignee dropdown (Unassigned / ⟳ Auto-assign /
   a specific member); a **My leads / All leads** toggle filters to the current
   user's leads (`?mine=1`).
 
@@ -34,7 +34,7 @@ original goal.
 | `app/Models/LeadAssignment.php`, migration | Audit trail. |
 | `app/Services/LeadDelegator.php` | Assignment logic. |
 | `app/Http/Controllers/LeadController.php` | `assign()` + `?mine` filter. |
-| `app/Http/Controllers/VoiceflowWebhookController.php` | Auto-delegate on qualify. |
+| the legacy capture-webhook controller | Auto-delegate on qualify. |
 | `resources/js/Components/LeadCard.vue`, `Pages/Leads/Index.vue` | Assign UI + My-leads. |
 | `tests/Feature/LeadDelegationTest.php` | Strategy + endpoint + scoping tests. |
 
@@ -51,7 +51,7 @@ pnpm run build
 - Assignments broadcast `LeadSaved` on the private team channel, so every open
   board reflects the new owner live.
 - Round-robin and least-loaded both operate on `team->allUsers()`, so they
-  respect Jetstream team membership.
+  respect [[phase-1-foundation|Jetstream team membership]].
 
 ## Next ideas
 

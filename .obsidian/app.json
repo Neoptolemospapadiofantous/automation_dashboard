@@ -1,0 +1,29 @@
+{
+  "showInlineTitle": true,
+  "livePreview": true,
+  "defaultViewMode": "preview",
+  "showLineNumber": true,
+  "showFrontmatter": true,
+  "foldHeading": true,
+  "foldIndent": true,
+  "alwaysUpdateLinks": true,
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "attachmentFolderPath": "docs/_attachments",
+  "showUnsupportedFiles": false,
+  "promptDelete": true,
+  "trashOption": "system",
+  "userIgnoreFilters": [
+    "^vendor/",
+    "^node_modules/",
+    "^public/build/",
+    "^public/hot",
+    "^storage/",
+    "^bootstrap/cache/",
+    "^\\.git/",
+    "^tests/Browser/screenshots/"
+  ],
+  "spellcheck": true,
+  "strictLineBreaks": false,
+  "readableLineLength": true
+}

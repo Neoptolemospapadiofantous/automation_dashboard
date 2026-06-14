@@ -1,0 +1,184 @@
+/*
+ * Blueprint motif utilities — ported from automation-landing/src/app/globals.css
+ * so the dashboard speaks the same drawing language as the marketing site.
+ *
+ * Everything keys off the brand tokens (var(--ink), var(--line), var(--violet),
+ * var(--elevation)), so each class re-themes for free across the white sheet
+ * and the black sheet (dark mode). On the dashboard --violet is a real accent
+ * hue (see app.css); on the landing it resolves to ink — same classes, both.
+ *
+ * All motion is gated behind prefers-reduced-motion.
+ *
+ * These are plain CSS (not @layer) so Tailwind never tree-shakes them — the
+ * set is small and curated, and we want them always available. They're emitted
+ * before @tailwind utilities, so utility classes still override on equal
+ * specificity (e.g. a .bp-node with a bg-* utility).
+ */
+
+/* ── Grid backdrops ─────────────────────────────────────────────── */
+
+  /* Hairline schematic grid — for hero areas, empty states, page tops. */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, var(--line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  /* Coarser grid with stronger lines — "title block" / footer register. */
+  .bg-grid-major {
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px),
+      linear-gradient(var(--line-strong) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-strong) 1px, transparent 1px);
+    background-size: 32px 32px, 32px 32px, 160px 160px, 160px 160px;
+  }
+  /* Fade a grid out toward the edges (pair with .bg-grid). */
+  .bg-grid-fade {
+    -webkit-mask-image: radial-gradient(ellipse at top, black 30%, transparent 75%);
+    mask-image: radial-gradient(ellipse at top, black 30%, transparent 75%);
+  }
+
+  /* ── Sheet depth ────────────────────────────────────────────────── */
+
+  /* Hard offset shadow that follows the sheet (black ink on the white sheet,
+     faint light on the black sheet — so panels keep depth in dark mode, where
+     a pure-black shadow would vanish). Use with a hairline border. */
+  .shadow-sheet {
+    box-shadow: var(--elevation);
+  }
+
+  /* Blueprint panel: crisp translucent fill over a grid, hairline border. */
+  .glass {
+    background: color-mix(in oklab, var(--bg-elev) 80%, transparent);
+    border: 1px solid var(--border-line);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+
+  /* ── Drawing primitives ─────────────────────────────────────────── */
+
+  /* Node box: an outlined component in the flow, monospace-labelled. */
+  .bp-node {
+    border: 1px solid var(--draw);
+    background: color-mix(in oklab, var(--bg-elev) 90%, transparent);
+  }
+  /* Small hollow square marker — a connection point on the diagram. */
+  .bp-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--violet);
+    background: transparent;
+  }
+  /* Mono sheet-reference label (e.g. DASH/01, AGENT/STATUS). */
+  .bp-ref {
+    font-family: var(--font-mono, ui-monospace, "JetBrains Mono", monospace);
+    font-size: 0.6875rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--violet);
+  }
+  /* Mono annotation / dimension caption. */
+  .bp-annot {
+    font-family: var(--font-mono, ui-monospace, "JetBrains Mono", monospace);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-mute);
+  }
+  /* Dimension line: a measured span with end ticks. */
+  .bp-dim {
+    position: relative;
+    height: 1px;
+    background: var(--line-strong);
+  }
+  .bp-dim::before,
+  .bp-dim::after {
+    content: "";
+    position: absolute;
+    top: -3px;
+    width: 1px;
+    height: 7px;
+    background: var(--line-strong);
+  }
+  .bp-dim::before { left: 0; }
+  .bp-dim::after { right: 0; }
+  /* Diagonal hatch fill — emphasis / "cut" regions / empty zones. */
+  .bp-hatch {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 6px,
+      var(--line-strong) 6px,
+      var(--line-strong) 7px
+    );
+  }
+
+  /* Status stamp — rotated outlined mono label (LIVE, DRAFT, PAID). Reads
+     like a rubber stamp on a drawing sheet. Set tint via text color. */
+  .ins-stamp {
+    display: inline-block;
+    padding: 0.35rem 0.6rem;
+    border: 1.5px solid currentColor;
+    font-family: var(--font-mono, ui-monospace, "JetBrains Mono", monospace);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    line-height: 1;
+    transform: rotate(-5deg);
+    color: var(--ink-dim);
+    background: transparent;
+    position: relative;
+  }
+  .ins-stamp::before,
+  .ins-stamp::after {
+    content: "";
+    position: absolute;
+    left: 0.4rem;
+    right: 0.4rem;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.5;
+  }
+  .ins-stamp::before { top: 2px; }
+  .ins-stamp::after { bottom: 2px; }
+
+  /* ── Animated connectors (reduced-motion safe) ──────────────────── */
+
+  /* Horizontal dashed connector wire with an arrowhead; set width via class. */
+  .bp-wire {
+    position: relative;
+    height: 2px;
+    color: var(--violet);
+    background-image: linear-gradient(90deg, currentColor 55%, transparent 55%);
+    background-size: 11px 2px;
+    animation: bp-march 0.9s linear infinite;
+  }
+  .bp-wire::after {
+    content: "";
+    position: absolute;
+    right: -1px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-left: 7px solid var(--violet);
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+  }
+  @keyframes bp-march {
+    to { background-position: 11px 0; }
+  }
+
+  /* Pulsing glow for live-status dots; set color via text/current color. */
+  .pulse-glow {
+    animation: pulse-glow 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; }
+    50% { opacity: 0.85; box-shadow: 0 0 8px 1px currentColor; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bp-wire { animation: none; }
+    .pulse-glow { animation: none; }
+  }

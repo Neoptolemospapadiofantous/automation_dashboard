@@ -2,75 +2,87 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\VoiceflowService;
+use App\Authorization\Role;
+use App\Billing\CreditMeter;
+use App\Billing\Exceptions\OutOfCredits;
+use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
+use App\Models\Agent;
+use App\Models\AgentConfigVersion;
+use App\Models\Team;
+use App\Runtime\Contracts\KnowledgeStore;
+use App\Runtime\LLM\AnthropicClient;
+use App\Runtime\Models\KbDocument;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 use Inertia\Response;
+use Smalot\PdfParser\Parser as PdfParser;
 
 /**
- * Per-agent Knowledge Base management.
+ * Per-agent Knowledge Base management on the native runtime's RAG store.
  *
- * Documents are scoped to the team's current agent automatically — the
- * VoiceflowService injected here is the scoped, agent-bound instance
- * (see AppServiceProvider). Switching agents in the picker swaps the
- * underlying Voiceflow project; the same listKbDocuments() call then
- * returns a different document set.
+ * Documents are scoped to the team's current agent — switching agents in
+ * the picker shows a different document set. Content is chunked + embedded
+ * at upload (KnowledgeBase) and retrieved by the engine at chat time.
  *
- * Surfaces the Voiceflow Knowledge Base public API:
- *  - GET /knowledge → list + type filter
- *  - POST /knowledge/url → create URL document (scrape)
- *  - POST /knowledge/file → create file document (PDF/TXT/DOCX/CSV/XLSX, 10MB cap)
- *  - GET /knowledge/{documentID} → fetch one doc with chunks + metadata
- *  - DELETE /knowledge/{documentID} → remove
- *  - POST /knowledge/query → ask the KB
+ *  - GET    /knowledge              → list + type filter
+ *  - POST   /knowledge/url          → fetch a page, strip to text, ingest
+ *  - POST   /knowledge/file         → PDF/TXT/MD/CSV upload (10MB cap)
+ *  - POST   /knowledge/text         → paste raw text
+ *  - GET    /knowledge/{documentID} → chunks + metadata (side panel)
+ *  - DELETE /knowledge/{documentID} → remove (chunks cascade)
+ *  - POST   /knowledge/query        → RAG search + LLM-synthesized answer
  */
 class KnowledgeBaseController extends Controller
 {
-    /** Voiceflow's documented per-file upload ceiling. */
+    use AuthorizesByTeamRole;
+
+    /** Per-file upload ceiling. */
     private const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
     /** @var array<int, string> */
-    private const ACCEPTED_DOCUMENT_TYPES = ['url', 'pdf', 'text', 'docx', 'md', 'csv', 'xlsx', 'table'];
+    private const ACCEPTED_TYPES = ['url', 'pdf', 'text', 'md', 'csv'];
 
-    public function __construct(protected VoiceflowService $voiceflow) {}
+    public function __construct(protected KnowledgeStore $knowledge) {}
 
     public function index(Request $request): Response
     {
-        $team = $request->user()->currentTeam;
-        $agent = $team?->currentAgent;
-        $configured = $this->voiceflow->isConfigured();
+        $agent = $this->currentAgent($request);
+        $configured = (string) config('runtime.embeddings.openai_api_key') !== '';
 
         $filter = $request->validate([
-            'type' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', self::ACCEPTED_DOCUMENT_TYPES)],
+            'type' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', self::ACCEPTED_TYPES)],
         ])['type'] ?? null;
 
         $documents = [];
-        $total = 0;
-        $error = null;
-
-        if ($configured) {
-            try {
-                $page = $this->voiceflow->listKbDocuments(limit: 50, documentType: $filter);
-                $documents = $page['data'];
-                $total = $page['total'];
-            } catch (\Throwable $e) {
-                report($e);
-                $error = 'Could not load this agent\'s documents.';
+        if ($configured && $agent !== null) {
+            foreach ($this->knowledge->listDocuments($agent->id) as $doc) {
+                $type = (string) ($doc['metadata']['source'] ?? 'text');
+                if ($filter !== null && $type !== $filter) {
+                    continue;
+                }
+                $documents[] = [
+                    'documentID' => (string) $doc['id'],
+                    'data' => [
+                        'name' => $doc['title'],
+                        'type' => $type,
+                        'url' => $doc['metadata']['source_url'] ?? null,
+                    ],
+                    'status' => ['type' => 'SUCCESS'],
+                    'updatedAt' => $doc['created_at'],
+                ];
             }
         }
 
         return Inertia::render('Knowledge/Index', [
-            'configured' => $configured,
+            'configured' => $configured && $agent !== null,
             'documents' => $documents,
-            'total' => $total,
-            'error' => $error,
+            'total' => count($documents),
+            'error' => $configured ? null : 'Set OPENAI_API_KEY to enable this agent\'s knowledge base.',
             'filter' => ['type' => $filter],
-            'accepted_types' => self::ACCEPTED_DOCUMENT_TYPES,
-            // Surface the current agent so the UI can scope its language
-            // ("This agent's documents") and the user understands docs
-            // follow the agent picker, not the team.
+            'accepted_types' => self::ACCEPTED_TYPES,
             'agent' => $agent ? [
                 'id' => $agent->id,
                 'name' => $agent->name,
@@ -81,7 +93,8 @@ class KnowledgeBaseController extends Controller
 
     public function storeUrl(Request $request): RedirectResponse
     {
-        $this->abortIfUnconfigured();
+        $this->requireCapability($request, fn (Role $r) => $r->canAddKnowledge(), 'add knowledge documents');
+        $agent = $this->currentAgentOrAbort($request);
 
         $data = $request->validate([
             'url' => ['required', 'url', 'max:2000'],
@@ -89,106 +102,218 @@ class KnowledgeBaseController extends Controller
         ]);
 
         try {
-            $this->voiceflow->createKbUrlDocument($data['url'], $data['name'] ?? null);
+            $response = Http::timeout(20)->withHeaders(['User-Agent' => 'FlowstackBot/1.0'])->get($data['url']);
+            if ($response->failed()) {
+                return back()->withErrors(['url' => 'That URL returned HTTP '.$response->status().'.']);
+            }
+
+            $content = $this->htmlToText($response->body());
+            if (mb_strlen($content) < 40) {
+                return back()->withErrors(['url' => 'That page had no readable text content.']);
+            }
+
+            $this->knowledge->ingestDocument($agent->id, $data['name'] ?: $data['url'], $content, [
+                'source' => 'url',
+                'source_url' => $data['url'],
+            ]);
         } catch (\Throwable $e) {
             report($e);
 
-            return back()->withErrors(['url' => 'Voiceflow rejected the document. Check the URL and try again.']);
+            return back()->withErrors(['url' => 'Could not fetch or index that URL. Check it and try again.']);
         }
 
         return back();
     }
 
-    /**
-     * Upload a file (PDF/DOCX/TXT/MD/CSV/XLSX) into the current agent's KB.
-     * Voiceflow caps at 10 MB; Laravel rejects larger uploads at the
-     * validation step before we open the file handle.
-     */
     public function storeFile(Request $request): RedirectResponse
     {
-        $this->abortIfUnconfigured();
+        $this->requireCapability($request, fn (Role $r) => $r->canAddKnowledge(), 'upload knowledge files');
+        $agent = $this->currentAgentOrAbort($request);
 
         $data = $request->validate([
             'file' => [
                 'required',
                 'file',
                 'max:'.(int) (self::MAX_UPLOAD_BYTES / 1024), // Laravel max is in kilobytes
-                'mimetypes:application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel',
+                'mimetypes:application/pdf,text/plain,text/markdown,text/csv',
             ],
         ]);
 
         $file = $data['file'];
         $originalName = $file->getClientOriginalName();
+        $mime = (string) $file->getMimeType();
 
         try {
-            $this->voiceflow->createKbFileDocument(
-                filePath: $file->getRealPath(),
-                name: $originalName,
-            );
+            $content = $mime === 'application/pdf'
+                ? (new PdfParser)->parseFile($file->getRealPath())->getText()
+                : (string) file_get_contents($file->getRealPath());
+
+            if (mb_strlen(trim($content)) < 10) {
+                return back()->withErrors(['file' => 'No readable text found in that file (scanned/image PDFs are not supported yet).']);
+            }
+
+            $this->knowledge->ingestDocument($agent->id, $originalName, $content, [
+                'source' => str_ends_with($originalName, '.pdf') ? 'pdf' : 'text',
+            ]);
         } catch (\Throwable $e) {
             report($e);
 
-            return back()->withErrors(['file' => 'Voiceflow rejected the upload. Check the file format (PDF, DOCX, TXT, MD, CSV, XLSX) and that it is under 10 MB.']);
+            return back()->withErrors(['file' => 'Could not index that file. Supported: PDF, TXT, MD, CSV under 10 MB.']);
+        }
+
+        return back();
+    }
+
+    public function storeText(Request $request): RedirectResponse
+    {
+        $this->requireCapability($request, fn (Role $r) => $r->canAddKnowledge(), 'paste knowledge text');
+        $agent = $this->currentAgentOrAbort($request);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'text' => ['required', 'string', 'max:200000'],
+        ]);
+
+        try {
+            $this->knowledge->ingestDocument($agent->id, $data['name'], $data['text'], ['source' => 'text']);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withErrors(['text' => 'Could not index that text. Check OPENAI_API_KEY and try again.']);
         }
 
         return back();
     }
 
     /**
-     * Inspect one document — chunks + metadata. Returned as JSON because
-     * the UI renders it in a side panel without a full page navigation.
+     * Inspect one document — chunks + metadata for the side panel.
      */
-    public function show(string $documentID): JsonResponse
+    public function show(Request $request, string $documentID): JsonResponse
     {
-        $this->abortIfUnconfigured();
+        $agent = $this->currentAgentOrAbort($request);
 
-        try {
-            $doc = $this->voiceflow->getKbDocument($documentID);
-        } catch (\Throwable $e) {
-            report($e);
+        $doc = KbDocument::query()
+            ->where('agent_id', $agent->id)
+            ->find((int) $documentID);
 
-            return response()->json(['error' => 'Could not load that document.'], 502);
+        if ($doc === null) {
+            return response()->json(['error' => 'Could not load that document.'], 404);
         }
 
-        return response()->json($doc);
+        return response()->json([
+            'data' => [
+                'name' => $doc->title,
+                'type' => (string) ($doc->metadata['source'] ?? 'text'),
+                'url' => $doc->metadata['source_url'] ?? null,
+                'updatedAt' => $doc->updated_at->toIso8601String(),
+            ],
+            'chunks' => $doc->chunks()->orderBy('position')->pluck('content')->map(fn ($c) => ['content' => $c])->all(),
+            'metadata' => (array) ($doc->metadata ?? []),
+        ]);
     }
 
-    public function destroy(string $documentID): RedirectResponse
+    public function destroy(Request $request, string $documentID): RedirectResponse
     {
-        $this->abortIfUnconfigured();
+        $this->requireCapability($request, fn (Role $r) => $r->canDeleteKnowledge(), 'delete knowledge documents');
+        $agent = $this->currentAgentOrAbort($request);
 
-        try {
-            $this->voiceflow->deleteKbDocument($documentID);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return back()->withErrors(['delete' => 'Could not delete that document. It may have already been removed.']);
-        }
+        $this->knowledge->deleteDocument($agent->id, (int) $documentID);
 
         return back();
     }
 
+    /**
+     * Ask the KB a question: RAG search + LLM synthesis grounded ONLY in
+     * the retrieved chunks.
+     */
     public function query(Request $request): JsonResponse
     {
-        $this->abortIfUnconfigured();
+        $agent = $this->currentAgentOrAbort($request);
 
         $data = $request->validate([
             'question' => ['required', 'string', 'max:1000'],
         ]);
 
+        // This endpoint runs a real LLM synthesis — it bills like a chat
+        // turn (tier multiplier). Pricing-audit finding: unbilled, it was
+        // a free-LLM vector that kept working at zero balance.
+        $team = $agent->team;
         try {
-            $result = $this->voiceflow->queryKnowledgeBase($data['question']);
+            if ($team instanceof Team) {
+                app(CreditMeter::class)->consume(
+                    team: $team,
+                    amount: AgentConfigVersion::creditsPerMessage($agent->id),
+                    agentId: $agent->id,
+                    meta: ['kb_query' => true],
+                );
+            }
+        } catch (OutOfCredits) {
+            return response()->json(['error' => 'Out of credits for this billing period.'], 402);
+        }
+
+        try {
+            $chunks = $this->knowledge->search($agent->id, $data['question'], 5);
+
+            $answer = null;
+            if ($chunks !== []) {
+                $context = implode("\n\n", array_map(fn (array $c) => '('.$c['document_title'].') '.$c['chunk'], $chunks));
+                $result = app(AnthropicClient::class)->complete(
+                    system: 'Answer the question using ONLY the provided context. If the context does not contain the answer, say so plainly. Be concise.',
+                    messages: [['role' => 'user', 'content' => "Context:\n{$context}\n\nQuestion: {$data['question']}"]],
+                );
+                $answer = $result->text;
+            }
+
+            return response()->json([
+                'answer' => $answer,
+                'chunks' => array_map(fn (array $c) => [
+                    'content' => $c['chunk'],
+                    'source' => ['name' => $c['document_title']],
+                    'score' => $c['score'],
+                ], $chunks),
+            ]);
         } catch (\Throwable $e) {
             report($e);
 
             return response()->json(['error' => 'Knowledge base query failed.'], 502);
         }
-
-        return response()->json($result);
     }
 
-    protected function abortIfUnconfigured(): void
+    // ── helpers ──────────────────────────────────────────────────────────────
+
+    protected function currentAgent(Request $request): ?Agent
     {
-        abort_unless($this->voiceflow->isConfigured(), 503, 'Voiceflow is not configured.');
+        $team = $request->user()?->currentTeam;
+        if (! $team instanceof Team) {
+            return null;
+        }
+
+        $agent = $team->currentAgent;
+
+        return $agent instanceof Agent ? $agent : null;
+    }
+
+    protected function currentAgentOrAbort(Request $request): Agent
+    {
+        $agent = $this->currentAgent($request);
+        abort_if($agent === null, 503, 'No agent is set up yet.');
+
+        return $agent;
+    }
+
+    /**
+     * Crude-but-effective HTML → text: drop script/style blocks, strip
+     * tags, collapse whitespace. A readability-grade extractor can slot
+     * in later; for marketing/docs pages this captures the substance.
+     */
+    protected function htmlToText(string $html): string
+    {
+        $html = preg_replace('#<(script|style|noscript)\b[^>]*>.*?</\1>#si', ' ', $html) ?? $html;
+        $html = preg_replace('#<(br|/p|/div|/li|/h[1-6])[^>]*>#i', "\n", $html) ?? $html;
+        $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5);
+        $text = preg_replace('/[ \t]+/', ' ', $text) ?? $text;
+        $text = preg_replace("/\n{3,}/", "\n\n", $text) ?? $text;
+
+        return trim($text);
     }
 }

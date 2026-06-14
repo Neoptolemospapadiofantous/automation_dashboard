@@ -1,0 +1,745 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$current_agent_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Actions/Agents/DeleteAgent.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:agents\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Actions/Agents/DeleteAgent.php
+
+		-
+			message: '#^Unused App\\Actions\\Fortify\\ResetUserPassword\:\:reset$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: app/Actions/Fortify/ResetUserPassword.php
+
+		-
+			message: '#^Unused App\\Actions\\Fortify\\UpdateUserPassword\:\:update$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: app/Actions/Fortify/UpdateUserPassword.php
+
+		-
+			message: '#^Unused App\\Actions\\Fortify\\UpdateUserProfileInformation\:\:update$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: app/Actions/Fortify/UpdateUserProfileInformation.php
+
+		-
+			message: '#^Method App\\Actions\\Jetstream\\AddTeamMember\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Actions/Jetstream/AddTeamMember.php
+
+		-
+			message: '#^Unused App\\Actions\\Jetstream\\AddTeamMember\:\:add$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: app/Actions/Jetstream/AddTeamMember.php
+
+		-
+			message: '#^Method App\\Actions\\Jetstream\\CreateTeam\:\:create\(\) should return App\\Models\\Team but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Actions/Jetstream/CreateTeam.php
+
+		-
+			message: '#^Unused App\\Actions\\Jetstream\\CreateTeam\:\:create$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: app/Actions/Jetstream/CreateTeam.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:each\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: mixed, Closure\(App\\Models\\Team\)\: void given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Actions/Jetstream/DeleteUser.php
+
+		-
+			message: '#^Unused App\\Actions\\Jetstream\\DeleteUser\:\:delete$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: app/Actions/Jetstream/DeleteUser.php
+
+		-
+			message: '#^Method App\\Actions\\Jetstream\\InviteTeamMember\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Actions/Jetstream/InviteTeamMember.php
+
+		-
+			message: '#^Parameter \#1 \$invitation of class Laravel\\Jetstream\\Mail\\TeamInvitation constructor expects Laravel\\Jetstream\\TeamInvitation, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Actions/Jetstream/InviteTeamMember.php
+
+		-
+			message: '#^Unused App\\Actions\\Jetstream\\InviteTeamMember\:\:invite$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: app/Actions/Jetstream/InviteTeamMember.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Jetstream/RemoveTeamMember.php
+
+		-
+			message: '#^Unused App\\Actions\\Jetstream\\RemoveTeamMember\:\:remove$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: app/Actions/Jetstream/RemoveTeamMember.php
+
+		-
+			message: '#^Unused App\\Actions\\Jetstream\\UpdateTeamName\:\:update$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: app/Actions/Jetstream/UpdateTeamName.php
+
+		-
+			message: '#^Method App\\Billing\\CreditMeter\:\:grantMonthlyRenewal\(\) has parameter \$meta with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Billing/CreditMeter.php
+
+		-
+			message: '#^Method App\\Billing\\CreditMeter\:\:grantTopUp\(\) has parameter \$meta with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Billing/CreditMeter.php
+
+		-
+			message: '#^Property App\\Billing\\Exceptions\\OutOfCredits\:\:\$plan is never read$#'
+			identifier: shipmonk.deadProperty.neverRead
+			count: 1
+			path: app/Billing/Exceptions/OutOfCredits.php
+
+		-
+			message: '#^Property App\\Billing\\Exceptions\\PlanLimitExceeded\:\:\$limit is never read$#'
+			identifier: shipmonk.deadProperty.neverRead
+			count: 1
+			path: app/Billing/Exceptions/PlanLimitExceeded.php
+
+		-
+			message: '#^Property App\\Billing\\Exceptions\\PlanLimitExceeded\:\:\$plan is never read$#'
+			identifier: shipmonk.deadProperty.neverRead
+			count: 1
+			path: app/Billing/Exceptions/PlanLimitExceeded.php
+
+		-
+			message: '#^Property App\\Billing\\Exceptions\\PlanLimitExceeded\:\:\$resource is never read$#'
+			identifier: shipmonk.deadProperty.neverRead
+			count: 1
+			path: app/Billing/Exceptions/PlanLimitExceeded.php
+
+		-
+			message: '#^Unused App\\Billing\\Plan\:\:fromStripePriceId$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: app/Billing/Plan.php
+
+		-
+			message: '#^Cannot call method diffForHumans\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Console/Commands/PlatformSet.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\PlatformSetting\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Console/Commands/PlatformSet.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\PlatformSetting\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Console/Commands/PlatformSet.php
+
+		-
+			message: '#^Method App\\Enums\\LeadStatus\:\:board\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Enums/LeadStatus.php
+
+		-
+			message: '#^Property App\\Events\\Domain\\AgentCreated\:\:\$agent is never read$#'
+			identifier: shipmonk.deadProperty.neverRead
+			count: 1
+			path: app/Events/Domain/AgentCreated.php
+
+		-
+			message: '#^Property App\\Events\\Domain\\StateChanged\:\:\$context is never read$#'
+			identifier: shipmonk.deadProperty.neverRead
+			count: 1
+			path: app/Events/Domain/StateChanged.php
+
+		-
+			message: '#^Property App\\Events\\Domain\\StateChanged\:\:\$from is never read$#'
+			identifier: shipmonk.deadProperty.neverRead
+			count: 1
+			path: app/Events/Domain/StateChanged.php
+
+		-
+			message: '#^Property App\\Events\\Domain\\StateChanged\:\:\$model is never read$#'
+			identifier: shipmonk.deadProperty.neverRead
+			count: 1
+			path: app/Events/Domain/StateChanged.php
+
+		-
+			message: '#^Property App\\Events\\Domain\\StateChanged\:\:\$to is never read$#'
+			identifier: shipmonk.deadProperty.neverRead
+			count: 1
+			path: app/Events/Domain/StateChanged.php
+
+		-
+			message: '#^Property App\\Events\\LeadDeleted\:\:\$afterCommit is never read$#'
+			identifier: shipmonk.deadProperty.neverRead
+			count: 1
+			path: app/Events/LeadDeleted.php
+
+		-
+			message: '#^Property App\\Events\\LeadSaved\:\:\$afterCommit is never read$#'
+			identifier: shipmonk.deadProperty.neverRead
+			count: 1
+			path: app/Events/LeadSaved.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$current_agent_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/AgentController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/AgentController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:agents\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/AgentController.php
+
+		-
+			message: '#^Parameter \#1 \$team of method App\\Actions\\Agents\\CreateAgent\:\:execute\(\) expects App\\Models\\Team, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/AgentController.php
+
+		-
+			message: '#^Parameter \#1 \$team of method App\\Actions\\Agents\\SwitchAgent\:\:execute\(\) expects App\\Models\\Team, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/AgentController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:creditTransactions\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/BillingController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:planObject\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/BillingController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Conversation\:\:\$agent_id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$current_agent_id\.$#'
+			identifier: property.notFound
+			count: 6
+			path: app/Http/Controllers/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 6
+			path: app/Http/Controllers/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$lead_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/ConversationController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\ConversationController\:\:runSearch\(\) should return Illuminate\\Support\\Collection\<int, array\<string, mixed\>\> but returns Illuminate\\Support\\Collection\<int, array\{id\: int, conversation_id\: int\<0, max\>, role\: string, text\: mixed, sent_at\: mixed, lead_id\: mixed\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/ConversationController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Message\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/ConversationController.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Message\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Http/Controllers/ConversationController.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,array\<string, mixed\>\>\:\:values\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Http/Controllers/ConversationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$current_agent_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/LeadController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/LeadController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:allUsers\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/LeadController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\LeadStatus will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/LeadController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$currentAgent\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:agents\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: '#^Parameter \#1 \$team of method App\\Actions\\Agents\\CreateAgent\:\:execute\(\) expects App\\Models\\Team, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\PublicStatsController\:\:compute\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Http/Controllers/PublicStatsController.php
+
+		-
+			message: '#^Unused App\\Http\\Controllers\\PublicStatsController\:\:show$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: app/Http/Controllers/PublicStatsController.php
+
+		-
+			message: '#^Method App\\Lifecycle\\AgentStateMachine\:\:transitions\(\) return type with generic class App\\Lifecycle\\Transition does not specify its types\: TState$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Lifecycle/AgentStateMachine.php
+
+		-
+			message: '#^Method App\\Lifecycle\\ConversationStateMachine\:\:transitions\(\) return type with generic class App\\Lifecycle\\Transition does not specify its types\: TState$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Lifecycle/ConversationStateMachine.php
+
+		-
+			message: '#^Property App\\Lifecycle\\InvalidTransition\:\:\$from is never read$#'
+			identifier: shipmonk.deadProperty.neverRead
+			count: 1
+			path: app/Lifecycle/InvalidTransition.php
+
+		-
+			message: '#^Property App\\Lifecycle\\InvalidTransition\:\:\$model is never read$#'
+			identifier: shipmonk.deadProperty.neverRead
+			count: 1
+			path: app/Lifecycle/InvalidTransition.php
+
+		-
+			message: '#^Property App\\Lifecycle\\InvalidTransition\:\:\$to is never read$#'
+			identifier: shipmonk.deadProperty.neverRead
+			count: 1
+			path: app/Lifecycle/InvalidTransition.php
+
+		-
+			message: '#^Method App\\Lifecycle\\LeadStateMachine\:\:transitions\(\) return type with generic class App\\Lifecycle\\Transition does not specify its types\: TState$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Lifecycle/LeadStateMachine.php
+
+		-
+			message: '#^Method App\\Lifecycle\\StateMachine\:\:findTransition\(\) return type with generic class App\\Lifecycle\\Transition does not specify its types\: TState$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Lifecycle/StateMachine.php
+
+		-
+			message: '#^Method App\\Lifecycle\\StateMachine\:\:transitions\(\) return type with generic class App\\Lifecycle\\Transition does not specify its types\: TState$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Lifecycle/StateMachine.php
+
+		-
+			message: '#^Method App\\Models\\Agent\:\:conversations\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Agent.php
+
+		-
+			message: '#^Method App\\Models\\Agent\:\:leads\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Agent.php
+
+		-
+			message: '#^Method App\\Models\\Agent\:\:messages\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Agent.php
+
+		-
+			message: '#^Method App\\Models\\Agent\:\:team\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Agent.php
+
+		-
+			message: '#^Method App\\Models\\Agent\:\:transitionTo\(\) has parameter \$context with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Models/Agent.php
+
+		-
+			message: '#^Method App\\Models\\Conversation\:\:agent\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Conversation.php
+
+		-
+			message: '#^Method App\\Models\\Conversation\:\:lead\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Conversation.php
+
+		-
+			message: '#^Method App\\Models\\Conversation\:\:messages\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Conversation.php
+
+		-
+			message: '#^Method App\\Models\\Conversation\:\:scopeForAgent\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Conversation.php
+
+		-
+			message: '#^Method App\\Models\\Conversation\:\:scopeForAgent\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Conversation.php
+
+		-
+			message: '#^Method App\\Models\\Conversation\:\:team\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Conversation.php
+
+		-
+			message: '#^Method App\\Models\\Conversation\:\:transitionTo\(\) has parameter \$context with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Models/Conversation.php
+
+		-
+			message: '#^Method App\\Models\\CreditTransaction\:\:agent\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/CreditTransaction.php
+
+		-
+			message: '#^Method App\\Models\\CreditTransaction\:\:team\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/CreditTransaction.php
+
+		-
+			message: '#^Method App\\Models\\Lead\:\:agent\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Lead.php
+
+		-
+			message: '#^Method App\\Models\\Lead\:\:assignee\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Lead.php
+
+		-
+			message: '#^Method App\\Models\\Lead\:\:conversations\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Lead.php
+
+		-
+			message: '#^Method App\\Models\\Lead\:\:scopeForAgent\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Lead.php
+
+		-
+			message: '#^Method App\\Models\\Lead\:\:scopeForAgent\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Lead.php
+
+		-
+			message: '#^Method App\\Models\\Lead\:\:team\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Lead.php
+
+		-
+			message: '#^Method App\\Models\\Lead\:\:transitionTo\(\) has parameter \$context with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Models/Lead.php
+
+		-
+			message: '#^Method App\\Models\\LeadAssignment\:\:assignee\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/LeadAssignment.php
+
+		-
+			message: '#^Method App\\Models\\LeadAssignment\:\:lead\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/LeadAssignment.php
+
+		-
+			message: '#^Method App\\Models\\Message\:\:agent\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: '#^Method App\\Models\\Message\:\:conversation\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: '#^Method App\\Models\\Message\:\:scopeForAgent\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: '#^Method App\\Models\\Message\:\:scopeForAgent\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: '#^Method App\\Models\\Message\:\:team\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/PlatformSetting.php
+
+		-
+			message: '#^Instanceof between string and App\\Billing\\Plan will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: app/Models/Team.php
+
+		-
+			message: '#^Method App\\Models\\Team\:\:creditTransactions\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Team.php
+
+		-
+			message: '#^Method App\\Models\\Team\:\:currentAgent\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/Team.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\Team\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/Team.php
+
+		-
+			message: '#^Method App\\Models\\TeamInvitation\:\:team\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Models/TeamInvitation.php
+
+		-
+			message: '#^Unable to resolve the template type TRelatedModel in call to method Illuminate\\Database\\Eloquent\\Model\:\:belongsTo\(\)$#'
+			identifier: argument.templateType
+			count: 1
+			path: app/Models/TeamInvitation.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\User\:\:\$appends is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$appends\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\User\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\User\:\:\$hidden is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$hidden\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Unused App\\Policies\\TeamPolicy\:\:addTeamMember$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: app/Policies/TeamPolicy.php
+
+		-
+			message: '#^Unused App\\Policies\\TeamPolicy\:\:removeTeamMember$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: app/Policies/TeamPolicy.php
+
+		-
+			message: '#^Unused App\\Policies\\TeamPolicy\:\:updateTeamMember$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: app/Policies/TeamPolicy.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Conversation\:\:\$agent_id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/ConversationRecorder.php
+
+		-
+			message: '#^Method App\\Services\\ConversationRecorder\:\:record\(\) should return App\\Models\\Message but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/ConversationRecorder.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Lead\:\:\$agent_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/LeadDelegator.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/LeadDelegator.php
+
+		-
+			message: '#^Parameter \#1 \$team of method App\\Services\\LeadDelegator\:\:leastLoaded\(\) expects App\\Models\\Team, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/LeadDelegator.php
+
+		-
+			message: '#^Parameter \#1 \$team of method App\\Services\\LeadDelegator\:\:memberOrNull\(\) expects App\\Models\\Team, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/LeadDelegator.php
+
+		-
+			message: '#^Parameter \#1 \$team of method App\\Services\\LeadDelegator\:\:roundRobin\(\) expects App\\Models\\Team, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/LeadDelegator.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Lead\|Illuminate\\Database\\Eloquent\\Collection\<int, App\\Models\\Lead\>\:\:\$agent_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: database/factories/LeadAssignmentFactory.php
+
+		-
+			message: '#^Unused Database\\Factories\\LeadFactory\:\:status$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: database/factories/LeadFactory.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Conversation\|Illuminate\\Database\\Eloquent\\Collection\<int, App\\Models\\Conversation\>\:\:\$agent_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: database/factories/MessageFactory.php
+
+		-
+			message: '#^Parameter \#1 \$state of method Illuminate\\Database\\Eloquent\\Factories\\Factory\<App\\Models\\Team\>\:\:state\(\) expects array\<string, mixed\>\|\(callable\(array\<string, mixed\>, Illuminate\\Database\\Eloquent\\Model\|null\)\: array\<string, mixed\>\), Closure\(array, App\\Models\\User\)\: array\{name\: non\-falsy\-string, user_id\: int, personal_team\: true\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: database/factories/UserFactory.php
+
+		-
+			message: '#^Unused Database\\Factories\\UserFactory\:\:unverified$#'
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: database/factories/UserFactory.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: database/seeders/DatabaseSeeder.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$currentAgent\.$#'
+			identifier: property.notFound
+			count: 1
+			path: routes/web.php

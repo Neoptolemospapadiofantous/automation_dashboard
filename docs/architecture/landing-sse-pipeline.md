@@ -1,11 +1,11 @@
 # Architecture — landing SSE pipeline (landing-site side)
 
 How the Next.js marketing site at `/home/theone/automation-landing` consumes
-the dashboard's [`/api/public/stats`](../public-surface.md) and pushes
+[[public-surface|the dashboard's [`/api/public/stats`](../public-surface.md)]] and pushes
 sub-second updates to visitors **without polling** and **without holding
 PHP-FPM workers hostage**.
 
-> Companion: [./public-stats-flow.md](./public-stats-flow.md) (dashboard side)
+> Companion: [[public-stats-flow|[./public-stats-flow.md](./public-stats-flow.md)]] (dashboard side)
 
 ## Design constraints
 
@@ -147,7 +147,7 @@ module-level singleton survives across requests.
 
 If the landing site moves to a serverless host, fall back to short-interval
 polling (~5s) with edge cache. See the polling-design notes in
-[../phase-14-public-stats.md](../phase-14-public-stats.md#alternative-polling).
+[[phase-14-public-stats|[../phase-14-public-stats.md](../phase-14-public-stats.md#alternative-polling)]].
 
 ## Environment variables
 

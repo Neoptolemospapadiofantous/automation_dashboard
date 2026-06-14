@@ -23,8 +23,8 @@ side via SSE; near-zero ongoing cost.
   operator edits land immediately.
 - **`PublicStatsController`** + `GET /api/public/stats` route — the only
   unauthenticated, CORS-open endpoint. Combines editable settings with
-  live aggregate counts from existing tables (`teams`, `agents`, `leads`,
-  `messages`). Cached server-side 5 min; throttled `60`/min/IP.
+  [[public-stats-flow|live aggregate counts from existing tables (`teams`, `agents`, `leads`,
+  `messages`)]]. Cached server-side 5 min; throttled `60`/min/IP.
 - **Bucketing** — every aggregate count is also returned as a bucketed
   string under `display.*` (`"10+"`, `"100+"`, `"1k+"`, snapped DOWN; `null`
   below 10). Landing site reads `display.*` so embarrassingly small
@@ -61,7 +61,7 @@ side via SSE; near-zero ongoing cost.
 
 ## Routes also renamed in this phase
 
-Untangled the long-standing `agent.*` (chat panel) vs `agents.*`
+Untangled the long-standing `agent.*` ([[phase-5-voiceflow|chat panel]]) vs `agents.*`
 (agents CRUD) one-letter collision that bit me multiple times during
 the earlier UI polish pass:
 
@@ -73,7 +73,7 @@ the earlier UI polish pass:
 | `GET /agent/health` → `agent.health` | `GET /chat/health` → `chat.health` |
 | `resources/js/Pages/Agent/Index.vue` | `resources/js/Pages/Chat/Index.vue` |
 
-Phase 5 doc updated to reflect the new names.
+[[phase-5-voiceflow|Phase 5 doc updated to reflect the new names.]]
 
 ## Why bucketing matters
 
@@ -202,11 +202,10 @@ within ~5s (next broadcaster poll cycle).
 
 ## Next ideas
 
-- Add `last_activity_ago` (time since most recent qualified lead) for a
-  strong recency signal on the landing page.
-- Add `time_saved_hours` derived metric (`messages × 3min / 60`) as a
-  cumulative trust counter.
-- Add `messages_last_24h` to prove the platform is *being used*, not
-  just signed up for.
+> **Note (auto-synced 2026-06-05):** The first three ideas below have
+> shipped (`ffe948e`). `messages_last_24h`, `time_saved_hours`, and
+> `last_activity_at` are now part of the response — see
+> [public-surface.md](./public-surface.md) for the current contract.
+
 - If landing moves to a serverless host, swap SSE for the polling
   fallback documented above.

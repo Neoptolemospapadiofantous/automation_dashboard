@@ -21,7 +21,7 @@ docker run -d --name typesense --restart unless-stopped \
   --enable-cors
 ```
 
-**Or as a Forge daemon** (Server → Daemons): run the `typesense-server` binary
+**Or as a [[phase-4-deploy|Forge daemon]]** (Server → Daemons): run the `typesense-server` binary
 with `--data-dir /var/lib/typesense --api-key=... --listen-port 8108`.
 
 Semantic search uses Typesense's built-in embedding model
@@ -43,7 +43,7 @@ TYPESENSE_PROTOCOL=http
 
 ## 3. Deploy
 
-The deploy script (`deploy/forge-deploy.sh`) detects `SCOUT_DRIVER=typesense`
+The [[phase-4-deploy|deploy script]] (`deploy/forge-deploy.sh`) detects `SCOUT_DRIVER=typesense`
 and automatically runs:
 
 ```bash
@@ -52,7 +52,7 @@ php artisan scout:import "App\Models\Message"   # back-fills existing messages
 ```
 
 A running **queue worker** is required (`SCOUT_QUEUE=true` indexes via the
-queue) — you already need it for broadcasts.
+queue) — you already need it for [[phase-2-realtime|broadcasts]].
 
 ## 4. Verify
 
@@ -64,7 +64,7 @@ curl http://127.0.0.1:8108/health -H "x-typesense-api-key: CHOOSE_A_STRONG_KEY"
 php artisan tinker --execute="echo App\Models\Message::search('hello')->take(1)->get()->count();"
 ```
 
-Then use the **Conversations → Search** page: queries now match by keyword
+Then use the **[[phase-6-conversation-storage|Conversations → Search]]** page: queries now match by keyword
 *and* meaning (hybrid). Drop `SCOUT_DRIVER` (or set it empty) to fall back to
 the DB scan at any time.
 

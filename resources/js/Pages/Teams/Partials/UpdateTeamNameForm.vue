@@ -26,6 +26,8 @@ const updateTeamName = () => {
 
 <template>
     <FormSection @submitted="updateTeamName">
+        <template #ref>TEAM/INFO</template>
+
         <template #title>
             Team Name
         </template>
@@ -43,8 +45,8 @@ const updateTeamName = () => {
                     <img class="size-12 rounded-full object-cover" :src="team.owner.profile_photo_url" :alt="team.owner.name">
 
                     <div class="ms-4 leading-tight">
-                        <div class="text-gray-900">{{ team.owner.name }}</div>
-                        <div class="text-gray-700 text-sm">
+                        <div class="text-ink">{{ team.owner.name }}</div>
+                        <div class="text-ink-dim text-sm">
                             {{ team.owner.email }}
                         </div>
                     </div>

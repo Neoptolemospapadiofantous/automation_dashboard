@@ -1,6 +1,61 @@
+/* Flowstack brand tokens — vendored from automation-landing/branding/tokens.css.
+   Sheet class is set per-request by app.blade.php (light = white, dark = black). */
+@import './tokens.css';
+/* Blueprint motif utilities (.bp-node, .bp-ref, .ins-stamp, .bg-grid, …). */
+@import './motifs.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Dashboard accent + depth ───────────────────────────────────────────
+   The shared tokens.css keeps --violet/--cyan resolved to ink (the marketing
+   site stays pure mono). The DASHBOARD layers a real accent over them here,
+   tuned per sheet so it reads on both grounds: dark-violet on the white sheet,
+   light-violet on the black sheet. Because the accent is dark-on-light and
+   light-on-dark while --bg flips with it, an accent fill always pairs with
+   `text-bg` for correct contrast on either sheet.
+   --elevation drives .shadow-sheet (depth that survives dark mode). */
+.sheet-white {
+    /* color-scheme drives native form-control chrome: the <select> widget, its
+       <option> popup, scrollbars, etc. Set it on the sheet so it's correct on
+       first paint (app.blade.php applies the class server-side) — not only after
+       a JS theme toggle. */
+    color-scheme: light;
+    --violet: #5145E5;
+    --violet-soft: #6D63F0;
+    --elevation: 6px 6px 0 rgba(0, 0, 0, 0.06);
+}
+.sheet-black {
+    color-scheme: dark;
+    --violet: #9A8FFF;
+    --violet-soft: #7E73F5;
+    --elevation: 6px 6px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Focus-ring offset follows the active sheet, so the 2px offset gap reads as
+   the page ground on both the white and the black sheet (Tailwind defaults it
+   to #fff, which would show a white halo in dark mode). */
+*,
+::before,
+::after {
+    --tw-ring-offset-color: var(--bg);
+}
+
+/* @tailwindcss/forms hard-codes `background-color:#fff` on <select>, so a
+   dropdown with no explicit bg utility renders as a white widget on the black
+   sheet (and the native <option> list ignores it without color-scheme above).
+   Re-theme the control to the active sheet. Element specificity (0,0,1) sits
+   BELOW any `bg-*`/`text-*` utility class, so selects that set their own
+   background (e.g. bg-bg) still win — this only fills the unstyled ones. */
+select {
+    background-color: var(--surface);
+    color: var(--ink);
+}
+select option {
+    background-color: var(--surface);
+    color: var(--ink);
+}
 
 [x-cloak] {
     display: none;

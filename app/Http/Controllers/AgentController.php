@@ -4,10 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Actions\Agents\CreateAgent;
 use App\Actions\Agents\DeleteAgent;
-use App\Actions\Agents\RotateWebhookSecret;
 use App\Actions\Agents\SwitchAgent;
-use App\Actions\Agents\UpdateAgentCredentials;
+use App\Authorization\Role;
+use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Agent;
+use App\Runtime\Contracts\Runtime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,11 +18,13 @@ use Inertia\Response;
 /**
  * Agent CRUD for the team-owner UI. Every route here is thin: validate input,
  * call the matching action, redirect. Business rules live in the actions
- * (CreateAgent, UpdateAgentCredentials, RotateWebhookSecret, SwitchAgent,
- * DeleteAgent) so the wizard and the CLI hit the same code paths.
+ * (CreateAgent, SwitchAgent, DeleteAgent) so the wizard and the CLI hit the
+ * same code paths.
  */
 class AgentController extends Controller
 {
+    use AuthorizesByTeamRole;
+
     public function index(Request $request): Response
     {
         $team = $request->user()->currentTeam;
@@ -35,8 +38,7 @@ class AgentController extends Controller
     }
 
     /**
-     * Settings page for one agent. Shows the webhook URL + secret (sensitive
-     * fields surfaced explicitly here — never via the default $hidden serializer).
+     * Settings page for one agent.
      */
     public function show(Request $request, Agent $agent): Response
     {
@@ -58,14 +60,9 @@ class AgentController extends Controller
         return Inertia::render('Agents/Show', [
             'agent' => $this->presentForSettings($agent),
             'activity' => $activity,
-            // Webhook URL only matters for BYOK — the user has to paste it
-            // into their own Voiceflow Custom Action. In managed mode we
-            // configure that on the master template ourselves, so the URL
-            // is an implementation detail (and surfacing it would invite
-            // the user to misconfigure something they don't own).
-            // Phase 14: always null now that BYOK left the product surface;
-            // kept the field shape so Vue's `webhook_url` prop binding
-            // doesn't need a follow-up change.
+            // Historical prop shape kept so Vue's `webhook_url` binding
+            // doesn't need a follow-up change; always null on the native
+            // runtime (no inbound webhooks exist).
             'webhook_url' => null,
             'is_current' => $request->user()->currentTeam->current_agent_id === $agent->id,
         ]);
@@ -73,6 +70,8 @@ class AgentController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $this->requireCapability($request, fn (Role $r) => $r->canCreateAgent(), 'create a new agent');
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
         ]);
@@ -81,25 +80,19 @@ class AgentController extends Controller
         // in bootstrap/app.php — JSON requests get 403, web requests get
         // a redirect-back with the flash.plan_limit payload. Don't catch
         // it here or the global handler can't pick the right shape.
-        $agent = (new CreateAgent())->execute($request->user()->currentTeam, $data['name']);
+        $agent = (new CreateAgent)->execute($request->user()->currentTeam, $data['name']);
 
         return redirect()->route('agents.show', $agent);
     }
 
     /**
-     * Update agent name. Credentials are no longer user-editable — Phase 14
-     * removed BYOK from the product surface, so all user-flow agents are
-     * managed (credentials minted by the pool, never touched by the user).
-     *
-     * The endpoint ONLY validates `name`. Any credential field in the
-     * payload is silently dropped — a clever curl can't sneak credential
-     * writes regardless of the agent's mode. If ops wires a BYOK agent
-     * for a Custom-tier customer, ops updates credentials via tinker
-     * (the UpdateAgentCredentials action is still importable).
+     * Update agent name. The endpoint ONLY validates `name` — there are no
+     * user-editable credentials on the native runtime.
      */
     public function update(Request $request, Agent $agent): RedirectResponse
     {
         $this->authorize($request, $agent);
+        $this->requireCapability($request, fn (Role $r) => $r->canUpdateAgent(), 'update an agent');
 
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -115,24 +108,11 @@ class AgentController extends Controller
     public function destroy(Request $request, Agent $agent): RedirectResponse
     {
         $this->authorize($request, $agent);
+        $this->requireCapability($request, fn (Role $r) => $r->canDeleteAgent(), 'delete an agent');
 
-        (new DeleteAgent())->execute($agent);
+        (new DeleteAgent)->execute($agent);
 
         return redirect()->route('agents.index');
-    }
-
-    /**
-     * Rotate the per-agent webhook secret. The new value is immediately
-     * required — the user must update their Voiceflow Custom Action header
-     * to match. We surface the fresh secret in a flash message.
-     */
-    public function rotateSecret(Request $request, Agent $agent): RedirectResponse
-    {
-        $this->authorize($request, $agent);
-
-        $rotated = (new RotateWebhookSecret())->execute($agent);
-
-        return back()->with('flash.webhook_secret_rotated', $rotated->webhook_secret);
     }
 
     /**
@@ -147,7 +127,7 @@ class AgentController extends Controller
         $agent = Agent::findOrFail($data['agent_id']);
 
         try {
-            (new SwitchAgent())->execute($request->user()->currentTeam, $agent);
+            (new SwitchAgent)->execute($request->user()->currentTeam, $agent);
         } catch (\InvalidArgumentException) {
             abort(403, 'That agent does not belong to your current team.');
         }
@@ -156,20 +136,15 @@ class AgentController extends Controller
     }
 
     /**
-     * Run an on-demand health probe and report the result. The
-     * UpdateAgentCredentials action does this implicitly on save, but the
-     * settings page also wants a "Test connection" button that doesn't
-     * require resaving.
+     * On-demand health probe for the settings page's "Test connection"
+     * button: are the platform LLM/embedding keys present + which models
+     * answer. Safe — exposes no secrets.
      */
     public function health(Request $request, Agent $agent): JsonResponse
     {
         $this->authorize($request, $agent);
 
-        // Re-run the existing pipeline so activation rules (draft → active on
-        // green) stay in exactly one place.
-        ['health' => $health] = (new UpdateAgentCredentials())->execute($agent, []);
-
-        return response()->json($health);
+        return response()->json(app(Runtime::class)->health($agent));
     }
 
     protected function authorize(Request $request, Agent $agent): void
@@ -200,14 +175,8 @@ class AgentController extends Controller
      */
     protected function presentForSettings(Agent $agent): array
     {
-        // Phase 14: BYOK is gone from the product surface, so the settings
-        // page only ever renders the managed projection. Credential fields
-        // + webhook URL/secret are intentionally absent — the user neither
-        // set them nor needs to touch them.
-        //
-        // Ops-wired BYOK agents (Custom-tier one-offs) get the same
-        // projection here; their credentials are administered out-of-band
-        // via tinker, not via the UI.
+        // Managed projection only — there are no user-facing credentials
+        // on the native runtime.
         return [
             'id' => $agent->id,
             'name' => $agent->name,

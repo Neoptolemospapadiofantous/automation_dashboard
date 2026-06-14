@@ -1,0 +1,21 @@
+{
+    "traces": [
+        {
+            "type": "text",
+            "payload": {
+                "message": "All set, Ada — our team will reach out shortly!"
+            }
+        }
+    ],
+    "flow_state": "wrapup",
+    "lead": {
+        "name": "Ada Lovelace",
+        "email": "ada@example.com",
+        "score": 90,
+        "captured": {
+            "name": "Ada Lovelace",
+            "email": "ada@example.com",
+            "company": "Analytical Engines Ltd"
+        }
+    }
+}

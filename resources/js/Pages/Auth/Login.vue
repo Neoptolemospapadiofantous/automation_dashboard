@@ -37,6 +37,11 @@ const submit = () => {
             <AuthenticationCardLogo />
         </template>
 
+        <div class="mb-5 flex items-center gap-2">
+            <span class="bp-ref">ACCESS/LOGIN</span>
+            <span class="bp-dim flex-1" aria-hidden="true" />
+        </div>
+
         <div v-if="status" class="mb-4 font-medium text-sm text-green-600">
             {{ status }}
         </div>
@@ -72,12 +77,12 @@ const submit = () => {
             <div class="block mt-4">
                 <label class="flex items-center">
                     <Checkbox v-model:checked="form.remember" name="remember" />
-                    <span class="ms-2 text-sm text-gray-600">Remember me</span>
+                    <span class="ms-2 text-sm text-ink-dim">Remember me</span>
                 </label>
             </div>
 
             <div class="flex items-center justify-end mt-4">
-                <Link v-if="canResetPassword" :href="route('password.request')" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <Link v-if="canResetPassword" :href="route('password.request')" class="underline text-sm text-ink-dim hover:text-ink rounded-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ink">
                     Forgot your password?
                 </Link>
 

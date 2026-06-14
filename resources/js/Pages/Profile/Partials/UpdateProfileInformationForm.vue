@@ -77,6 +77,8 @@ const clearPhotoFileInput = () => {
 
 <template>
     <FormSection @submitted="updateProfileInformation">
+        <template #ref>PROFILE/INFO</template>
+
         <template #title>
             Profile Information
         </template>
@@ -163,7 +165,7 @@ const clearPhotoFileInput = () => {
                             :href="route('verification.send')"
                             method="post"
                             as="button"
-                            class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            class="underline text-sm text-ink-dim hover:text-ink rounded-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ink"
                             @click.prevent="sendEmailVerification"
                         >
                             Click here to re-send the verification email.

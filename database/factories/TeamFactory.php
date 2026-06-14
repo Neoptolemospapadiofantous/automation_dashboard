@@ -3,11 +3,12 @@
 namespace Database\Factories;
 
 use App\Billing\Plan;
+use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Team>
+ * @extends Factory<Team>
  */
 class TeamFactory extends Factory
 {
@@ -29,18 +30,5 @@ class TeamFactory extends Factory
             'credit_balance' => Plan::Free->monthlyCredits(),
             'credits_renewed_at' => now(),
         ];
-    }
-
-    public function outOfCredits(): self
-    {
-        return $this->state(['credit_balance' => 0]);
-    }
-
-    public function onPlan(Plan $plan): self
-    {
-        return $this->state([
-            'plan' => $plan->value,
-            'credit_balance' => $plan->monthlyCredits(),
-        ]);
     }
 }

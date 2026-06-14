@@ -1,7 +1,24 @@
-# Public surface — `/api/public/stats`
+# Public surface
 
-The dashboard's only unauthenticated, publicly-consumable endpoint. The
-marketing site (`/home/theone/automation-landing`) reads this to show
+The dashboard's externally-reachable, non-session-authenticated routes.
+
+| Route | Auth | Purpose |
+|---|---|---|
+| `GET /api/public/stats` | none (anonymous) | Marketing-site metrics + scarcity counter. Throttled `60/min/IP` |
+| `GET /api/health` | none (anonymous) | Deploy/uptime probe — db + cache checks, 200/503. Throttled `60/min/IP`. No tenant data |
+| `GET /widget/{slug}.js` | agent must be `active` | Embed loader JS (floating button + iframe bootstrap). Edge-cacheable 5 min |
+| `GET /embed/{slug}` | agent must be `active` | Standalone chat page served into the customer-site iframe (`frame-ancestors *`). Carries the AI Act Art. 50 disclosure in the header |
+| `POST /embed/{slug}/launch` | agent must be `active` + team credits | Opens a visitor session (30-day cookie). Throttled `60/min/IP`; free-greeting daily cap per team, then debits. |
+| `POST /embed/{slug}/interact` | agent must be `active` + team credits | Visitor message → native engine → traces. Throttled + billed `(1+replies)×tier` |
+| `POST /webhooks/stripe` | Stripe signature (`whsec`, constant-time) | Inbound Stripe events (checkout, invoices, subscription lifecycle). Deliberately not IP-throttled — signature is the guard; throttling would drop renewal bursts |
+| `GET /` | none | Static framework Welcome page — serves no tenant data |
+
+> Historical note: the three legacy inbound webhook receivers were
+> removed with the legacy engine (2026-06-11) — no inbound
+> engine webhooks exist on the native runtime.
+
+The rest of this document covers `/api/public/stats`, the only *anonymous*
+endpoint. The [[landing-sse-pipeline|marketing site]] (`/home/theone/automation-landing`) reads it to show
 live platform metrics + an operator-curated scarcity counter.
 
 > Phase doc covering how this was built: [phase-14-public-stats.md](./phase-14-public-stats.md)
@@ -33,13 +50,19 @@ GET <DASHBOARD_URL>/api/public/stats
   "leads_total": 0,
   "leads_qualified": 0,
   "messages_handled": 0,
+  "messages_last_24h": 0,
+  "time_saved_hours": 0,
+
+  "last_activity_at": null,
 
   "display": {
     "teams_count": null,
     "agents_active": null,
     "leads_total": null,
     "leads_qualified": null,
-    "messages_handled": null
+    "messages_handled": null,
+    "messages_last_24h": null,
+    "time_saved_hours": null
   },
 
   "generated_at": "2026-06-04T10:21:00+00:00"
@@ -57,7 +80,10 @@ GET <DASHBOARD_URL>/api/public/stats
 | `leads_total` | `leads` table count | no | Captured across all tenants |
 | `leads_qualified` | `leads WHERE status='qualified'` count | no | Qualified by AI agents |
 | `messages_handled` | `messages` table count | no | Total conversational turns |
-| `display.*` | server-bucketed labels | no | Bucketed strings (see below) — landing site renders these |
+| `messages_last_24h` | `messages WHERE created_at >= now-24h` count | no | Recency signal — "the platform is being used right now" |
+| `time_saved_hours` | derived (`messages_handled * 3 / 60`) | no | Cumulative trust counter — 3-min/msg heuristic (Drift 2023 inbound-rep response time) |
+| `last_activity_at` | most recent qualified-lead `created_at` | no | ISO 8601 timestamp (or `null` if none yet). NOT bucketed — landing renders as relative time |
+| `display.*` | server-bucketed labels | no | Bucketed strings (see below) — landing site renders these. Every numeric `counts` key gets a `display.*` companion automatically |
 | `generated_at` | server timestamp | no | When the cached snapshot was computed |
 
 ## Bucketing — why `display.*` exists

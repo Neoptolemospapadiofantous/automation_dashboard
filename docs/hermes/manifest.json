@@ -1,0 +1,80 @@
+{
+  "_comment": "Hermes project manifest — the shared 'trunk' every Hermes check reads from and writes findings back to. Promoted from docs/coverage.json (Increment 1 of the tree design in docs/hermes/README.md). Each subsystem node carries: domain (for the tree/split), docs (>=1 doc, or 'waived' with a reason), tests, checks (which Hermes checks apply), edges (other node keys it connects to — the 'context' links), criticality. Enforced by scripts/doc_coverage.py; visualized by scripts/hermes_graph.py.",
+
+  "domains": {
+    "runtime":  { "title": "Native runtime — the conversational engine", "primary_doc": "docs/runtime-native.md" },
+    "billing":  { "title": "Billing & credits", "primary_doc": "docs/business-model.md" },
+    "pipeline": { "title": "Leads, conversations & events", "primary_doc": "docs/phase-3-leads.md" },
+    "tenancy":  { "title": "Teams, agents, authz & lifecycle", "primary_doc": "docs/phase-13-multitenancy.md" },
+    "http":     { "title": "Web surface — controllers & middleware", "primary_doc": "docs/public-surface.md" },
+    "ops":      { "title": "Operator commands & schedule", "primary_doc": "docs/operations/commands.md" },
+    "platform": { "title": "Cross-cutting wiring — providers, notifications, scaffold", "primary_doc": "docs/project-overview.md" }
+  },
+
+  "_checks_comment": "Granular, node-scoped check definitions run by the tree runner (scripts/hermes_tree.py). Each maps a check name used in a node's 'checks' to how to run it. type 'test' → php artisan test <target>. The broad checks (phpstan/tests/doc-coverage/pint/…) run repo-wide via hermes.sh and are NOT defined here.",
+  "checks": {
+    "margin-invariant": { "type": "test", "target": "tests/Feature/BillingInvariantsTest.php", "desc": "credit pricing preserves margin by construction" },
+    "llm-contract":      { "type": "test", "target": "tests/Contracts/LlmClientContractTest.php", "desc": "every provider honours the canonical message contract" },
+    "security":          { "type": "test", "target": "tests/Security", "desc": "headers, tenant isolation, throttle, redaction, exception-leak" },
+    "route-smoke":       { "type": "test", "target": "tests/Integrity/RouteSmokeTest.php", "desc": "every route boots without error" },
+    "schedule":          { "type": "test", "target": "tests/Integrity/SchedulerTest.php", "desc": "scheduled commands resolve + register" },
+    "snapshots":         { "type": "test", "target": "tests/Snapshots/DialogPathTest.php", "desc": "dialog-path fixtures stay stable" }
+  },
+
+  "subsystems": {
+    "app/Runtime":            { "domain": "runtime", "docs": ["docs/runtime-native.md"], "tests": ["tests/Feature/Runtime/AgentRuntimeTest.php", "tests/Wiring/InjectableGraphTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Runtime/Flow", "app/Runtime/Session", "app/Http/Controllers"], "criticality": "high" },
+    "app/Runtime/Contracts":  { "domain": "runtime", "docs": ["docs/runtime-native.md"], "tests": ["tests/Feature/Runtime/DispatcherTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Runtime", "app/Providers"], "criticality": "medium" },
+    "app/Runtime/Exceptions": { "domain": "runtime", "docs": ["docs/runtime-native.md"], "tests": [], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Http/Controllers"], "criticality": "low" },
+    "app/Runtime/Flow":       { "domain": "runtime", "docs": ["docs/runtime-native.md"], "tests": ["tests/Snapshots/DialogPathTest.php", "tests/Feature/Runtime/AgentRuntimeTest.php"], "checks": ["phpstan", "tests", "doc-coverage", "snapshots"], "edges": ["app/Runtime/LLM", "app/Runtime/Tools", "app/Runtime/Knowledge", "app/Services"], "criticality": "high" },
+    "app/Runtime/Knowledge":  { "domain": "runtime", "docs": ["docs/phase-12-knowledge-base.md", "docs/runtime-native.md"], "tests": ["tests/Feature/Runtime/NativeDashboardTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Runtime/Models", "app/Runtime/Flow"], "criticality": "medium" },
+    "app/Runtime/LLM":        { "domain": "runtime", "docs": ["docs/runtime-native.md"], "tests": ["tests/Contracts/LlmClientContractTest.php"], "checks": ["phpstan", "tests", "doc-coverage", "llm-contract"], "edges": ["app/Runtime/Flow", "app/Billing"], "criticality": "high" },
+    "app/Runtime/Models":     { "domain": "runtime", "docs": ["docs/architecture/data-model.md", "docs/runtime-native.md"], "tests": ["tests/Integrity/CastsCoherenceTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Models"], "criticality": "medium" },
+    "app/Runtime/Session":    { "domain": "runtime", "docs": ["docs/runtime-native.md"], "tests": ["tests/Feature/Runtime/AgentRuntimeTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Runtime/Flow", "app/Runtime/Models"], "criticality": "medium" },
+    "app/Runtime/Tools":      { "domain": "runtime", "docs": ["docs/runtime-native.md"], "tests": ["tests/Feature/Runtime/AgentRuntimeTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Models", "app/Services", "app/Runtime/Knowledge"], "criticality": "high" },
+
+    "app/Billing":            { "domain": "billing", "docs": ["docs/business-model.md", "docs/project-overview.md#4"], "tests": ["tests/Feature/BillingInvariantsTest.php", "tests/Feature/LedgerIntegrityTest.php", "tests/Feature/BillingCreditMeterTest.php"], "checks": ["phpstan", "tests", "doc-coverage", "margin-invariant"], "edges": ["app/Runtime/LLM", "app/Http/Controllers", "app/Models", "app/Console/Commands"], "criticality": "high" },
+    "app/Billing/Exceptions": { "domain": "billing", "docs": ["docs/business-model.md"], "tests": ["tests/Feature/BillingPlanLimitsTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Billing", "app/Http/Controllers"], "criticality": "medium" },
+    "app/Services/Billing":   { "domain": "billing", "docs": ["docs/business-model.md", "docs/project-overview.md#4"], "tests": ["tests/Feature/BillingTopUpTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Billing"], "criticality": "medium" },
+
+    "app/Services":           { "domain": "pipeline", "docs": ["docs/phase-6-conversation-storage.md", "docs/phase-7-delegation.md"], "tests": ["tests/Feature/LeadDelegationTest.php", "tests/Feature/ConversationTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Models", "app/Events", "app/Lifecycle"], "criticality": "high" },
+    "app/Events":             { "domain": "pipeline", "docs": ["docs/phase-2-realtime.md"], "tests": ["tests/Wiring/EventWiringTest.php", "tests/Feature/DashboardTickTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Services", "app/Models"], "criticality": "medium" },
+    "app/Events/Domain":      { "domain": "pipeline", "docs": ["docs/domain-events.md"], "tests": ["tests/Wiring/EventWiringTest.php", "tests/Feature/StateMachineTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Lifecycle", "app/Listeners"], "criticality": "medium" },
+    "app/Enums":              { "domain": "pipeline", "docs": ["docs/phase-3-leads.md"], "tests": ["tests/Feature/LeadTest.php", "tests/Feature/QualityTierTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Models", "app/Lifecycle"], "criticality": "low" },
+
+    "app/Models":             { "domain": "tenancy", "docs": ["docs/architecture/data-model.md"], "tests": ["tests/Integrity/CastsCoherenceTest.php", "tests/Integrity/FactoryTest.php", "tests/Feature/AgentModelTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Lifecycle", "app/Runtime/Models", "app/Billing"], "criticality": "high" },
+    "app/Lifecycle":          { "domain": "tenancy", "docs": ["docs/architecture/state-machines.md"], "tests": ["tests/Feature/StateMachineTest.php", "tests/Feature/StateMachineWiringTest.php", "tests/Feature/OnboardingStateTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Events/Domain", "app/Models"], "criticality": "high" },
+    "app/Authorization":      { "domain": "tenancy", "docs": ["docs/authorization.md"], "tests": ["tests/Feature/RoleAuthorizationTest.php", "tests/Security/CrossTenantTest.php"], "checks": ["phpstan", "tests", "doc-coverage", "security"], "edges": ["app/Policies", "app/Http/Controllers/Concerns", "app/Models"], "criticality": "high" },
+    "app/Policies":           { "domain": "tenancy", "docs": ["docs/authorization.md"], "tests": ["tests/Feature/RoleAuthorizationTest.php"], "checks": ["phpstan", "tests", "doc-coverage", "security"], "edges": ["app/Authorization", "app/Models"], "criticality": "high" },
+    "app/Actions/Agents":     { "domain": "tenancy", "docs": ["docs/phase-13-multitenancy.md"], "tests": ["tests/Feature/AgentCrudTest.php", "tests/Feature/AgentActionsTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Models", "app/Events/Domain"], "criticality": "medium" },
+
+    "app/Http/Controllers":          { "domain": "http", "docs": ["docs/project-overview.md", "docs/public-surface.md"], "tests": ["tests/Integrity/RouteSmokeTest.php", "tests/Feature/DashboardTest.php", "tests/Feature/EmbedTest.php", "tests/Feature/PublicStatsTest.php"], "checks": ["phpstan", "tests", "doc-coverage", "route-smoke"], "edges": ["app/Runtime", "app/Billing", "app/Services", "app/Http/Middleware"], "criticality": "high" },
+    "app/Http/Controllers/Concerns": { "domain": "http", "docs": ["docs/authorization.md"], "tests": ["tests/Feature/RoleAuthorizationTest.php"], "checks": ["phpstan", "tests", "doc-coverage", "security"], "edges": ["app/Authorization", "app/Http/Controllers"], "criticality": "medium" },
+    "app/Http/Middleware":           { "domain": "http", "docs": ["docs/security.md"], "tests": ["tests/Security/HeadersTest.php", "tests/Security/ThrottleTest.php", "tests/Security/CrossTenantTest.php"], "checks": ["phpstan", "tests", "doc-coverage", "security"], "edges": ["app/Http/Controllers"], "criticality": "high" },
+
+    "app/Console/Commands":   { "domain": "ops", "docs": ["docs/operations/commands.md"], "tests": ["tests/Integrity/SchedulerTest.php", "tests/Feature/RuntimeCostsTest.php", "tests/Feature/MailTestCommandTest.php"], "checks": ["phpstan", "tests", "doc-coverage", "schedule"], "edges": ["app/Billing", "app/Runtime/Models"], "criticality": "medium" },
+
+    "app/Providers":          { "domain": "platform", "waived": "framework service providers — standard wiring", "tests": ["tests/Wiring/BootTest.php", "tests/Wiring/ContainerTest.php"], "checks": ["phpstan", "tests"], "edges": ["app/Runtime/Contracts"], "criticality": "medium" },
+    "app/Notifications":      { "domain": "platform", "docs": ["docs/project-overview.md"], "tests": ["tests/Feature/NotificationTest.php", "tests/Feature/LeadAssignedNotificationTest.php", "tests/Feature/CreditBurnAlertTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Billing", "app/Services"], "criticality": "medium" },
+    "app/Listeners":          { "domain": "platform", "docs": ["docs/domain-events.md"], "tests": ["tests/Feature/WelcomeEmailTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Events/Domain"], "criticality": "low" },
+    "app/Actions/Fortify":    { "domain": "platform", "waived": "Jetstream/Fortify scaffold actions — framework-standard", "tests": ["tests/Feature/RegistrationTest.php", "tests/Feature/UpdatePasswordTest.php"], "checks": ["phpstan", "tests"], "edges": [], "criticality": "low" },
+    "app/Actions/Jetstream":  { "domain": "platform", "waived": "Jetstream scaffold actions — framework-standard", "tests": ["tests/Feature/CreateTeamTest.php", "tests/Feature/InviteTeamMemberTest.php"], "checks": ["phpstan", "tests"], "edges": [], "criticality": "low" }
+  },
+
+  "_documents_comment": "Canonical project-level docs (not tied to one app/ dir). Each must EXIST and be LINKED from docs/README.md. Phase docs (history), the voiceflow archive, and legal drafts are intentionally NOT listed.",
+  "documents": [
+    "docs/project-overview.md",
+    "docs/business-model.md",
+    "docs/architecture/data-model.md",
+    "docs/security.md",
+    "docs/glossary.md",
+    "docs/runtime-native.md",
+    "docs/public-surface.md",
+    "docs/authorization.md",
+    "docs/domain-events.md",
+    "docs/architecture/state-machines.md",
+    "docs/operations/commands.md",
+    "docs/design-system.md",
+    "docs/agent-lifecycle.md",
+    "docs/hermes/README.md"
+  ]
+}

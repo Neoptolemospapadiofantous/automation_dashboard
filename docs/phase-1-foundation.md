@@ -6,7 +6,7 @@ Scaffold the application and all the plumbing later phases build on.
 
 - **Laravel 12** application (PHP 8.2+).
 - **Jetstream** with the **Inertia + Vue 3** stack and **teams** enabled, plus
-  Sanctum. Teams map naturally to sales pods for lead delegation later.
+  Sanctum. [[phase-7-delegation|Teams map naturally to sales pods for lead delegation later.]]
 - **Broadcasting plumbing installed** (`config/broadcasting.php`,
   `routes/channels.php`) and the Pusher/Echo dependencies added, ready for the
   real-time feature in Phase 2. No live feature is wired yet.
@@ -14,7 +14,8 @@ Scaffold the application and all the plumbing later phases build on.
   zero-config local/CI runs. Switching is a one-line `.env` change
   (`DB_CONNECTION=mysql` + `DB_*`). Migrations are MySQL-compatible.
 - **Environment template** (`.env.example`) documenting Pusher, Reverb, MySQL
-  and Voiceflow settings. Secrets stay out of git.
+  and [[phase-5-voiceflow|the legacy conversational-engine settings]]. Secrets stay
+  out of git.
 
 ## Key files
 
@@ -39,4 +40,4 @@ php artisan serve       # / , /login , /up respond; /dashboard redirects to logi
 
 ## Next
 
-Phase 2 wires the first real-time feature on top of this broadcasting plumbing.
+[[phase-2-realtime|Phase 2 wires the first real-time feature on top of this broadcasting plumbing.]]

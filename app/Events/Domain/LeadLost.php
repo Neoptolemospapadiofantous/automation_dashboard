@@ -2,6 +2,4 @@
 
 namespace App\Events\Domain;
 
-class LeadLost extends StateChanged
-{
-}
+class LeadLost extends StateChanged {}

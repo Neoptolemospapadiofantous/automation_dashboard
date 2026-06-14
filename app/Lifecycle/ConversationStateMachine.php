@@ -9,7 +9,7 @@ use App\Events\Domain\ConversationEnded;
  *
  *   active ─► ended  (terminal)
  *
- * A conversation that ends and then resumes (rare with Voiceflow) gets a
+ * A conversation that ends and then resumes (rare) gets a
  * new row instead — keeps the audit trail honest and avoids any "did the
  * conversation actually end?" ambiguity in analytics.
  */

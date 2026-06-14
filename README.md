@@ -3,9 +3,9 @@
 A real-time lead-delegation dashboard built with **Laravel 12 + Inertia 2 + Vue 3
 (Jetstream, teams)**. Every change — incoming leads, agent conversations,
 qualification status, and delegation — ticks **live across all connected
-screens** over WebSockets. Lead conversations are handled by **Voiceflow**
-agents, proxied server-side through Laravel so the API key never reaches the
-browser.
+screens** over WebSockets. Lead conversations are handled by the **native
+Flowstack runtime** (Anthropic + RAG — see docs/runtime-native.md), proxied
+server-side through Laravel so provider API keys never reach the browser.
 
 ## Stack
 
@@ -16,7 +16,7 @@ browser.
 | Frontend     | Vue 3, Inertia 2, Vite 7, Tailwind, Laravel Echo + pusher-js |
 | Real-time    | **Pusher** (managed) — swappable for self-hosted **Reverb**  |
 | Database     | **MySQL** in production · SQLite for zero-config local dev    |
-| AI agents    | Voiceflow Dialog Manager API (server-proxied)                |
+| AI agents    | Native runtime (Anthropic + OpenAI embeddings)              |
 
 ## Why Pusher (and how to switch to Reverb)
 
@@ -75,8 +75,8 @@ php artisan queue:work
 Browser (Vue 3 + Inertia + Echo)
    |  ^ live ticks (WebSocket)
    v  |
-Laravel (Jetstream) --proxy--> Voiceflow general-runtime (Dialog Manager API)
-   |  - Controllers / VoiceflowService (API key stays server-side)
+Laravel (Jetstream) --calls--> Native runtime (app/Runtime: AgentRuntime + LLM providers)
+   |  - Controllers bill credits around the engine (provider keys stay server-side)
    |  - Events -> broadcast on channels
    |  - Queue worker delivers broadcasts
    v
@@ -88,36 +88,34 @@ Pusher/Reverb (WebSocket) + MySQL + (Redis for queue/cache in prod)
   (`resources/js/composables/useEcho.js`) and patches state in place — no
   polling, no reloads.
 
-## Voiceflow integration (server-proxied Dialog Manager API)
+## Native runtime (server-side AgentRuntime)
 
-Configured via `.env` (`VOICEFLOW_API_KEY` — a `VF.DM.*` key from
-Voiceflow → Settings → API keys, kept server-side only):
+Configured via `.env` (`ANTHROPIC_API_KEY` for the chat loop, `OPENAI_API_KEY`
+for KB embeddings — kept server-side only):
 
-- **Runtime / Dialog Manager** *(implemented)* — `App\Services\VoiceflowService`
-  proxies `POST {VOICEFLOW_RUNTIME_URL}/state/user/{userID}/interact` to launch
-  and advance conversations and read session variables. Exposed to the UI via
-  `/agent/launch` and `/agent/interact`; captured fields upsert a `Lead`. The
-  chat panel lives at `/agent` (`Agent/Index.vue`).
-- **Custom Actions webhook** *(implemented)* — `POST /api/voiceflow/lead-captured`
-  lets the agent push a qualified lead the instant it's captured, secured by the
-  `X-Webhook-Secret` header (`VOICEFLOW_WEBHOOK_SECRET`).
-- **Transcripts API** *(planned, Phase 7)* — `{VOICEFLOW_API_URL}/v2/transcripts/{projectID}`
-  for full conversation records / audit.
-- **Knowledge Base API** *(optional)* — feed qualification docs to the agent.
+- **Conversational engine** — `app/Runtime` (`AgentRuntime`, `FlowExecutor`,
+  `LlmRouter` + per-provider clients) launches and advances conversations and
+  tracks per-visitor session state. Exposed to the UI via the chat panel; the
+  `capture_lead` tool upserts a `Lead` inside the engine.
+- **Lead capture** — happens inside the engine (`capture_lead` tool → `leads`
+  table + `LeadSaved` broadcast), so a qualified lead lands on the kanban the
+  instant it's captured. No inbound engine webhooks.
+- **Knowledge Base** — per-agent docs are chunked, embedded, and retrieved as
+  auto-RAG context for each turn.
 
-See `docs/phase-5-voiceflow.md` for the full breakdown.
+See `docs/runtime-native.md` for the full breakdown.
 
 ## Build roadmap
 
-- [x] **Phase 1** — Scaffold Laravel 12 + Jetstream (Inertia/Vue, teams), MySQL-ready.
-- [x] **Phase 2** — Real-time backbone (Pusher + Echo + queue) with a live-tick demo.
-- [x] **Phase 3** — Lead domain: model/migration, kanban board, drag-and-drop + live status changes.
-- [x] **Phase 5** — Voiceflow agent: `VoiceflowService`, server-proxied chat panel, variable capture -> leads, and the Custom Action capture webhook. (docs/phase-5-voiceflow.md)
+- [x] **[[phase-1-foundation|Phase 1]]** — Scaffold Laravel 12 + Jetstream (Inertia/Vue, teams), MySQL-ready.
+- [x] **[[phase-2-realtime|Phase 2]]** — Real-time backbone (Pusher + Echo + queue) with a live-tick demo.
+- [x] **[[phase-3-leads|Phase 3]]** — Lead domain: model/migration, kanban board, drag-and-drop + live status changes.
+- [x] **Phase 5** — Conversational agent: server-side chat panel, in-engine lead capture, and live lead delivery. The current engine is the native runtime ([[runtime-native|docs/runtime-native.md]]); the original Phase 5 build ran on the legacy engine, since removed.
 - [ ] **Phase 6** — Delegation engine: assignment rules, presence, rep-scoped views.
 - [ ] **Phase 7** — Transcripts API backfill, analytics widgets, notifications.
 
 > A standalone deploy command (push + Laravel Forge) lives in `bin/deploy.sh`;
-> see docs/phase-4-deploy.md.
+> see [[phase-4-deploy|docs/phase-4-deploy.md]].
 
 ## Deployment (Laravel Forge)
 

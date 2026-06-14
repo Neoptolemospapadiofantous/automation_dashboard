@@ -2,11 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\Conversation;
 use App\Models\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<\App\Models\Conversation>
+ * @extends Factory<Conversation>
  */
 class ConversationFactory extends Factory
 {
@@ -15,7 +16,7 @@ class ConversationFactory extends Factory
         return [
             'team_id' => Team::factory(),
             'lead_id' => null,
-            'voiceflow_user_id' => 'web-'.fake()->uuid(),
+            'visitor_id' => 'web-'.fake()->uuid(),
             'channel' => 'agent',
             'status' => 'active',
             'message_count' => 0,

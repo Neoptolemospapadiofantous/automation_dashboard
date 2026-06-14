@@ -22,9 +22,7 @@ class LeadDeleted implements ShouldBroadcast, ShouldQueue
     use InteractsWithSockets;
     use SerializesModels;
 
-    public function __construct(public int $leadId, public int $teamId)
-    {
-    }
+    public function __construct(public int $leadId, public int $teamId) {}
 
     public function broadcastOn(): PrivateChannel
     {

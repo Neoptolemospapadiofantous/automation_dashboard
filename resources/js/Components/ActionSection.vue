@@ -14,7 +14,11 @@ import SectionTitle from './SectionTitle.vue';
         </SectionTitle>
 
         <div class="mt-5 md:mt-0 md:col-span-2">
-            <div class="px-4 py-5 sm:p-6 bg-white shadow sm:rounded-lg">
+            <div v-if="!! $slots.ref" class="mb-1.5 flex items-center gap-2">
+                <span class="bp-ref"><slot name="ref" /></span>
+                <span class="bp-dim flex-1" aria-hidden="true" />
+            </div>
+            <div class="px-4 py-5 sm:p-6 bg-bg border border-border-line shadow-sheet">
                 <slot name="content" />
             </div>
         </div>

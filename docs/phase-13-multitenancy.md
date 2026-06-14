@@ -1,22 +1,33 @@
 # Phase 13 — Multi-tenant SaaS: per-team agents + seamless onboarding
 
-Turns the app from "one Voiceflow project per Laravel deployment" into a
-SaaS where **every team configures their own Voiceflow agent(s)** through a
+Turns the app from "one engine project per Laravel deployment" into a
+SaaS where **every team configures their own agent(s)** through a
 wizard. Each agent's credentials live encrypted in the DB; the existing
-team-scoping already covers data isolation.
+team-scoping already covers data isolation. (At the time this phase was
+built, agents were backed by the legacy engine; the platform has since moved
+to its own native runtime in `app/Runtime/` — `AgentRuntime`, `FlowExecutor`,
+`LlmRouter`.)
 
 > Status of this doc: **Phase A shipped** (data model + backfill). Phases
 > B–G in progress — see the roadmap at the end.
 
 ## End-to-end onboarding flow
 
+> **Note (auto-synced 2026-06-08):** The 3-step BYOK wizard below was the
+> Phase E design. BYOK was dropped in `0ede0da` and Phase K (project pool)
+> replaced env-clone provisioning — managed signups now land active
+> atomically. See the Phase E auto-sync note + the Phase K section for the
+> current `Intro → POST /onboarding/start → Done` flow. The `/agent/health`
+> probe node refers to a route that was renamed to `/chat/health` in
+> Phase 14.
+
 ```mermaid
 flowchart TD
     A[User signs up] --> B{Has an active agent\non current team?}
     B -- yes --> H[Dashboard / Leads / Conversations]
     B -- no --> C[Forced redirect → /onboarding]
-    C --> D[Step 1: Create Voiceflow account\n+ Download template .vf]
-    D --> E[Step 2: Import template in Voiceflow\n+ Generate VF.DM API key]
+    C --> D[Step 1: Create legacy-engine account\n+ Download template]
+    D --> E[Step 2: Import template in legacy engine\n+ Generate API key]
     E --> F[Step 3: Paste API key + project ID]
     F --> G{Health check\n/agent/health}
     G -- fail --> F
@@ -33,22 +44,27 @@ active agent on a different team they belong to.
 
 How a single agent-chat round trip flows through the system after onboarding:
 
+> **Note (auto-synced 2026-06-08):** The Mermaid uses the historical
+> `/agent/interact` URL. The route was renamed to `/chat/interact` in
+> Phase 14 (see `docs/phase-14-public-stats.md#routes-also-renamed-in-this-phase`).
+> The flow is otherwise unchanged.
+
 ```mermaid
 sequenceDiagram
     participant U as Browser
     participant L as Laravel
     participant R as ResolveAgent\nmiddleware
-    participant S as VoiceflowService
-    participant VF as Voiceflow (V4 Conversations API)
+    participant S as Engine client
+    participant VF as Legacy engine (conversations API)
 
     U->>L: POST /agent/interact { message }
     L->>R: resolve current Agent
     R->>R: team.current_agent_id → Agent row
     R->>L: Agent injected into controller
-    L->>S: new VoiceflowService($agent)
-    S->>VF: POST /v4/.../session (using agent.voiceflow_api_key)
+    L->>S: build engine client for $agent
+    S->>VF: open session (using agent's encrypted API key)
     VF-->>S: sessionKey
-    S->>VF: POST /v4/interact (sessionKey)
+    S->>VF: interact (sessionKey)
     VF-->>S: { traces: [...] }
     S->>L: parsed messages + buttons
     L->>L: ConversationRecorder.append(agent_id=…)
@@ -57,7 +73,10 @@ sequenceDiagram
 
 The same pattern applies to KB queries, transcript backfill, and
 the per-agent webhook — `Agent` becomes the explicit context object that
-replaces the implicit global `config('services.voiceflow.*')`.
+replaces the implicit global engine config. (Engine wire-protocol details
+are legacy-engine specifics; see the archived reference under
+[docs/voiceflow/](voiceflow/). This service has since been replaced by the
+native runtime in `app/Runtime/`.)
 
 ## Data model
 
@@ -77,10 +96,10 @@ erDiagram
         bigint team_id FK
         string name
         string slug UK "used in webhook URL"
-        text voiceflow_api_key "encrypted"
-        string voiceflow_project_id
-        string voiceflow_environment "default: main"
-        text voiceflow_workspace_api_key "encrypted, nullable"
+        text engine_api_key "encrypted"
+        string engine_project_id
+        string engine_environment "default: main"
+        text engine_workspace_api_key "encrypted, nullable"
         string webhook_secret "per-agent, 40-char random"
         string status "draft|active|disabled"
         timestamp last_health_check_at
@@ -112,7 +131,7 @@ queries an efficient filter without joining through `team_id`.
 **Model** (`app/Models/Agent.php`):
 - `encrypted` cast on credential columns (round-trips through the model, never
   in cleartext on disk).
-- `$hidden` blocks `voiceflow_api_key`, `voiceflow_workspace_api_key`,
+- `$hidden` blocks `engine_api_key`, `engine_workspace_api_key`,
   `webhook_secret` from `toArray()` / Inertia props — they must be exposed
   explicitly when needed.
 - `booted()` auto-generates `slug` and `webhook_secret` on create.
@@ -132,61 +151,66 @@ and `switchAgent(Agent)` that rejects cross-team switches.
 
 ## Phase B — Service refactor (shipped)
 
-`VoiceflowService::__construct` already accepted per-instance overrides
+The engine client's constructor already accepted per-instance overrides
 (it was built this way for testing), which made the refactor surgical:
 
-1. **`VoiceflowService::forAgent(Agent $agent): self`** — the canonical
-   SaaS entrypoint, builds an instance from the agent's encrypted
-   credential columns.
-2. Container binding in `AppServiceProvider::register()` is now
-   `$this->app->scoped(VoiceflowService::class, ...)`. The closure
+1. **The engine client's `forAgent(Agent $agent): self` factory** — the
+   canonical SaaS entrypoint, builds an instance from the agent's encrypted
+   credential columns. (The client was the legacy-engine client, since
+   superseded by the native runtime in `app/Runtime/`.)
+2. Container binding in `AppServiceProvider::register()` was now a
+   `scoped` binding for the engine client. The closure
    resolves the request's current Agent via
    `auth()->user()?->currentTeam?->currentAgent` and constructs through
    `forAgent`. **Fallback path:** when there's no authenticated user OR no
    current agent (cron / artisan / pre-onboarding), it constructs from
    `.env` config so transcript backfill, KB sync, and other background work
    stay usable.
-3. **Downstream files unchanged.** `VoiceflowController`,
+3. **Downstream files unchanged.** The chat controller,
    `ConversationController`, `KnowledgeBaseController`,
-   `ConversationRecorder`, `LeadDelegator`, and the `voiceflow:backfill`
-   command keep injecting `VoiceflowService` through DI; the container
+   `ConversationRecorder`, `LeadDelegator`, and the transcript-backfill
+   command keep injecting the engine client through DI; the container
    hands them the agent-scoped instance automatically.
 4. **`ConversationRecorder::resolve()`** now accepts an optional `agentId`.
    New conversations and their messages get stamped with the agent id so
    Phase G's page-scoping (`where('agent_id', current_agent_id)`) can
    filter them. Existing rows that were backfilled to the team's default
    agent by the Phase A migration remain visible.
-5. **`VoiceflowController::upsertLead`** stamps `agent_id =
+5. **The chat controller's `upsertLead`** stamps `agent_id =
    $team->current_agent_id` on lead create and backfills it on pre-existing
    lead rows the agent re-touches.
 
-Tests added in `VoiceflowServiceResolutionTest` (5 cases):
+Tests added in the resolution tests (5 cases):
 - Service resolved through the container uses the current agent's credentials
 - Falls back to `.env` config when no agent is current
-- End-to-end through `/agent/health`: tenant sees their `project_id`
-- End-to-end through `/agent/health`: no-agent user sees the env fallback
+- End-to-end through `/chat/health` (was `/agent/health` before the Phase 14 rename): tenant sees their `project_id`
+- End-to-end through `/chat/health` (was `/agent/health` before the Phase 14 rename): no-agent user sees the env fallback
 - `forAgent()` factory tested directly
 
 ## Phase C — Per-agent webhook (shipped)
 
 Old (single-tenant):
 ```
-POST /api/voiceflow/lead-captured
-X-Webhook-Secret: <global VOICEFLOW_WEBHOOK_SECRET>
+POST <legacy capture webhook, route since removed>
+X-Webhook-Secret: <global webhook secret from the legacy engine's env block>
 body: { team_id, name, email, ... }
 ```
 
 New (per-agent):
 ```
-POST /api/voiceflow/lead-captured/{agent:slug}
+POST <legacy capture webhook>/{agent:slug}
 X-Webhook-Secret: <agent.webhook_secret>
 body: { name, email, ... }   # team_id derived from agent
 ```
 
+(The legacy capture route and its global secret belonged to the legacy engine
+that fired this webhook; they were the live identifiers at the time of this
+phase. The route has since been removed.)
+
 Implementation:
 - **Route** binds `{agent:slug}` to the `Agent` model (via
   `Agent::getRouteKeyName()` returning `'slug'`).
-- **`VoiceflowWebhookController::leadCaptured(Request, Agent)`** verifies
+- **The capture-webhook controller's `leadCaptured(Request, Agent)`** verifies
   the secret with `hash_equals($agent->webhook_secret, $providedHeader)`
   and rejects requests against a `disabled` agent with 503 (draft agents
   still accept — the first capture is sometimes how a user discovers the
@@ -194,15 +218,15 @@ Implementation:
 - **`team_id` removed from the request body** — the agent owns it.
 - **`agent_id` stamped on new leads** and backfilled on pre-existing
   leads the agent re-touches.
-- **Voiceflow user-id matching scoped to `agent_id`** so two agents in the
+- **Visitor-id matching scoped to `agent_id`** so two agents in the
   same team can't collide on identical session ids.
 
 The Phase A backfill migration reused the existing global webhook secret
 as the default agent's `webhook_secret`, so the only change a current
-single-tenant deployment needs is updating its Voiceflow Custom Action URL
-to include `/<agent_slug>` — the secret already matches.
+single-tenant deployment needs is updating the legacy engine's outbound
+webhook URL to include `/<agent_slug>` — the secret already matches.
 
-Tests added in `VoiceflowTest`:
+Tests added in the capture tests:
 - `webhook rejects disabled agent` (503)
 - `webhook rejects another agent's secret` (cross-agent 401)
 
@@ -235,20 +259,29 @@ foreign agents, settings page surfaces webhook URL + secret correctly.
 
 ## Phase E — Onboarding wizard (shipped)
 
+> **Note (auto-synced 2026-06-05):** The Connect step described below
+> was removed in `0ede0da` when BYOK was dropped from the product
+> surface. The wizard is now a single managed-only flow
+> (`Intro` → POST `/onboarding/start` → `Done`); `Pages/Onboarding/Connect.vue`
+> is gone and `OnboardingState` collapsed to three cases (`NeedsTeam`,
+> `NeedsAgent`, `Complete`). `OnboardingController::credentialRules()`
+> stays for ops use via tinker. See `OnboardingController` for the
+> current shape.
+
 Three Inertia pages, all under `/onboarding`:
 
-1. **`Intro`** (`GET /onboarding`): value prop, "Sign up for Voiceflow"
+1. **`Intro`** (`GET /onboarding`): value prop, "Sign up for the engine"
    external link, "Download template" link to `/templates/lead-qualification.vf`.
    The "Continue" button POSTs to `/onboarding/start` which calls
    `CreateAgent` to create a draft row (idempotent — re-clicking reuses the
    existing draft) and redirects to step 2.
-2. **`Connect`** (`GET/POST /onboarding/connect`): the form for the DM
-   key + project ID + optional workspace key. POST runs
-   `UpdateAgentCredentials` which probes Voiceflow; on green, the agent
+2. **`Connect`** (`GET/POST /onboarding/connect`): the form for the engine's
+   API key + project ID + optional workspace key. POST runs
+   `UpdateAgentCredentials` which probes the engine; on green, the agent
    transitions to `active` and becomes the team's `current_agent_id`. On
    failure, stays on the page with the failure reason via
    `withErrors([...])`. Shows the per-agent webhook URL + secret so the
-   user can paste them into Voiceflow's Custom Action while they're here.
+   user can wire them into the engine's outbound action while they're here.
 3. **`Done`** (`GET /onboarding/done`): success page → "Start chatting"
    button to `/agent`, or skip to `/dashboard`.
 
@@ -266,17 +299,18 @@ global test base class disables it for the broader suite so the existing
 
 ## Phase F — Template asset (placeholder shipped)
 
-`resources/voiceflow/README.md` documents the exact shape the template
+A now-removed template README documented the exact shape the template
 must take: the four captured variables (`name`, `email`, `phone`,
-`company`), the Custom Action POST contract, the recommended flow
-shape, and Voiceflow IDE build instructions.
+`company`), the outbound-capture POST contract, the recommended flow
+shape, and engine build instructions (legacy-engine specifics; see the
+archived reference under [docs/voiceflow/](voiceflow/)).
 
-`public/templates/lead-qualification.vf` is a **text-stub placeholder** —
-a real `.vf` export from the Voiceflow IDE must replace it before the
-wizard's "Download template" link gives users a working starting point.
-Voiceflow's `.vf` is an opaque binary tied to canvas coordinates and
-internal IDs; we can't generate a valid one in-repo, so this is a
-one-time manual export.
+`public/templates/lead-qualification.vf` was a **text-stub placeholder**
+(since removed) — a real flow export from the legacy engine's IDE would have
+had to replace it before the wizard's "Download template" link gave users a
+working starting point.
+That export was an opaque binary tied to canvas coordinates and internal
+IDs that couldn't be generated in-repo, so it was a one-time manual export.
 
 ## Phase G — Page scoping (shipped)
 
@@ -301,7 +335,7 @@ so switching agents in the picker swaps every visible row in one click.
    - `ConversationController::runSearch` — both Scout and DB-LIKE branches
    - `DashboardController::stats` — every counter + the per-rep load
 
-**KnowledgeBase page** is already agent-scoped because `VoiceflowService`
+**KnowledgeBase page** is already agent-scoped because the engine client
 is per-request bound to the current agent via the container.
 
 **Tests** — `AgentScopingTest` (6 cases) covers the picker-swap behavior
@@ -322,8 +356,8 @@ fixtures with `agent_id`, reflecting the new SaaS model.
 - **Credentials never logged.** The `$hidden` list + `encrypted` cast cover
   both serialization and at-rest exposure. Logging an `Agent` model dumps
   no secrets.
-- **Webhook rollover.** `webhook_secret` defaults to the existing
-  `VOICEFLOW_WEBHOOK_SECRET` value during backfill so existing Voiceflow
+- **Webhook rollover.** `webhook_secret` defaults to the legacy engine's
+  existing global webhook secret during backfill so existing legacy-engine
   agents keep working without reconfiguration.
 - **Rollback preserves credentials.** `down()` nulls out `current_agent_id`
   and `agent_id` columns but does not drop agent rows — losing user-entered
@@ -333,10 +367,10 @@ fixtures with `agent_id`, reflecting the new SaaS model.
 
 - **Billing.** Stripe/Cashier comes in a separate PR. Plan limits will hang
   off `agents` (e.g. messages/month counter).
-- **OAuth with Voiceflow.** They don't offer it for this use case.
-- **Managed Voiceflow workspace.** We don't host Voiceflow on the user's
+- **OAuth with the engine.** The legacy engine didn't offer it for this use case.
+- **Managed engine workspace.** We don't host the engine on the user's
   behalf — pure BYOK keeps usage costs off our books.
-- **Per-agent KB.** Phase 12's KB controller already targets a single project;
+- **Per-agent KB.** [[phase-12-knowledge-base|Phase 12's KB controller already targets a single project]];
   in Phase G it'll switch on `current_agent_id` automatically.
 
 ## Lifecycle architecture
@@ -363,7 +397,7 @@ canonical place for side effects, and one canonical place for the
 flowchart LR
     HTTP[HTTP / CLI / Wizard] --> Action[Action class]
     Action -->|writes DB| Model[Model]
-    Action -->|calls| Service[VoiceflowService]
+    Action -->|calls| Service[Engine client]
     Action -->|fires| Event[Domain event]
     Model -.->|transitionTo| Machine[State machine]
     Machine -->|atomic save| Model
@@ -427,14 +461,17 @@ The guard on `draft → active` is enforced in two places:
 
 ### Onboarding state diagram
 
+> **Note (auto-synced 2026-06-05):** `NeedsCredentials` and
+> `NeedsHealthCheck` were removed in `0ede0da` (BYOK drop). The current
+> state machine has three cases — `NeedsTeam`, `NeedsAgent`, `Complete`
+> — because managed signups land ACTIVE atomically. See
+> `app/Lifecycle/OnboardingState.php`.
+
 ```mermaid
 stateDiagram-v2
     [*] --> NeedsTeam : new user
     NeedsTeam --> NeedsAgent : team created (Jetstream)
-    NeedsAgent --> NeedsCredentials : CreateAgent action
-    NeedsCredentials --> NeedsHealthCheck : creds pasted
-    NeedsHealthCheck --> Complete : UpdateAgentCredentials + green probe
-    NeedsHealthCheck --> NeedsCredentials : probe failed, retry
+    NeedsAgent --> Complete : CreateAgent (pool allocate + activate)
     Complete --> [*]
 ```
 
@@ -481,52 +518,53 @@ existing 85.
 
 ## Phase J — Managed mode (SUPERSEDED — see Phase K)
 
-> ⚠️ **The environment-clone design described below was abandoned.** Web
-> research on Voiceflow's docs (2026-06-03) surfaced two facts that
-> invalidate it: a hard cap of **10 environments per project** across
+> ⚠️ **The environment-clone design described below was abandoned.**
+> Research on the legacy engine's docs (2026-06-03) surfaced two facts
+> that invalidate it: a hard cap of **10 environments per project** across
 > all tiers, AND that KB documents / integrations / secrets / analytics
 > are **SHARED across environments in the same project**. So even if
 > the cap weren't a wall, customers would leak data into each other's
 > agents. **The pool-based replacement is in [Phase K](#phase-k--project-pool-replaces-the-phase-j-environment-clone) below.**
 >
 > This section is kept as a record of what didn't work and why. Don't
-> bring the clone-environment approach back without confirmation from
-> Voiceflow Enterprise that those two limits have been raised in
-> writing.
+> bring the clone-environment approach back. (The engine-specific limits
+> referenced here are legacy-engine specifics; see the archived reference
+> under [docs/voiceflow/](voiceflow/).)
 
 ## Phase J — Managed mode (original, superseded)
 
-The BYOK flow we shipped first asked the user to set up Voiceflow,
-build a project, generate a key, and paste it. Managed mode skips
-all of that — **we** own the Voiceflow workspace + a master project,
-and on signup we clone the template environment into a fresh
-per-tenant environment via the Project API. The user clicks one
-button and lands on a working chat 10 seconds later.
+The BYOK flow we shipped first asked the user to set up the engine,
+build a project, generate a key, and paste it. Managed mode skipped
+all of that — **we** would own the engine workspace + a master project,
+and on signup clone the template environment into a fresh per-tenant
+environment via the engine's project API. The user clicks one button and
+lands on a working chat 10 seconds later.
 
-### The constraint that shapes the design
+### The constraint that shaped the design
 
-Voiceflow's public API has **no `POST /project` endpoint** — verified
-against the mirrored docs (see `docs/voiceflow/projects/README.md`).
-What it DOES support is `POST /v1alpha1/project/{ourProjectId}/environment`
-with a `cloneFromEnvironmentID` parameter. Each tenant gets their own
-environment inside our shared project. KB, conversation state, and
-variables are environment-scoped, so isolation holds.
+The legacy engine's public API had **no create-project endpoint** — verified
+against the mirrored docs. What it DID support was cloning a new environment
+inside an existing project from a template environment. Each tenant would get
+their own environment inside our shared project; KB, conversation state, and
+variables were environment-scoped, so isolation appeared to hold. (Endpoint
+shapes are legacy-engine specifics; see the archived reference under
+[docs/voiceflow/](voiceflow/).)
 
 ### Architecture
 
 ```
-Voiceflow (we own)             Our app                 User
+Legacy engine (we own)         Our app                 User
 ──────────────────             ───────                 ────
 ONE master project ─┐
   ├─ env "template" ┼──── on signup ────── click "Set up my agent"
   │ (the agent      │       ↓
   │  flow we built) │       CreateAgent::createManaged:
-  ├─ env "alice"    │         1. POST /v1alpha1/project/{ours}/environment
-  ├─ env "bob"      │            with cloneFromEnvironmentID: tmpl-env-id
+  ├─ env "alice"    │         1. clone a new environment from the
+  ├─ env "bob"      │            template env in our project
   └─ env "carol"    │         2. Store returned env_id on agent row
                               3. Mark status=active immediately (clone
                                  success already proved the env works)
-                              All Voiceflow calls use:
+                              All engine calls use:
                                 projectID = ours (env config)
                                 environment = tenant's clone (agent row)
                                 key = ours workspace (env config)
@@ -537,39 +575,39 @@ ONE master project ─┐
 | File | Change |
 |---|---|
 | `database/migrations/2026_06_03_200000_add_mode_to_agents.php` | New `mode` column on agents (`byok` default, `managed` opt-in) |
-| `app/Models/Agent.php` | `MODE_BYOK`, `MODE_MANAGED` constants. `isConfigured()` branches per mode (managed requires only `voiceflow_environment` + env config). `isManaged()` helper. |
-| `config/services.php` | New `voiceflow.managed.{enabled, master_project_id, template_environment_id}` keys |
-| `.env.example` | `VOICEFLOW_MANAGED`, `VOICEFLOW_MASTER_PROJECT_ID`, `VOICEFLOW_TEMPLATE_ENVIRONMENT_ID` documented |
-| `app/Services/VoiceflowService.php` | `cloneEnvironment()` method (POST to realtime-api with workspace key). `forAgent()` falls back to env config for managed agents — they only store the env id |
-| `app/Actions/Agents/CreateAgent.php` | Branches on `config('services.voiceflow.managed.enabled')`. `createByok()` is the original behaviour; `createManaged()` calls `cloneEnvironment()` BEFORE the DB write so a Voiceflow failure doesn't leave an orphan local row |
+| `app/Models/Agent.php` | `MODE_BYOK`, `MODE_MANAGED` constants. `isConfigured()` branches per mode (managed requires only `engine_environment` + env config). `isManaged()` helper. |
+| `config/services.php` | New managed-mode keys in the legacy engine config (enabled flag + master project id + template environment id) |
+| `.env.example` | The legacy engine's managed-mode env vars (managed flag + master project id + template environment id) documented |
+| The engine client | `cloneEnvironment()` method (clones an env using the workspace key). `forAgent()` falls back to env config for managed agents — they only store the env id |
+| `app/Actions/Agents/CreateAgent.php` | Branches on the managed-enabled flag. `createByok()` is the original behaviour; `createManaged()` calls `cloneEnvironment()` BEFORE the DB write so an engine failure doesn't leave an orphan local row |
 | `app/Http/Controllers/OnboardingController.php` | `intro()` shares the `managed` flag; `startAgent()` redirects to Done (not Connect) when the agent is managed |
 | `resources/js/Pages/Onboarding/Intro.vue` | Single-step "Set up my agent" CTA in managed mode; original 3-step instructions in BYOK |
 
 ### Feature flag
 
-`VOICEFLOW_MANAGED=true` flips the wizard for **new signups**. Existing
-agents stay on whatever mode they were created with — the `mode` column
-is per-agent, not per-deployment. This lets you A/B managed vs BYOK
+The legacy engine's managed-mode flag flipped the wizard for **new signups**. Existing
+agents stayed on whatever mode they were created with — the `mode` column
+is per-agent, not per-deployment. This let you A/B managed vs BYOK
 without disrupting current users.
 
 ### What you take on by going managed
 
-- **Voiceflow's bill is yours.** Credits + Stripe (Phase H3 when it
+- **The engine's bill is yours.** Credits + Stripe (Phase H3 when it
   lands) recover it. The credit meter we built earlier is exactly
   this rail.
 - **Shared rate limits** across all your tenants (one workspace).
-- **Shared outage blast radius** — Voiceflow goes down, every tenant's
+- **Shared outage blast radius** — the engine goes down, every tenant's
   chat goes down. BYOK isolates this per-tenant.
 - **No per-tenant flow customization** in v1. The cloned environment
   is the template; users can change KB documents but not the agent
   flow itself. Adding customization needs either a flow editor we
-  build or a way to expose Voiceflow's IDE to tenants.
+  build or a way to expose the engine's IDE to tenants.
 
 ### Tests
 
 `ManagedModeTest` (5 cases):
 - ✓ Create agent clones environment and marks active
-- ✓ Managed create propagates Voiceflow failure (no orphan row)
+- ✓ Managed create propagates engine failure (no orphan row)
 - ✓ Managed `isConfigured()` requires env config
 - ✓ BYOK agents unaffected by managed mode flag
 - ✓ Managed wizard skips step 2 (lands on Done directly)
@@ -578,23 +616,23 @@ without disrupting current users.
 
 ### Architecture
 
-Each tenant gets their **own** Voiceflow project — not their own
+Each tenant gets their **own** engine project — not their own
 environment. You (operator) manually pre-create N projects from the
 template, store their `project_id + api_key` in
-`voiceflow_project_pool`, and signup allocates the next available
+the engine project-pool table, and signup allocates the next available
 row to the new agent.
 
 ```
 You (one-time, then weekly):
-  Create N Voiceflow projects from template
+  Create N engine projects from template
   → record project_id + api_key for each
-  → php artisan vf:pool:add  (interactive; secret-safe)
+  → run the pool-add command  (interactive; secret-safe)
 
 User signup, managed mode:
   CreateAgent::createManaged
     → create draft agent shell
     → PoolAllocator::allocate(agent)
-       SELECT FROM voiceflow_project_pool WHERE status='available' LIMIT 1 FOR UPDATE
+       SELECT FROM <engine project-pool table> WHERE status='available' LIMIT 1 FOR UPDATE
        UPDATE → status='assigned', assigned_to_agent_id, assigned_at
     → stamp the agent with the entry's keys
     → status='active', returns to wizard /done
@@ -602,22 +640,22 @@ User signup, managed mode:
 
 ### Why this works where the clone path didn't
 
-- **Real isolation.** Each tenant has a separate Voiceflow project —
+- **Real isolation.** Each tenant has a separate engine project —
   KB, integrations, secrets, analytics are all project-scoped, so
   there's no cross-tenant leak path.
 - **Scales to whatever pool size you maintain.** No environment cap.
 - **Zero per-signup latency.** Allocation is a DB write.
 
 Cost: operator pre-provisioning. A signup surge can deplete the
-pool; `vf:pool:list --available-min=10` in cron exits 1 when below
-threshold, pipe to Slack/email alert.
+pool; the pool-list command with `--available-min=10` in cron exits 1 when
+below threshold, pipe to Slack/email alert.
 
 ### Operator commands
 
 | Command | What |
 |---|---|
-| `php artisan vf:pool:list` | Counts (available/assigned/retired/total) + 20 most recent. Exits 1 when `available < min`. |
-| `php artisan vf:pool:add --project-id=… --api-key=…` | Add one pool entry. Prompts interactively for missing flags so secrets stay out of shell history. |
+| The pool-list command | Counts (available/assigned/retired/total) + 20 most recent. Exits 1 when `available < min`. |
+| The pool-add command (`--project-id=… --api-key=…`) | Add one pool entry. Prompts interactively for missing flags so secrets stay out of shell history. |
 
 ### Error model
 
@@ -631,50 +669,53 @@ in logs is a lost signup — alert on it.
 `DeleteAgent::execute` calls `PoolAllocator::release` first, which
 flips the pool row to `retired`. NOT back to `available` — the
 previous tenant's KB + conversation state are still inside the
-Voiceflow project, so reusing it without wiping would leak data.
-Operator must wipe in Voiceflow first, then manually flip retired →
+engine project, so reusing it without wiping would leak data.
+Operator must wipe in the engine first, then manually flip retired →
 available (DB update for now; future admin UI would surface it).
 
 ### Switching a deployment to Phase K managed mode
 
-1. Sign up for paid Voiceflow.
+1. Sign up for the paid engine tier.
 2. Build the lead-qualification template project once. Captured
-   variables MUST be `name`, `email`, `phone`, `company` (per
-   `services.voiceflow.lead_variables`).
+   variables MUST be `name`, `email`, `phone`, `company` (per the
+   legacy engine config's lead-variables key).
 3. **For each tenant slot you want available**:
-   - In Voiceflow IDE: New project, clone from your template
-   - Generate a Dialog Manager API key in Settings → API keys
-   - Copy the 24-char project id from the URL
-   - `php artisan vf:pool:add` and paste the values
-4. Set in env: `VOICEFLOW_MANAGED=true` (plus
-   `VOICEFLOW_API_KEY` + `VOICEFLOW_WORKSPACE_API_KEY` if you also
+   - In the engine's IDE: new project, clone from your template
+   - Generate an API key for it
+   - Copy its project id
+   - Run the pool-add command and paste the values
+
+   (Per-step IDE/key details are legacy-engine specifics; see the
+   archived reference under [docs/voiceflow/](voiceflow/).)
+4. Set the legacy engine's managed-mode env vars: enable managed mode
+   (plus the engine API key + workspace API key if you also
    need workspace-key features like analytics/KB management).
 5. Deploy. New signups now allocate from the pool; existing BYOK
    agents are untouched.
 
-If/when Voiceflow opens a programmatic project-creation API to
+If/when the engine opens a programmatic project-creation API to
 partners, step 3 becomes a background job. The rest stays the same.
 
 ### Files
 
 - `database/migrations/2026_06_03_220000_create_voiceflow_project_pool_table.php`
-- `app/Models/VoiceflowProjectPoolEntry.php` (encrypted credentials, $hidden mirrors Agent)
+- The project-pool entry model (encrypted credentials, $hidden mirrors Agent)
 - `app/Provisioning/{PoolAllocator, PoolExhausted}.php`
 - `app/Actions/Agents/CreateAgent.php` — `createManaged()` allocates from pool
 - `app/Actions/Agents/DeleteAgent.php` — releases pool entry on delete
-- `app/Console/Commands/{VoiceflowPoolList, VoiceflowPoolAdd}.php`
+- The pool-management commands (pool-list + pool-add)
 - `tests/Feature/PoolAllocatorTest.php` (7 cases)
 
 ### Phase J cleanup
 
 When Phase K shipped, the obsolete Phase J pieces were removed:
 
-- `VoiceflowService::cloneEnvironment()` — deleted
-- `services.voiceflow.managed.master_project_id` config key — deleted
-- `services.voiceflow.managed.template_environment_id` config key — deleted
-- `VOICEFLOW_MASTER_PROJECT_ID` / `VOICEFLOW_TEMPLATE_ENVIRONMENT_ID` env vars — deleted from `.env.example`
+- The engine client's `cloneEnvironment()` method — deleted
+- The managed master-project-id config key — deleted
+- The managed template-environment-id config key — deleted
+- The legacy engine's managed master-project-id / template-environment-id env vars — deleted from `.env.example`
 - `Agent::isConfigured()` managed-specific branch — collapsed (managed and BYOK now have the same shape: per-row api_key + project_id)
-- `VoiceflowService::forAgent()` managed-specific branch — collapsed (same reason)
+- The engine client's `forAgent()` managed-specific branch — collapsed (same reason)
 
 ## Roadmap
 
@@ -682,24 +723,24 @@ When Phase K shipped, the obsolete Phase J pieces were removed:
 |---|---|---|
 | A. Foundation | ✅ shipped | `agents` table, FKs, model, backfill, Team mods |
 | L. Lifecycle layer | ✅ shipped | State machines, domain events, actions, OnboardingState |
-| B. Service refactor | ✅ shipped | `VoiceflowService::forAgent` + scoped container binding + recorder agent_id propagation |
-| C. Per-agent webhook | ✅ shipped | `/api/voiceflow/lead-captured/{agent:slug}` with per-agent secret |
+| B. Service refactor | ✅ shipped | engine client's `forAgent` + scoped container binding + recorder agent_id propagation |
+| C. Per-agent webhook | ✅ shipped | The per-agent capture webhook (`…/{agent:slug}`, route since removed) with per-agent secret |
 | D. Agent CRUD UI | ✅ shipped | `/agents` index + settings, nav picker, switcher, regenerate-secret, delete |
 | E. Onboarding wizard | ✅ shipped | 3-step `/onboarding` flow + `RequireAgent` middleware |
-| F. Template `.vf` | ⚠️ placeholder shipped | Schema documented; real `.vf` export pending (manual Voiceflow IDE step) |
+| F. Template export | ⚠️ placeholder shipped | Schema documented; real flow export pending (manual legacy-engine IDE step) |
 | G. Page scoping | ✅ shipped | All lists + detail pages filter by `current_agent_id`; `forAgent()` scope on Lead/Conversation/Message |
-| J. Managed mode (env-clone, superseded) | ⚠️ removed | `mode` column + wizard collapse still ship. Environment-clone provisioning abandoned after Voiceflow's docs confirmed 10-env-per-project cap + shared KB across environments. |
-| K. Project pool (real managed) | ✅ shipped | One Voiceflow project per tenant, allocated from a pre-created pool via `php artisan vf:pool:add` + `PoolAllocator`. Real isolation. Phase J's dead code removed in same commit. |
+| J. Managed mode (env-clone, superseded) | ⚠️ removed | `mode` column + wizard collapse still ship. Environment-clone provisioning abandoned after the legacy engine's docs confirmed 10-env-per-project cap + shared KB across environments. |
+| K. Project pool (real managed) | ✅ shipped | One engine project per tenant, allocated from a pre-created pool via the pool-add command + `PoolAllocator`. Real isolation. Phase J's dead code removed in same commit. |
 | H. Billing | later | Cashier + Stripe, plan limits |
 
 ## Adjacent work — chat-route rename
 
-Shipped alongside Phase 14. The chat-panel routes (`agent.*`,
+[[phase-14-public-stats|Shipped alongside Phase 14]]. The chat-panel routes (`agent.*`,
 `Pages/Agent/`) were renamed to `chat.*` / `Pages/Chat/` to remove the
 long-standing one-letter collision with the agents-CRUD routes
 (`agents.*`). Same controller logic, new URLs + route names. See
 [phase-14-public-stats.md](./phase-14-public-stats.md#routes-also-renamed-in-this-phase)
-for the full rename map. Phase 5 doc has been updated to match.
+for the full rename map. [[phase-5-voiceflow|Phase 5 doc has been updated to match]].
 
 ## See also
 

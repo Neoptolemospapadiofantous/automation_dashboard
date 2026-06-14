@@ -39,6 +39,8 @@ const closeModal = () => {
 
 <template>
     <ActionSection>
+        <template #ref><span class="text-red-600">PROFILE/DELETE</span></template>
+
         <template #title>
             Delete Account
         </template>
@@ -48,7 +50,7 @@ const closeModal = () => {
         </template>
 
         <template #content>
-            <div class="max-w-xl text-sm text-gray-600">
+            <div class="max-w-xl text-sm text-ink-dim">
                 Once your account is deleted, all of its resources and data will be permanently deleted. Before deleting your account, please download any data or information that you wish to retain.
             </div>
 

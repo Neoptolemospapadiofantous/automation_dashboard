@@ -1,0 +1,64 @@
+/*
+ * Flowstack design tokens — "two sheets, one ink".
+ *
+ * CANONICAL copy:  automation-landing/branding/tokens.css   (this file)
+ * VENDORED copy:   automation_dashboard/resources/css/tokens.css
+ * Keep the two byte-identical — a diff between them is a bug.
+ *
+ *   :root / .sheet-black — the black sheet (marketing site)
+ *   .sheet-white         — the white sheet (dashboard app, embed chat)
+ *
+ * The accent names (--violet, --cyan) intentionally resolve to the ink
+ * color, so recoloring the whole brand later is a one-block edit here.
+ * The brand owns --radius (hard edges everywhere).
+ */
+
+:root,
+.sheet-black {
+  --bg:           #000000;
+  --bg-elev:      #0A0A0A;
+  --surface:      #0A0A0A;
+  --surface-hi:   #141414;
+  --border-line:  #1F1F1F;
+  --border-hi:    #2E2E2E;
+  --ink:          #FFFFFF;
+  --ink-dim:      #B8B8B8;
+  --ink-mute:     #6B6B6B;
+  --violet:       #FFFFFF;
+  --violet-soft:  #E5E5E5;
+  --cyan:         #FFFFFF;
+  --cyan-soft:    #E5E5E5;
+  --success:      #FFFFFF;
+  --warn:         #B8B8B8;
+  --danger:       #FFFFFF;
+
+  /* drawing primitives */
+  --line:         rgba(255, 255, 255, 0.06);
+  --line-strong:  rgba(255, 255, 255, 0.14);
+  --draw:         var(--ink);
+
+  --radius: 0;
+}
+
+.sheet-white {
+  --bg:           #FFFFFF;
+  --bg-elev:      #FAFAFA;
+  --surface:      #FAFAFA;
+  --surface-hi:   #F0F0F0;
+  --border-line:  #E5E5E5;
+  --border-hi:    #D4D4D4;
+  --ink:          #000000;
+  --ink-dim:      #525252;
+  --ink-mute:     #8A8A8A;
+  --violet:       #000000;
+  --violet-soft:  #1F1F1F;
+  --cyan:         #000000;
+  --cyan-soft:    #1F1F1F;
+  --success:      #000000;
+  --warn:         #525252;
+  --danger:       #000000;
+
+  --line:         rgba(0, 0, 0, 0.06);
+  --line-strong:  rgba(0, 0, 0, 0.14);
+  --draw:         var(--ink);
+}

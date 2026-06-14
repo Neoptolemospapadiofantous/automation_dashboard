@@ -26,6 +26,8 @@ const deleteTeam = () => {
 
 <template>
     <ActionSection>
+        <template #ref><span class="text-red-600">TEAM/DANGER</span></template>
+
         <template #title>
             Delete Team
         </template>
@@ -35,7 +37,7 @@ const deleteTeam = () => {
         </template>
 
         <template #content>
-            <div class="max-w-xl text-sm text-gray-600">
+            <div class="max-w-xl text-sm text-ink-dim">
                 Once a team is deleted, all of its resources and data will be permanently deleted. Before deleting this team, please download any data or information regarding this team that you wish to retain.
             </div>
 

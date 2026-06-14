@@ -6,16 +6,20 @@ namespace App\Billing;
  * Top-up credit pack catalog. Single source of truth for what's on offer,
  * what each pack costs, and how many credits it grants.
  *
- * Pricing per credit is INTENTIONALLY worse than the Operator tier on the
- * small pack and only matches Operator on the large pack. This is the
- * upgrade-pressure mechanism: users who consistently top up will save
- * money by upgrading to Operator (or upsizing to Custom).
+ * Pricing is EUR throughout — we sell in Europe.
  *
- *   Starter        $19/mo → 1k credits   = $0.0190/credit
- *   Small pack     $10    → 1k credits   = $0.0100/credit
- *   Operator       $79/mo → 10k credits  = $0.0079/credit
- *   Medium pack    $39    → 5k credits   = $0.0078/credit
- *   Large pack     $129   → 20k credits  = $0.0065/credit
+ * INVARIANT (asserted by BillingInvariantsTest): every pack's €/credit is
+ * STRICTLY worse than Operator's monthly rate. That is the upgrade-pressure
+ * mechanism — users who consistently top up save money by upgrading — and
+ * the margin floor: tier credit prices are calibrated against Operator's
+ * €0.01596/credit, so any pack below it can turn tiers margin-negative
+ * (the 2026-06-11 pricing audit caught exactly that).
+ *
+ *   Starter      €99/mo  →  2,500 credits = €0.0396/credit
+ *   Operator     €399/mo → 25,000 credits = €0.01596/credit  ← floor
+ *   Small pack   €29     →  1,000 credits = €0.0290/credit
+ *   Medium pack  €119    →  5,000 credits = €0.0238/credit
+ *   Large pack   €399    → 20,000 credits = €0.0200/credit
  *
  * When Phase H (Stripe Checkout) ships, the stripePriceId() values map
  * to one-off SKU price ids. Until then, the BillingController instant-
@@ -36,12 +40,12 @@ enum TopUpPack: string
         };
     }
 
-    public function priceUsd(): int
+    public function priceEur(): int
     {
         return match ($this) {
-            self::Small => 10,
-            self::Medium => 39,
-            self::Large => 129,
+            self::Small => 29,
+            self::Medium => 119,
+            self::Large => 399,
         };
     }
 
@@ -64,7 +68,7 @@ enum TopUpPack: string
     }
 
     /**
-     * @return array<int, array{id: string, label: string, credits: int, price_usd: int}>
+     * @return array<int, array{id: string, label: string, credits: int, price_eur: int}>
      */
     public static function catalog(): array
     {
@@ -72,7 +76,7 @@ enum TopUpPack: string
             'id' => $p->value,
             'label' => $p->label(),
             'credits' => $p->credits(),
-            'price_usd' => $p->priceUsd(),
+            'price_eur' => $p->priceEur(),
         ], self::cases());
     }
 }

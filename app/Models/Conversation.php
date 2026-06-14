@@ -16,6 +16,7 @@ class Conversation extends Model
 {
     /** @use HasFactory<ConversationFactory> */
     use HasFactory;
+
     use HasLifecycle;
 
     public function stateMachine(): StateMachine
@@ -27,9 +28,9 @@ class Conversation extends Model
         'team_id',
         'agent_id',
         'lead_id',
-        'voiceflow_user_id',
-        'voiceflow_session_key',
-        'voiceflow_transcript_id',
+        'visitor_id',
+        'session_key',
+        'transcript_id',
         'channel',
         'status',
         'message_count',
@@ -67,11 +68,6 @@ class Conversation extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class);
-    }
-
-    public function isEnded(): bool
-    {
-        return $this->status === 'ended';
     }
 
     /**

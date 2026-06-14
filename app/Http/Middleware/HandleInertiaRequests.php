@@ -2,6 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Billing\Plan;
+use App\Models\Agent;
+use App\Models\PlatformSetting;
+use App\Models\Team;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -43,7 +47,6 @@ class HandleInertiaRequests extends Middleware
             // share session keys — without this, controllers' ->with('flash.x')
             // calls land in the session but never reach the front end.
             'flash' => fn () => array_filter([
-                'webhook_secret_rotated' => $request->session()->get('flash.webhook_secret_rotated'),
                 'plan_limit' => $request->session()->get('flash.plan_limit'),
             ], fn ($v) => $v !== null),
             // Unread lead notifications for the bell UI.
@@ -57,20 +60,38 @@ class HandleInertiaRequests extends Middleware
                     ])->values()
                 : [],
 
+            // Latest product-news headline for the top bar. Hand-managed
+            // via PlatformSetting (key `latest_headline`, optional
+            // `latest_headline_url`); null hides the line. Cheap key/value
+            // read — PlatformSetting caches.
+            'latestHeadline' => function () {
+                $text = PlatformSetting::value('latest_headline');
+
+                return is_string($text) && $text !== ''
+                    ? ['text' => $text, 'url' => PlatformSetting::value('latest_headline_url')]
+                    : null;
+            },
+
             // Agent picker data for the nav. Shared on every Inertia request
             // so the picker stays in sync without each page re-querying.
-            'currentAgent' => fn () => $request->user()?->currentTeam?->currentAgent
-                ? [
-                    'id' => $request->user()->currentTeam->currentAgent->id,
-                    'name' => $request->user()->currentTeam->currentAgent->name,
-                    'status' => $request->user()->currentTeam->currentAgent->status,
-                ]
-                : null,
-            'teamAgents' => fn () => $request->user()?->currentTeam
-                ? $request->user()->currentTeam->agents()->orderBy('created_at')->get()
+            'currentAgent' => function () use ($request) {
+                $team = $request->user()?->currentTeam;
+                $agent = $team instanceof Team ? $team->currentAgent : null;
+
+                return $agent instanceof Agent
+                    ? ['id' => $agent->id, 'name' => $agent->name, 'status' => $agent->status]
+                    : null;
+            },
+            'teamAgents' => function () use ($request) {
+                $team = $request->user()?->currentTeam;
+                if (! $team instanceof Team) {
+                    return [];
+                }
+
+                return $team->agents()->orderBy('created_at')->get()
                     ->map(fn ($a) => ['id' => $a->id, 'name' => $a->name, 'status' => $a->status])
-                    ->values()
-                : [],
+                    ->values();
+            },
 
             // Billing snapshot for the credit pill in the sidebar.
             //
@@ -85,8 +106,26 @@ class HandleInertiaRequests extends Middleware
             'billing' => fn () => $request->user()?->currentTeam
                 ? (function () use ($request) {
                     $team = $request->user()->currentTeam;
+                    if (! $team instanceof Team) {
+                        return null;
+                    }
                     $plan = $team->planObject();
-                    $isCustom = $plan === \App\Billing\Plan::Business;
+                    $isCustom = $plan === Plan::Business;
+
+                    // has_stripe_customer is true once the team has subscribed
+                    // OR purchased a topup. That's the precondition for the
+                    // Customer Portal session to work (Stripe needs a cus_*).
+                    $stripeCustomerId = $team->getAttribute('stripe_customer_id');
+                    $hasStripeCustomer = $stripeCustomerId !== null && $stripeCustomerId !== '';
+                    $subscriptionStatus = $team->getAttribute('stripe_subscription_status');
+
+                    // is_owner gates the Manage subscription / Subscribe /
+                    // Top up buttons. Server-side enforcement is in the
+                    // controllers (AuthorizesByTeamRole::requireOwner); this
+                    // just keeps the UI honest so non-owners don't see
+                    // buttons that 403. The outer closure already guards
+                    // on $request->user() before reaching here.
+                    $isOwner = (int) $team->getAttribute('user_id') === (int) $request->user()->id;
 
                     if ($isCustom) {
                         return [
@@ -95,35 +134,38 @@ class HandleInertiaRequests extends Middleware
                             'is_custom' => true,
                             'credits_used' => null,
                             'credits_total' => null,
-                            'credits_remaining' => $team->credit_balance,
+                            'credits_remaining' => $team->totalCredits(),
+                            'topup_balance' => (int) $team->topup_balance,
                             'max_agents' => $plan->maxAgents(),
                             'agents_count' => $team->agents()->count(),
                             'allows_topups' => $plan->allowsTopUps(),
+                            'has_stripe_customer' => $hasStripeCustomer,
+                            'subscription_status' => $subscriptionStatus,
+                            'is_owner' => $isOwner,
                         ];
                     }
 
-                    // Sum of top-up grants since the last renewal. Falls back
-                    // to "all time" when credits_renewed_at hasn't been set
-                    // yet (fresh teams pre-first-renewal). Single COUNT-style
-                    // query per request — cheap.
-                    $topupsThisPeriod = (int) \App\Models\CreditTransaction::query()
-                        ->where('team_id', $team->id)
-                        ->where('reason', \App\Models\CreditTransaction::REASON_GRANT_TOPUP)
-                        ->when($team->credits_renewed_at, fn ($q) => $q->where('created_at', '>=', $team->credits_renewed_at))
-                        ->sum('amount');
-
-                    $totalGranted = $plan->monthlyCredits() + $topupsThisPeriod;
+                    // Two-bucket display (policy 2026-06-12): the bar tracks
+                    // the MONTHLY allowance (used/total of the plan grant —
+                    // a clean denominator that no longer moves when topping
+                    // up); rolled-over purchased credits ride alongside as
+                    // topup_balance and are included in credits_remaining.
+                    $monthlyTotal = $plan->monthlyCredits();
 
                     return [
                         'plan' => $plan->value,
                         'plan_label' => $plan->label(),
                         'is_custom' => false,
-                        'credits_used' => max(0, $totalGranted - $team->credit_balance),
-                        'credits_total' => $totalGranted,
-                        'credits_remaining' => $team->credit_balance,
+                        'credits_used' => max(0, $monthlyTotal - (int) $team->credit_balance),
+                        'credits_total' => $monthlyTotal,
+                        'credits_remaining' => $team->totalCredits(),
+                        'topup_balance' => (int) $team->topup_balance,
                         'max_agents' => $plan->maxAgents(),
                         'agents_count' => $team->agents()->count(),
                         'allows_topups' => $plan->allowsTopUps(),
+                        'has_stripe_customer' => $hasStripeCustomer,
+                        'subscription_status' => $subscriptionStatus,
+                        'is_owner' => $isOwner,
                     ];
                 })()
                 : null,

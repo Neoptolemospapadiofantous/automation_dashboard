@@ -2,6 +2,4 @@
 
 namespace App\Events\Domain;
 
-class ConversationEnded extends StateChanged
-{
-}
+class ConversationEnded extends StateChanged {}
