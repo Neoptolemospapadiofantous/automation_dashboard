@@ -16,11 +16,6 @@ const props = defineProps({
 // The card self-completes (each step is derived from live data) and
 // disappears entirely once everything is done.
 const SETUP_META = {
-    engine: {
-        label: 'Connect the engine',
-        hint: 'Set ANTHROPIC_API_KEY + OPENAI_API_KEY in .env, then config:clear.',
-        route: null,
-    },
     knowledge: {
         label: 'Add knowledge',
         hint: 'Paste your FAQ, pricing, or a docs URL so answers are grounded.',

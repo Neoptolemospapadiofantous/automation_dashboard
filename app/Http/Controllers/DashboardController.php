@@ -43,11 +43,9 @@ class DashboardController extends Controller
      */
     protected function setupChecklist(?int $agentId): array
     {
-        $engineReady = (string) config('runtime.llm.anthropic.api_key') !== ''
-            && (string) config('runtime.embeddings.openai_api_key') !== '';
-
+        // Engine connection (ANTHROPIC/OPENAI keys) is provisioned by us, not
+        // the customer — so it's intentionally NOT a user-facing setup step.
         $steps = [
-            ['key' => 'engine', 'done' => $engineReady],
             ['key' => 'knowledge', 'done' => $agentId !== null && KbDocument::where('agent_id', $agentId)->exists()],
             ['key' => 'behavior', 'done' => $agentId !== null && AgentConfigVersion::query()
                 ->where('agent_id', $agentId)

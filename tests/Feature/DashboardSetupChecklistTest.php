@@ -22,23 +22,23 @@ class DashboardSetupChecklistTest extends TestCase
 
     public function test_fresh_agent_shows_incomplete_checklist(): void
     {
-        config(['runtime.llm.anthropic.api_key' => '', 'runtime.embeddings.openai_api_key' => '']);
         $user = $this->owner();
 
+        // Engine connection is no longer a user step (we provision the keys),
+        // so the checklist starts at 'knowledge' and runs through 'lead'.
         $this->actingAs($user)->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('setup.complete', false)
-                ->where('setup.steps.0.key', 'engine')
+                ->where('setup.steps.0.key', 'knowledge')
                 ->where('setup.steps.0.done', false)
-                ->where('setup.steps.1.done', false) // knowledge
-                ->where('setup.steps.5.done', false) // lead
+                ->where('setup.steps.4.key', 'lead')
+                ->where('setup.steps.4.done', false)
             );
     }
 
     public function test_steps_flip_as_the_operator_works(): void
     {
-        config(['runtime.llm.anthropic.api_key' => 'sk', 'runtime.embeddings.openai_api_key' => 'sk']);
         $user = $this->owner();
         $agent = $user->currentTeam->currentAgent;
 
@@ -64,7 +64,6 @@ class DashboardSetupChecklistTest extends TestCase
 
     public function test_dashboard_chat_session_does_not_count_as_install(): void
     {
-        config(['runtime.llm.anthropic.api_key' => 'sk', 'runtime.embeddings.openai_api_key' => 'sk']);
         $user = $this->owner();
         $agent = $user->currentTeam->currentAgent;
 
@@ -77,8 +76,8 @@ class DashboardSetupChecklistTest extends TestCase
 
         $this->actingAs($user)->get(route('dashboard'))
             ->assertInertia(fn ($page) => $page
-                ->where('setup.steps.4.key', 'install')
-                ->where('setup.steps.4.done', false)
+                ->where('setup.steps.3.key', 'install')
+                ->where('setup.steps.3.done', false)
             );
     }
 
