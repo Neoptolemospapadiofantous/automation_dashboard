@@ -35,6 +35,7 @@ class BillingController extends Controller
     public function index(Request $request): Response
     {
         $team = $request->user()->currentTeam;
+        $allowsTopUps = $team->planObject()->allowsTopUps();
 
         return Inertia::render('Billing/Index', [
             'transactions' => $team->creditTransactions()
@@ -49,13 +50,13 @@ class BillingController extends Controller
             // Top-up pack catalog — the UI renders a picker from this. Empty
             // array when the current plan doesn't allow top-ups so the
             // dialog won't even render the buy buttons.
-            'topup_packs' => $team->planObject()->allowsTopUps()
+            'topup_packs' => $allowsTopUps
                 ? TopUpPack::catalog()
                 : [],
             // Custom top-up (customer-chosen € amount). Null when the plan
             // can't top up or the custom price isn't configured — the UI
             // hides the custom card in that case.
-            'topup_custom' => $team->planObject()->allowsTopUps() && $this->customTopUpAvailable()
+            'topup_custom' => $allowsTopUps && $this->customTopUpAvailable()
                 ? [
                     'min_eur' => (int) config('billing.topup_custom.min_eur'),
                     'max_eur' => (int) config('billing.topup_custom.max_eur'),
