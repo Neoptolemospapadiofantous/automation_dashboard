@@ -33,3 +33,10 @@ Thumbs.db
 /.obsidian/workspaces.json
 /.obsidian/cache
 /.obsidian/.trash/
+
+# Locally-installed skills/agents (npx skills add) — machine-local, not
+# project code. Tracked .claude/commands and .hermes content are unaffected.
+/.agents/
+/.claude/skills/
+/.hermes/skills/
+/skills-lock.json
