@@ -53,9 +53,13 @@ REVERB_SERVER_PORT=8080
       Certificate) — same as `app`.
 
 ## 4. nginx — the `ws.flowstack.run` site (Forge)
-1. Forge → **New Site** → `ws.flowstack.run` (any project type; the document
-      root is irrelevant — all traffic is proxied). Let Forge issue **Let's
-      Encrypt TLS** for it.
+1. Forge → **New Site** → `ws.flowstack.run`, project type **Static HTML**
+      (no app code — all traffic is proxied). For SSL, install a **Cloudflare
+      Origin Certificate** (Forge → ws site → SSL → **Install Existing
+      Certificate** → paste the `*.flowstack.run` cert + key from Cloudflare →
+      SSL/TLS → **Origin Server**). Behind Cloudflare's proxy this is more
+      reliable than Let's Encrypt (whose HTTP-01 challenge the proxy can block);
+      a missing/wrong origin cert surfaces as Cloudflare **error 525**.
 2. Forge → that site → **Edit Nginx Configuration** → replace the `location /`
       block with a websocket proxy to Reverb:
 
@@ -81,25 +85,34 @@ location / {
 > Keep TLS on the proxy (nginx), not on Reverb. Reverb stays plain HTTP on
 > `127.0.0.1:8080` — never expose `8080` publicly.
 
-## 5. Forge daemons
-Add under Forge → Server (or Site) → **Daemons** (run as user `forge`,
-directory = the site path):
+## 5. Forge background processes (on the APP site)
+In the current Forge UI these live per-site under **Processes → Background
+processes → Add** (not a server-level "Daemons" page). Add **both on the APP
+site** — that's where `artisan` + the `REVERB_*` env are; the `ws` site is just
+the proxy. Both run under Supervisor (auto-restart on crash).
 
-- [ ] **Reverb server**
+- [ ] **Reverb server** — use the **Custom** tab:
   ```
   php artisan reverb:start --host=0.0.0.0 --port=8080
   ```
-- [ ] **Queue worker** (broadcasts + queued mail/notifications)
+- [ ] **Queue worker** — use the **Queue worker** tab (connection `database`,
+      processes `1`). Equivalent command:
   ```
   php artisan queue:work --tries=3 --max-time=3600 --sleep=1
   ```
 
-(Both run under supervisor; Forge restarts them on crash.)
+> ⚠️ **The queue worker is REQUIRED for realtime, not optional.** Every
+> broadcast event (`LeadSaved`, `LeadDeleted`, `DashboardTick`, `LeadMessage`)
+> is `ShouldQueue`, so it's written to the `jobs` table and dispatched by the
+> worker. With Reverb up but **no worker running**, the WebSocket connects and
+> the "Live" pill turns green, yet **nothing ever pushes** — the board never
+> updates and `jobs` quietly piles up. Always run the worker alongside Reverb.
 
 ## 6. Scheduler
-- [ ] Forge → Site → **Scheduler** → enable (adds `* * * * * php artisan schedule:run`).
-      Separate from realtime, but required for the daily jobs (audit sentinel,
-      credit renewals/reconcile, spend-check) — see the launch checklist.
+- [ ] Forge → app site → **Processes → Scheduler** → add `php artisan schedule:run`
+      every minute (`* * * * *`). Separate from realtime, but required for the
+      daily jobs (audit sentinel, credit renewals/reconcile, spend-check) — see
+      the launch checklist.
 
 ## 7. Reload Reverb on deploy
 Append to the Forge **deploy script** (after `migrate`/`build`) so the running
