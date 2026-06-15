@@ -31,6 +31,11 @@ except the verification commands.
 - [ ] `APP_URL=https://app.flowstack.run`
 - [ ] `APP_NAME=Flowstack`
 - [ ] `APP_KEY` is set (generated)
+- [ ] `COMING_SOON=true` — **pre-launch gate**. The whole app shows the
+      "coming soon" + waitlist page; login/register are blocked. Machine
+      endpoints (`api/*`, `webhooks/*`, `up`, `waitlist`) stay open. Flip to
+      `false` at go-live (§9). While gated, `/` redirects don't apply — every
+      page is the waitlist.
 
 ---
 
@@ -180,6 +185,22 @@ Run as a brand-new user in a fresh/incognito session against `app.flowstack.run`
 
 Test cards (only meaningful before live): `4242 4242 4242 4242` (ok),
 `4000 0000 0000 0341` (fails on renewal).
+
+> Note: §8 needs the app **open**. While `COMING_SOON=true` every route is the
+> waitlist, so run the smoke test either against a temporarily-ungated prod
+> (maintenance window) or locally on live keys before flipping the gate.
+
+---
+
+## 9. Go live — open the app
+1. [ ] While still gated, confirm the public face works: `app.flowstack.run`
+       shows the **waitlist**, and submitting an email lands a row in
+       `waitlist_signups`.
+2. [ ] Flip **`COMING_SOON=false`** in Forge → `php artisan config:clear`
+       (or redeploy). The gate lifts; `/` now redirects to login/dashboard.
+3. [ ] Run the §8 lifecycle smoke test against the live app.
+4. [ ] (Optional) export the waitlist and email them the launch announcement:
+       `php artisan tinker --execute="App\Models\WaitlistSignup::orderBy('created_at')->pluck('email')->each(fn(\$e)=>print(\$e.PHP_EOL));"`
 
 ---
 
