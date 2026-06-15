@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\WaitlistSignup;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -17,7 +18,7 @@ use Illuminate\Support\Str;
  */
 class WaitlistController extends Controller
 {
-    public function __invoke(Request $request)
+    public function __invoke(Request $request): Response
     {
         // Honeypot: real users never fill this hidden field. Pretend success.
         if (filled($request->input('company'))) {
