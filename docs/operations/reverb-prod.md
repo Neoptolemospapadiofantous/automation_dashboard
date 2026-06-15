@@ -42,9 +42,15 @@ REVERB_SERVER_PORT=8080
 `config/broadcasting.php` (host/port/scheme) and `resources/js/echo.js`
 (`VITE_REVERB_*`) already read these — no code change needed.
 
-## 3. DNS
-- [ ] `ws.flowstack.run` → **A/AAAA** record pointing at the **same server** as
-      `app.flowstack.run`.
+## 3. DNS (Cloudflare)
+`flowstack.run` is on Cloudflare. dash.cloudflare.com → flowstack.run → DNS:
+- [ ] Add **`ws`** with the **same type / target / proxy as the existing `app`
+      record** (points at the same Forge origin). Keep it **Proxied (orange)** —
+      Cloudflare proxies WebSockets over 443, and Reverb's 60s ping beats CF's
+      ~100s idle timeout.
+- [ ] If your SSL/TLS mode is **Full (strict)**, the Forge origin needs a valid
+      cert for `ws.flowstack.run` (Forge Let's Encrypt, or a Cloudflare Origin
+      Certificate) — same as `app`.
 
 ## 4. nginx — the `ws.flowstack.run` site (Forge)
 1. Forge → **New Site** → `ws.flowstack.run` (any project type; the document
