@@ -5,7 +5,7 @@ tags: [hermes, billing, automation]
 
 # Hermes — automation_dashboard
 
-Local CI + audit tooling for automation_dashboard. No scheduled execution; all invocation is manual via composer scripts or interactive Claude Code slash commands.
+Local CI + audit tooling for automation_dashboard. The LLM/fleet layer is invoked manually (composer scripts or interactive Claude Code slash commands); the no-LLM collectors (`audit_sentinel`, `update_inspector`, `system_check`) also run on a prod schedule via `routes/console.php`, and the audit + system collectors chain `hermes:alert` to email the operator on CRITICAL/FAIL findings (see [Alerting](#alerting-criticalfail--email)).
 
 ## Architecture
 
@@ -121,6 +121,9 @@ flowchart LR
 | `scripts/agents/update_inspector.sh` | No-LLM collector — writes `data/agents/update-inspector/findings.json` (composer + pnpm outdated) |
 | `scripts/agents/system_check.sh` | No-LLM collector — writes `data/agents/system-check/findings.json` (runtime health) |
 | `scripts/agents/agent_status.py` | Shared helper — writes `data/agents/<name>/last_run.json` for any collector |
+| `app/Console/Commands/HermesAlertCommand.php` | `hermes:alert` — reads latest CRITICAL/FAIL collector reports + emails the operator (deduped) via SES; see [Alerting](#alerting-criticalfail--email) |
+| `app/Notifications/HermesAlertNotification.php` | Queued (on the `mail` queue) SES notification carrying the CRITICAL/FAIL findings |
+| `config/hermes.php` | `alert_email` ← `HERMES_ALERT_EMAIL` — recipient for `hermes:alert` (unset → alerting skipped) |
 | `.claude/commands/hermes-fleet.md` | Slash command `/hermes-fleet` — runs the 5-agent fleet inside an interactive session |
 | `.claude/commands/hermes-docs.md` | Slash command `/hermes-docs` — single-agent doc sync |
 | `.claude/commands/hermes-audit.md` | Slash command `/hermes-audit` — runs audit collector + interprets findings |
@@ -133,6 +136,39 @@ flowchart LR
 | `data/hermes_findings.json` | Latest run's machine-readable status (gitignored) |
 | `data/logs/` | Per-step logs (gitignored) |
 | `docs/hermes/FLEET-*.md` | Fleet run notes — agent reports, actions taken, carry-forward items |
+
+## Alerting (CRITICAL/FAIL → email)
+
+The collectors are scheduled in prod but only *write report files* — nothing reads
+them unless someone runs `composer hermes-status`. `hermes:alert` closes that loop:
+it turns an actionable finding into an email so an operator hears about it.
+
+```
+collector (no LLM)            hermes:alert (no LLM)            SES
+audit_sentinel  ─CRITICAL─┐                                ┌─ mail queue ─→ inbox
+system_check    ─FAIL─────┴─→ reads latest findings.json ──┘   (HERMES_ALERT_EMAIL)
+```
+
+- **Wiring** — `routes/console.php` chains `->then(fn () => Artisan::call('hermes:alert'))`
+  after `audit_sentinel.sh` (daily 06:00) and `system_check.sh` (every 6h), so the
+  alert always reads a *fresh* report. update_inspector is WARN-only and not wired in.
+- **What it alerts on** — audit-sentinel findings with `severity: CRITICAL` (leaked
+  secret, `APP_DEBUG` in prod, dependency CVE) and system-check findings with
+  `status: FAIL` (disk full, DB unreachable, queue backlog).
+- **Dedup** — a fingerprint of the active finding-set is stored in
+  `storage/app/hermes-alert-state.json`; the email sends only when that set *changes*,
+  so a standing condition emails once, not every 6h. When the set clears, state resets
+  so a recurrence re-alerts. `hermes:alert --force` ignores the state (for testing).
+- **Delivery** — queued on the dedicated `mail` queue via `HermesAlertNotification`,
+  riding the existing SES stack (no AWS CLI in bash). Requires the Email Worker daemon
+  (`queue:work --queue=mail`).
+- **Config** — `config/hermes.php` reads `HERMES_ALERT_EMAIL`. Unset → the command logs
+  a warning and sends nothing (never crashes the scheduler). Set it **before**
+  `config:cache` runs on deploy; in the SES sandbox the recipient must be a verified
+  identity or the alert itself bounces.
+- **Still no LLM** — `hermes:alert` is pure PHP reading JSON; the prod alert path makes
+  no API call and costs nothing. (The deeper "read & interpret the finding" step is the
+  manual `/hermes-audit` LLM layer, off-server.)
 
 ## Dead-code policy (both stacks gated)
 
