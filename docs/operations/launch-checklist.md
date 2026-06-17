@@ -92,33 +92,41 @@ Pricing is **EUR**. Test mode is already wired; this is the LIVE setup.
 
 ---
 
-## 4. Mail — Zoho (transactional), domain `flowstack.run`
+## 4. Mail — AWS SES (transactional), identity `txn.flowstack.run`
 **Skip symptom:** verification + password-reset + lead/handoff/credit emails
 never arrive (they fall back to the log).
 
-AWS SES is **not** needed — the app only sends transactional mail. (SES would
-only be for bulk/marketing, which this app doesn't do.)
+The app sends **transactional** mail through **AWS SES** (via the SES API over
+HTTPS — `MAIL_MAILER=ses`, no SMTP). **Zoho is the human inbox only** — the
+mailbox where we read/reply to mail at `hello@flowstack.run`. Zoho is **not**
+the app's sender (its free-plan SMTP was unreliable: repeated `535` auth
+failures). Marketing/bulk is a separate future lane (own subdomain — see the
+out-of-scope note).
 
-- [ ] Zoho Mail Admin (EU) → https://mailadmin.zoho.eu → add + verify `flowstack.run`
-- [ ] Add DNS records at the registrar (values from the Zoho panel):
-  - MX: `mx.zoho.eu` (10), `mx2.zoho.eu` (20), `mx3.zoho.eu` (50)
-  - SPF (TXT `@`): `v=spf1 include:zohomail.eu ~all`
-  - DKIM (TXT `zmail._domainkey`): key from the panel
-  - Verification TXT + optional DMARC (`_dmarc`: `v=DMARC1; p=none; rua=mailto:hello@flowstack.run`)
-- [ ] Create mailbox `hello@flowstack.run`
-- [ ] App password: https://accounts.zoho.eu/home#security/app-passwords (needs 2FA)
+- [ ] SES (region **eu-central-1**) → verify a **domain identity**
+      `txn.flowstack.run` (https://console.aws.amazon.com/ses):
+  - DKIM: add the 3 `*._domainkey.txn` CNAMEs from SES → status **Verified**
+  - Custom MAIL FROM `bounce.txn.flowstack.run`:
+    - MX: `feedback-smtp.eu-central-1.amazonses.com` (priority 10)
+    - SPF (TXT `bounce.txn`): `v=spf1 include:amazonses.com ~all`
+  - DMARC (TXT `_dmarc.txn`): `v=DMARC1; p=none;`
+- [ ] **Request production access** (SES → Account dashboard). Until granted,
+      sandbox only delivers to verified addresses. See
+      `docs/operations/ses-production-access-request.md` for the support-case reply.
+- [ ] IAM user with `ses:SendEmail` + `ses:SendRawEmail` → access key + secret
 - [ ] Forge `.env`:
   ```bash
-  MAIL_MAILER=smtp
-  MAIL_HOST=smtp.zoho.eu
-  MAIL_PORT=465
-  MAIL_SCHEME=smtps
-  MAIL_USERNAME=hello@flowstack.run
-  MAIL_PASSWORD=<app password>
-  MAIL_FROM_ADDRESS=hello@flowstack.run
+  MAIL_MAILER=ses
+  MAIL_FROM_ADDRESS=noreply@txn.flowstack.run   # must be @ the verified domain
   MAIL_FROM_NAME="Flowstack"
+  AWS_ACCESS_KEY_ID=AKIA...
+  AWS_SECRET_ACCESS_KEY=...
+  AWS_DEFAULT_REGION=eu-central-1
   ```
-- [ ] Verify: `php artisan mail:test you@example.com`
+- [ ] Verify: `php artisan mail:test neoptolemos.papadiofantous@flowstack.run`
+      (a verified address while in sandbox) → expect `Mailer: ses`, then delivery.
+- [ ] Transactional email runs on a dedicated **`mail` queue** drained by the
+      **Email Worker** (§6) — needs that worker running to deliver.
 
 ---
 
@@ -153,8 +161,13 @@ queued events; no live broadcasts; search index never updates.
 - [ ] **Scheduler**: enable Forge's scheduler (`* * * * * php artisan schedule:run`).
       Gates: `credits:grant-renewals`, `credits:reconcile`, `runtime:spend-check`,
       `runtime:prune-sessions`, the daily **audit sentinel**, weekly update inspector.
-- [ ] **Queue worker** daemon: `php artisan queue:work` (with `QUEUE_CONNECTION=database`,
-      `SCOUT_QUEUE=true`). Processes broadcasts, queued mail, scout indexing.
+- [ ] **Queue worker** daemon (general): `php artisan queue:work database` (with
+      `QUEUE_CONNECTION=database`, `SCOUT_QUEUE=true`). Processes the `default`
+      queue — broadcasts, scout indexing, etc.
+- [ ] **Email Worker** daemon (dedicated): `php artisan queue:work database --queue=mail`.
+      Transactional email (verify, welcome, password-reset) is queued on the
+      `mail` queue; without this worker those emails never send. Isolated lane so
+      a future bulk/marketing send can't delay transactional mail.
 - [ ] **Reverb daemon** (§5).
 - [ ] Confirm `BILLING_GRANT_ON_SIGNUP=false` in prod.
 
@@ -206,6 +219,9 @@ Test cards (only meaningful before live): `4242 4242 4242 4242` (ok),
 
 ## Out of scope for this launch (by decision or phase)
 - Free trial (product decision: none — €99 Starter is the entry point)
-- AWS SES / S3 (not used — Zoho covers mail; KB uploads parse to text, no file storage)
+- Marketing / bulk email (not in this launch — transactional only via AWS SES;
+  marketing would use a separate SES identity e.g. `news.flowstack.run`, a `bulk`
+  queue, and unsubscribe/consent handling)
+- S3 / file storage (not used — KB uploads parse to text, no file storage)
 - Slack notifier, general action audit log, DSR intake, consent records, transcript export (backlog)
 - Typesense search (optional — DB `LIKE` fallback ships by default)
