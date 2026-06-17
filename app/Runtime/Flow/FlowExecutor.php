@@ -9,6 +9,7 @@ use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\LLM\LlmRouter;
 use App\Runtime\Session\ConversationContext;
 use App\Runtime\Session\SessionManager;
+use App\Runtime\Support\EscalateToHuman;
 use App\Runtime\Tools\ToolRegistry;
 
 /**
@@ -36,6 +37,7 @@ class FlowExecutor
         protected ToolRegistry $tools,
         protected KnowledgeStore $knowledge,
         protected SessionManager $sessions,
+        protected EscalateToHuman $escalate,
     ) {}
 
     public function execute(ConversationContext $context, Flow $flow): TurnResult
@@ -46,8 +48,22 @@ class FlowExecutor
         $stateName = $flow->has($session->flow_state) ? $session->flow_state : $flow->initial();
         $state = $flow->resolve($stateName);
 
-        $system = $this->systemPrompt($context->agent, $state, $context);
-        $specs = $this->tools->specs($state->tools);
+        // Grounding retrieval for this turn. The confidence gate reads the
+        // best score; citations ride out on the assistant message.
+        $retrieval = $this->retrieve($context->agent->id, $context->userMessage);
+        $lowConfidence = $this->isLowConfidence($context->agent, $retrieval);
+        // On a low-confidence turn we don't claim sources — the whole point
+        // is "we don't have a confident answer".
+        $citations = $lowConfidence ? [] : $retrieval['citations'];
+
+        $system = $this->systemPrompt($context->agent, $state, $context, $retrieval['text'], $lowConfidence);
+
+        // Low confidence → make sure the model CAN escalate even if the
+        // current state didn't expose request_handoff.
+        $toolNames = $lowConfidence
+            ? array_values(array_unique([...$state->tools, 'request_handoff']))
+            : $state->tools;
+        $specs = $this->tools->specs($toolNames);
 
         // Quality tier (Versions page): resolves provider + model for every
         // LLM call this turn. Unknown/absent tiers degrade to the default.
@@ -131,6 +147,16 @@ class FlowExecutor
 
         $this->sessions->appendHistory($session, $newEntries); // also saves + touches activity
 
+        // Deterministic backstop for the hybrid gate: if this was a
+        // low-confidence turn and the model didn't escalate on its own,
+        // escalate anyway so the human-follow-up promise is always kept.
+        if ($lowConfidence && ! $this->handoffFired($toolEvents)) {
+            rescue(
+                fn () => $this->escalate->handle($context, 'Low-confidence answer: no KB match above the confidence threshold.'),
+                report: true,
+            );
+        }
+
         // Durable cost rollup (runtime_usage) — sessions are ephemeral, this
         // survives resets/pruning. Best-effort: never fail the visitor's turn.
         rescue(fn () => RuntimeUsage::record($context->agent, $tokensIn, $tokensOut, $tier), report: true);
@@ -139,8 +165,16 @@ class FlowExecutor
             $finalText = 'Thanks — a teammate will follow up shortly.';
         }
 
+        // Only attach the citations key when there are sources — keeps the
+        // trace payload shape unchanged for greetings / low-confidence /
+        // no-KB turns (the UI + recorder both treat it as optional).
+        $payload = ['message' => $finalText];
+        if ($citations !== []) {
+            $payload['citations'] = $citations;
+        }
+
         return new TurnResult(
-            traces: [['type' => 'text', 'payload' => ['message' => $finalText]]],
+            traces: [['type' => 'text', 'payload' => $payload]],
             finalState: $next,
             toolEvents: $toolEvents,
         );
@@ -150,7 +184,7 @@ class FlowExecutor
      * Base identity + guardrails + state instructions + remembered
      * variables + auto-RAG context for this turn.
      */
-    protected function systemPrompt(Agent $agent, State $state, ConversationContext $context): string
+    protected function systemPrompt(Agent $agent, State $state, ConversationContext $context, string $kbContext, bool $lowConfidence): string
     {
         $company = (string) ($agent->team->name ?? 'the company');
 
@@ -190,24 +224,33 @@ class FlowExecutor
             $parts[] = "Known facts about this visitor (do not re-ask):\n".implode("\n", $lines);
         }
 
-        $kbContext = $this->ragContext($agent->id, $context->userMessage);
         if ($kbContext !== '') {
             $parts[] = "Knowledge-base context for this turn:\n".$kbContext;
+        }
+
+        if ($lowConfidence) {
+            $parts[] = 'IMPORTANT: The knowledge base has no confident answer to the visitor\'s current '
+                .'question. Do NOT guess or invent an answer. Briefly tell the visitor you\'ll connect them '
+                .'with a teammate who can help, and call the request_handoff tool.';
         }
 
         return implode("\n\n", $parts);
     }
 
     /**
-     * Top KB chunks for the visitor's message, injected automatically so
-     * answers are grounded without depending on the model calling query_kb.
-     * Failures (no embedding key, provider down, empty KB) degrade to no
-     * context — the turn still completes.
+     * Retrieve grounding context for this turn: the top KB chunks formatted
+     * for the prompt, plus structured citations and the best similarity
+     * score (read by the confidence gate). Failures (no embedding key,
+     * provider down, empty KB) degrade to "no context" — the turn still
+     * completes. `attempted` distinguishes "we looked" from the greeting
+     * turn, so the gate only fires on real questions.
+     *
+     * @return array{text: string, citations: list<array{document_id: int, document_title: string, chunk_id: int, score: float}>, top_score: float, attempted: bool}
      */
-    protected function ragContext(int $agentId, string $userMessage): string
+    protected function retrieve(int $agentId, string $userMessage): array
     {
         if ($userMessage === self::OPENING_MESSAGE) {
-            return ''; // greeting turn — nothing to look up
+            return ['text' => '', 'citations' => [], 'top_score' => 0.0, 'attempted' => false];
         }
 
         $results = rescue(
@@ -217,14 +260,64 @@ class FlowExecutor
         );
 
         if ($results === []) {
-            return '';
+            return ['text' => '', 'citations' => [], 'top_score' => 0.0, 'attempted' => true];
         }
 
         $lines = [];
+        $citations = [];
         foreach ($results as $r) {
             $lines[] = '- ('.$r['document_title'].') '.$r['chunk'];
+            $citations[] = [
+                'document_id' => (int) $r['document_id'],
+                'document_title' => (string) $r['document_title'],
+                'chunk_id' => (int) $r['chunk_id'],
+                'score' => (float) $r['score'],
+            ];
         }
 
-        return implode("\n", $lines);
+        return [
+            'text' => implode("\n", $lines),
+            'citations' => $citations,
+            'top_score' => (float) $results[0]['score'], // search() returns score-descending
+            'attempted' => true,
+        ];
+    }
+
+    /**
+     * Hybrid confidence gate: low confidence when the per-agent toggle is on,
+     * we actually attempted retrieval, the best score is below the answer
+     * threshold, AND the agent has a knowledge base (so a weak score means
+     * "couldn't answer", not "this agent answers from instructions alone").
+     *
+     * @param  array{text: string, citations: array<int, mixed>, top_score: float, attempted: bool}  $retrieval
+     */
+    protected function isLowConfidence(Agent $agent, array $retrieval): bool
+    {
+        if (! $agent->auto_escalate_low_confidence || ! $retrieval['attempted']) {
+            return false;
+        }
+
+        if ($retrieval['top_score'] >= (float) config('runtime.rag.answer_confidence')) {
+            return false;
+        }
+
+        // Below threshold. Citations present → KB has content but matched
+        // weakly. Citations empty → confirm the agent has a KB at all before
+        // treating a no-match as a failure to answer.
+        return $retrieval['citations'] !== [] || $this->knowledge->hasDocuments($agent->id);
+    }
+
+    /**
+     * @param  list<array{name: string, ok: bool}>  $toolEvents
+     */
+    protected function handoffFired(array $toolEvents): bool
+    {
+        foreach ($toolEvents as $event) {
+            if ($event['name'] === 'request_handoff' && $event['ok']) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

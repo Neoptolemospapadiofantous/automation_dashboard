@@ -3,7 +3,14 @@
         {
             "type": "text",
             "payload": {
-                "message": "The Starter plan is $99 per month."
+                "message": "The Starter plan is $99 per month.",
+                "citations": [
+                    {
+                        "document_title": "Pricing",
+                        "chunk_id": 1,
+                        "score": 1
+                    }
+                ]
             }
         }
     ],

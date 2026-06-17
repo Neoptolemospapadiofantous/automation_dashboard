@@ -63,6 +63,14 @@ return [
         // Similarity threshold below which retrieved chunks are dropped —
         // prevents irrelevant context from polluting prompts.
         'min_similarity' => (float) env('RUNTIME_MIN_SIMILARITY', 0.25),
+        // Confidence floor for *answering*. When an agent HAS a knowledge
+        // base but the best retrieved chunk scores below this, the turn is
+        // treated as low-confidence: the model is told not to guess and to
+        // escalate, with a deterministic handoff backstop (see FlowExecutor).
+        // Higher than min_similarity on purpose — "good enough to inject" is
+        // a lower bar than "good enough to answer on". Per-agent opt-out via
+        // agents.auto_escalate_low_confidence.
+        'answer_confidence' => (float) env('RUNTIME_ANSWER_CONFIDENCE', 0.45),
     ],
 
     /*

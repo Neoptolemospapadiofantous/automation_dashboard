@@ -39,7 +39,7 @@ class AppServiceProvider extends ServiceProvider
             $registry->register($app->make(QueryKnowledgeTool::class));
             $registry->register(new EndSessionTool);
             $registry->register(new SetVariableTool);
-            $registry->register(new RequestHandoffTool);
+            $registry->register($app->make(RequestHandoffTool::class));
 
             return $registry;
         });

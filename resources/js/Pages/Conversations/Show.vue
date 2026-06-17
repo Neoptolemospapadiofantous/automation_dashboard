@@ -14,6 +14,23 @@ const props = defineProps({
 
 const fmt = (d) => (d ? new Date(d).toLocaleString() : '');
 
+// KB citation chips: dedupe by document_title, keep order of first
+// appearance, and cap the visible list (the rest collapse into "+N more").
+// Backend leaves citations null/empty for user turns, greetings, and
+// low-confidence / no-KB answers, so callers must guard on length.
+const citationChips = (citations) => {
+    if (!Array.isArray(citations)) return [];
+    const seen = new Set();
+    const titles = [];
+    for (const c of citations) {
+        const title = c?.document_title;
+        if (!title || seen.has(title)) continue;
+        seen.add(title);
+        titles.push(title);
+    }
+    return titles;
+};
+
 const hasTranscript = computed(() => !!props.conversation.transcript_id);
 const isEnded = computed(() => !!props.conversation.ended_at);
 
@@ -101,6 +118,26 @@ const deleteUpstream = async () => {
                             :class="m.role === 'user' ? 'bg-ink text-bg' : 'bg-surface-hi text-ink'"
                         >
                             <p>{{ m.text }}</p>
+                            <!-- KB source chips: secondary metadata under agent
+                                 turns only, deduped by document title. -->
+                            <div
+                                v-if="m.role === 'agent' && citationChips(m.citations).length"
+                                class="mt-1.5 flex flex-wrap gap-1"
+                            >
+                                <span
+                                    v-for="title in citationChips(m.citations).slice(0, 3)"
+                                    :key="title"
+                                    class="inline-flex items-center rounded-none border border-border-line bg-bg px-1.5 py-0.5 font-mono text-[10px] text-ink-dim"
+                                >
+                                    Source: {{ title }}
+                                </span>
+                                <span
+                                    v-if="citationChips(m.citations).length > 3"
+                                    class="inline-flex items-center font-mono text-[10px] text-ink-dim opacity-60"
+                                >
+                                    +{{ citationChips(m.citations).length - 3 }} more
+                                </span>
+                            </div>
                             <p class="mt-1 font-mono text-[10px] opacity-60">{{ fmt(m.sent_at) }}</p>
                         </div>
                     </div>

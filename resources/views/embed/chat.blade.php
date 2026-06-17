@@ -103,6 +103,21 @@
         form button:hover:not(:disabled),
         form button:active:not(:disabled) { background: var(--bg); color: var(--ink); }
         form button:disabled { opacity: .5; cursor: not-allowed; }
+        /* KB source chips — secondary metadata beneath an agent turn.
+           Aligned to the agent bubble (flex-start), muted mono to read as
+           provenance rather than message content. */
+        .sources {
+            align-self: flex-start;
+            display: flex; flex-wrap: wrap; gap: 4px;
+            max-width: 80%; margin-top: -4px;
+        }
+        .sources .source {
+            border: 1px solid var(--border-line); border-radius: 0;
+            background: var(--bg); color: var(--ink-dim);
+            padding: 2px 6px; font-size: 10px;
+            font-family: var(--font-mono); letter-spacing: 0.02em;
+        }
+        .sources .source.more { border: 0; opacity: .6; padding: 2px 2px; }
         .typing {
             align-self: flex-start;
             background: var(--surface); color: var(--ink-dim);
@@ -158,6 +173,38 @@
         return d;
     }
 
+    // Render deduped KB source chips beneath an agent turn. citations is the
+    // raw trace payload array; may be null/undefined/empty (greetings,
+    // low-confidence answers, no-KB replies) in which case nothing renders.
+    function addSources(citations) {
+        if (!Array.isArray(citations) || !citations.length) return;
+        var seen = {};
+        var titles = [];
+        for (var i = 0; i < citations.length; i++) {
+            var title = citations[i] && citations[i].document_title;
+            if (!title || seen[title]) continue;
+            seen[title] = true;
+            titles.push(title);
+        }
+        if (!titles.length) return;
+        var wrap = document.createElement('div');
+        wrap.className = 'sources';
+        titles.slice(0, 3).forEach(function (title) {
+            var chip = document.createElement('span');
+            chip.className = 'source';
+            chip.textContent = 'Source: ' + title;
+            wrap.appendChild(chip);
+        });
+        if (titles.length > 3) {
+            var more = document.createElement('span');
+            more.className = 'source more';
+            more.textContent = '+' + (titles.length - 3) + ' more';
+            wrap.appendChild(more);
+        }
+        thread.appendChild(wrap);
+        thread.scrollTop = thread.scrollHeight;
+    }
+
     function addTyping() {
         var d = document.createElement('div');
         d.className = 'typing';
@@ -172,8 +219,10 @@
         traces.forEach(function (t) {
             if (t.type === 'text' && t.payload && t.payload.message) {
                 addMsg('agent', t.payload.message);
+                addSources(t.payload.citations);
             } else if (t.type === 'speak' && t.payload && t.payload.message) {
                 addMsg('agent', t.payload.message);
+                addSources(t.payload.citations);
             }
         });
     }

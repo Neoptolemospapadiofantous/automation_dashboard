@@ -24,6 +24,7 @@ class Message extends Model
         'text',
         'trace_type',
         'payload',
+        'citations',
         'sequence',
         'sent_at',
     ];
@@ -32,6 +33,7 @@ class Message extends Model
     {
         return [
             'payload' => 'array',
+            'citations' => 'array',
             'sent_at' => 'datetime',
         ];
     }

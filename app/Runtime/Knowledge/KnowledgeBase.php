@@ -99,6 +99,11 @@ class KnowledgeBase implements KnowledgeStore
         return array_slice($scored, 0, max(1, $topK));
     }
 
+    public function hasDocuments(int $agentId): bool
+    {
+        return KbChunk::query()->where('agent_id', $agentId)->exists();
+    }
+
     public function deleteDocument(int $agentId, int $documentId): void
     {
         // Chunks cascade via the document_id FK.

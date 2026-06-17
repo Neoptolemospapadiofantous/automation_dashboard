@@ -169,11 +169,12 @@ class ChatController extends Controller
                 foreach ($this->runtime->streamText($agent, $data['user_id'], $data['message']) as $event) {
                     if ($event['event'] === 'message') {
                         $text = (string) ($event['data']['message'] ?? '');
+                        $citations = (array) ($event['data']['citations'] ?? []);
                         if ($text !== '') {
-                            $messages[] = $text;
+                            $messages[] = ['text' => $text, 'citations' => $citations];
                         }
                         echo 'event: trace'."\n";
-                        echo 'data: '.json_encode(['type' => 'text', 'payload' => ['message' => $text]])."\n\n";
+                        echo 'data: '.json_encode(['type' => 'text', 'payload' => ['message' => $text, 'citations' => $citations]])."\n\n";
                     } elseif ($event['event'] === 'done') {
                         $ended = ($event['data']['state'] ?? '') === 'ended';
                     }
@@ -205,11 +206,11 @@ class ChatController extends Controller
                 }
             }
 
-            foreach ($messages as $text) {
+            foreach ($messages as $turn) {
                 if ($conversation) {
-                    $this->safelyRecord($conversation, 'agent', $text);
+                    $this->safelyRecord($conversation, 'agent', $turn['text'], $turn['citations']);
                 }
-                $this->broadcastMessage($request, $lead, 'agent', $text);
+                $this->broadcastMessage($request, $lead, 'agent', $turn['text']);
             }
 
             if ($conversation && $ended) {
@@ -245,11 +246,13 @@ class ChatController extends Controller
      */
     protected function respond(Request $request, Agent $agent, string $userId, ?Lead $lead, array $traces, ?Conversation $conversation = null): JsonResponse
     {
-        $messages = [];
+        $messages = [];      // text only — billing count + JSON response shape
+        $agentTurns = [];    // [text, citations] — for recording with sources
         foreach ($traces as $trace) {
             $text = (string) ($trace['payload']['message'] ?? '');
             if ($text !== '') {
                 $messages[] = $text;
+                $agentTurns[] = ['text' => $text, 'citations' => (array) ($trace['payload']['citations'] ?? [])];
             }
         }
 
@@ -273,11 +276,11 @@ class ChatController extends Controller
             report(new \RuntimeException('Credit debit raced past zero for team '.$team->id));
         }
 
-        foreach ($messages as $message) {
+        foreach ($agentTurns as $turn) {
             if ($conversation) {
-                $this->safelyRecord($conversation, 'agent', $message);
+                $this->safelyRecord($conversation, 'agent', $turn['text'], $turn['citations']);
             }
-            $this->broadcastMessage($request, $lead, 'agent', $message);
+            $this->broadcastMessage($request, $lead, 'agent', $turn['text']);
         }
 
         // End detection: the runtime owns flow_state; 'ended' is terminal.
@@ -371,10 +374,13 @@ class ChatController extends Controller
         }
     }
 
-    protected function safelyRecord(Conversation $conversation, string $role, string $text): void
+    /**
+     * @param  list<array<string, mixed>>  $citations
+     */
+    protected function safelyRecord(Conversation $conversation, string $role, string $text, array $citations = []): void
     {
         try {
-            $this->recorder->record($conversation, $role, $text, 'text');
+            $this->recorder->record($conversation, $role, $text, 'text', null, $citations ?: null);
         } catch (\Throwable $e) {
             report($e);
         }

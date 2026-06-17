@@ -58,6 +58,7 @@ class ConversationRecorder
      *
      * @param  'user'|'agent'|'system'  $role
      * @param  array<string, mixed>|null  $payload
+     * @param  list<array<string, mixed>>|null  $citations  KB sources that grounded an agent answer
      */
     public function record(
         Conversation $conversation,
@@ -65,8 +66,9 @@ class ConversationRecorder
         string $text,
         ?string $traceType = null,
         ?array $payload = null,
+        ?array $citations = null,
     ): Message {
-        return DB::transaction(function () use ($conversation, $role, $text, $traceType, $payload) {
+        return DB::transaction(function () use ($conversation, $role, $text, $traceType, $payload, $citations) {
             $sequence = (int) $conversation->messages()->lockForUpdate()->max('sequence') + 1;
 
             $message = $conversation->messages()->create([
@@ -76,6 +78,7 @@ class ConversationRecorder
                 'text' => $text,
                 'trace_type' => $traceType,
                 'payload' => $payload,
+                'citations' => $citations !== null && $citations !== [] ? $citations : null,
                 'sequence' => $sequence,
                 'sent_at' => now(),
             ]);
