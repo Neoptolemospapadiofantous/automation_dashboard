@@ -4,7 +4,7 @@ import { onBeforeUnmount } from 'vue';
  * Subscribe to a Laravel Echo channel for the lifetime of a component.
  *
  * Usage:
- *   useEcho('dashboard', '.tick', (payload) => { ... });
+ *   const { connected } = useEcho('some-channel', '.event.name', (payload) => { ... });
  *
  * Returns whether a live connection is actually available (Echo is only
  * initialised when real-time credentials are present — see echo.js), so the

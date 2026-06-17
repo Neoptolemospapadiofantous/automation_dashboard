@@ -7,7 +7,6 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\DashboardTickController;
 use App\Http\Controllers\EmbedController;
 use App\Http\Controllers\HermesMetricsController;
 use App\Http\Controllers\InstallController;
@@ -127,11 +126,6 @@ Route::middleware([
         ->name('billing.portal');
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
-
-    // Phase 2 live-tick demo: fires a broadcast every connected browser receives.
-    Route::post('/dashboard/tick', DashboardTickController::class)
-        ->middleware('throttle:30,1')
-        ->name('dashboard.tick');
 
     // Phase 3 lead pipeline (kanban board with live updates).
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
