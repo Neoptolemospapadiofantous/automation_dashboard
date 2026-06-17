@@ -64,10 +64,10 @@ const meta = computed(() => {
                     Back to dashboard
                 </Link>
                 <a
-                    href="https://flowstack.com"
+                    href="https://flowstack.run"
                     class="rounded-none border border-border-hi bg-bg px-4 py-2 text-sm font-medium text-ink-dim hover:bg-surface-hi active:bg-surface-hi"
                 >
-                    Visit flowstack.com
+                    Visit flowstack.run
                 </a>
             </div>
 

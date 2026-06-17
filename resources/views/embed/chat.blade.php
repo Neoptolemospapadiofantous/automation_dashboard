@@ -137,7 +137,7 @@
     <button type="submit" id="send">Send</button>
 </form>
 
-<div class="powered">Powered by <a href="https://flowstack.com" target="_blank" rel="noopener">Flowstack</a></div>
+<div class="powered">Powered by <a href="https://flowstack.run" target="_blank" rel="noopener">Flowstack</a></div>
 
 <script>
 (function () {
