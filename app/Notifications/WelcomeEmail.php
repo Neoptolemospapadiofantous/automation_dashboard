@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -11,11 +12,17 @@ use Illuminate\Notifications\Notification;
  * an entry point to the most-valuable part of the product (the chat
  * panel) so they're not staring at an empty dashboard.
  *
- * Queued so registration doesn't block on SMTP.
+ * Queued on the dedicated "mail" queue so registration never blocks on
+ * mail-provider latency and the send is isolated from other work.
  */
-class WelcomeEmail extends Notification
+class WelcomeEmail extends Notification implements ShouldQueue
 {
     use Queueable;
+
+    public function __construct()
+    {
+        $this->onQueue('mail');
+    }
 
     /**
      * @return array<int, string>

@@ -5,16 +5,19 @@ namespace App\Listeners;
 use App\Models\User;
 use App\Notifications\WelcomeEmail;
 use Illuminate\Auth\Events\Registered;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
 /**
- * Sends the welcome email after a user registers. Queued so the
- * registration response isn't gated on SMTP latency.
+ * Sends the welcome email after a user registers.
+ *
+ * The listener itself runs synchronously, but WelcomeEmail is a queued
+ * (ShouldQueue) notification on the "mail" queue, so the only in-request
+ * work is enqueuing the job — the registration response is never gated on
+ * mail-provider latency.
  *
  * Laravel 11+ auto-discovers listeners by method signature — the
  * `handle(Registered $event)` shape is enough.
  */
-class SendWelcomeEmail implements ShouldQueue
+class SendWelcomeEmail
 {
     public function handle(Registered $event): void
     {

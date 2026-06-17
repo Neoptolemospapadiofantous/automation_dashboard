@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\QueuedResetPassword;
 use App\Notifications\QueuedVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -78,5 +79,17 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendEmailVerificationNotification(): void
     {
         $this->notify(new QueuedVerifyEmail);
+    }
+
+    /**
+     * Send the password reset notification via the queued variant so the
+     * forgot-password request never blocks on — or 500s from — mail-provider
+     * latency or rejections. See QueuedResetPassword.
+     *
+     * @param  string  $token
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new QueuedResetPassword($token));
     }
 }

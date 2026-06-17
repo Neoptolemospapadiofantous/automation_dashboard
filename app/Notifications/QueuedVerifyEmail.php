@@ -20,9 +20,16 @@ use Illuminate\Contracts\Queue\ShouldQueue;
  * semantics. Branded copy is inherited from the VerifyEmail::toMailUsing()
  * callback registered in AppServiceProvider.
  *
- * Requires a running queue worker in production to actually deliver.
+ * Routed to the dedicated "mail" queue so transactional auth email is
+ * isolated from broadcasts/indexing and (later) bulk sends. Requires a
+ * worker consuming the "mail" queue to actually deliver.
  */
 class QueuedVerifyEmail extends VerifyEmail implements ShouldQueue
 {
     use Queueable;
+
+    public function __construct()
+    {
+        $this->onQueue('mail');
+    }
 }
