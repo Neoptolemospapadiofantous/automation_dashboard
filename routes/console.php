@@ -26,6 +26,10 @@ Schedule::command('runtime:spend-check')->dailyAt('5:45');
 // land in data/agents/*/; `composer hermes-status` summarizes. The full
 // watchdog (hermes-fast) stays on-demand + CI; these cover drift that
 // only shows over time (CVEs, outdated deps, disk, log errors, secrets).
-Schedule::exec('bash scripts/agents/audit_sentinel.sh')->dailyAt('6:00');
+// After the two collectors that can produce CRITICAL/FAIL, run hermes:alert —
+// it reads the fresh report and emails the operator (deduped) via SES.
+Schedule::exec('bash scripts/agents/audit_sentinel.sh')->dailyAt('6:00')
+    ->then(fn () => Artisan::call('hermes:alert'));
 Schedule::exec('bash scripts/agents/update_inspector.sh')->weeklyOn(1, '6:10');
-Schedule::exec('bash scripts/agents/system_check.sh')->everySixHours();
+Schedule::exec('bash scripts/agents/system_check.sh')->everySixHours()
+    ->then(fn () => Artisan::call('hermes:alert'));
