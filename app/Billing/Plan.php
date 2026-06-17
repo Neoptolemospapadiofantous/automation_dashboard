@@ -22,7 +22,7 @@ namespace App\Billing;
  * Custom direction (see priceEur() + label() + features); future Phase H
  * Stripe wiring can introduce new case names + migration as needed.
  *
- * Offer tiers (aligned with flowstack.com/pricing as of 2026-06-09):
+ * Offer tiers (aligned with flowstack.run/pricing as of 2026-06-09):
  *   - Starter  (€99/mo)  — 1 agent, 2,500 credits, "try the product"
  *   - Operator (€399/mo) — up to 5 agents, 25,000 credits, top-ups enabled
  *   - Custom   (scoped 4-6 week project) — bespoke flows, custom integrations
