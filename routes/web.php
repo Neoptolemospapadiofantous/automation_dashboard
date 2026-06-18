@@ -189,6 +189,9 @@ Route::middleware([
     // Done page links to it as the final activation step.
     Route::get('/install', [InstallController::class, 'index'])
         ->name('install.index');
+    Route::put('/install/widget', [InstallController::class, 'update'])
+        ->middleware('throttle:30,1')
+        ->name('install.update');
 
     // Knowledge Base (native runtime RAG store).
     Route::get('/knowledge', [KnowledgeBaseController::class, 'index'])->name('knowledge.index');

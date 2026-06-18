@@ -13,11 +13,13 @@ use Symfony\Component\HttpFoundation\Response;
  *  - Referrer-Policy                   — don't leak full dashboard URLs
  *  - X-Frame-Options: SAMEORIGIN       — clickjacking guard for the app
  *
- * X-Frame-Options is set ONLY IF ABSENT: the embed chat page
- * (EmbedController::chat) is an iframe product — it deliberately sends
- * `Content-Security-Policy: frame-ancestors *` + `X-Frame-Options:
- * ALLOWALL` so customers can frame it from any domain. Overriding that
- * here would silently break every installed widget.
+ * The embed chat page (EmbedController::chat) is an iframe PRODUCT and owns
+ * its own framing policy via `Content-Security-Policy: frame-ancestors ...`
+ * (plus `X-Frame-Options: ALLOWALL` only when unrestricted). We must NOT
+ * backfill SAMEORIGIN there: for an allowlisted agent the controller
+ * intentionally omits X-Frame-Options (XFO can't express a domain list) and
+ * relies on frame-ancestors — a SAMEORIGIN backfill would block the
+ * customer's own domain and silently break every restricted widget.
  */
 class SecurityHeaders
 {
@@ -28,7 +30,8 @@ class SecurityHeaders
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-        if (! $response->headers->has('X-Frame-Options')) {
+        // The embed chat page governs its own framing (frame-ancestors).
+        if (! $response->headers->has('X-Frame-Options') && ! $request->routeIs('embed.chat')) {
             $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         }
 
