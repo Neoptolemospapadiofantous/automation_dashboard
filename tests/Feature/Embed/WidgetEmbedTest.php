@@ -31,6 +31,16 @@ class WidgetEmbedTest extends TestCase
                 return [['type' => 'text', 'payload' => ['message' => 'hi']]];
             }
 
+            public function hasSession(Agent $agent, string $visitorId): bool
+            {
+                return false;
+            }
+
+            public function transcript(Agent $agent, string $visitorId): array
+            {
+                return [];
+            }
+
             public function sendText(Agent $agent, string $visitorId, string $text): array
             {
                 return [['type' => 'text', 'payload' => ['message' => 'hi']]];

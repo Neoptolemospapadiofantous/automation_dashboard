@@ -134,9 +134,26 @@ class EmbedController extends Controller
             ], 402);
         }
 
-        $visitorId = $request->cookie("fs_embed_{$slug}");
-        if (! is_string($visitorId) || $visitorId === '') {
-            $visitorId = 'embed-'.Str::random(28);
+        // Visitor identity: prefer the client-supplied id (localStorage —
+        // survives third-party-cookie blocking + http localhost), then the
+        // cookie, else mint one. The id is an unguessable capability token
+        // ("embed-" + 28 random chars); validate the shape so a client can't
+        // inject an arbitrary value.
+        $visitorId = $this->resolveVisitorId(
+            (string) $request->input('visitor_id', ''),
+            (string) $request->cookie("fs_embed_{$slug}", ''),
+        );
+
+        // Returning visitor with a live session → resume: restore the
+        // transcript, no greeting, no LLM call, no charge.
+        if ($this->runtime->hasSession($agent, $visitorId)) {
+            return $this->launchResponse($slug, $visitorId, [
+                'visitor_id' => $visitorId,
+                'agent_name' => $agent->name,
+                'resumed' => true,
+                'transcript' => $this->runtime->transcript($agent, $visitorId),
+                'traces' => [],
+            ]);
         }
 
         // Greeting cap: launches are normally free (the visitor hasn't said
@@ -170,11 +187,37 @@ class EmbedController extends Controller
             ], 503);
         }
 
-        return response()->json([
+        return $this->launchResponse($slug, $visitorId, [
             'visitor_id' => $visitorId,
             'agent_name' => $agent->name,
+            'resumed' => false,
+            'transcript' => [],
             'traces' => $traces,
-        ])->cookie(Cookie::make(
+        ]);
+    }
+
+    /**
+     * Resolve the visitor id from a client-supplied value then the cookie,
+     * minting a fresh token when neither is a valid id. The id is a bearer
+     * capability for an anonymous chat — accept only the exact shape we mint.
+     */
+    protected function resolveVisitorId(string $fromClient, string $fromCookie): string
+    {
+        foreach ([$fromClient, $fromCookie] as $candidate) {
+            if (preg_match('/^embed-[A-Za-z0-9]{16,48}$/', $candidate) === 1) {
+                return $candidate;
+            }
+        }
+
+        return 'embed-'.Str::random(28);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    protected function launchResponse(string $slug, string $visitorId, array $payload): JsonResponse
+    {
+        return response()->json($payload)->cookie(Cookie::make(
             name: "fs_embed_{$slug}",
             value: $visitorId,
             minutes: 60 * 24 * 30, // 30 days

@@ -56,6 +56,9 @@ class InstallController extends Controller
             'proactive_delay' => ['required', 'integer', 'min:0', 'max:120'],
             'auto_open' => ['required', 'boolean'],
             'show_branding' => ['required', 'boolean'],
+            'welcome_message' => ['nullable', 'string', 'max:280'],
+            'starter_prompts' => ['nullable', 'array', 'max:6'],
+            'starter_prompts.*' => ['string', 'max:120'],
             'allowed_domains' => ['nullable', 'array', 'max:50'],
             'allowed_domains.*' => ['string', 'max:255'],
         ]);
@@ -72,6 +75,11 @@ class InstallController extends Controller
             'proactive_delay' => (int) $data['proactive_delay'],
             'auto_open' => (bool) $data['auto_open'],
             'show_branding' => (bool) $data['show_branding'],
+            'welcome_message' => (string) ($data['welcome_message'] ?? ''),
+            'starter_prompts' => array_values(array_filter(array_map(
+                fn ($p) => trim((string) $p),
+                $data['starter_prompts'] ?? [],
+            ), fn (string $p) => $p !== '')),
         ];
 
         $agent->allowed_domains = $this->normalizeDomains($data['allowed_domains'] ?? []);

@@ -27,6 +27,20 @@ interface Runtime
     public function launch(Agent $agent, string $visitorId): array;
 
     /**
+     * Whether a returning visitor has a live (non-ended, non-empty) session
+     * to resume — so the embed can restore the transcript instead of
+     * resetting and re-greeting on every page load.
+     */
+    public function hasSession(Agent $agent, string $visitorId): bool;
+
+    /**
+     * The prior conversation as display messages for a resuming visitor.
+     *
+     * @return list<array{role: string, text: string}>
+     */
+    public function transcript(Agent $agent, string $visitorId): array;
+
+    /**
      * Send a user message and return the agent's response traces.
      *
      * @return list<array<string, mixed>>
