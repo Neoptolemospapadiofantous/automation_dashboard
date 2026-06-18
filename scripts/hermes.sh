@@ -79,6 +79,9 @@ fi
 # ── 3. PHPUnit / Laravel tests ─────────────────────────────────────────────────
 log "=== TESTS ==="
 if [[ -x vendor/bin/phpunit ]]; then
+  # Ensure the suite uses phpunit.xml's test DB, not a cached dev config.
+  # Without this a stale config:cache makes RefreshDatabase wipe the dev DB.
+  php artisan config:clear > /dev/null 2>&1 || true
   if php artisan test --without-tty > "$LOG_DIR/test.log" 2>&1; then
     record PASS tests "all green"
   else

@@ -41,6 +41,10 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
+        <!-- Dedicated test database — NEVER the dev DB. Combined with the
+             config:clear before the test step in scripts/hermes.sh (a stale
+             config:cache pointing at the dev DB is what once let a test run
+             wipe dev data). -->
         <env name="DB_CONNECTION" value="mariadb"/>
         <env name="DB_HOST" value="127.0.0.1"/>
         <env name="DB_PORT" value="3306"/>
@@ -48,6 +52,13 @@
         <env name="DB_USERNAME" value="flowstack"/>
         <env name="DB_PASSWORD" value="flowstack"/>
         <env name="DB_URL" value=""/>
+        <!-- Pin runtime LLM/embedding config to product defaults so a
+             developer's local overrides (e.g. a local Ollama server in .env)
+             can't break the runtime test suite. -->
+        <env name="OPENAI_BASE_URL" value="https://api.openai.com"/>
+        <env name="RUNTIME_EMBEDDINGS_MODEL" value="text-embedding-3-small"/>
+        <env name="RUNTIME_EMBEDDINGS_DIMENSIONS" value="1536"/>
+        <env name="RUNTIME_TIER_GPT_MODEL" value="gpt-5.1"/>
         <!-- Tests exercise the real Stripe credit lifecycle; the dev signup
              auto-grant (BILLING_GRANT_ON_SIGNUP, true in local .env) must be
              OFF here or it mints credits behind credit-balance assertions. -->
