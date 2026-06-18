@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Hermes per-push gate: run the Audit Sentinel before every push.
+# Blocks the push on a FAIL verdict (collector found CRITICAL-class risk).
+# WARN/PASS pass through but still print the summary so drift stays visible.
+# Escape hatch: `git push --no-verify` skips this hook.
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+echo "→ Hermes pre-push audit…"
+if composer hermes-audit; then
+    echo "✓ Audit gate passed — pushing."
+    exit 0
+else
+    echo ""
+    echo "✗ Audit gate FAILED — push blocked."
+    echo "  Review docs/hermes/ and data/agents/audit-sentinel/findings.json."
+    echo "  To override (not recommended): git push --no-verify"
+    exit 1
+fi
