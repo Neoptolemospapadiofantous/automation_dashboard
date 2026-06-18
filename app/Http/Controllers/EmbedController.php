@@ -4,11 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Billing\CreditMeter;
 use App\Billing\Exceptions\OutOfCredits;
+use App\Events\LeadMessage;
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
+use App\Models\Conversation;
 use App\Models\Team;
 use App\Runtime\Contracts\Runtime;
 use App\Runtime\Exceptions\RuntimeException;
+use App\Runtime\Models\RuntimeSession;
+use App\Services\ConversationRecorder;
 use App\Support\Embed\DomainAllowlist;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,6 +44,7 @@ class EmbedController extends Controller
     public function __construct(
         protected CreditMeter $credits,
         protected Runtime $runtime,
+        protected ConversationRecorder $recorder,
     ) {}
 
     /**
@@ -187,6 +192,18 @@ class EmbedController extends Controller
             ], 503);
         }
 
+        // Record the greeting to the operator-visible transcript + broadcast
+        // (so widget conversations show up in the dashboard like in-app chats).
+        $conversation = $this->recordConversation($agent, $visitorId);
+        foreach ($traces as $trace) {
+            $text = (string) ($trace['payload']['message'] ?? '');
+            if ($text === '') {
+                continue;
+            }
+            $this->recordMessage($conversation, 'agent', $text, (array) ($trace['payload']['citations'] ?? []));
+            $this->broadcastEmbed($team->id, 'agent', $text);
+        }
+
         return $this->launchResponse($slug, $visitorId, [
             'visitor_id' => $visitorId,
             'agent_name' => $agent->name,
@@ -263,6 +280,12 @@ class EmbedController extends Controller
             ], 402);
         }
 
+        // Record + echo the visitor's message before the engine call, so the
+        // dashboard transcript + lead board update live.
+        $conversation = $this->recordConversation($agent, $data['visitor_id']);
+        $this->recordMessage($conversation, 'user', $data['message']);
+        $this->broadcastEmbed($team->id, 'user', $data['message']);
+
         try {
             $traces = $this->runtime->sendText($agent, $data['visitor_id'], $data['message']);
         } catch (RuntimeException $e) {
@@ -285,9 +308,78 @@ class EmbedController extends Controller
             report(new \RuntimeException('Credit debit raced past zero for team '.$team->id.' (embed)'));
         }
 
+        // Record the agent's reply (with citations) + broadcast.
+        foreach ($traces as $trace) {
+            $text = (string) ($trace['payload']['message'] ?? '');
+            if ($text === '') {
+                continue;
+            }
+            $this->recordMessage($conversation, 'agent', $text, (array) ($trace['payload']['citations'] ?? []));
+            $this->broadcastEmbed($team->id, 'agent', $text);
+        }
+
+        // Terminal flow state → mark the conversation ended (dashboard replay).
+        if ($conversation !== null && $this->sessionEnded($agent, $data['visitor_id'])) {
+            rescue(fn () => $this->recorder->end($conversation), report: true);
+        }
+
         return response()->json([
             'traces' => $traces,
         ]);
+    }
+
+    /**
+     * Resolve (find-or-create) the operator-visible conversation for an embed
+     * visitor. Best-effort — recording must never break the visitor's chat.
+     */
+    protected function recordConversation(Agent $agent, string $visitorId): ?Conversation
+    {
+        try {
+            return $this->recorder->resolve(
+                teamId: (int) $agent->team_id,
+                visitorId: $visitorId,
+                channel: 'embed',
+                agentId: $agent->id,
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $citations
+     */
+    protected function recordMessage(?Conversation $conversation, string $role, string $text, array $citations = []): void
+    {
+        if ($conversation === null) {
+            return;
+        }
+        try {
+            $this->recorder->record($conversation, $role, $text, 'text', null, $citations ?: null);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    protected function broadcastEmbed(int $teamId, string $role, string $text): void
+    {
+        rescue(fn () => broadcast(new LeadMessage(
+            teamId: $teamId,
+            leadId: null,
+            role: $role,
+            text: $text,
+            at: now()->toIso8601String(),
+        )), report: false);
+    }
+
+    protected function sessionEnded(Agent $agent, string $visitorId): bool
+    {
+        return RuntimeSession::query()
+            ->where('agent_id', $agent->id)
+            ->where('visitor_id', $visitorId)
+            ->value('flow_state') === 'ended';
     }
 
     /**
