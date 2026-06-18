@@ -12,6 +12,12 @@ use App\Runtime\Tools\QueryKnowledgeTool;
 use App\Runtime\Tools\RequestHandoffTool;
 use App\Runtime\Tools\SetVariableTool;
 use App\Runtime\Tools\ToolRegistry;
+use App\Slack\Commands\AgentAskCommand;
+use App\Slack\Commands\ChannelAdminCommand;
+use App\Slack\Commands\HermesStatusCommand;
+use App\Slack\SlackAgentResponder;
+use App\Slack\SlackEventRouter;
+use App\Support\Slack\SlackApi;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\ServiceProvider;
@@ -42,6 +48,20 @@ class AppServiceProvider extends ServiceProvider
             $registry->register($app->make(RequestHandoffTool::class));
 
             return $registry;
+        });
+
+        // Slack bot (local-team, two-way) — wire the slash-command registry
+        // into the event router. The daemon (slack:listen) is local-only.
+        $this->app->singleton(SlackEventRouter::class, function ($app): SlackEventRouter {
+            return new SlackEventRouter(
+                $app->make(SlackApi::class),
+                $app->make(SlackAgentResponder::class),
+                [
+                    $app->make(HermesStatusCommand::class),
+                    $app->make(AgentAskCommand::class),
+                    $app->make(ChannelAdminCommand::class),
+                ],
+            );
         });
     }
 

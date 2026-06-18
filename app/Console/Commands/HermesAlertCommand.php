@@ -2,28 +2,29 @@
 
 namespace App\Console\Commands;
 
-use App\Notifications\HermesAlertNotification;
+use App\Support\Slack\SlackWebhook;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 
 /**
- * Reads the latest Hermes collector reports and emails the operator when there
- * are CRITICAL (audit-sentinel) or FAIL (system-check) findings.
+ * Reads the latest Hermes collector reports and posts to Slack when there are
+ * CRITICAL (audit-sentinel) or FAIL (system-check) findings.
  *
- * Dedupes via storage/app/hermes-alert-state.json: only sends when the set of
- * active CRITICAL/FAIL findings changes, so a standing condition doesn't email
- * on every run. When the set clears, state resets so a later recurrence alerts
- * again. Wired via ->then() right after the collectors in routes/console.php;
- * also runnable by hand (`php artisan hermes:alert [--force]`) for validation.
+ * Delivery is a fully-local Slack Incoming-Webhook POST (see {@see SlackWebhook})
+ * — no bot token, no Web API. Dedupes via storage/app/hermes-alert-state.json:
+ * only posts when the set of active CRITICAL/FAIL findings changes, so a standing
+ * condition doesn't ping the channel on every run. When the set clears, state
+ * resets so a later recurrence alerts again. Wired via ->then() right after the
+ * collectors in routes/console.php; also runnable by hand
+ * (`php artisan hermes:alert [--force]`) for validation.
  */
 class HermesAlertCommand extends Command
 {
     protected $signature = 'hermes:alert {--force : Send even if the finding-set is unchanged}';
 
-    protected $description = 'Email the operator about Hermes CRITICAL/FAIL findings (deduped).';
+    protected $description = 'Post Hermes CRITICAL/FAIL findings to Slack (deduped).';
 
-    public function handle(): int
+    public function handle(SlackWebhook $slack): int
     {
         $findings = array_merge(
             $this->collect('audit-sentinel', 'findings', 'severity', 'CRITICAL'),
@@ -49,22 +50,73 @@ class HermesAlertCommand extends Command
             return self::SUCCESS;
         }
 
-        $email = (string) config('hermes.alert_email');
-        if ($email === '') {
-            Log::warning('hermes:alert — '.count($findings).' CRITICAL/FAIL finding(s) but HERMES_ALERT_EMAIL is unset; no email sent.');
-            $this->warn('HERMES_ALERT_EMAIL is unset — logged, not emailed.');
+        if (! $slack->enabled()) {
+            Log::warning('hermes:alert — '.count($findings).' CRITICAL/FAIL finding(s) but SLACK_ALERT_WEBHOOK_URL is unset; nothing posted.');
+            $this->warn('SLACK_ALERT_WEBHOOK_URL is unset — logged, not posted.');
 
             return self::SUCCESS;
         }
 
-        Notification::route('mail', $email)->notify(
-            new HermesAlertNotification($findings, (string) config('app.env'))
-        );
+        $env = (string) config('app.env');
+        $count = count($findings);
+
+        if (! $slack->send($this->fallbackText($findings, $env), $this->blocks($findings, $env))) {
+            // Delivery failed (network / Slack 4xx). Do NOT persist state, so the
+            // next run retries instead of treating this finding-set as "sent".
+            $this->error('Slack post failed — see logs. State not updated; will retry next run.');
+
+            return self::FAILURE;
+        }
 
         @file_put_contents($statePath, $signature);
-        $this->info('Queued Hermes alert to '.$email.' ('.count($findings).' finding(s)).');
+        $this->info('Posted Hermes alert to Slack ('.$count.' finding(s)).');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Plain-text fallback shown in notifications / clients without Block Kit.
+     *
+     * @param  list<array{collector:string,severity:string,check:string,detail:string}>  $findings
+     */
+    private function fallbackText(array $findings, string $env): string
+    {
+        return '🚨 Hermes: '.count($findings)." CRITICAL/FAIL finding(s) on {$env}";
+    }
+
+    /**
+     * Slack Block Kit body — a header plus one line per finding.
+     *
+     * @param  list<array{collector:string,severity:string,check:string,detail:string}>  $findings
+     * @return list<array<string,mixed>>
+     */
+    private function blocks(array $findings, string $env): array
+    {
+        $blocks = [[
+            'type' => 'header',
+            'text' => ['type' => 'plain_text', 'text' => '🚨 Hermes: '.count($findings)." finding(s) on {$env}"],
+        ]];
+
+        foreach ($findings as $f) {
+            $detail = $f['detail'] !== '' ? ' — '.$f['detail'] : '';
+            $blocks[] = [
+                'type' => 'section',
+                'text' => [
+                    'type' => 'mrkdwn',
+                    'text' => "*[{$f['severity']}] {$f['collector']} / {$f['check']}*{$detail}",
+                ],
+            ];
+        }
+
+        $blocks[] = [
+            'type' => 'context',
+            'elements' => [[
+                'type' => 'mrkdwn',
+                'text' => 'Run `composer hermes-status` on the server for the full report. Re-posts only when the finding-set changes.',
+            ]],
+        ];
+
+        return $blocks;
     }
 
     /**

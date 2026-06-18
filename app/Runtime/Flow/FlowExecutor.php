@@ -9,6 +9,7 @@ use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\LLM\LlmRouter;
 use App\Runtime\Session\ConversationContext;
 use App\Runtime\Session\SessionManager;
+use App\Runtime\Support\CaptureLeadBackstop;
 use App\Runtime\Support\EscalateToHuman;
 use App\Runtime\Tools\ToolRegistry;
 
@@ -38,6 +39,7 @@ class FlowExecutor
         protected KnowledgeStore $knowledge,
         protected SessionManager $sessions,
         protected EscalateToHuman $escalate,
+        protected CaptureLeadBackstop $leadBackstop,
     ) {}
 
     public function execute(ConversationContext $context, Flow $flow): TurnResult
@@ -150,11 +152,31 @@ class FlowExecutor
         // Deterministic backstop for the hybrid gate: if this was a
         // low-confidence turn and the model didn't escalate on its own,
         // escalate anyway so the human-follow-up promise is always kept.
-        if ($lowConfidence && ! $this->handoffFired($toolEvents)) {
+        if ($lowConfidence && ! $this->toolFired($toolEvents, 'request_handoff')) {
             rescue(
                 fn () => $this->escalate->handle($context, 'Low-confidence answer: no KB match above the confidence threshold.'),
                 report: true,
             );
+        }
+
+        // Deterministic lead-capture backstop: the capture_lead tool is the
+        // primary path, but a less reliable model can collect a name + email
+        // and never emit the call (the low-confidence handoff directive above
+        // also competes for the model's attention). If this state can capture
+        // leads and the model didn't this turn, capture from the conversation
+        // so a real contact is never dropped. Mirrors the handoff backstop.
+        if (in_array('capture_lead', $state->tools, true) && ! $this->toolFired($toolEvents, 'capture_lead')) {
+            $captured = rescue(
+                fn () => $this->leadBackstop->capture($context, $this->visitorTexts($messages)),
+                rescue: false,
+                report: true,
+            );
+            // Mirror the tool's onToolSuccess transition so the next turn opens
+            // in wrapup ("details saved") instead of re-capturing in discovery.
+            if ($captured === true) {
+                $session->flow_state = $flow->has('wrapup') ? 'wrapup' : $next;
+                $session->save();
+            }
         }
 
         // Durable cost rollup (runtime_usage) — sessions are ephemeral, this
@@ -308,16 +330,43 @@ class FlowExecutor
     }
 
     /**
+     * Did the named tool run successfully this turn? Drives the deterministic
+     * backstops — they only fire when the model didn't act on its own.
+     *
      * @param  list<array{name: string, ok: bool}>  $toolEvents
      */
-    protected function handoffFired(array $toolEvents): bool
+    protected function toolFired(array $toolEvents, string $name): bool
     {
         foreach ($toolEvents as $event) {
-            if ($event['name'] === 'request_handoff' && $event['ok']) {
+            if ($event['name'] === $name && $event['ok']) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Plain-text visitor messages from the canonical history (real turns only —
+     * tool_result entries and the synthetic greeting prompt are skipped). Feeds
+     * the lead-capture backstop's email scan.
+     *
+     * @param  list<array<string, mixed>>  $messages
+     * @return list<string>
+     */
+    protected function visitorTexts(array $messages): array
+    {
+        $out = [];
+        foreach ($messages as $message) {
+            if (($message['role'] ?? '') !== 'user') {
+                continue;
+            }
+            $content = $message['content'] ?? null;
+            if (is_string($content) && $content !== '' && $content !== self::OPENING_MESSAGE) {
+                $out[] = $content;
+            }
+        }
+
+        return $out;
     }
 }
