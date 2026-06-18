@@ -9,6 +9,7 @@ use App\Models\AgentConfigVersion;
 use App\Models\Team;
 use App\Runtime\Contracts\Runtime;
 use App\Runtime\Exceptions\RuntimeException;
+use App\Support\Embed\DomainAllowlist;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -52,25 +53,19 @@ class EmbedController extends Controller
     {
         $agent = $this->resolveAgent($slug);
 
-        $iframeUrl = url("/embed/{$slug}");
-
-        // Flowstack brand tokens (resources/css/tokens.css, black sheet) —
-        // the button is a black ink block on the customer's page, matching
-        // the marketing site. Future: per-agent override via data-attributes.
-        $ink = '#000000';
-        $bg = '#FFFFFF';
-
         $js = view('embed.widget', [
-            'iframeUrl' => $iframeUrl,
-            'ink' => $ink,
-            'bg' => $bg,
+            'iframeUrl' => url("/embed/{$slug}"),
             'agentName' => $agent->name,
+            'config' => $agent->widgetConfig(),
+            // The loader self-checks window.location.hostname against this
+            // (UX layer); the hard enforcement is frame-ancestors in chat().
+            'allowedDomains' => $agent->allowedDomains(),
         ])->render();
 
         return response($js, 200, [
             'Content-Type' => 'application/javascript; charset=utf-8',
-            // Public cache, 5 min — short enough that color/iframe URL
-            // changes propagate quickly, long enough to avoid hammering us.
+            // Public cache, 5 min — short enough that config changes
+            // propagate quickly, long enough to avoid hammering us.
             'Cache-Control' => 'public, max-age=300',
         ]);
     }
@@ -83,19 +78,35 @@ class EmbedController extends Controller
      * of our SPA bundle. CSP-friendly: no inline scripts beyond the
      * tiny bootstrap.
      */
-    public function chat(string $slug): Response
+    public function chat(string $slug, Request $request): Response
     {
         $agent = $this->resolveAgent($slug);
+        $domains = $agent->allowedDomains();
+
+        // Browser-enforced, unspoofable control over WHERE the chat may be
+        // embedded: an allowlisted agent's iframe simply won't render on a
+        // disallowed parent domain. Empty allowlist → embeddable anywhere.
+        $frameAncestors = DomainAllowlist::frameAncestors($domains);
+
+        $headers = [
+            'Content-Type' => 'text/html; charset=utf-8',
+            'Content-Security-Policy' => "frame-ancestors {$frameAncestors};",
+        ];
+        // Only emit the legacy ALLOWALL when truly unrestricted; with an
+        // allowlist we rely on frame-ancestors (X-Frame-Options can't express
+        // multiple origins).
+        if ($domains === []) {
+            $headers['X-Frame-Options'] = 'ALLOWALL';
+        }
 
         return response(view('embed.chat', [
             'slug' => $slug,
             'agentName' => $agent->name,
-        ])->render(), 200, [
-            'Content-Type' => 'text/html; charset=utf-8',
-            // The customer can iframe us from any domain.
-            'Content-Security-Policy' => 'frame-ancestors *;',
-            'X-Frame-Options' => 'ALLOWALL', // legacy fallback for older browsers
-        ]);
+            'config' => $agent->widgetConfig(),
+            // Parent host forwarded by the loader (?ref=) — echoed back on
+            // launch/interact for the best-effort origin check.
+            'host' => DomainAllowlist::host((string) $request->query('ref', '')) ?? '',
+        ])->render(), 200, $headers);
     }
 
     /**
@@ -108,6 +119,10 @@ class EmbedController extends Controller
     public function launch(string $slug, Request $request): JsonResponse
     {
         $agent = $this->resolveAgent($slug);
+
+        if ($denied = $this->originDenied($agent, $request)) {
+            return $denied;
+        }
 
         $team = $agent->team;
         if (! $team instanceof Team) {
@@ -179,9 +194,14 @@ class EmbedController extends Controller
     {
         $agent = $this->resolveAgent($slug);
 
+        if ($denied = $this->originDenied($agent, $request)) {
+            return $denied;
+        }
+
         $data = $request->validate([
             'visitor_id' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string', 'max:2000'],
+            'host' => ['nullable', 'string', 'max:255'],
         ]);
 
         $team = $agent->team;
@@ -225,6 +245,35 @@ class EmbedController extends Controller
         return response()->json([
             'traces' => $traces,
         ]);
+    }
+
+    /**
+     * Best-effort domain check for launch/interact. The hard control is the
+     * frame-ancestors CSP in chat(); this catches direct (non-iframe) calls
+     * that forward (or omit) a host. Empty allowlist → always allowed.
+     *
+     * Host source order: the loader-forwarded `host` field, then Referer,
+     * then Origin. All are spoofable by a hand-crafted request — the
+     * throttle + greeting cap + credit ceiling are the abuse backstops.
+     */
+    protected function originDenied(Agent $agent, Request $request): ?JsonResponse
+    {
+        $domains = $agent->allowedDomains();
+        if ($domains === []) {
+            return null;
+        }
+
+        $candidate = (string) $request->input('host', '')
+            ?: (string) $request->headers->get('referer', '')
+            ?: (string) $request->headers->get('origin', '');
+
+        if (! DomainAllowlist::allows($domains, $candidate)) {
+            return response()->json([
+                'error' => 'This widget is not authorized on this domain.',
+            ], 403);
+        }
+
+        return null;
     }
 
     protected function greetingCounterKey(int $teamId): string

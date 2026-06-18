@@ -19,6 +19,9 @@ use Illuminate\Support\Str;
  * Agents run on the native Flowstack runtime (app/Runtime) — there are no
  * per-agent credentials; the engine's keys are platform-level
  * (ANTHROPIC_API_KEY / OPENAI_API_KEY).
+ *
+ * @property array<string, mixed>|null $widget_config
+ * @property list<string>|null $allowed_domains
  */
 class Agent extends Model
 {
@@ -59,6 +62,8 @@ class Agent extends Model
         'mode',
         'runtime_mode',
         'auto_escalate_low_confidence',
+        'widget_config',
+        'allowed_domains',
         'last_health_check_at',
         'last_health_ok',
     ];
@@ -67,9 +72,73 @@ class Agent extends Model
     {
         return [
             'auto_escalate_low_confidence' => 'boolean',
+            'widget_config' => 'array',
+            'allowed_domains' => 'array',
             'last_health_check_at' => 'datetime',
             'last_health_ok' => 'boolean',
         ];
+    }
+
+    /**
+     * Default appearance/behavior for the embeddable widget. Operator
+     * overrides (Install page) are merged over these. Brand: hard edges,
+     * ink-on-ground — mirrors the marketing site.
+     *
+     * @var array<string, mixed>
+     */
+    public const WIDGET_DEFAULTS = [
+        'accent_color' => '#000000',   // launcher + header background
+        'text_color' => '#FFFFFF',     // contrast color on the accent
+        'position' => 'right',         // 'right' | 'left'
+        'launcher_text' => '',         // label beside the icon; '' = icon only
+        'title' => '',                 // panel header; '' → agent name
+        'subtitle' => 'AI assistant',  // panel header subline
+        'avatar_url' => '',            // header avatar; '' = none
+        'proactive_message' => '',     // teaser bubble copy; '' = no teaser
+        'proactive_delay' => 8,        // seconds before teaser/auto-open
+        'auto_open' => false,          // open the panel automatically
+        'show_branding' => true,       // "Powered by Flowstack" footer
+    ];
+
+    /**
+     * Resolved widget config: operator overrides merged over defaults, with
+     * only known keys kept (stored junk can't leak into the loader).
+     *
+     * @return array<string, mixed>
+     */
+    public function widgetConfig(): array
+    {
+        $stored = is_array($this->widget_config) ? $this->widget_config : [];
+
+        $merged = self::WIDGET_DEFAULTS;
+        foreach (self::WIDGET_DEFAULTS as $key => $default) {
+            if (array_key_exists($key, $stored)) {
+                $merged[$key] = $stored[$key];
+            }
+        }
+
+        // Normalize: position is an enum; delay is a sane integer.
+        $merged['position'] = $merged['position'] === 'left' ? 'left' : 'right';
+        $merged['proactive_delay'] = max(0, min(120, (int) $merged['proactive_delay']));
+        $merged['auto_open'] = (bool) $merged['auto_open'];
+        $merged['show_branding'] = (bool) $merged['show_branding'];
+
+        return $merged;
+    }
+
+    /**
+     * Host domains allowed to embed this agent. Empty = no restriction.
+     *
+     * @return list<string>
+     */
+    public function allowedDomains(): array
+    {
+        $domains = is_array($this->allowed_domains) ? $this->allowed_domains : [];
+
+        return array_values(array_filter(array_map(
+            fn ($d) => strtolower(trim((string) $d)),
+            $domains,
+        ), fn (string $d) => $d !== ''));
     }
 
     protected static function booted(): void
