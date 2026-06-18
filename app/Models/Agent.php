@@ -61,6 +61,7 @@ class Agent extends Model
         'status',
         'mode',
         'runtime_mode',
+        'auto_escalate_low_confidence',
         'widget_config',
         'allowed_domains',
         'last_health_check_at',
@@ -70,6 +71,7 @@ class Agent extends Model
     protected function casts(): array
     {
         return [
+            'auto_escalate_low_confidence' => 'boolean',
             'widget_config' => 'array',
             'allowed_domains' => 'array',
             'last_health_check_at' => 'datetime',

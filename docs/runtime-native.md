@@ -91,6 +91,37 @@ Handoffs: when a visitor asks for a human, the `request_handoff` tool flags
 the session AND notifies the team owner (bell + email,
 `HandoffRequestedNotification`).
 
+## Grounded answers & the confidence gate
+
+Every turn auto-retrieves the top KB chunks for the visitor's message
+(`FlowExecutor::retrieve()`). Two thresholds govern what happens with them:
+
+- `runtime.rag.min_similarity` (0.25) — chunks below this are dropped as noise.
+- `runtime.rag.answer_confidence` (0.45) — the floor for *answering*. "Good
+  enough to inject" is a lower bar than "good enough to answer on."
+
+**Citations.** Chunks that ground an answer are attached to the assistant
+message as `messages.citations`
+(`[{document_id, document_title, chunk_id, score}]`) and ride out in the text
+trace's `payload.citations`. The operator transcript (`Conversations/Show.vue`)
+and the embed widget render them as "Source: <title>" chips. No citations on
+greetings, low-confidence, or no-KB turns.
+
+**Hybrid auto-escalate.** When the agent HAS a knowledge base but the best
+retrieved score is below `answer_confidence`, the turn is low-confidence:
+1. the system prompt tells the model not to guess and to escalate;
+2. `request_handoff` is added to the turn's tools even if the state didn't
+   expose it;
+3. a deterministic backstop — if the model didn't escalate, `FlowExecutor`
+   calls `EscalateToHuman` itself (flags the session + notifies the owner via
+   `HandoffRequestedNotification`).
+
+`EscalateToHuman` (`app/Runtime/Support/`) is the single escalation path,
+shared with `RequestHandoffTool` so the two can't drift. Per-agent opt-out:
+`agents.auto_escalate_low_confidence` (default on). An agent with no KB never
+trips the gate — a weak score there means "answers from instructions," not
+"couldn't answer."
+
 ## Known follow-ups
 
 - pgvector swap for `kb_chunks.embedding` (JSON + in-process cosine is fine

@@ -41,6 +41,14 @@ interface KnowledgeStore
     public function search(int $agentId, string $question, int $topK = 5): array;
 
     /**
+     * Whether this agent has any ingested knowledge at all. Cheap existence
+     * check used by the runtime's confidence gate: an agent with no KB is a
+     * pure instructions/tool agent, so a low retrieval score must NOT be
+     * read as "couldn't answer" — there was nothing to retrieve from.
+     */
+    public function hasDocuments(int $agentId): bool;
+
+    /**
      * Delete a document and all its chunks. Idempotent.
      */
     public function deleteDocument(int $agentId, int $documentId): void;
