@@ -60,8 +60,10 @@
         '#fs-embed-teaser{position:fixed;bottom:92px;' + SIDE + ':24px;max-width:260px;background:#fff;color:#111;border:1px solid ' + ACCENT + ';box-shadow:6px 6px 0 rgba(0,0,0,.12);padding:12px 30px 12px 12px;font:14px/1.45 ui-sans-serif,system-ui,sans-serif;z-index:2147483646;cursor:pointer;display:none;}',
         '#fs-embed-teaser.show{display:block;}',
         '#fs-embed-teaser-x{position:absolute;top:3px;right:6px;border:0;background:none;cursor:pointer;font-size:17px;line-height:1;color:#999;}',
-        '#fs-embed-frame-wrap{position:fixed;bottom:96px;' + SIDE + ':24px;width:380px;height:min(640px,calc(100vh - 120px));border-radius:0;overflow:hidden;border:1px solid ' + ACCENT + ';box-shadow:8px 8px 0 rgba(0,0,0,.12);background:#fff;z-index:2147483645;display:none;}',
+        '#fs-embed-frame-wrap{position:fixed;bottom:96px;' + SIDE + ':24px;width:380px;height:min(640px,calc(100vh - 120px));border-radius:0;overflow:hidden;border:1px solid ' + ACCENT + ';box-shadow:8px 8px 0 rgba(0,0,0,.12);background:#fff;z-index:2147483645;display:none;opacity:0;transform:translateY(12px);transition:opacity .2s ease,transform .2s ease;}',
         '#fs-embed-frame-wrap.open{display:block;}',
+        '#fs-embed-frame-wrap.open.in{opacity:1;transform:translateY(0);}',
+        '@media (prefers-reduced-motion:reduce){#fs-embed-frame-wrap{transition:none;}}',
         '#fs-embed-frame{width:100%;height:100%;border:0;}',
         '@media (max-width:480px){#fs-embed-frame-wrap{bottom:0;left:0;right:0;top:0;width:100%;height:100%;}#fs-embed-teaser{display:none !important;}}'
     ].join('');
@@ -110,7 +112,10 @@
     function open() {
         if (opened) return;
         opened = true; unread = 0;
-        wrap.classList.add('open'); setIcon(); renderBadge(); hideTeaser();
+        wrap.classList.add('open');
+        // Next frame: add .in so the slide+fade-in transition runs.
+        requestAnimationFrame(function () { requestAnimationFrame(function () { wrap.classList.add('in'); }); });
+        setIcon(); renderBadge(); hideTeaser();
         btn.setAttribute('aria-expanded', 'true');
         postToFrame({ type: 'fs:visible' });
         emit('open');
@@ -118,7 +123,7 @@
     function close() {
         if (!opened) return;
         opened = false;
-        wrap.classList.remove('open'); setIcon();
+        wrap.classList.remove('open'); wrap.classList.remove('in'); setIcon();
         btn.setAttribute('aria-expanded', 'false');
         emit('close');
     }
@@ -156,6 +161,8 @@
             emit('lead', d.lead || d);
         } else if (d.type === 'fs:ready') {
             emit('ready', d);
+        } else if (d.type === 'fs:close') {
+            close();
         }
     });
 

@@ -50,6 +50,18 @@ class SessionManager
     }
 
     /**
+     * Existing session for a returning visitor, or null. Used by the embed
+     * resume path (don't reset on reload).
+     */
+    public function find(Agent $agent, string $visitorId): ?RuntimeSession
+    {
+        return RuntimeSession::query()
+            ->where('agent_id', $agent->id)
+            ->where('visitor_id', $visitorId)
+            ->first();
+    }
+
+    /**
      * Append LLM-format entries to the session history, trimmed from the
      * FRONT to the configured limit so recent context survives.
      *

@@ -46,6 +46,66 @@ class AgentRuntime implements Runtime
         return $result->traces;
     }
 
+    public function hasSession(Agent $agent, string $visitorId): bool
+    {
+        $session = $this->sessions->find($agent, $visitorId);
+
+        return $session !== null
+            && $session->flow_state !== 'ended'
+            && (array) ($session->history ?? []) !== [];
+    }
+
+    public function transcript(Agent $agent, string $visitorId): array
+    {
+        $session = $this->sessions->find($agent, $visitorId);
+        if ($session === null) {
+            return [];
+        }
+
+        $out = [];
+        foreach ((array) ($session->history ?? []) as $entry) {
+            $role = $entry['role'] ?? null;
+            $content = $entry['content'] ?? null;
+
+            if ($role === 'user' && is_string($content)) {
+                if ($content === FlowExecutor::OPENING_MESSAGE) {
+                    continue; // synthetic greeting prompt, not a real visitor message
+                }
+                $out[] = ['role' => 'user', 'text' => $content];
+            } elseif ($role === 'assistant') {
+                $text = $this->extractText($content);
+                if (trim($text) !== '') {
+                    $out[] = ['role' => 'agent', 'text' => $text];
+                }
+            }
+            // tool_result entries (role=user, array content) are not displayed
+        }
+
+        return $out;
+    }
+
+    /**
+     * Pull the plain text out of an LLM history entry's content (string or
+     * Anthropic content blocks).
+     */
+    protected function extractText(mixed $content): string
+    {
+        if (is_string($content)) {
+            return $content;
+        }
+        if (! is_array($content)) {
+            return '';
+        }
+        $parts = [];
+        foreach ($content as $block) {
+            if (is_array($block) && ($block['type'] ?? '') === 'text' && isset($block['text'])) {
+                $parts[] = (string) $block['text'];
+            }
+        }
+
+        return implode("\n", $parts);
+    }
+
     public function sendText(Agent $agent, string $visitorId, string $text): array
     {
         return $this->turn($agent, $visitorId, $text)->traces;

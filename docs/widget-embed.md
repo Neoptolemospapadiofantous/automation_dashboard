@@ -72,6 +72,28 @@ keys (stored junk can't reach the loader) and normalizing `position`,
 | `proactive_delay` | Seconds before teaser / auto-open (0–120) | `8` |
 | `auto_open` | Open the panel automatically after the delay | `false` |
 | `show_branding` | "Powered by Flowstack" footer in the chat | `true` |
+| `welcome_message` | Empty-state copy shown above the chat before the greeting (max 280) | `''` |
+| `starter_prompts` | Quick-reply suggestions the visitor can tap to send (list, ≤6 entries, each ≤120) | `[]` |
+
+`welcome_message` and `starter_prompts` are validated on save
+(`InstallController::update`: `welcome_message` ≤ 280 chars; `starter_prompts`
+an array of ≤ 6 strings, each ≤ 120). `widgetConfig()` then normalizes
+`starter_prompts` into a clean list — each entry trimmed, blank/whitespace-only
+entries dropped, and the list capped at 6 — so stored junk can't reach the
+loader.
+
+**Widget UI features** driven by this config / the resume flow:
+
+- **Session resume** — on open the panel restores the prior transcript instead
+  of greeting again (see *Sessions & identity* below).
+- **Starter-prompt quick replies** — `starter_prompts` render as tappable chips
+  in the empty state; tapping one sends it as the visitor's first message.
+- **Thinking loader** — an animated indicator shows while the agent's reply is
+  in flight.
+- **Markdown replies** — agent messages are rendered as Markdown (links, bold,
+  lists) rather than raw text.
+- **In-panel close** — a close control inside the chat header dismisses the
+  panel without leaving the host page.
 
 **Propagation:** `widget/{slug}.js` is served with
 `Cache-Control: public, max-age=300`, so appearance/domain edits go live
@@ -170,9 +192,50 @@ verification is skipped — see `bootstrap/app.php`).
 | POST | `/embed/{slug}/launch` | Start a visitor session; returns the welcome traces. Throttle 60/min. |
 | POST | `/embed/{slug}/interact` | Send a visitor message; returns the agent's reply traces. Throttle 120/min. |
 
-**Visitor identity:** a 30-day cookie `fs_embed_{slug}` (SameSite=None,
-Secure, HttpOnly) holds a stable, account-less `visitor_id` so the
-conversation threads across `interact` calls.
+## Sessions & identity
+
+The visitor has no Flowstack account; the conversation is threaded by an
+account-less **`visitor_id`** — an unguessable capability token of the shape
+`embed-` + 16–48 alphanumerics (we mint `embed-` + 28 random chars).
+
+**Where it lives, in priority order** (`EmbedController::resolveVisitorId`):
+
+1. **`localStorage` (primary).** The iframe stores the id in its own
+   `localStorage` and posts it on `launch`. This is the durable path: it
+   survives third-party-cookie blocking (Safari/Firefox ITP, Chrome's
+   eventual default) and works over plain `http://localhost` during local
+   testing, where a `Secure` cookie wouldn't be sent.
+2. **`fs_embed_{slug}` cookie (fallback).** A 30-day cookie (SameSite=None,
+   Secure, HttpOnly) set on every `launch`. Used when no valid client id is
+   supplied (e.g. first visit, or localStorage cleared).
+3. **Freshly minted** when neither yields a valid id.
+
+A client-supplied `visitor_id` is **only accepted if it matches the exact
+shape we mint** (`^embed-[A-Za-z0-9]{16,48}$`); anything else (a guessed id,
+a path like `../../etc`, an empty value) is ignored and a fresh id is minted,
+so a caller can't inject an arbitrary session key.
+
+**Resume.** A `RuntimeSession` is keyed by **(agent, visitor)**. On `launch`
+the controller checks `Runtime::hasSession()` — true when a **non-ended**
+session with **non-empty history** exists for that pair:
+
+- **Live session → resume.** Returns `{resumed: true, transcript: [...],
+  traces: []}` — the prior conversation is restored from history and **no
+  greeting fires, no LLM call is made, and nothing is charged.**
+  `Runtime::transcript()` maps the stored LLM history to display turns
+  (`[{role: 'user'|'agent', text}]`), skipping the synthetic
+  `FlowExecutor::OPENING_MESSAGE` greeting prompt and tool-result entries, and
+  flattening Anthropic content-blocks to text.
+- **New or ended session → greet.** Returns `{resumed: false, transcript: [],
+  traces: [...]}` and goes through the normal greeting + free-greeting-cap /
+  credit path (see Billing). An `ended` session never resumes.
+
+**Trade-off (intentional).** localStorage is readable by the iframe's own
+JavaScript — it is *not* `HttpOnly` like the cookie. That's acceptable here:
+the token only grants access to an **anonymous** chat session (no account, no
+PII beyond what the visitor types), and the durability win (surviving
+cookie-blocking + http localhost) outweighs the exposure of an
+already-anonymous capability token.
 
 ## Billing
 

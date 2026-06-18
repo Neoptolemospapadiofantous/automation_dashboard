@@ -98,6 +98,8 @@ class Agent extends Model
         'proactive_delay' => 8,        // seconds before teaser/auto-open
         'auto_open' => false,          // open the panel automatically
         'show_branding' => true,       // "Powered by Flowstack" footer
+        'welcome_message' => '',       // empty-state copy shown before the greeting
+        'starter_prompts' => [],       // list<string> quick-reply suggestions
     ];
 
     /**
@@ -122,6 +124,11 @@ class Agent extends Model
         $merged['proactive_delay'] = max(0, min(120, (int) $merged['proactive_delay']));
         $merged['auto_open'] = (bool) $merged['auto_open'];
         $merged['show_branding'] = (bool) $merged['show_branding'];
+        // Starter prompts: a clean list of non-empty strings, capped.
+        $merged['starter_prompts'] = array_values(array_slice(array_filter(array_map(
+            fn ($p) => trim((string) $p),
+            is_array($merged['starter_prompts']) ? $merged['starter_prompts'] : [],
+        ), fn (string $p) => $p !== ''), 0, 6));
 
         return $merged;
     }
