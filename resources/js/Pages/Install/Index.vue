@@ -1,13 +1,18 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import InputLabel from '@/Components/InputLabel.vue';
+import TextInput from '@/Components/TextInput.vue';
+import InputError from '@/Components/InputError.vue';
 
 const props = defineProps({
     agent: { type: Object, default: null },
 });
+
+const page = usePage();
 
 const widgetUrl = computed(() =>
     props.agent ? `${window.location.origin}/widget/${props.agent.slug}.js` : null,
@@ -67,6 +72,58 @@ async function copy() {
         copyState.value = 'idle';
     }
 }
+
+// --- Widget customization form -------------------------------------------
+// Initialized from the agent's persisted widget_config + allowed_domains.
+// The PUT to install.update accepts the flat widget_config fields plus the
+// allowed_domains array.
+const cfg = props.agent?.widget_config ?? {};
+const form = useForm({
+    accent_color: cfg.accent_color ?? '#4f46e5',
+    text_color: cfg.text_color ?? '#ffffff',
+    position: cfg.position ?? 'right',
+    launcher_text: cfg.launcher_text ?? '',
+    title: cfg.title ?? '',
+    subtitle: cfg.subtitle ?? '',
+    avatar_url: cfg.avatar_url ?? '',
+    proactive_message: cfg.proactive_message ?? '',
+    proactive_delay: cfg.proactive_delay ?? 0,
+    auto_open: cfg.auto_open ?? false,
+    show_branding: cfg.show_branding ?? true,
+    allowed_domains: [...(props.agent?.allowed_domains ?? [])],
+});
+
+function save() {
+    router.put(route('install.update'), { ...form.data() }, {
+        preserveScroll: true,
+        onStart: () => { form.processing = true; form.clearErrors(); },
+        onSuccess: () => { form.recentlySuccessful = true; setTimeout(() => (form.recentlySuccessful = false), 2500); },
+        onError: (errors) => { form.errors = errors; },
+        onFinish: () => { form.processing = false; },
+    });
+}
+
+const savedFlash = computed(
+    () => page.props.flash?.status === 'widget-updated' || form.recentlySuccessful,
+);
+
+// --- Allowed-domains list editor -----------------------------------------
+const newDomain = ref('');
+function addDomain() {
+    const d = newDomain.value.trim().toLowerCase();
+    if (!d) return;
+    if (!form.allowed_domains.includes(d) && form.allowed_domains.length < 50) {
+        form.allowed_domains.push(d);
+    }
+    newDomain.value = '';
+}
+function removeDomain(i) {
+    form.allowed_domains.splice(i, 1);
+}
+
+// --- Live preview helpers -------------------------------------------------
+const previewTitle = computed(() => form.title || props.agent?.name || 'Your agent');
+const previewLauncher = computed(() => form.launcher_text || 'Chat with us');
 </script>
 
 <template>
@@ -148,6 +205,244 @@ async function copy() {
                             >
                                 View raw widget.js
                             </a>
+                        </div>
+                    </div>
+
+                    <!-- Section divider into the customize block -->
+                    <div class="flex items-center gap-3 py-1">
+                        <span class="bp-ref shrink-0">WIDGET/CUSTOMIZE</span>
+                        <div class="bp-dim flex-1" />
+                    </div>
+
+                    <!-- Customize widget -->
+                    <form class="bp-node shadow-sheet rounded-none p-6" @submit.prevent="save">
+                        <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <h3 class="text-base font-semibold text-ink">Customize widget</h3>
+                                <p class="mt-1 text-sm text-ink-dim">
+                                    Style the floating launcher and chat panel. Changes apply everywhere
+                                    <span class="font-medium">{{ agent.name }}</span> is embedded.
+                                </p>
+                            </div>
+                            <span class="bp-annot">{{ agent.slug }}</span>
+                        </div>
+
+                        <div class="grid gap-6 lg:grid-cols-[1fr_18rem]">
+                            <!-- Controls -->
+                            <div class="space-y-6">
+                                <!-- Colors -->
+                                <div class="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <InputLabel for="accent_color" value="Accent color" />
+                                        <div class="mt-1 flex items-center gap-2">
+                                            <input
+                                                id="accent_color"
+                                                v-model="form.accent_color"
+                                                type="color"
+                                                class="h-9 w-12 flex-shrink-0 cursor-pointer rounded-none border border-border-hi bg-bg p-0.5"
+                                            >
+                                            <TextInput
+                                                v-model="form.accent_color"
+                                                type="text"
+                                                class="block w-full font-mono text-sm"
+                                                placeholder="#4f46e5"
+                                                maxlength="7"
+                                            />
+                                        </div>
+                                        <InputError :message="form.errors.accent_color" class="mt-1" />
+                                    </div>
+                                    <div>
+                                        <InputLabel for="text_color" value="Text color" />
+                                        <div class="mt-1 flex items-center gap-2">
+                                            <input
+                                                id="text_color"
+                                                v-model="form.text_color"
+                                                type="color"
+                                                class="h-9 w-12 flex-shrink-0 cursor-pointer rounded-none border border-border-hi bg-bg p-0.5"
+                                            >
+                                            <TextInput
+                                                v-model="form.text_color"
+                                                type="text"
+                                                class="block w-full font-mono text-sm"
+                                                placeholder="#ffffff"
+                                                maxlength="7"
+                                            />
+                                        </div>
+                                        <InputError :message="form.errors.text_color" class="mt-1" />
+                                    </div>
+                                </div>
+
+                                <!-- Position toggle -->
+                                <div>
+                                    <InputLabel value="Position" />
+                                    <div class="mt-1 inline-flex rounded-none border border-border-line bg-bg p-1">
+                                        <button
+                                            v-for="pos in ['left', 'right']"
+                                            :key="pos"
+                                            type="button"
+                                            class="rounded-none px-4 py-1.5 text-sm font-medium capitalize transition"
+                                            :class="form.position === pos ? 'bg-ink text-bg' : 'text-ink-dim hover:bg-surface-hi'"
+                                            @click="form.position = pos"
+                                        >
+                                            {{ pos }}
+                                        </button>
+                                    </div>
+                                    <InputError :message="form.errors.position" class="mt-1" />
+                                </div>
+
+                                <!-- Text fields -->
+                                <div class="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <InputLabel for="launcher_text" value="Launcher text" />
+                                        <TextInput id="launcher_text" v-model="form.launcher_text" type="text" class="mt-1 block w-full" placeholder="Chat with us" maxlength="255" />
+                                        <InputError :message="form.errors.launcher_text" class="mt-1" />
+                                    </div>
+                                    <div>
+                                        <InputLabel for="title" value="Title" />
+                                        <TextInput id="title" v-model="form.title" type="text" class="mt-1 block w-full" :placeholder="agent.name" maxlength="255" />
+                                        <InputError :message="form.errors.title" class="mt-1" />
+                                    </div>
+                                    <div>
+                                        <InputLabel for="subtitle" value="Subtitle" />
+                                        <TextInput id="subtitle" v-model="form.subtitle" type="text" class="mt-1 block w-full" placeholder="We typically reply in a few minutes" maxlength="255" />
+                                        <InputError :message="form.errors.subtitle" class="mt-1" />
+                                    </div>
+                                    <div>
+                                        <InputLabel for="avatar_url" value="Avatar URL" />
+                                        <TextInput id="avatar_url" v-model="form.avatar_url" type="url" class="mt-1 block w-full" placeholder="https://…/avatar.png" />
+                                        <InputError :message="form.errors.avatar_url" class="mt-1" />
+                                    </div>
+                                </div>
+
+                                <!-- Proactive message -->
+                                <div>
+                                    <InputLabel for="proactive_message" value="Proactive message" />
+                                    <textarea
+                                        id="proactive_message"
+                                        v-model="form.proactive_message"
+                                        rows="2"
+                                        class="mt-1 block w-full rounded-none border-border-hi bg-bg text-ink focus:border-ink focus:ring-2 focus:ring-ink focus:ring-offset-1"
+                                        placeholder="Hi there 👋 Need a hand with anything?"
+                                    />
+                                    <p class="mt-1 text-xs text-ink-dim">Shown as a teaser bubble before the visitor opens the chat.</p>
+                                    <InputError :message="form.errors.proactive_message" class="mt-1" />
+                                </div>
+
+                                <div>
+                                    <InputLabel for="proactive_delay" value="Proactive delay (seconds)" />
+                                    <TextInput id="proactive_delay" v-model="form.proactive_delay" type="number" min="0" max="120" class="mt-1 block w-32" />
+                                    <p class="mt-1 text-xs text-ink-dim">0–120 seconds after the page loads.</p>
+                                    <InputError :message="form.errors.proactive_delay" class="mt-1" />
+                                </div>
+
+                                <!-- Toggles -->
+                                <div class="space-y-3">
+                                    <label class="flex cursor-pointer items-start gap-3">
+                                        <input v-model="form.auto_open" type="checkbox" class="mt-0.5 rounded-none border-border-hi text-ink focus:ring-2 focus:ring-ink focus:ring-offset-1">
+                                        <span>
+                                            <span class="block text-sm font-medium text-ink">Auto-open chat</span>
+                                            <span class="block text-xs text-ink-dim">Open the chat panel automatically on first visit.</span>
+                                        </span>
+                                    </label>
+                                    <InputError :message="form.errors.auto_open" />
+                                    <label class="flex cursor-pointer items-start gap-3">
+                                        <input v-model="form.show_branding" type="checkbox" class="mt-0.5 rounded-none border-border-hi text-ink focus:ring-2 focus:ring-ink focus:ring-offset-1">
+                                        <span>
+                                            <span class="block text-sm font-medium text-ink">Show "Powered by" branding</span>
+                                            <span class="block text-xs text-ink-dim">Display a small Flowstack credit in the chat footer.</span>
+                                        </span>
+                                    </label>
+                                    <InputError :message="form.errors.show_branding" />
+                                </div>
+                            </div>
+
+                            <!-- Live preview -->
+                            <div class="rounded-none border border-border-line bg-bg-elev p-4">
+                                <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">Live preview</p>
+                                <div class="relative mt-3 h-64 overflow-hidden rounded-none border border-border-line bg-surface-hi">
+                                    <!-- Proactive teaser -->
+                                    <div
+                                        v-if="form.proactive_message"
+                                        class="absolute bottom-16 max-w-[12rem] rounded-none border border-border-line bg-bg px-3 py-2 text-xs text-ink shadow-sheet"
+                                        :class="form.position === 'left' ? 'left-3' : 'right-3'"
+                                    >
+                                        {{ form.proactive_message }}
+                                    </div>
+                                    <!-- Launcher -->
+                                    <div
+                                        class="absolute bottom-3 flex items-center gap-2 rounded-none px-4 py-2.5 text-sm font-medium shadow-sheet"
+                                        :class="form.position === 'left' ? 'left-3' : 'right-3'"
+                                        :style="{ backgroundColor: form.accent_color, color: form.text_color }"
+                                    >
+                                        <img v-if="form.avatar_url" :src="form.avatar_url" alt="" class="h-5 w-5 rounded-none object-cover">
+                                        <span>{{ previewLauncher }}</span>
+                                    </div>
+                                </div>
+                                <p class="mt-3 text-sm font-medium text-ink">{{ previewTitle }}</p>
+                                <p v-if="form.subtitle" class="text-xs text-ink-dim">{{ form.subtitle }}</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex items-center gap-3 border-t border-border-line pt-4">
+                            <PrimaryButton type="submit" :disabled="form.processing" :class="{ 'opacity-50': form.processing }">
+                                Save
+                            </PrimaryButton>
+                            <span v-if="savedFlash" class="text-xs font-medium text-green-700">✓ Saved</span>
+                        </div>
+                    </form>
+
+                    <!-- Allowed domains -->
+                    <div class="rounded-none border border-border-line bg-bg p-6">
+                        <h3 class="text-base font-semibold text-ink">Allowed domains</h3>
+                        <p class="mt-1 text-sm text-ink-dim">
+                            Empty = embeddable anywhere. Add hosts like
+                            <code class="rounded-none bg-surface-hi px-1 py-0.5 text-[11px]">acme.com</code> or
+                            <code class="rounded-none bg-surface-hi px-1 py-0.5 text-[11px]">*.acme.com</code>
+                            to restrict where this widget can load.
+                        </p>
+
+                        <div class="mt-4 flex flex-wrap items-end gap-2">
+                            <div class="min-w-[16rem] flex-1">
+                                <InputLabel for="new_domain" value="Add a host" />
+                                <TextInput
+                                    id="new_domain"
+                                    v-model="newDomain"
+                                    type="text"
+                                    class="mt-1 block w-full font-mono text-sm"
+                                    placeholder="acme.com"
+                                    @keydown.enter.prevent="addDomain"
+                                />
+                            </div>
+                            <PrimaryButton type="button" :disabled="form.allowed_domains.length >= 50" @click="addDomain">
+                                Add
+                            </PrimaryButton>
+                        </div>
+                        <InputError :message="form.errors.allowed_domains" class="mt-1" />
+
+                        <ul v-if="form.allowed_domains.length" class="mt-4 flex flex-wrap gap-2">
+                            <li
+                                v-for="(domain, i) in form.allowed_domains"
+                                :key="domain"
+                                class="inline-flex items-center gap-2 rounded-none border border-border-line bg-surface-hi px-2.5 py-1 font-mono text-xs text-ink"
+                            >
+                                {{ domain }}
+                                <button
+                                    type="button"
+                                    class="text-ink-mute hover:text-rose-700"
+                                    :aria-label="`Remove ${domain}`"
+                                    @click="removeDomain(i)"
+                                >
+                                    ×
+                                </button>
+                            </li>
+                        </ul>
+                        <p v-else class="mt-4 text-xs text-ink-mute">No restrictions — embeddable on any domain.</p>
+
+                        <div class="mt-4 flex items-center gap-3 border-t border-border-line pt-4">
+                            <PrimaryButton type="button" :disabled="form.processing" :class="{ 'opacity-50': form.processing }" @click="save">
+                                Save domains
+                            </PrimaryButton>
+                            <span v-if="savedFlash" class="text-xs font-medium text-green-700">✓ Saved</span>
                         </div>
                     </div>
 

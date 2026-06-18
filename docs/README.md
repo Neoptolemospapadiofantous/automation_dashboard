@@ -51,6 +51,7 @@ write a new phase doc that supersedes the prior one).
 - [phase-7-delegation.md](./phase-7-delegation.md) — [[phase-7-delegation|round-robin + manual lead assignment]]
 
 ### Public surface
+- [widget-embed.md](./widget-embed.md) — **the embeddable chat widget**: the `<script>` loader, `window.flowstack` JS API, `widget_config` customization, the domain allowlist + frame-ancestors trust boundary, the public embed endpoints (`app/Support/Embed`, `EmbedController`, `InstallController`)
 - [public-surface.md](./public-surface.md) — `/api/public/stats` contract, safety doctrine, bucketing
 - [phase-14-public-stats.md](./phase-14-public-stats.md) — phase doc: how the public surface was built
 - [architecture/public-stats-flow.md](./architecture/public-stats-flow.md) — dashboard data flow (Mermaid)

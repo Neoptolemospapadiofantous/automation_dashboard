@@ -1,3 +1,11 @@
+@php
+    $title = ($config['title'] ?? '') !== '' ? $config['title'] : $agentName;
+    $subtitle = $config['subtitle'] ?? 'AI assistant';
+    $accent = $config['accent_color'] ?? '#000000';
+    $onAccent = $config['text_color'] ?? '#FFFFFF';
+    $avatar = $config['avatar_url'] ?? '';
+    $showBranding = (bool) ($config['show_branding'] ?? true);
+@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,7 +17,8 @@
         /* Flowstack brand — white sheet. Values inlined from
            resources/css/tokens.css (.sheet-white): this page is served into
            customers' iframes and deliberately loads no app bundle or
-           external fonts. Hard edges (radius 0) per the brand. */
+           external fonts. Hard edges (radius 0) per the brand. The accent is
+           operator-configurable (Install page). */
         :root {
             --bg:          #FFFFFF;
             --bg-elev:     #FAFAFA;
@@ -20,6 +29,8 @@
             --ink:         #000000;
             --ink-dim:     #525252;
             --ink-mute:    #8A8A8A;
+            --accent:      {{ $accent }};
+            --on-accent:   {{ $onAccent }};
             --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
         }
         * { box-sizing: border-box; }
@@ -41,19 +52,18 @@
             background: var(--bg-elev);
         }
         header h1 { font-size: 14px; font-weight: 600; margin: 0; }
-        /* Art. 50 disclosure — mono annotation, must stay legible on the
-           light header (was once white-on-white; never again). */
         header .ai-disclosure {
             font-size: 10px; color: var(--ink-dim); margin: 2px 0 0;
             font-family: var(--font-mono); letter-spacing: 0.04em;
         }
         header .badge {
-            width: 32px; height: 32px; border-radius: 0;
-            background: var(--ink); color: var(--bg);
+            width: 32px; height: 32px; border-radius: 0; overflow: hidden;
+            background: var(--accent); color: var(--on-accent);
             display: flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: 700;
+            font-size: 14px; font-weight: 700; flex: none;
             font-family: var(--font-mono);
         }
+        header .badge img { width: 100%; height: 100%; object-fit: cover; display: block; }
         #thread {
             flex: 1; overflow-y: auto;
             padding: 16px; display: flex; flex-direction: column; gap: 8px;
@@ -65,7 +75,7 @@
         }
         .msg.user {
             align-self: flex-end;
-            background: var(--ink); color: var(--bg);
+            background: var(--accent); color: var(--on-accent);
         }
         .msg.agent {
             align-self: flex-start;
@@ -88,20 +98,18 @@
             font-size: 14px; outline: none;
             background: var(--bg); color: var(--ink);
         }
-        form input:focus { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink); }
+        form input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
         form button {
-            padding: 10px 16px; border: 1px solid var(--ink); border-radius: 0;
-            background: var(--ink); color: var(--bg);
+            padding: 10px 16px; border: 1px solid var(--accent); border-radius: 0;
+            background: var(--accent); color: var(--on-accent);
             font-weight: 600; font-size: 12px; cursor: pointer;
             font-family: var(--font-mono);
             letter-spacing: 0.06em; text-transform: uppercase;
             white-space: nowrap; flex-shrink: 0;
-            transition: background .15s, color .15s;
+            transition: background .15s, color .15s, opacity .15s;
         }
-        /* :active alongside :hover so touch devices get press feedback and
-           the inverted state doesn't "stick" after tap. */
         form button:hover:not(:disabled),
-        form button:active:not(:disabled) { background: var(--bg); color: var(--ink); }
+        form button:active:not(:disabled) { background: var(--bg); color: var(--accent); }
         form button:disabled { opacity: .5; cursor: not-allowed; }
         .typing {
             align-self: flex-start;
@@ -121,9 +129,15 @@
 </head>
 <body>
 <header>
-    <div class="badge">{{ substr($agentName, 0, 1) }}</div>
+    <div class="badge">
+        @if ($avatar !== '')
+            <img src="{{ $avatar }}" alt="">
+        @else
+            {{ strtoupper(substr($title, 0, 1)) }}
+        @endif
+    </div>
     <div>
-        <h1>{{ $agentName }}</h1>
+        <h1>{{ $title }}</h1>
         {{-- EU AI Act Art. 50 transparency: rendered by the PLATFORM,
              independent of agent scripting, at every conversation. --}}
         <p class="ai-disclosure">AI assistant — not a person. You can ask for a human at any time.</p>
@@ -137,17 +151,26 @@
     <button type="submit" id="send">Send</button>
 </form>
 
-<div class="powered">Powered by <a href="https://flowstack.run" target="_blank" rel="noopener">Flowstack</a></div>
+@if ($showBranding)
+    <div class="powered">Powered by <a href="https://flowstack.run" target="_blank" rel="noopener">Flowstack</a></div>
+@endif
 
 <script>
 (function () {
     var slug = {!! json_encode($slug) !!};
+    var HOST = {!! json_encode($host) !!}; // parent page host, forwarded by the loader (?ref=)
     var thread = document.getElementById('thread');
     var form = document.getElementById('composer');
     var input = document.getElementById('msg');
     var sendBtn = document.getElementById('send');
     var visitorId = null;
     var csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+    // Tell the host page (loader) about lifecycle + new messages. The loader
+    // origin-checks these; we post to the parent only.
+    function toParent(msg) {
+        try { if (window.parent && window.parent !== window) window.parent.postMessage(msg, '*'); } catch (e) {}
+    }
 
     function addMsg(role, text) {
         var d = document.createElement('div');
@@ -172,13 +195,17 @@
         traces.forEach(function (t) {
             if (t.type === 'text' && t.payload && t.payload.message) {
                 addMsg('agent', t.payload.message);
+                toParent({ type: 'fs:message', text: t.payload.message });
             } else if (t.type === 'speak' && t.payload && t.payload.message) {
                 addMsg('agent', t.payload.message);
+                toParent({ type: 'fs:message', text: t.payload.message });
             }
         });
     }
 
     function callJson(path, body) {
+        body = body || {};
+        if (HOST) body.host = HOST; // backend domain check for restricted agents
         return fetch(path, {
             method: 'POST',
             credentials: 'include',
@@ -187,7 +214,7 @@
                 'X-CSRF-TOKEN': csrf,
                 'Accept': 'application/json',
             },
-            body: body ? JSON.stringify(body) : '{}',
+            body: JSON.stringify(body),
         }).then(function (r) {
             return r.json().then(function (j) {
                 return { status: r.status, body: j };
@@ -205,15 +232,15 @@
             }
             visitorId = r.body.visitor_id;
             renderTraces(r.body.traces);
+            toParent({ type: 'fs:ready' });
         } catch (e) {
             addMsg('system', 'Connection failed. Please refresh.');
         }
     }
 
-    form.addEventListener('submit', async function (e) {
-        e.preventDefault();
-        var text = input.value.trim();
-        if (!text || !visitorId) return;
+    async function send(text) {
+        text = (text || '').trim();
+        if (!text || !visitorId || sendBtn.disabled) return;
         addMsg('user', text);
         input.value = '';
         sendBtn.disabled = true;
@@ -234,6 +261,22 @@
             addMsg('system', 'Connection failed.');
         } finally {
             sendBtn.disabled = false;
+            input.focus();
+        }
+    }
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        send(input.value);
+    });
+
+    // Host JS API bridge: the loader relays window.flowstack.sendMessage()
+    // and open() here.
+    window.addEventListener('message', function (e) {
+        var d = e.data || {};
+        if (d.type === 'fs:send' && typeof d.text === 'string') {
+            send(d.text);
+        } else if (d.type === 'fs:visible') {
             input.focus();
         }
     });
