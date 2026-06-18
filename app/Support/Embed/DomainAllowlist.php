@@ -91,7 +91,11 @@ class DomainAllowlist
         $sources = [];
         foreach ($patterns as $pattern) {
             $pattern = strtolower(trim($pattern));
-            if ($pattern === '') {
+            // Defense in depth: only bare hosts (optionally "*." prefixed) may
+            // reach the CSP header. Anything with a space, ";", or control char
+            // is dropped so it can't inject extra directives, regardless of how
+            // it got stored.
+            if ($pattern === '' || preg_match('/^\*?[a-z0-9.-]+$/', $pattern) !== 1) {
                 continue;
             }
             foreach (['https://', 'http://'] as $scheme) {

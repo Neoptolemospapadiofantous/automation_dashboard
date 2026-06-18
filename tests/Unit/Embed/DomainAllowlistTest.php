@@ -90,4 +90,23 @@ class DomainAllowlistTest extends TestCase
         $this->assertStringContainsString('https://acme.com', $value);
         $this->assertStringContainsString('http://acme.com', $value);
     }
+
+    public function test_frame_ancestors_drops_csp_directive_injection(): void
+    {
+        // A stored value carrying a ";" or a space must not leak extra
+        // directives/sources into the CSP header — the malicious entry is
+        // dropped, leaving only the clean host.
+        $value = DomainAllowlist::frameAncestors([
+            'evil.com;frame-ancestors *',
+            'evil.com sandbox',
+            "acme.com\nfoo",
+            'acme.com',
+        ]);
+
+        $this->assertStringNotContainsString(';', $value);
+        $this->assertStringNotContainsString(' frame-ancestors', $value);
+        $this->assertStringNotContainsString('sandbox', $value);
+        $this->assertStringNotContainsString("\n", $value);
+        $this->assertStringContainsString('https://acme.com', $value);
+    }
 }

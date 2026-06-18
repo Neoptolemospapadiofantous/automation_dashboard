@@ -97,7 +97,10 @@ class InstallController extends Controller
 
                 return explode(':', $d)[0];                          // drop port
             })
-            ->filter(fn (string $d) => $d !== '')
+            // Reject anything that isn't a bare host (optionally "*." prefixed).
+            // Critically this drops spaces / ";" / control chars so a value can
+            // never inject extra directives into the frame-ancestors CSP header.
+            ->filter(fn (string $d) => $d !== '' && preg_match('/^\*?[a-z0-9.-]+$/', $d) === 1)
             ->unique()
             ->values()
             ->all();
