@@ -68,11 +68,29 @@ class SlackAgentFeedTest extends TestCase
         Http::fake([self::HOOK => Http::response('ok', 200)]);
         config(['services.slack.webhook_url' => self::HOOK]);
 
-        // Reads the real data/agents/*/findings.json reports checked into the
-        // repo. As long as at least one collector report exists, it posts.
-        $this->artisan('slack:digest')->assertSuccessful();
+        // The digest reads data/agents/*/findings.json, which is gitignored and
+        // absent on a fresh checkout (CI). Stage a fixture report so the test is
+        // hermetic, and restore any pre-existing local report afterward.
+        $path = base_path('data/agents/audit-sentinel/findings.json');
+        $prior = is_file($path) ? file_get_contents($path) : null;
+        @mkdir(dirname($path), 0775, true);
+        file_put_contents($path, json_encode([
+            'overall' => 'WARN',
+            'critical' => 0, 'high' => 0, 'medium' => 1, 'low' => 0,
+            'ts' => '2026-06-19T00:00:00Z',
+        ]));
 
-        Http::assertSent(fn ($request) => $request->url() === self::HOOK
-            && str_contains((string) $request['text'], 'Hermes daily digest'));
+        try {
+            $this->artisan('slack:digest')->assertSuccessful();
+
+            Http::assertSent(fn ($request) => $request->url() === self::HOOK
+                && str_contains((string) $request['text'], 'Hermes daily digest'));
+        } finally {
+            if ($prior === null) {
+                @unlink($path);
+            } else {
+                file_put_contents($path, $prior);
+            }
+        }
     }
 }
