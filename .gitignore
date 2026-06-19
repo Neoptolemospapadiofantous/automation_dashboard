@@ -10,6 +10,7 @@
 /.nova
 /.phpunit.cache
 /.vscode
+/coverage
 /database/*.sqlite
 /database/*.sqlite-journal
 /.forge-deploy
