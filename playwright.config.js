@@ -9,6 +9,7 @@ import { defineConfig, devices } from '@playwright/test';
 //   E2E_AGENT_SLUG   an ACTIVE agent slug to drive (smokes skip if unset)
 //   E2E_NO_SERVER    set to reuse an already-running server (no auto php serve)
 const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:8000';
+const { hostname: serveHost, port: servePort } = new URL(baseURL);
 
 export default defineConfig({
     testDir: './tests/e2e',
@@ -30,8 +31,12 @@ export default defineConfig({
     webServer: process.env.E2E_NO_SERVER
         ? undefined
         : {
-            command: 'php artisan serve --host=127.0.0.1 --port=8000',
-            url: baseURL,
+            command: `php artisan serve --host=${serveHost} --port=${servePort || 8000}`,
+            // Readiness probe hits the asset-free /up health route. The root `/`
+            // redirects to an Inertia/Vite page that 500s without a built
+            // manifest (we don't build assets for the embed smokes), which would
+            // otherwise leave the server "not ready" and time out in CI.
+            url: `${baseURL}/up`,
             reuseExistingServer: !process.env.CI,
             timeout: 60_000,
         },
