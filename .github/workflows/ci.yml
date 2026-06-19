@@ -14,6 +14,12 @@ name: CI
 
 on: [push, pull_request]
 
+# Least-privilege GITHUB_TOKEN: every job only checks out code and (for e2e)
+# uploads an artifact — none write to the repo. Scoping this here applies to all
+# jobs below.
+permissions:
+  contents: read
+
 jobs:
   secrets:
     runs-on: ubuntu-latest
@@ -158,3 +164,66 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run test:unit
+
+  e2e:
+    runs-on: ubuntu-latest
+    # Browser smokes over a real server. Everything (migrate, seed, serve) runs
+    # against the MariaDB service DB; DB_DATABASE points all of them at it so the
+    # seeded agent and the served app share one database. The embed surface is
+    # plain Blade — no Vite build needed.
+    env:
+      DB_DATABASE: automation_dashboard_test
+      E2E_AGENT_SLUG: e2e-smoke-agent
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: automation_dashboard_test
+          MARIADB_USER: flowstack
+          MARIADB_PASSWORD: flowstack
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: pdo_mysql
+      - run: composer install --no-interaction --prefer-dist
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+      - name: Migrate + seed the e2e agent
+        run: |
+          php artisan migrate --force
+          php artisan db:seed --class="Database\\Seeders\\E2eSeeder" --force
+      # The embed pages are plain Blade, but a 404 (e.g. unknown slug) renders a
+      # branded Inertia error page via @vite — which needs a built manifest or it
+      # 500s. Building assets is what lets the "404 not 500" smoke be meaningful.
+      - name: Build frontend assets
+        run: pnpm run build
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      # playwright.config.js starts `php artisan serve` itself (CI=true → fresh
+      # server), inheriting DB_DATABASE so it reads the seeded agent.
+      - run: pnpm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

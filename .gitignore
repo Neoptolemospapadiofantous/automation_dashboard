@@ -11,6 +11,10 @@
 /.phpunit.cache
 /.vscode
 /coverage
+/test-results
+/playwright-report
+/blob-report
+/.playwright
 /database/*.sqlite
 /database/*.sqlite-journal
 /.forge-deploy
