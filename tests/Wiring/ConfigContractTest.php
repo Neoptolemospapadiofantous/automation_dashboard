@@ -45,8 +45,6 @@ class ConfigContractTest extends TestCase
         'MEILISEARCH_KEY',
         // session.php — optional cookie/store overrides
         'SESSION_CONNECTION', 'SESSION_SECURE_COOKIE', 'SESSION_STORE',
-        // services.php — unused slack notifications
-        'SLACK_BOT_USER_DEFAULT_CHANNEL', 'SLACK_BOT_USER_OAUTH_TOKEN',
     ];
 
     public function test_anthropic_api_key_is_part_of_the_config_contract(): void
