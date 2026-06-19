@@ -37,6 +37,7 @@ Thumbs.db
 # Locally-installed skills/agents (npx skills add) — machine-local, not
 # project code. Tracked .claude/commands and .hermes content are unaffected.
 /.agents/
+/.claude/scheduled_tasks.lock
 /.claude/skills/
 /.hermes/skills/
 /skills-lock.json

@@ -18,6 +18,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 use Inertia\Response;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\UriInterface;
 use Smalot\PdfParser\Parser as PdfParser;
 
 /**
@@ -101,8 +104,31 @@ class KnowledgeBaseController extends Controller
             'name' => ['nullable', 'string', 'max:255'],
         ]);
 
+        // SSRF guard: refuse non-public destinations before any request
+        // leaves the box. This endpoint is authenticated, but a tenant could
+        // otherwise aim it at cloud metadata (169.254.169.254), localhost, or
+        // anything on the private network and read the response back.
         try {
-            $response = Http::timeout(20)->withHeaders(['User-Agent' => 'FlowstackBot/1.0'])->get($data['url']);
+            $this->assertPublicHttpUrl($data['url']);
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['url' => $e->getMessage()]);
+        }
+
+        try {
+            $response = Http::timeout(20)
+                ->withHeaders(['User-Agent' => 'FlowstackBot/1.0'])
+                ->withOptions(['allow_redirects' => [
+                    'max' => 5,
+                    'strict' => true,
+                    'referer' => false,
+                    'protocols' => ['http', 'https'],
+                    // Re-validate every hop so a public page can't 30x into
+                    // the private network (redirect-based SSRF bypass).
+                    'on_redirect' => function (RequestInterface $request, ResponseInterface $response, UriInterface $uri): void {
+                        $this->assertPublicHttpUrl((string) $uri);
+                    },
+                ]])
+                ->get($data['url']);
             if ($response->failed()) {
                 return back()->withErrors(['url' => 'That URL returned HTTP '.$response->status().'.']);
             }
@@ -299,6 +325,69 @@ class KnowledgeBaseController extends Controller
         abort_if($agent === null, 503, 'No agent is set up yet.');
 
         return $agent;
+    }
+
+    /**
+     * SSRF guard for user-supplied fetch targets. Enforces an http(s) scheme
+     * and rejects any host that resolves to a private, loopback, link-local,
+     * or otherwise reserved address. Throws \RuntimeException with a message
+     * safe to surface back to the user.
+     */
+    protected function assertPublicHttpUrl(string $url): void
+    {
+        $parts = parse_url($url);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        if (! in_array($scheme, ['http', 'https'], true)) {
+            throw new \RuntimeException('Only http and https URLs can be fetched.');
+        }
+
+        $host = trim((string) ($parts['host'] ?? ''), '[]');
+        if ($host === '') {
+            throw new \RuntimeException('That URL has no host to fetch.');
+        }
+
+        $ips = $this->resolveHostIps($host);
+        if ($ips === []) {
+            throw new \RuntimeException('Could not resolve that host.');
+        }
+
+        foreach ($ips as $ip) {
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+                throw new \RuntimeException('That URL points to a non-public address and cannot be fetched.');
+            }
+        }
+    }
+
+    /**
+     * Resolve a host to its IP literals (A + AAAA). If the host is already an
+     * IP literal it is returned as-is.
+     *
+     * @return list<string>
+     */
+    protected function resolveHostIps(string $host): array
+    {
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            return [$host];
+        }
+
+        $ips = [];
+        $records = @dns_get_record($host, DNS_A + DNS_AAAA) ?: [];
+        foreach ($records as $record) {
+            foreach (['ip', 'ipv6'] as $key) {
+                if (isset($record[$key]) && $record[$key] !== '') {
+                    $ips[] = (string) $record[$key];
+                }
+            }
+        }
+
+        if ($ips === []) {
+            $resolved = gethostbyname($host);
+            if ($resolved !== $host) {
+                $ips[] = $resolved;
+            }
+        }
+
+        return $ips;
     }
 
     /**

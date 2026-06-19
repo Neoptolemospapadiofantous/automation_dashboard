@@ -3,6 +3,7 @@
 namespace Tests\Feature\Runtime;
 
 use App\Models\Agent;
+use App\Models\Lead;
 use App\Models\User;
 use App\Notifications\HandoffRequestedNotification;
 use App\Runtime\AgentRuntime;
@@ -143,6 +144,66 @@ class GroundedAnswersTest extends TestCase
         // Exactly one handoff notification — the deterministic backstop saw
         // the tool fire and stood down.
         Notification::assertSentToTimes($owner, HandoffRequestedNotification::class, 1);
+    }
+
+    public function test_lead_backstop_captures_when_model_gives_email_but_skips_the_tool(): void
+    {
+        $this->ownerWithAgent($agent, autoEscalate: false);
+
+        // High confidence so the low-confidence handoff path stays out of the
+        // way — this isolates the lead backstop.
+        $this->fakeKnowledge(hasDocuments: true, topScore: 0.92, title: 'Pricing FAQ');
+        // The model answers conversationally but never calls capture_lead —
+        // the exact small-model failure this backstop exists for.
+        $this->fakeLlm($this->textResult('Great, thanks for sharing that!'));
+
+        $this->seedSession($agent, 'v1', 'discovery');
+        app(AgentRuntime::class)->sendText($agent, 'v1', 'My email is jane@example.com, please reach out.');
+
+        $lead = Lead::where('agent_id', $agent->id)->where('email', 'jane@example.com')->first();
+        $this->assertNotNull($lead, 'the backstop should have captured the lead');
+        $this->assertSame('chat', $lead->source);
+
+        // Captured ⇒ advance to wrapup so the next turn does not re-capture.
+        $session = RuntimeSession::where('visitor_id', 'v1')->first();
+        $this->assertSame('wrapup', $session->flow_state);
+    }
+
+    public function test_lead_backstop_stands_down_when_the_model_captures_via_tool(): void
+    {
+        $this->ownerWithAgent($agent, autoEscalate: false);
+        $this->fakeKnowledge(hasDocuments: true, topScore: 0.92, title: 'Pricing FAQ');
+
+        // The model captures one email via the tool; the visitor's message
+        // mentions a DIFFERENT email. If the backstop wrongly fired it would
+        // create a SECOND lead for that address — so a single lead proves the
+        // backstop saw the tool fire and stood down.
+        $this->fakeLlm(
+            $this->toolUseResult('capture_lead', ['name' => 'Jane', 'email' => 'tool@example.com']),
+            $this->textResult('All set — a teammate will follow up.'),
+        );
+
+        $this->seedSession($agent, 'v1', 'discovery');
+        app(AgentRuntime::class)->sendText($agent, 'v1', 'reach me at other@example.com or tool@example.com');
+
+        $this->assertSame(1, Lead::where('agent_id', $agent->id)->count());
+        $this->assertNotNull(Lead::where('agent_id', $agent->id)->where('email', 'tool@example.com')->first());
+        $this->assertNull(Lead::where('agent_id', $agent->id)->where('email', 'other@example.com')->first());
+    }
+
+    public function test_lead_backstop_does_not_fire_without_an_email(): void
+    {
+        $this->ownerWithAgent($agent, autoEscalate: false);
+        $this->fakeKnowledge(hasDocuments: true, topScore: 0.92, title: 'Pricing FAQ');
+        $this->fakeLlm($this->textResult('Happy to help — what are you looking for?'));
+
+        $this->seedSession($agent, 'v1', 'discovery');
+        app(AgentRuntime::class)->sendText($agent, 'v1', 'just browsing for now, thanks');
+
+        $this->assertSame(0, Lead::where('agent_id', $agent->id)->count());
+        // No capture ⇒ stay in discovery so capture can still happen later.
+        $session = RuntimeSession::where('visitor_id', 'v1')->first();
+        $this->assertSame('discovery', $session->flow_state);
     }
 
     // ── fixtures ─────────────────────────────────────────────────────────────

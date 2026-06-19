@@ -155,6 +155,33 @@ class KnowledgeBaseTest extends TestCase
         app(KnowledgeStore::class)->ingestDocument($this->agent()->id, 'Doc', 'text', []);
     }
 
+    public function test_store_url_blocks_ssrf_targets(): void
+    {
+        // Any outbound request here would mean the guard let a private/
+        // reserved destination through — the fake records it so we can assert.
+        Http::fake();
+
+        $user = User::factory()->withPersonalTeam()->create();
+        $agent = Agent::factory()->for($user->currentTeam)->create(['runtime_mode' => 'native']);
+        $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
+
+        $blocked = [
+            'http://169.254.169.254/latest/meta-data/', // cloud metadata
+            'http://127.0.0.1/admin',                   // loopback
+            'http://10.0.0.5/internal',                 // private network
+            'ftp://example.com/secret',                 // non-http scheme
+        ];
+
+        foreach ($blocked as $url) {
+            $this->actingAs($user)
+                ->post(route('knowledge.url'), ['url' => $url])
+                ->assertSessionHasErrors('url');
+        }
+
+        Http::assertNothingSent();
+        $this->assertDatabaseCount('kb_documents', 0);
+    }
+
     private function agent(): Agent
     {
         $user = User::factory()->withPersonalTeam()->create();

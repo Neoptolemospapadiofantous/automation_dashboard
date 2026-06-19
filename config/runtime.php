@@ -91,7 +91,7 @@ return [
     | docs/operations/pricing-audit.md): all five model IDs valid, all
     | five rate pairs exact. Re-verify when bumping any model env.
     */
-    'tiers' => [
+    'tiers' => array_merge([
         'haiku' => [
             'provider' => 'anthropic',
             'label' => 'Claude Haiku',
@@ -132,7 +132,20 @@ return [
             'credits_per_message' => (int) env('RUNTIME_TIER_GEMINI_CREDITS', 1),
             'pricing_per_mtok' => ['in' => 0.30, 'out' => 2.50],
         ],
-    ],
+    ], (string) env('APP_ENV') === 'local' ? [
+        // LOCAL ONLY: a development tier backed by the local Ollama server
+        // (routed through the OpenAI-compatible client → OPENAI_BASE_URL).
+        // The env gate means this tier is evaluated out of the config in any
+        // non-local environment, so it can never appear on prod.
+        'local' => [
+            'provider' => 'openai',
+            'label' => 'Local (Ollama)',
+            'description' => 'Local Ollama model for development — never shown in production.',
+            'model' => env('RUNTIME_TIER_LOCAL_MODEL', env('RUNTIME_TIER_GPT_MODEL', 'qwen2.5')),
+            'credits_per_message' => (int) env('RUNTIME_TIER_LOCAL_CREDITS', 1),
+            'pricing_per_mtok' => ['in' => 0.0, 'out' => 0.0],
+        ],
+    ] : []),
 
     /*
     |--------------------------------------------------------------------------
