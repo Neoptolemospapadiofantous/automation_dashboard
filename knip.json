@@ -4,7 +4,8 @@
     "resources/js/app.js",
     "resources/js/Pages/**/*.vue",
     "resources/js/**/*.spec.js",
-    "resources/js/test/setup.js"
+    "resources/js/test/setup.js",
+    "tests/e2e/**/*.spec.js"
   ],
   "project": ["resources/js/**/*.{js,vue}"],
   "paths": {
