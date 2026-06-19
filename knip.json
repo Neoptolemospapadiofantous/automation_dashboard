@@ -2,7 +2,9 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "resources/js/app.js",
-    "resources/js/Pages/**/*.vue"
+    "resources/js/Pages/**/*.vue",
+    "resources/js/**/*.spec.js",
+    "resources/js/test/setup.js"
   ],
   "project": ["resources/js/**/*.{js,vue}"],
   "paths": {

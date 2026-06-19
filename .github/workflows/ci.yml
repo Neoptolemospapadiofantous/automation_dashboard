@@ -1,16 +1,55 @@
-# CI — GitHub mirror of the local hermes watchdog (scripts/hermes.sh):
-# pint, phpstan, full test suite, config/route/migration boot checks,
-# composer audit — plus gitleaks secret scanning and the frontend build.
+# CI — GitHub mirror of the local hermes watchdog (scripts/hermes.sh), split
+# into one job per test layer so a failure names the layer that broke. See
+# tests/README.md for the layer taxonomy.
+#
+#   secrets        gitleaks history scan
+#   php-static     composer validate/audit, pint, phpstan, doc coverage
+#   php-tests      phpunit, one matrix leg per testsuite (Unit, Feature, …)
+#   php-boot       config cacheable, routes register, migrations run clean
+#   frontend       pnpm audit, knip dead-code, vite build
+#   js-unit        vitest component/unit layer
+#
 # Strategy reference: PROJECT_ASSURANCE_STRATEGY.md, Category I2.
 name: CI
 
 on: [push, pull_request]
 
 jobs:
-  quality:
+  secrets:
     runs-on: ubuntu-latest
-    # Tests + boot checks run on MariaDB (the dev/test DB was migrated off
-    # SQLite). Match phpunit.xml: db automation_dashboard_test, flowstack/flowstack.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # gitleaks scans history
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  php-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: pdo_mysql
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer validate --strict
+      - run: composer audit
+      - run: vendor/bin/pint --test
+      - run: vendor/bin/phpstan analyse --no-progress --memory-limit=2G
+      - name: Doc coverage
+        run: python3 scripts/doc_coverage.py # every app/ subsystem must be documented or waived
+
+  php-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # one failing layer must not hide the others
+      matrix:
+        suite: [Unit, Feature, Wiring, Integrity, Performance, Security, Contracts, Snapshots]
+    # Tests run on MariaDB (the dev/test DB was migrated off SQLite). Match
+    # phpunit.xml: db automation_dashboard_test, flowstack/flowstack.
     services:
       mariadb:
         image: mariadb:11
@@ -28,43 +67,53 @@ jobs:
           --health-retries=15
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # gitleaks scans history
-
-      - uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          coverage: pcov
+          coverage: none # coverage is measured in the hardening PR, not gated here
           extensions: pdo_mysql
-
       - run: composer install --no-interaction --prefer-dist
-
-      - run: composer validate --strict
-
-      - run: composer audit
-
-      - run: vendor/bin/pint --test
-
-      - run: vendor/bin/phpstan analyse --no-progress --memory-limit=2G
-
-      # Tests use the MariaDB service (phpunit.xml env wins over .env); the
-      # app still needs a base .env + APP_KEY to boot.
+      # Tests use the MariaDB service (phpunit.xml env wins over .env); the app
+      # still needs a base .env + APP_KEY to boot.
       - name: Prepare environment
         run: |
           cp .env.example .env
           php artisan key:generate
-
       # NOT --parallel: RefreshDatabase on a single shared MariaDB connection.
-      - run: php artisan test
+      - run: php artisan test --testsuite=${{ matrix.suite }}
 
-      # Boot checks, mirroring hermes: config cacheable, routes register,
-      # migrations run cleanly. config:cache runs AFTER the tests — cached
-      # config would override phpunit.xml env vars. Point migrate at the test
-      # DB the service already provisioned.
+  php-boot:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: automation_dashboard_test
+          MARIADB_USER: flowstack
+          MARIADB_PASSWORD: flowstack
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: pdo_mysql
+      - run: composer install --no-interaction --prefer-dist
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+      # Mirrors hermes: config cacheable, routes register, migrations run clean.
+      # config:cache must run BEFORE migrate but the cached config would override
+      # phpunit.xml env vars, so point migrate at the test DB explicitly.
       - name: Boot checks
         env:
           DB_DATABASE: automation_dashboard_test
@@ -74,34 +123,38 @@ jobs:
           php artisan config:clear
           php artisan migrate --force
 
-      - name: Doc coverage
-        run: python3 scripts/doc_coverage.py # every app/ subsystem must be documented or waived
-
   frontend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       # resources/js/app.js imports Ziggy from vendor/tightenco/ziggy, so the
       # Composer vendor dir must exist before the vite build resolves it.
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-
       # --ignore-platform-reqs: this job's bare PHP lacks some runtime
-      # extensions, but we only need the vendor files (Ziggy's JS), not a
-      # working PHP runtime.
+      # extensions, but we only need the vendor files (Ziggy's JS).
       - run: composer install --no-interaction --prefer-dist --no-scripts --ignore-platform-reqs
-
       - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: pnpm
-
       - run: pnpm install --frozen-lockfile
-
       - run: pnpm audit --prod --audit-level high
       - run: pnpm run knip # frontend dead-code gate (unused files/exports)
       - run: pnpm run build
+
+  js-unit:
+    runs-on: ubuntu-latest
+    # The vitest layer mocks @inertiajs/vue3 and stubs route(), so it needs no
+    # Composer vendor dir — just Node + pnpm.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test:unit
