@@ -14,6 +14,12 @@ name: CI
 
 on: [push, pull_request]
 
+# Least-privilege GITHUB_TOKEN: every job only checks out code and (for e2e)
+# uploads an artifact — none write to the repo. Scoping this here applies to all
+# jobs below.
+permissions:
+  contents: read
+
 jobs:
   secrets:
     runs-on: ubuntu-latest
