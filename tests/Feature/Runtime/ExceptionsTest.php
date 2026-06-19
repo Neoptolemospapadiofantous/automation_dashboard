@@ -15,21 +15,13 @@ use Tests\TestCase;
 /**
  * The umbrella RuntimeException + Misconfigured + UpstreamUnavailable
  * hierarchy: controllers catch RuntimeException once and get a clean
- * 503 for any engine failure.
+ * 503 for any engine failure. These cases prove the runtime actually THROWS
+ * the right type; the pure type-hierarchy checks live in
+ * tests/Unit/Runtime/RuntimeExceptionHierarchyTest.php.
  */
 class ExceptionsTest extends TestCase
 {
     use RefreshDatabase;
-
-    public function test_misconfigured_extends_runtime_exception(): void
-    {
-        $this->assertInstanceOf(RuntimeException::class, new Misconfigured('no key'));
-    }
-
-    public function test_upstream_unavailable_extends_runtime_exception(): void
-    {
-        $this->assertInstanceOf(RuntimeException::class, new UpstreamUnavailable('provider 502'));
-    }
 
     public function test_engine_without_llm_key_throws_misconfigured(): void
     {

@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Billing\Plan;
-use App\Billing\TopUpPack;
 use App\Models\Agent;
 use App\Models\Team;
 use App\Models\User;
@@ -13,83 +12,14 @@ use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
- * Standing pricing invariants from the 2026-06-11 pricing audit
- * (docs/operations/pricing-audit.md). If any of these fail, someone
- * repriced plans/packs/tiers without re-running the margin math.
+ * DB/HTTP-bound billing invariants: credit debits, balance gating, and the
+ * renewal safety-net command. The pure pricing/margin math (Plan/TopUpPack
+ * enums + pricing config, no DB) lives in
+ * tests/Unit/Billing/PricingInvariantsTest.php.
  */
 class BillingInvariantsTest extends TestCase
 {
     use RefreshDatabase;
-
-    public function test_every_topup_pack_is_pricier_per_credit_than_operator(): void
-    {
-        // The upgrade-pressure mechanism AND the margin floor: tier credit
-        // prices are calibrated against Operator's $/credit; any pack below
-        // it can turn tiers margin-negative.
-        $operatorPerCredit = Plan::Pro->priceEur() / Plan::Pro->monthlyCredits();
-
-        foreach (TopUpPack::cases() as $pack) {
-            $packPerCredit = $pack->priceEur() / $pack->credits();
-
-            $this->assertGreaterThan(
-                $operatorPerCredit,
-                $packPerCredit,
-                "{$pack->label()} (€{$packPerCredit}/credit) undercuts Operator (€{$operatorPerCredit}/credit) — margin-negative risk.",
-            );
-        }
-    }
-
-    public function test_custom_topup_rate_beats_the_operator_floor(): void
-    {
-        // The custom amount grants credits at billing.topup_custom.credits_per_eur.
-        // Its €/credit MUST stay strictly above Operator's floor, same as the
-        // fixed packs — otherwise a big custom buy goes margin-negative.
-        $operatorPerCredit = Plan::Pro->priceEur() / Plan::Pro->monthlyCredits();
-        $customPerCredit = 1 / (int) config('billing.topup_custom.credits_per_eur');
-
-        $this->assertGreaterThan(
-            $operatorPerCredit,
-            $customPerCredit,
-            "Custom top-up (€{$customPerCredit}/credit) undercuts Operator (€{$operatorPerCredit}/credit) — margin-negative risk.",
-        );
-    }
-
-    public function test_every_tier_is_margin_positive_at_high_usage_on_the_cheapest_credits(): void
-    {
-        // HIGH scenario: 2 LLM calls × (8k in / 800 out) per visitor turn.
-        // Worst revenue source = cheapest $/credit across plans and packs.
-        // Embed bills (1 + replies) ≈ 2 × multiplier per turn.
-        $sources = [Plan::Free->priceEur() / Plan::Free->monthlyCredits(), Plan::Pro->priceEur() / Plan::Pro->monthlyCredits()];
-        foreach (TopUpPack::cases() as $pack) {
-            $sources[] = $pack->priceEur() / $pack->credits();
-        }
-        $worstPerCredit = min($sources);
-
-        foreach ((array) config('runtime.tiers') as $key => $tier) {
-            $rates = (array) $tier['pricing_per_mtok'];
-            $revenuePerTurn = 2 * (int) $tier['credits_per_message'] * $worstPerCredit;
-
-            // WORST case (maxed 8k context, every turn a 2-call tool loop):
-            // must never lose money, with a 10% buffer.
-            $costHigh = 2 * ((8_000 / 1_000_000) * (float) $rates['in'] + (800 / 1_000_000) * (float) $rates['out']);
-            $marginHigh = 1 - ($costHigh / $revenuePerTurn);
-            $this->assertGreaterThan(
-                0.10,
-                $marginHigh,
-                "Tier '{$key}' margin at WORST-case usage on the cheapest credits is ".round($marginHigh * 100).'% — repricing required.',
-            );
-
-            // TYPICAL case (2-call turn ≈ 3.2k in / 300 out per call):
-            // must clear 50%.
-            $costMid = 2 * ((3_200 / 1_000_000) * (float) $rates['in'] + (300 / 1_000_000) * (float) $rates['out']);
-            $marginMid = 1 - ($costMid / $revenuePerTurn);
-            $this->assertGreaterThan(
-                0.50,
-                $marginMid,
-                "Tier '{$key}' margin at TYPICAL usage on the cheapest credits is ".round($marginMid * 100).'% — repricing required.',
-            );
-        }
-    }
 
     public function test_kb_query_debits_the_tier_multiplier(): void
     {
