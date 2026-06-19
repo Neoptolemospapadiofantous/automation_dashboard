@@ -211,6 +211,11 @@ jobs:
         run: |
           php artisan migrate --force
           php artisan db:seed --class="Database\\Seeders\\E2eSeeder" --force
+      # The embed pages are plain Blade, but a 404 (e.g. unknown slug) renders a
+      # branded Inertia error page via @vite — which needs a built manifest or it
+      # 500s. Building assets is what lets the "404 not 500" smoke be meaningful.
+      - name: Build frontend assets
+        run: pnpm run build
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       # playwright.config.js starts `php artisan serve` itself (CI=true → fresh
