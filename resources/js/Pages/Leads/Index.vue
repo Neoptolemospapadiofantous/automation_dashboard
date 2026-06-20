@@ -324,23 +324,23 @@ function submit() {
                         </button>
                     </div>
                 </div>
-                <div class="flex gap-3 overflow-x-auto pb-4">
+                <div class="flex gap-2 overflow-x-auto pb-4">
                     <div
                         v-for="col in columns"
                         :key="col.value"
-                        class="flex w-64 flex-shrink-0 flex-col rounded-none border border-border-line bg-surface p-2.5"
+                        class="flex w-56 flex-shrink-0 flex-col rounded-none border border-border-line bg-surface p-2"
                         @dragover.prevent
                         @drop="onDrop($event, col.value)"
                     >
-                        <div class="mb-1.5 flex items-center justify-between px-0.5">
-                            <h3 class="text-sm font-semibold text-ink-dim">{{ col.label }}</h3>
-                            <span class="rounded-none bg-bg px-2 py-0.5 font-mono text-xs text-ink-dim">
+                        <div class="sticky top-0 z-10 mb-1 flex items-center justify-between bg-surface px-0.5 py-0.5">
+                            <h3 class="text-[13px] font-semibold text-ink-dim">{{ col.label }}</h3>
+                            <span class="rounded-none bg-bg px-1.5 py-0.5 font-mono text-[11px] text-ink-dim">
                                 {{ col.leads.length }}
                             </span>
                         </div>
-                        <div class="bp-dim mb-2.5 mx-0.5" />
+                        <div class="bp-dim mb-2 mx-0.5" />
 
-                        <div class="flex flex-1 flex-col gap-2">
+                        <div class="flex flex-1 flex-col gap-1.5">
                             <LeadCard
                                 v-for="lead in col.leads"
                                 :key="lead.id"
@@ -352,7 +352,7 @@ function submit() {
                             />
                             <p
                                 v-if="!col.leads.length"
-                                class="rounded-none border-2 border-dashed border-border-line p-3 text-center text-xs text-ink-mute"
+                                class="rounded-none border border-dashed border-border-line p-2 text-center text-[11px] text-ink-mute"
                             >
                                 Drop leads here
                             </p>
