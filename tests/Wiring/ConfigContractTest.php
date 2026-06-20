@@ -37,8 +37,8 @@ class ConfigContractTest extends TestCase
         'DB_QUEUE_CONNECTION', 'SQS_SUFFIX',
         // database.php — optional URL-style / TLS configuration
         'DB_URL', 'MYSQL_ATTR_SSL_CA', 'REDIS_URL', 'REDIS_USERNAME',
-        // logging.php — unused slack/papertrail/stderr channels
-        'LOG_SLACK_WEBHOOK_URL', 'LOG_STDERR_FORMATTER', 'PAPERTRAIL_PORT', 'PAPERTRAIL_URL',
+        // logging.php — unused papertrail/stderr channels
+        'LOG_STDERR_FORMATTER', 'PAPERTRAIL_PORT', 'PAPERTRAIL_URL',
         // mail.php / services.php — unused mailers
         'MAIL_LOG_CHANNEL', 'MAIL_URL', 'POSTMARK_API_KEY', 'POSTMARK_MESSAGE_STREAM_ID', 'RESEND_API_KEY',
         // scout.php — unused meilisearch driver
