@@ -187,6 +187,8 @@ class EmbedController extends Controller
         try {
             $traces = $this->runtime->launch($agent, $visitorId);
         } catch (RuntimeException $e) {
+            report($e);
+
             return response()->json([
                 'error' => 'The agent is temporarily unavailable.',
             ], 503);
@@ -289,6 +291,8 @@ class EmbedController extends Controller
         try {
             $traces = $this->runtime->sendText($agent, $data['visitor_id'], $data['message']);
         } catch (RuntimeException $e) {
+            report($e);
+
             return response()->json([
                 'error' => 'The agent is temporarily unavailable.',
             ], 503);
