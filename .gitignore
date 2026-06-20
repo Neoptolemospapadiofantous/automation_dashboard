@@ -39,6 +39,9 @@ Thumbs.db
 /.obsidian/cache
 /.obsidian/.trash/
 
+# Stray local reference material (downloaded books/PDFs), not project code.
+*.pdf
+
 # Locally-installed skills/agents (npx skills add) — machine-local, not
 # project code. Tracked .claude/commands and .hermes content are unaffected.
 /.agents/
