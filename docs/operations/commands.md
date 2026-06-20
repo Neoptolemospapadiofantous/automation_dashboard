@@ -28,7 +28,6 @@ scheduler's output surfaces failures to ops.
 | `conversations:prune` | `--days=N` (default 365), `--force` | **Opt-in** archival. Dry-run unless `--force`. App keeps all conversations forever by default; run only to reclaim storage. Messages cascade. | Manual |
 | `platform:set` | `{key?} {value?}` `--list` | Sets/lists editable `platform_settings` (public-stats scarcity: `founder_slots_remaining`, `next_cohort_label`, `featured_proof`, …). Writing busts the `/api/public/stats` cache. | Manual (operator) |
 | `mail:test` | `{to}` (recipient) | Sends a probe email through the configured mailer; prints resolved driver + from-address. Warns when `MAIL_MAILER=log`. | Manual |
-| `hermes:alert` | `--force` | Reads the latest **audit-sentinel** (CRITICAL) / **system-check** (FAIL) reports and emails the operator via SES on the `mail` queue. Deduped (`storage/app/hermes-alert-state.json`) — re-sends only when the finding-set changes; `--force` ignores the dedup state. No-ops with a logged warning when `HERMES_ALERT_EMAIL` is unset. | Scheduled — chained after the audit/system collectors (also manual) |
 
 > `runtime:prune-sessions --days` overrides the window (floored at 1).
 > `platform:set` with no key, or `--list`, prints the current table (or
@@ -46,15 +45,15 @@ Defined in [`routes/console.php`](../../routes/console.php) via the
 | `credits:grant-renewals` | `daily()` | Renewal safety net (annual cycles + missed webhooks). |
 | `credits:reconcile` | `dailyAt('5:30')` | Ledger-vs-balance integrity; non-zero on drift. |
 | `runtime:spend-check` | `dailyAt('5:45')` | Daily token-spend tripwire vs. SLA ceiling. |
-| `bash scripts/agents/audit_sentinel.sh` | `dailyAt('6:00')` | Hermes audit sweep (CVEs, secrets, .env drift). `->then()` chains `hermes:alert`. |
+| `bash scripts/agents/audit_sentinel.sh` | `dailyAt('6:00')` | Hermes audit sweep (CVEs, secrets, .env drift). |
 | `bash scripts/agents/update_inspector.sh` | `weeklyOn(1, '6:10')` | Hermes outdated-deps sweep (Mondays). |
-| `bash scripts/agents/system_check.sh` | `everySixHours()` | Hermes runtime-health sweep (disk, logs, queue). `->then()` chains `hermes:alert`. |
+| `bash scripts/agents/system_check.sh` | `everySixHours()` | Hermes runtime-health sweep (disk, logs, queue). |
 
 The three `Schedule::exec(...)` entries are no-LLM bash audit agents;
 their reports land in `data/agents/*/` and `composer hermes-status`
-summarizes. The audit + system collectors additionally chain
-`hermes:alert` via `->then()`, which emails the operator on CRITICAL/FAIL
-findings (deduped, via SES on the `mail` queue). See [[hermes/README|Hermes]].
+summarizes. This repo only *produces* the findings files; notification
+and delivery live in the separate hermes-slack project. See
+[[hermes/README|Hermes]].
 
 ### Running the scheduler
 

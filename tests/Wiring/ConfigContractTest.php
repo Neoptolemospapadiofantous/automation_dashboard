@@ -37,16 +37,14 @@ class ConfigContractTest extends TestCase
         'DB_QUEUE_CONNECTION', 'SQS_SUFFIX',
         // database.php — optional URL-style / TLS configuration
         'DB_URL', 'MYSQL_ATTR_SSL_CA', 'REDIS_URL', 'REDIS_USERNAME',
-        // logging.php — unused slack/papertrail/stderr channels
-        'LOG_SLACK_WEBHOOK_URL', 'LOG_STDERR_FORMATTER', 'PAPERTRAIL_PORT', 'PAPERTRAIL_URL',
+        // logging.php — unused papertrail/stderr channels
+        'LOG_STDERR_FORMATTER', 'PAPERTRAIL_PORT', 'PAPERTRAIL_URL',
         // mail.php / services.php — unused mailers
         'MAIL_LOG_CHANNEL', 'MAIL_URL', 'POSTMARK_API_KEY', 'POSTMARK_MESSAGE_STREAM_ID', 'RESEND_API_KEY',
         // scout.php — unused meilisearch driver
         'MEILISEARCH_KEY',
         // session.php — optional cookie/store overrides
         'SESSION_CONNECTION', 'SESSION_SECURE_COOKIE', 'SESSION_STORE',
-        // services.php — unused slack notifications
-        'SLACK_BOT_USER_DEFAULT_CHANNEL', 'SLACK_BOT_USER_OAUTH_TOKEN',
     ];
 
     public function test_anthropic_api_key_is_part_of_the_config_contract(): void

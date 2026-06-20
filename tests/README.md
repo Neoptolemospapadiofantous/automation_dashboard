@@ -43,7 +43,7 @@ Run one layer: `php artisan test --testsuite=Security`. Run all: `php artisan te
 | Suite | Question it answers | Examples in repo |
 | ----- | ------------------- | ---------------- |
 | **Unit** | Does this pure function/class behave in isolation? | `DomainAllowlistTest` |
-| **Feature** | Does an HTTP/Inertia/console flow work end-to-end against the DB? | the 80-test workhorse — controllers, runtime, embed, Slack |
+| **Feature** | Does an HTTP/Inertia/console flow work end-to-end against the DB? | the 80-test workhorse — controllers, runtime, embed |
 | **Wiring** | Is the app *assembled* correctly — does it boot, do bindings resolve, are routes/events registered, is config coherent? | `BootTest`, `ContainerTest`, `RouteWiringTest`, `EventWiringTest`, `ConfigContractTest` |
 | **Integrity** | Is persisted state self-consistent — migrations round-trip, factories/seeders run, casts/scheduler agree? | `MigrationRoundTripTest`, `FactoryTest`, `SeederTest`, `CastsCoherenceTest`, `SchedulerTest` |
 | **Contracts** | Does an external dependency still match the shape we depend on? | `LlmClientContractTest` |

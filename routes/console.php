@@ -26,17 +26,8 @@ Schedule::command('runtime:spend-check')->dailyAt('5:45');
 // land in data/agents/*/; `composer hermes-status` summarizes. The full
 // watchdog (hermes-fast) stays on-demand + CI; these cover drift that
 // only shows over time (CVEs, outdated deps, disk, log errors, secrets).
-// After the two collectors that can produce CRITICAL/FAIL, run hermes:alert —
-// it reads the fresh report and posts the operator (deduped) to Slack.
-Schedule::exec('bash scripts/agents/audit_sentinel.sh')->dailyAt('6:00')
-    ->then(fn () => Artisan::call('hermes:alert'));
+// This repo only produces the findings.json on disk; notification/delivery
+// lives in the separate hermes-slack project (sole consumer).
+Schedule::exec('bash scripts/agents/audit_sentinel.sh')->dailyAt('6:00');
 Schedule::exec('bash scripts/agents/update_inspector.sh')->weeklyOn(1, '6:10');
-Schedule::exec('bash scripts/agents/system_check.sh')->everySixHours()
-    ->then(fn () => Artisan::call('hermes:alert'));
-
-// Daily Slack heartbeat: a roll-up of all collector activity (audit posture,
-// system health, outdated deps, last fleet run) — posted every day regardless
-// of status, so the channel always reflects the latest snapshot. Runs after
-// the morning collectors so it digests fresh reports. Silent if the webhook
-// is unset. See app/Console/Commands/SlackDigestCommand.php.
-Schedule::command('slack:digest')->dailyAt('6:30');
+Schedule::exec('bash scripts/agents/system_check.sh')->everySixHours();
