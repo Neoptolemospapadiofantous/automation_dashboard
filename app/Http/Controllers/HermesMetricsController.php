@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
+use App\Http\Controllers\Concerns\AuthorizesHermesOperator;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -13,16 +13,17 @@ use Inertia\Response;
  * per-run log parsed from the rolling session log (`data/logs/hermes_session.log`,
  * appended every `composer hermes` run). The KPIs are periodic; the run log is
  * always current. Registered only in the local environment (see routes/web.php),
- * so it never reaches production or the route-smoke test. Restricted to the team
- * owner (the highest role) — it's an engineering/ops surface, not for members.
+ * so it never reaches production or the route-smoke test. Restricted to the
+ * Hermes operator allowlist (config/hermes.php) — the platform-engineer tier
+ * above team Owner; even a team owner is denied unless allowlisted.
  */
 class HermesMetricsController extends Controller
 {
-    use AuthorizesByTeamRole;
+    use AuthorizesHermesOperator;
 
     public function __invoke(Request $request): Response
     {
-        $this->requireOwner($request, 'view the Hermes operator pages');
+        $this->requireHermesOperator($request);
 
         $file = base_path('data/hermes_metrics.json');
         $metrics = is_file($file)
