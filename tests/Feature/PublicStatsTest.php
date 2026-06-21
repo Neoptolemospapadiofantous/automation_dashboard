@@ -36,6 +36,7 @@ class PublicStatsTest extends TestCase
                 'founder_slots_remaining',
                 'founder_slots_total',
                 'next_cohort_label',
+                'next_cohort_open_at',
                 'featured_proof',
                 'teams_count',
                 'agents_active',
@@ -48,6 +49,7 @@ class PublicStatsTest extends TestCase
                 'founder_slots_remaining' => 100,
                 'founder_slots_total' => 100,
                 'next_cohort_label' => 'Rolling intake',
+                'next_cohort_open_at' => null,
                 'featured_proof' => null,
                 'teams_count' => 0,
                 'agents_active' => 0,
@@ -71,6 +73,7 @@ class PublicStatsTest extends TestCase
     {
         PlatformSetting::put('founder_slots_remaining', 47);
         PlatformSetting::put('next_cohort_label', 'Starts March 15');
+        PlatformSetting::put('next_cohort_open_at', '2026-07-15');
         PlatformSetting::put('featured_proof', '3.4× pipeline at Pendola');
 
         // Seed three teams; the third also has an active agent + 2 leads
@@ -90,6 +93,7 @@ class PublicStatsTest extends TestCase
             ->assertJson([
                 'founder_slots_remaining' => 47,
                 'next_cohort_label' => 'Starts March 15',
+                'next_cohort_open_at' => '2026-07-15',
                 'featured_proof' => '3.4× pipeline at Pendola',
                 'teams_count' => 3,
                 'agents_active' => 1,

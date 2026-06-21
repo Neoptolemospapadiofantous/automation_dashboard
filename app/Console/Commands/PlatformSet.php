@@ -10,6 +10,7 @@ use Illuminate\Console\Command;
  *
  *   php artisan platform:set founder_slots_remaining 47
  *   php artisan platform:set next_cohort_label "Starts March 15"
+ *   php artisan platform:set next_cohort_open_at 2026-07-15
  *   php artisan platform:set featured_proof "3.4× pipeline at Pendola"
  *
  *   # See all current values:
@@ -53,6 +54,7 @@ class PlatformSet extends Command
                 ['founder_slots_remaining', '100'],
                 ['founder_slots_total', '100'],
                 ['next_cohort_label', 'Rolling intake'],
+                ['next_cohort_open_at', '(none)'],
                 ['featured_proof', '(none)'],
             ]);
 
