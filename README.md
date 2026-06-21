@@ -226,3 +226,5 @@ the local Reverb daemon — see `docs/operations/websocket-proxy.md` and
 > **Other hosts:** the app is host-agnostic (Laravel Cloud, Railway, Render,
 > Fly.io). Whichever you pick, run a persistent `queue:work` process, a Reverb
 > daemon, and the scheduler.
+
+<!-- no-mistakes gate smoke test: safe to delete -->
