@@ -1,5 +1,6 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import axios from 'axios';
 import { Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
@@ -10,7 +11,29 @@ import { confirm } from '@/Composables/useConfirm';
 const props = defineProps({
     conversation: { type: Object, required: true },
     messages: { type: Array, required: true },
+    messagesHasMore: { type: Boolean, default: false },
 });
+
+// Only the most recent window arrives in props; older turns lazy-load on demand
+// and are prepended here, keeping the long-transcript page light on first paint.
+const transcript = ref([...props.messages]);
+const hasMore = ref(props.messagesHasMore);
+const loadingMore = ref(false);
+
+async function loadEarlier() {
+    if (loadingMore.value || !hasMore.value) return;
+    loadingMore.value = true;
+    try {
+        const before = transcript.value[0]?.sequence;
+        const { data } = await axios.get(route('conversations.messages', props.conversation.id), {
+            params: { before },
+        });
+        transcript.value = [...data.messages, ...transcript.value];
+        hasMore.value = data.has_more;
+    } finally {
+        loadingMore.value = false;
+    }
+}
 
 const fmt = (d) => (d ? new Date(d).toLocaleString() : '');
 
@@ -107,8 +130,18 @@ const deleteUpstream = async () => {
         <div class="py-8">
             <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
                 <div class="space-y-3 rounded-none border border-border-line bg-bg p-4 shadow-sheet">
+                    <div v-if="hasMore" class="flex justify-center">
+                        <button
+                            type="button"
+                            class="rounded-none border border-border-line bg-surface-hi px-3 py-1.5 text-xs font-medium text-ink-dim hover:bg-ink hover:text-bg disabled:opacity-50"
+                            :disabled="loadingMore"
+                            @click="loadEarlier"
+                        >
+                            {{ loadingMore ? 'Loading…' : 'Load earlier messages' }}
+                        </button>
+                    </div>
                     <div
-                        v-for="m in messages"
+                        v-for="m in transcript"
                         :key="m.id"
                         class="flex"
                         :class="m.role === 'user' ? 'justify-end' : 'justify-start'"
@@ -141,7 +174,7 @@ const deleteUpstream = async () => {
                             <p class="mt-1 font-mono text-[10px] opacity-60">{{ fmt(m.sent_at) }}</p>
                         </div>
                     </div>
-                    <div v-if="!messages.length" class="bg-grid bg-grid-fade rounded-none border border-dashed border-border-line py-12 text-center">
+                    <div v-if="!transcript.length" class="bg-grid bg-grid-fade rounded-none border border-dashed border-border-line py-12 text-center">
                         <span class="bp-annot">No messages recorded.</span>
                     </div>
                 </div>

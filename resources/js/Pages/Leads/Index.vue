@@ -1,5 +1,6 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
+import axios from 'axios';
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
@@ -16,6 +17,9 @@ import { useEcho } from '@/composables/useEcho';
 
 const props = defineProps({
     leads: { type: Array, required: true },
+    // Per-status totals + whether more cards exist beyond the first page.
+    leadCounts: { type: Object, default: () => ({}) },
+    leadHasMore: { type: Object, default: () => ({}) },
     statuses: { type: Array, required: true },
     members: { type: Array, required: true },
     sources: { type: Array, default: () => [] },
@@ -83,7 +87,7 @@ function assign(lead, { strategy = 'manual', assigned_to = null } = {}) {
     router.post(route('leads.assign', lead.id), { strategy, assigned_to }, {
         preserveScroll: true,
         preserveState: true,
-        only: ['leads'],
+        only: ['leads', 'leadCounts', 'leadHasMore'],
     });
 }
 
@@ -97,12 +101,50 @@ watch(() => props.leads, (fresh) => {
     fresh.forEach((l) => leads.set(l.id, l));
 });
 
+// Per-column lazy-load state. has-more is reactive (mutated as pages load);
+// loaded counts come from the live Map so they grow with broadcasts too.
+const hasMore = reactive({ ...props.leadHasMore });
+const loadingCol = reactive({});
+watch(() => props.leadHasMore, (fresh) => Object.assign(hasMore, fresh));
+
 const columns = computed(() =>
     props.statuses.map((status) => ({
         ...status,
         leads: [...leads.values()].filter((l) => l.status === status.value),
+        total: props.leadCounts?.[status.value] ?? 0,
+        hasMore: hasMore[status.value] ?? false,
     })),
 );
+
+const totalLeads = computed(() =>
+    Object.values(props.leadCounts ?? {}).reduce((sum, n) => sum + n, 0),
+);
+
+// Active server-side filters, shaped for the board endpoint's query string.
+function currentFilterParams() {
+    return {
+        mine: props.filters.mine ? 1 : undefined,
+        q: props.filters.q || undefined,
+        source: props.filters.source || undefined,
+        assignee: props.filters.assignee || undefined,
+        min_score: props.filters.min_score || undefined,
+        since: props.filters.since_key || undefined,
+    };
+}
+
+async function loadMore(col) {
+    if (loadingCol[col.value]) return;
+    loadingCol[col.value] = true;
+    try {
+        const { data } = await axios.get(route('leads.board'), {
+            params: { ...currentFilterParams(), status: col.value, offset: col.leads.length },
+        });
+        data.leads.forEach((l) => leads.set(l.id, l));
+        hasMore[col.value] = data.has_more;
+    } finally {
+        loadingCol[col.value] = false;
+    }
+}
 
 // --- Live updates: patch the board in place, no reload ----------------------
 const { connected } = useEcho(`team.${teamId.value}`, '.lead.saved', ({ lead }) => {
@@ -173,7 +215,7 @@ function submit() {
     // board. Other connected clients get the new card via the broadcast.
     form.post(route('leads.store'), {
         preserveScroll: true,
-        only: ['leads'],
+        only: ['leads', 'leadCounts', 'leadHasMore'],
         onSuccess: () => {
             form.reset();
             showCreate.value = false;
@@ -293,7 +335,7 @@ function submit() {
                     </button>
 
                     <div class="ml-auto text-xs text-ink-mute">
-                        {{ leads.size ?? leads.length ?? 0 }} {{ (leads.size ?? leads.length ?? 0) === 1 ? 'lead' : 'leads' }}
+                        {{ totalLeads }} {{ totalLeads === 1 ? 'lead' : 'leads' }}
                     </div>
                 </div>
 
@@ -301,7 +343,7 @@ function submit() {
                      above the kanban (which would otherwise just show 6
                      empty columns "Drop leads here" with no CTA). -->
                 <div
-                    v-if="leads.size === 0"
+                    v-if="totalLeads === 0"
                     class="bg-grid bg-grid-fade mb-6 rounded-none border border-dashed border-border-line bg-bg p-8 text-center"
                 >
                     <svg class="mx-auto h-10 w-10 text-ink-mute" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -350,7 +392,7 @@ function submit() {
                         <div class="sticky top-0 z-10 mb-1 flex items-center justify-between bg-surface px-0.5 py-0.5">
                             <h3 class="text-[13px] font-semibold text-ink-dim">{{ col.label }}</h3>
                             <span class="rounded-none bg-bg px-1.5 py-0.5 font-mono text-[11px] text-ink-dim">
-                                {{ col.leads.length }}
+                                {{ col.leads.length }}<template v-if="col.total > col.leads.length"> / {{ col.total }}</template>
                             </span>
                         </div>
                         <div class="bp-dim mb-2 mx-0.5" />
@@ -371,6 +413,15 @@ function submit() {
                             >
                                 Drop leads here
                             </p>
+                            <button
+                                v-if="col.hasMore"
+                                type="button"
+                                class="mt-1 rounded-none border border-border-line bg-bg px-2 py-1 text-[11px] font-medium text-ink-dim transition hover:bg-ink hover:text-bg disabled:opacity-50"
+                                :disabled="loadingCol[col.value]"
+                                @click="loadMore(col)"
+                            >
+                                {{ loadingCol[col.value] ? 'Loading…' : `Load more (${col.total - col.leads.length})` }}
+                            </button>
                         </div>
                     </div>
                 </div>
