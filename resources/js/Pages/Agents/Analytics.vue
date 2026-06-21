@@ -151,7 +151,7 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
                         <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">Qualify rate</p>
                         <p class="mt-2 font-mono text-3xl font-semibold text-ink">{{ totals.qualify_rate }}%</p>
                         <p class="mt-1 text-xs text-ink-dim">
-                            of {{ fmt(totals.leads) }} leads moved past Engaging
+                            of {{ fmt(totals.leads) }} leads that reached Qualified
                         </p>
                     </div>
                     <div class="rounded-none border border-border-line bg-bg p-5">

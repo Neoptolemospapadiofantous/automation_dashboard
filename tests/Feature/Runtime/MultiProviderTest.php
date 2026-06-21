@@ -84,15 +84,25 @@ class MultiProviderTest extends TestCase
         $this->assertStringContainsString('Saved, Bob', $traces[0]['payload']['message']);
         $this->assertDatabaseHas('leads', ['email' => 'bob@x.co', 'agent_id' => $agent->id]);
 
-        // The second call must carry the tool result as a role:tool message.
+        // The second call must carry the tool result as a role:tool message,
+        // and the replayed assistant tool-call turn must serialize with a
+        // string content — never null. OpenAI tolerates null alongside
+        // tool_calls, but stricter compatible backends (Ollama) reject it
+        // with "invalid message content type: <nil>".
         Http::assertSent(function (Request $r): bool {
+            $sawToolResult = false;
             foreach ((array) $r['messages'] as $m) {
                 if (($m['role'] ?? '') === 'tool' && ($m['tool_call_id'] ?? '') === 'call_1') {
-                    return true;
+                    $sawToolResult = true;
+                }
+                if (($m['role'] ?? '') === 'assistant' && isset($m['tool_calls'])) {
+                    if (! is_string($m['content'] ?? null)) {
+                        return false;
+                    }
                 }
             }
 
-            return false;
+            return $sawToolResult;
         });
     }
 

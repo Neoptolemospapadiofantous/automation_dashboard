@@ -134,7 +134,7 @@ class AgentScopingTest extends TestCase
             );
     }
 
-    public function test_search_returns_only_current_agent_messages(): void
+    public function test_search_returns_only_current_agent_conversations(): void
     {
         ['user' => $user, 'agentA' => $agentA, 'agentB' => $agentB] = $this->twoAgentSetup();
 
@@ -144,10 +144,12 @@ class AgentScopingTest extends TestCase
         Message::factory()->for($convoA, 'conversation')->create(['text' => 'hello unique-token-a']);
         Message::factory()->for($convoB, 'conversation')->create(['text' => 'hello unique-token-b']);
 
-        // Currently on A — A's match shows, B's doesn't.
-        $this->actingAs($user)->get(route('conversations.search', ['q' => 'unique-token']))
+        // Search is now an inline filter on the conversations list (the keyword
+        // box scans message text via whereHas). Currently on A — only A's
+        // conversation matches; B's is filtered out by the agent scope.
+        $this->actingAs($user)->get(route('conversations.index', ['q' => 'unique-token']))
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('results', 1));
+            ->assertInertia(fn ($page) => $page->has('conversations.data', 1));
     }
 
     public function test_no_current_agent_yields_empty_results(): void

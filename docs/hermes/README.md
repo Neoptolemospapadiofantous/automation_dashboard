@@ -21,7 +21,7 @@ flowchart TD
   MAN[("manifest.json — the trunk<br/>30 nodes · 7 domains<br/>docs · tests · checks · edges")]
 
   HS["hermes.sh / composer hermes"]
-  BROAD["broad gates<br/>pint · phpstan · tests · knip<br/>doc-coverage · audit · build"]
+  BROAD["broad gates<br/>pint · phpstan · tests · knip<br/>doc-coverage · arch-graph · audit · build"]
   TREE["hermes_tree.py<br/>granular per-node checks<br/>margin-invariant · llm-contract · security<br/>route-smoke · schedule · snapshots"]
   RAW[("data/hermes_findings.json<br/>raw findings")]
   ENR["hermes_findings.py<br/>enrich: attach nodes · domains<br/>related (blast radius) · doc refs"]
@@ -57,7 +57,7 @@ flowchart TD
 flowchart LR
   subgraph DET["Deterministic — facts (no LLM)"]
     direction TB
-    W["hermes.sh<br/>17 checks → findings graph"]
+    W["hermes.sh<br/>18 checks → findings graph"]
     COL["collectors<br/>audit_sentinel · system_check · update_inspector<br/>→ data/agents/*/findings.json"]
   end
   subgraph LLML["LLM — judgment (free, in-session)"]
@@ -105,7 +105,7 @@ flowchart LR
 
 | Path | Purpose |
 |---|---|
-| `scripts/hermes.sh` | Vendor + pint + PHPStan + tests + config + routes + migrations + composer audit + knip (frontend dead code) + doc-coverage [+ vite + pnpm audit] |
+| `scripts/hermes.sh` | Vendor + pint + PHPStan + tests + config + routes + migrations + arch-graph (architecture-graph integrity) + composer audit + knip (frontend dead code) + doc-coverage [+ vite + pnpm audit] |
 | `scripts/doc_coverage.py` | Doc-coverage gate — every `app/` subsystem + every canonical doc must be registered in the manifest |
 | `scripts/hermes_graph.py` | Manifest visualizer — prints the domain tree + each node's context (`--node app/X` for the connection view) |
 | `scripts/hermes_findings.py` | Findings enricher — joins raw findings × manifest into a node-aware graph (status rollup per node/domain + blast radius) |

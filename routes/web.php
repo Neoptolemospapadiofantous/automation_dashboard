@@ -3,6 +3,7 @@
 use App\Http\Controllers\AgentAnalyticsController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\AgentVersionsController;
+use App\Http\Controllers\ArchitectureGraphController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ConversationController;
@@ -170,7 +171,6 @@ Route::middleware([
 
     // Phase 6 conversation storage, history & search.
     Route::get('/conversations', [ConversationController::class, 'index'])->name('conversations.index');
-    Route::get('/conversations/search', [ConversationController::class, 'search'])->name('conversations.search');
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
     Route::post('/conversations/{conversation}/end-upstream', [ConversationController::class, 'endUpstream'])
         ->middleware('throttle:30,1')
@@ -237,6 +237,15 @@ Route::post('/embed/{slug}/launch', [EmbedController::class, 'launch'])
 Route::post('/embed/{slug}/interact', [EmbedController::class, 'interact'])
     ->middleware('throttle:120,1')
     ->name('embed.interact');
+Route::post('/embed/{slug}/feedback', [EmbedController::class, 'feedback'])
+    ->middleware('throttle:30,1')
+    ->name('embed.feedback');
+Route::post('/embed/{slug}/history', [EmbedController::class, 'history'])
+    ->middleware('throttle:120,1')
+    ->name('embed.history');
+Route::post('/embed/{slug}/conversation', [EmbedController::class, 'transcript'])
+    ->middleware('throttle:120,1')
+    ->name('embed.conversation');
 
 // ── Local-only operator page: Hermes effectiveness KPIs ───────────────────────
 // Git-mined quality trend + regression check (composer hermes-metrics). Registered
@@ -246,4 +255,10 @@ if (app()->environment('local')) {
     Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])
         ->get('/hermes-metrics', HermesMetricsController::class)
         ->name('hermes.metrics');
+
+    // Live render of docs/architecture/full-application-graph.md as Mermaid
+    // diagrams — same local-only, auth-but-no-agent gating as hermes-metrics.
+    Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])
+        ->get('/architecture', ArchitectureGraphController::class)
+        ->name('architecture.graph');
 }

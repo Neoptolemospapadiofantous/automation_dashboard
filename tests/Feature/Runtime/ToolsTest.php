@@ -66,6 +66,61 @@ class ToolsTest extends TestCase
         ]);
     }
 
+    public function test_capture_lead_sums_fit_intent_urgency_into_score(): void
+    {
+        $registry = app(ToolRegistry::class);
+        $context = $this->context();
+
+        $out = $registry->dispatch(new ToolCall('t1', 'capture_lead', [
+            'name' => 'Ada Scorer',
+            'email' => 'ada@scorer.co',
+            'fit' => 38,
+            'intent' => 30,
+            'urgency' => 20,
+        ]), $context);
+
+        $this->assertFalse($out['is_error']);
+
+        $lead = Lead::where('email', 'ada@scorer.co')->firstOrFail();
+        // Server-side sum, not model arithmetic: 38 + 30 + 20 = 88.
+        $this->assertSame(88, $lead->score);
+        $this->assertSame(['fit' => 38, 'intent' => 30, 'urgency' => 20], $lead->score_breakdown);
+    }
+
+    public function test_capture_lead_clamps_each_dimension_to_its_band(): void
+    {
+        $registry = app(ToolRegistry::class);
+        $context = $this->context();
+
+        $registry->dispatch(new ToolCall('t1', 'capture_lead', [
+            'name' => 'Over Scorer',
+            'email' => 'over@scorer.co',
+            'fit' => 99,      // clamps to 40
+            'intent' => 99,   // clamps to 35
+            'urgency' => 99,  // clamps to 25
+        ]), $context);
+
+        $lead = Lead::where('email', 'over@scorer.co')->firstOrFail();
+        $this->assertSame(100, $lead->score);
+        $this->assertSame(['fit' => 40, 'intent' => 35, 'urgency' => 25], $lead->score_breakdown);
+    }
+
+    public function test_capture_lead_legacy_flat_score_stores_no_breakdown(): void
+    {
+        $registry = app(ToolRegistry::class);
+        $context = $this->context();
+
+        $registry->dispatch(new ToolCall('t1', 'capture_lead', [
+            'name' => 'Legacy Lead',
+            'email' => 'legacy@scorer.co',
+            'score' => 72,
+        ]), $context);
+
+        $lead = Lead::where('email', 'legacy@scorer.co')->firstOrFail();
+        $this->assertSame(72, $lead->score);
+        $this->assertNull($lead->score_breakdown);
+    }
+
     public function test_capture_lead_dedupes_on_email(): void
     {
         $registry = app(ToolRegistry::class);

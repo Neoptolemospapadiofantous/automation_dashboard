@@ -1,5 +1,6 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 const props = defineProps({
     lead: { type: Object, required: true },
@@ -15,6 +16,12 @@ const scoreColor = (score) => {
     return 'bg-surface-hi text-ink-dim';
 };
 
+// Resting label for the current assignee (hover reveals the full picker).
+const assigneeName = computed(() => {
+    if (!props.lead.assigned_to) return null;
+    return props.members.find((m) => m.id === props.lead.assigned_to)?.name ?? null;
+});
+
 function onAssignChange(e) {
     const value = e.target.value;
     if (value === '__auto__') {
@@ -29,12 +36,12 @@ function onAssignChange(e) {
 
 <template>
     <div
-        class="group cursor-grab rounded-none border border-border-line bg-bg p-2 shadow-sheet transition-colors hover:border-ink active:cursor-grabbing"
+        class="group cursor-grab rounded-none border border-border-line bg-bg px-2 py-1.5 shadow-sheet transition-colors hover:border-ink active:cursor-grabbing"
         draggable="true"
         @dragstart="$event.dataTransfer.setData('text/lead-id', String(lead.id))"
     >
         <div
-            class="flex cursor-pointer items-start justify-between gap-2"
+            class="flex cursor-pointer items-center justify-between gap-2"
             role="button"
             tabindex="0"
             :aria-label="`Open lead ${lead.name}`"
@@ -42,19 +49,20 @@ function onAssignChange(e) {
             @keydown.enter="$emit('open', lead)"
         >
             <div class="min-w-0">
-                <p class="truncate text-sm font-medium text-ink hover:underline">{{ lead.name }}</p>
-                <p v-if="lead.company" class="truncate text-[11px] text-ink-dim">{{ lead.company }}</p>
+                <p class="truncate text-[13px] font-medium leading-tight text-ink hover:underline">{{ lead.name }}</p>
+                <p v-if="lead.company" class="truncate text-[11px] leading-tight text-ink-dim">{{ lead.company }}</p>
             </div>
-            <span class="rounded-none px-1.5 py-0.5 font-mono text-[11px] font-semibold" :class="scoreColor(lead.score)">
+            <span class="shrink-0 rounded-none px-1.5 py-0.5 font-mono text-[11px] font-semibold" :class="scoreColor(lead.score)">
                 {{ lead.score }}
             </span>
         </div>
 
-        <div v-if="lead.email || lead.phone" class="mt-1 flex flex-col gap-0.5 text-[11px]">
+        <!-- Contact: a single truncated line keeps the card short. -->
+        <div v-if="lead.email || lead.phone" class="mt-1 flex items-center gap-2 text-[11px] text-ink-dim">
             <a
                 v-if="lead.email"
                 :href="`mailto:${lead.email}`"
-                class="truncate text-ink-dim hover:text-ink hover:underline"
+                class="min-w-0 flex-1 truncate hover:text-ink hover:underline"
                 :title="`Email ${lead.email}`"
                 @click.stop
                 @mousedown.stop
@@ -65,18 +73,18 @@ function onAssignChange(e) {
             <a
                 v-if="lead.phone"
                 :href="`tel:${lead.phone}`"
-                class="truncate text-ink-dim hover:text-ink hover:underline"
+                class="shrink-0 hover:text-ink hover:underline"
                 :title="`Call ${lead.phone}`"
                 @click.stop
                 @mousedown.stop
                 @dragstart.prevent
             >
-                ☎ {{ lead.phone }}
+                ☎
             </a>
         </div>
 
-        <div class="mt-1.5 flex items-center justify-between">
-            <div class="flex items-center gap-1.5">
+        <div class="mt-1 flex items-center justify-between gap-2">
+            <div class="flex min-w-0 items-center gap-1.5">
                 <span class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-dim">
                     {{ lead.source }}
                 </span>
@@ -91,10 +99,17 @@ function onAssignChange(e) {
                 >
                     💬 {{ lead.conversations_count }}
                 </Link>
+                <!-- Resting assignee hint (the picker reveals on hover). -->
+                <span
+                    class="truncate text-[10px] text-ink-mute"
+                    :title="assigneeName ? `Assigned to ${assigneeName}` : 'Unassigned'"
+                >
+                    {{ assigneeName ? `· ${assigneeName}` : '· Unassigned' }}
+                </span>
             </div>
             <button
                 type="button"
-                class="text-xs text-ink-mute opacity-0 transition hover:text-rose-500 group-hover:opacity-100"
+                class="shrink-0 text-xs text-ink-mute opacity-0 transition hover:text-rose-500 group-hover:opacity-100"
                 title="Delete lead"
                 aria-label="Delete lead"
                 @click="$emit('delete', lead)"
@@ -103,8 +118,13 @@ function onAssignChange(e) {
             </button>
         </div>
 
-        <!-- Delegation: assign to a rep or auto round-robin -->
-        <div class="mt-1.5 border-t border-border-line pt-1.5" @mousedown.stop @dragstart.stop>
+        <!-- Delegation: collapsed at rest, revealed on hover/focus so the
+             resting card stays compact and columns scan faster. -->
+        <div
+            class="max-h-0 overflow-hidden opacity-0 transition-all duration-150 group-hover:mt-1.5 group-hover:max-h-12 group-hover:opacity-100 group-focus-within:mt-1.5 group-focus-within:max-h-12 group-focus-within:opacity-100"
+            @mousedown.stop
+            @dragstart.stop
+        >
             <select
                 class="w-full rounded-none border-border-hi bg-bg py-0.5 text-[11px] text-ink-dim focus:border-ink focus:ring-2 focus:ring-ink focus:ring-offset-1"
                 :value="lead.assigned_to ?? ''"

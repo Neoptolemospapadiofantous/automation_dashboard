@@ -52,7 +52,7 @@ class DashboardTest extends TestCase
                 ->where('stats.qualified', 1)
                 // 2 won of 3 decided = 66.7%
                 ->where('stats.conversion_rate', 66.7)
-                ->has('funnel', 6)
+                ->has('funnel', 5)
                 ->has('rep_load')
             );
     }

@@ -120,11 +120,15 @@ function onDrop(event, status) {
     if (!lead || lead.status === status) return;
 
     // Optimistic move; the server broadcast confirms to everyone else.
+    // If the move isn't allowed (e.g. Won is final, or a 2-step demotion),
+    // the request 422s and we snap the card back to where it came from.
+    const previous = lead.status;
     lead.status = status;
     router.patch(route('leads.status', id), { status }, {
         preserveScroll: true,
         preserveState: true,
         only: [],
+        onError: () => { lead.status = previous; },
     });
 }
 
@@ -324,23 +328,34 @@ function submit() {
                         </button>
                     </div>
                 </div>
-                <div class="flex gap-3 overflow-x-auto pb-4">
+                <!-- How moving leads works. The board enforces a one-way
+                     pipeline with a couple of escape hatches, so spell the
+                     rules out rather than letting reps discover them via
+                     rejected drags. -->
+                <div class="mb-4 flex flex-wrap items-start gap-x-4 gap-y-1 rounded-none border border-border-line bg-surface px-3 py-2 text-[11px] text-ink-dim">
+                    <span class="font-semibold text-ink-dim">Moving leads:</span>
+                    <span>Drag a card forward as it progresses (New → Qualified → Assigned → Won/Lost).</span>
+                    <span>Dragged to the wrong column? Move it back one step to fix it.</span>
+                    <span>Reopen a <strong class="font-semibold text-ink-dim">Lost</strong> lead by dragging it back to New.</span>
+                    <span><strong class="font-semibold text-ink-dim">Won</strong> is final — start a new lead instead of reopening.</span>
+                </div>
+                <div class="flex gap-2 overflow-x-auto pb-4">
                     <div
                         v-for="col in columns"
                         :key="col.value"
-                        class="flex w-64 flex-shrink-0 flex-col rounded-none border border-border-line bg-surface p-2.5"
+                        class="flex w-56 flex-shrink-0 flex-col rounded-none border border-border-line bg-surface p-2"
                         @dragover.prevent
                         @drop="onDrop($event, col.value)"
                     >
-                        <div class="mb-1.5 flex items-center justify-between px-0.5">
-                            <h3 class="text-sm font-semibold text-ink-dim">{{ col.label }}</h3>
-                            <span class="rounded-none bg-bg px-2 py-0.5 font-mono text-xs text-ink-dim">
+                        <div class="sticky top-0 z-10 mb-1 flex items-center justify-between bg-surface px-0.5 py-0.5">
+                            <h3 class="text-[13px] font-semibold text-ink-dim">{{ col.label }}</h3>
+                            <span class="rounded-none bg-bg px-1.5 py-0.5 font-mono text-[11px] text-ink-dim">
                                 {{ col.leads.length }}
                             </span>
                         </div>
-                        <div class="bp-dim mb-2.5 mx-0.5" />
+                        <div class="bp-dim mb-2 mx-0.5" />
 
-                        <div class="flex flex-1 flex-col gap-2">
+                        <div class="flex flex-1 flex-col gap-1.5">
                             <LeadCard
                                 v-for="lead in col.leads"
                                 :key="lead.id"
@@ -352,7 +367,7 @@ function submit() {
                             />
                             <p
                                 v-if="!col.leads.length"
-                                class="rounded-none border-2 border-dashed border-border-line p-3 text-center text-xs text-ink-mute"
+                                class="rounded-none border border-dashed border-border-line p-2 text-center text-[11px] text-ink-mute"
                             >
                                 Drop leads here
                             </p>

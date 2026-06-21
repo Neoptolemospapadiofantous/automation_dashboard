@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Conversation;
 use App\Models\Lead;
-use App\Models\Message;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -32,19 +32,100 @@ class ConversationController extends Controller
             abort_if($leadFilter === null, 404, 'Lead not found in this team.');
         }
 
+        $teamId = $team->id;
+        $agentId = $team->current_agent_id;
+
+        // Inline filters (the standalone Search page was merged in here): a
+        // keyword box that scans visitor id / lead name+email / message text,
+        // plus channel / status / rating dropdowns. All agent-scoped.
+        $q = trim((string) $request->input('q', ''));
+        $channel = trim((string) $request->input('channel', ''));
+        $status = trim((string) $request->input('status', ''));
+        $ratingFilter = trim((string) $request->input('rating', ''));
+
         // Phase G: agent-scoped so switching agents swaps the conversation
         // list. forAgent(null) returns no rows (no current agent = nothing to show).
         $conversations = Conversation::query()
-            ->where('team_id', $team->id)
-            ->forAgent($team->current_agent_id)
-            ->when($leadFilter, fn ($q) => $q->where('lead_id', $leadFilter->id))
+            ->where('team_id', $teamId)
+            ->forAgent($agentId)
+            ->when($leadFilter, fn ($query) => $query->where('lead_id', $leadFilter->id))
+            ->when($q !== '', function ($query) use ($q) {
+                $like = '%'.$q.'%';
+                $query->where(function ($inner) use ($like) {
+                    $inner->where('visitor_id', 'like', $like)
+                        ->orWhereHas('lead', fn ($l) => $l
+                            ->where('name', 'like', $like)
+                            ->orWhere('email', 'like', $like))
+                        ->orWhereHas('messages', fn ($m) => $m->where('text', 'like', $like));
+                });
+            })
+            ->when($channel !== '', fn ($query) => $query->where('channel', $channel))
+            ->when($status !== '', fn ($query) => $query->where('status', $status))
+            ->when(
+                in_array($ratingFilter, Conversation::RATINGS, true),
+                fn ($query) => $query->where('rating', $ratingFilter),
+            )
             ->with('lead:id,name,email')
             ->orderByDesc('last_message_at')
             ->paginate(20)
             ->withQueryString();
 
+        // Channel dropdown options: the distinct channels this agent actually
+        // has conversations on (so the filter only offers real values).
+        $channelOptions = $agentId === null ? [] : Conversation::query()
+            ->where('team_id', $teamId)
+            ->forAgent($agentId)
+            ->distinct()
+            ->orderBy('channel')
+            ->pluck('channel')
+            ->all();
+
+        // Operator reference: the last 5 rated conversations for the current
+        // agent (most recently rated first). Scoped per agent to match the
+        // list above — switching agents swaps which feedback shows. Built via
+        // the query builder (stdClass rows) so the lead-name join and the
+        // shaping stay clear of Eloquent's dynamic-property type noise.
+        $feedback = [];
+        if ($agentId !== null) {
+            $rows = DB::table('conversations')
+                ->leftJoin('leads', 'leads.id', '=', 'conversations.lead_id')
+                ->where('conversations.team_id', $teamId)
+                ->where('conversations.agent_id', $agentId)
+                ->whereNotNull('conversations.rating')
+                ->orderByDesc('conversations.rated_at')
+                ->limit(5)
+                ->get([
+                    'conversations.id',
+                    'conversations.visitor_id',
+                    'conversations.rating',
+                    'conversations.feedback_comment',
+                    'conversations.rated_at',
+                    'leads.name as lead_name',
+                ]);
+
+            foreach ($rows as $r) {
+                $feedback[] = [
+                    'id' => $r->id,
+                    'name' => $r->lead_name ?? $r->visitor_id,
+                    'rating' => $r->rating,
+                    'comment' => $r->feedback_comment,
+                    'rated_at' => $r->rated_at
+                        ? Carbon::parse($r->rated_at)->toIso8601String()
+                        : null,
+                ];
+            }
+        }
+
         return Inertia::render('Conversations/Index', [
             'conversations' => $conversations,
+            'feedback' => $feedback,
+            'filters' => [
+                'q' => $q,
+                'channel' => $channel,
+                'status' => $status,
+                'rating' => $ratingFilter,
+            ],
+            'channel_options' => $channelOptions,
             'filter_lead' => $leadFilter ? [
                 'id' => $leadFilter->id,
                 'name' => $leadFilter->name,
@@ -112,78 +193,5 @@ class ConversationController extends Controller
         $conversation->delete();
 
         return redirect()->route('conversations.index');
-    }
-
-    /**
-     * Search messages across the team's conversations.
-     *
-     * Uses Scout (Typesense hybrid keyword + semantic search) when configured;
-     * falls back to a MySQL LIKE/fulltext scan otherwise so it works everywhere.
-     */
-    public function search(Request $request): Response
-    {
-        $team = $request->user()->currentTeam;
-        $query = trim((string) $request->input('q', ''));
-
-        $results = collect();
-
-        if ($query !== '') {
-            $results = $this->runSearch($team->id, $team->current_agent_id, $query);
-        }
-
-        return Inertia::render('Conversations/Search', [
-            'q' => $query,
-            'results' => $results,
-        ]);
-    }
-
-    /**
-     * @return Collection<int, array<string, mixed>>
-     */
-    protected function runSearch(int $teamId, ?int $agentId, string $query): Collection
-    {
-        // Use the Scout engine only when a real one is configured (e.g.
-        // typesense). Otherwise do a plain DB scan so search works everywhere
-        // without depending on a search service.
-        //
-        // Read via config() not env() — env() returns null after
-        // `php artisan config:cache`, which would silently force the
-        // DB-LIKE fallback even when Typesense is correctly configured.
-        $engine = config('scout.driver');
-        $useScout = $engine && ! in_array($engine, ['database', 'collection', 'null'], true);
-
-        // Phase G: agent scope on both branches. Scout takes ->where(...)
-        // filters that translate to the upstream engine's filter syntax;
-        // a null agent yields no results (matches the model scope).
-        if ($agentId === null) {
-            return collect();
-        }
-
-        if ($useScout) {
-            $messages = Message::search($query)
-                ->where('team_id', $teamId)
-                ->where('agent_id', $agentId)
-                ->take(50)
-                ->get()
-                ->load('conversation:id,lead_id,visitor_id');
-        } else {
-            $messages = Message::query()
-                ->where('team_id', $teamId)
-                ->forAgent($agentId)
-                ->where('text', 'like', '%'.$query.'%')
-                ->latest('sent_at')
-                ->limit(50)
-                ->with('conversation:id,lead_id,visitor_id')
-                ->get();
-        }
-
-        return $messages->map(fn (Message $m) => [
-            'id' => $m->id,
-            'conversation_id' => $m->conversation_id,
-            'role' => $m->role,
-            'text' => $m->text,
-            'sent_at' => optional($m->sent_at)->toIso8601String(),
-            'lead_id' => $m->conversation?->lead_id,
-        ])->values();
     }
 }

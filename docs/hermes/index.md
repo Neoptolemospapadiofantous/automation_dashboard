@@ -56,6 +56,10 @@ Every agent run writes a session note here with frontmatter for [[#Search by fro
 
 ### 2026-06
 
+- 2026-06-21 11:52 UTC — [[AUDIT-2026-06-21_11-52|Audit]] — PASS, 0 critical / 0 high / 0 medium confirmed
+- 2026-06-20 16:22 UTC — [[AUDIT-2026-06-20_16-22|Audit]] — PASS, 0 critical / 0 high / 0 medium confirmed
+- 2026-06-20 15:37 UTC — [[AUDIT-2026-06-20_15-37|Audit]] — PASS, 0 critical / 0 high / 0 medium confirmed
+- 2026-06-20 12:50 UTC — [[AUDIT-2026-06-20_12-50|Audit]] — PASS, 0 critical / 0 high / 0 medium confirmed
 - 2026-06-18 21:11 UTC — [[AUDIT-2026-06-18_21-11|Audit]] — WARN, 0 critical / 0 high / 2 medium confirmed
 - 2026-06-14 15:35 UTC — [[AUDIT-2026-06-14_15-35|Audit]] — PASS, 0 critical / 0 high / 0 medium confirmed
 - 2026-06-08 16:55 UTC — [[FLEET-2026-06-08_16-55|Fleet run]] — baseline PASS → final PASS, 10 fixes applied (9 throttle, 1 swallowed-exception), 4 doc-sync edits absorbed

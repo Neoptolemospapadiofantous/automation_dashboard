@@ -17,9 +17,12 @@ use App\Support\Embed\DomainAllowlist;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 /**
  * Public chat embed: a JS snippet customers paste into their own website
@@ -149,6 +152,10 @@ class EmbedController extends Controller
             (string) $request->cookie("fs_embed_{$slug}", ''),
         );
 
+        // Stable browser identity (survives reset) — groups this visitor's
+        // chats so the widget's home screen can list their recent ones.
+        $visitorToken = $this->resolveVisitorToken((string) $request->input('visitor_token', ''));
+
         // Returning visitor with a live session → resume: restore the
         // transcript, no greeting, no LLM call, no charge.
         if ($this->runtime->hasSession($agent, $visitorId)) {
@@ -187,6 +194,8 @@ class EmbedController extends Controller
         try {
             $traces = $this->runtime->launch($agent, $visitorId);
         } catch (RuntimeException $e) {
+            report($e);
+
             return response()->json([
                 'error' => 'The agent is temporarily unavailable.',
             ], 503);
@@ -194,7 +203,7 @@ class EmbedController extends Controller
 
         // Record the greeting to the operator-visible transcript + broadcast
         // (so widget conversations show up in the dashboard like in-app chats).
-        $conversation = $this->recordConversation($agent, $visitorId);
+        $conversation = $this->recordConversation($agent, $visitorId, $visitorToken);
         foreach ($traces as $trace) {
             $text = (string) ($trace['payload']['message'] ?? '');
             if ($text === '') {
@@ -227,6 +236,16 @@ class EmbedController extends Controller
         }
 
         return 'embed-'.Str::random(28);
+    }
+
+    /**
+     * Validate the stable visitor token (persistent browser identity). Same
+     * shape as a visitor id; returns null when absent or malformed so a bad
+     * value just drops the history grouping rather than breaking the chat.
+     */
+    protected function resolveVisitorToken(string $candidate): ?string
+    {
+        return preg_match('/^embed-[A-Za-z0-9]{16,48}$/', $candidate) === 1 ? $candidate : null;
     }
 
     /**
@@ -282,13 +301,16 @@ class EmbedController extends Controller
 
         // Record + echo the visitor's message before the engine call, so the
         // dashboard transcript + lead board update live.
-        $conversation = $this->recordConversation($agent, $data['visitor_id']);
+        $visitorToken = $this->resolveVisitorToken((string) $request->input('visitor_token', ''));
+        $conversation = $this->recordConversation($agent, $data['visitor_id'], $visitorToken);
         $this->recordMessage($conversation, 'user', $data['message']);
         $this->broadcastEmbed($team->id, 'user', $data['message']);
 
         try {
             $traces = $this->runtime->sendText($agent, $data['visitor_id'], $data['message']);
         } catch (RuntimeException $e) {
+            report($e);
+
             return response()->json([
                 'error' => 'The agent is temporarily unavailable.',
             ], 503);
@@ -318,21 +340,183 @@ class EmbedController extends Controller
             $this->broadcastEmbed($team->id, 'agent', $text);
         }
 
-        // Terminal flow state → mark the conversation ended (dashboard replay).
-        if ($conversation !== null && $this->sessionEnded($agent, $data['visitor_id'])) {
+        // Terminal flow state → mark the conversation ended (dashboard replay)
+        // and signal the widget to show the post-chat rating prompt.
+        $ended = $this->sessionEnded($agent, $data['visitor_id']);
+        if ($conversation !== null && $ended) {
             rescue(fn () => $this->recorder->end($conversation), report: true);
         }
 
         return response()->json([
             'traces' => $traces,
+            'ended' => $ended,
         ]);
+    }
+
+    /**
+     * POST /embed/{slug}/feedback
+     *
+     * Records the visitor's post-chat rating (bad|ok|good) + optional comment
+     * on their current conversation, then ends it. Unauthenticated like the
+     * rest of the embed flow; scoped to the visitor's own conversation by the
+     * (team, visitor_id) pair. Skipping a rating never calls this endpoint.
+     */
+    public function feedback(string $slug, Request $request): JsonResponse
+    {
+        $agent = $this->resolveAgent($slug);
+
+        if ($denied = $this->originDenied($agent, $request)) {
+            return $denied;
+        }
+
+        $data = $request->validate([
+            'visitor_id' => ['required', 'string', 'max:255'],
+            'rating' => ['required', 'string', Rule::in(Conversation::RATINGS)],
+            'comment' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        // The visitor can only rate a conversation they own. No match (already
+        // reset, or never recorded) → succeed quietly so the widget still resets.
+        $conversation = Conversation::query()
+            ->where('team_id', $agent->team_id)
+            ->where('visitor_id', $data['visitor_id'])
+            ->first();
+
+        if ($conversation !== null) {
+            rescue(fn () => $this->recorder->rate(
+                $conversation,
+                $data['rating'],
+                $data['comment'] ?? null,
+            ), report: true);
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
+    /**
+     * POST /embed/{slug}/history
+     *
+     * The visitor's own recent conversations (last 5) for the widget's home
+     * screen. Scoped to (team, visitor_token): the token is the stable browser
+     * identity and acts as the bearer capability, so a visitor only ever sees
+     * their own chats. Pre-token rows (null visitor_token) never match.
+     */
+    public function history(string $slug, Request $request): JsonResponse
+    {
+        $agent = $this->resolveAgent($slug);
+
+        if ($denied = $this->originDenied($agent, $request)) {
+            return $denied;
+        }
+
+        $data = $request->validate([
+            'visitor_token' => ['required', 'string', 'regex:/^embed-[A-Za-z0-9]{16,48}$/'],
+        ]);
+
+        $conversations = Conversation::query()
+            ->where('team_id', $agent->team_id)
+            ->where('visitor_token', $data['visitor_token'])
+            ->orderByDesc('last_message_at')
+            ->limit(5)
+            ->get();
+
+        $items = [];
+        foreach ($conversations as $conversation) {
+            $items[] = [
+                'id' => $conversation->id,
+                'title' => $this->conversationTitle($conversation),
+                'status' => $conversation->status,
+                'rating' => $conversation->rating,
+                'message_count' => $conversation->message_count,
+                'last_message_at' => optional($conversation->last_message_at)->toIso8601String(),
+            ];
+        }
+
+        return response()->json(['conversations' => $items]);
+    }
+
+    /**
+     * POST /embed/{slug}/conversation
+     *
+     * Read-only transcript of one of the visitor's past conversations, for the
+     * home screen's "reopen" view. Token-scoped: the conversation must belong
+     * to the (team, visitor_token) pair or it's a 404 — the id alone is not
+     * authority (ids are sequential and guessable).
+     */
+    public function transcript(string $slug, Request $request): JsonResponse
+    {
+        $agent = $this->resolveAgent($slug);
+
+        if ($denied = $this->originDenied($agent, $request)) {
+            return $denied;
+        }
+
+        $data = $request->validate([
+            'visitor_token' => ['required', 'string', 'regex:/^embed-[A-Za-z0-9]{16,48}$/'],
+            'conversation_id' => ['required', 'integer'],
+        ]);
+
+        $conversation = Conversation::query()
+            ->where('team_id', $agent->team_id)
+            ->where('visitor_token', $data['visitor_token'])
+            ->find($data['conversation_id']);
+
+        if ($conversation === null) {
+            return response()->json(['error' => 'Not found.'], 404);
+        }
+
+        // Query-builder rows (stdClass) so the transcript shaping stays clear of
+        // Eloquent's dynamic-property type noise (matches the dashboard list).
+        $rows = DB::table('messages')
+            ->where('conversation_id', $conversation->id)
+            ->whereIn('role', ['user', 'agent'])
+            ->orderBy('sequence')
+            ->get(['role', 'text', 'sent_at']);
+
+        $messages = [];
+        foreach ($rows as $row) {
+            $text = trim((string) $row->text);
+            if ($text === '') {
+                continue;
+            }
+            $messages[] = [
+                'role' => $row->role,
+                'text' => $row->text,
+                'sent_at' => $row->sent_at
+                    ? Carbon::parse($row->sent_at)->toIso8601String()
+                    : null,
+            ];
+        }
+
+        return response()->json([
+            'id' => $conversation->id,
+            'status' => $conversation->status,
+            'rating' => $conversation->rating,
+            'messages' => $messages,
+        ]);
+    }
+
+    /**
+     * A short, human-readable label for a conversation: the visitor's first
+     * message, trimmed. Falls back to a generic label for greeting-only chats.
+     */
+    protected function conversationTitle(Conversation $conversation): string
+    {
+        $first = (string) $conversation->messages()
+            ->where('role', 'user')
+            ->orderBy('sequence')
+            ->value('text');
+
+        $first = trim($first);
+
+        return $first === '' ? 'Conversation' : Str::limit($first, 60);
     }
 
     /**
      * Resolve (find-or-create) the operator-visible conversation for an embed
      * visitor. Best-effort — recording must never break the visitor's chat.
      */
-    protected function recordConversation(Agent $agent, string $visitorId): ?Conversation
+    protected function recordConversation(Agent $agent, string $visitorId, ?string $visitorToken = null): ?Conversation
     {
         try {
             return $this->recorder->resolve(
@@ -340,6 +524,7 @@ class EmbedController extends Controller
                 visitorId: $visitorId,
                 channel: 'embed',
                 agentId: $agent->id,
+                visitorToken: $visitorToken,
             );
         } catch (\Throwable $e) {
             report($e);

@@ -100,7 +100,11 @@ class OpenAiClient implements LlmClient
                         ];
                     }
                 }
-                $entry = ['role' => 'assistant', 'content' => $text !== '' ? $text : null];
+                // Content stays a string ('' when the turn was tool-calls
+                // only). OpenAI accepts null alongside tool_calls, but
+                // stricter OpenAI-compatible backends (e.g. Ollama) reject it
+                // with "invalid message content type: <nil>".
+                $entry = ['role' => 'assistant', 'content' => $text];
                 if ($toolCalls !== []) {
                     $entry['tool_calls'] = $toolCalls;
                 }

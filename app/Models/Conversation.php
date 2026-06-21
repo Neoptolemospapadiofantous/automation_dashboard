@@ -19,6 +19,9 @@ class Conversation extends Model
 
     use HasLifecycle;
 
+    /** Visitor satisfaction ratings, worst → best. */
+    public const RATINGS = ['bad', 'ok', 'good'];
+
     public function stateMachine(): StateMachine
     {
         return new ConversationStateMachine($this);
@@ -29,10 +32,14 @@ class Conversation extends Model
         'agent_id',
         'lead_id',
         'visitor_id',
+        'visitor_token',
         'session_key',
         'transcript_id',
         'channel',
         'status',
+        'rating',
+        'feedback_comment',
+        'rated_at',
         'message_count',
         'started_at',
         'ended_at',
@@ -44,6 +51,7 @@ class Conversation extends Model
     {
         return [
             'meta' => 'array',
+            'rated_at' => 'datetime',
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
             'last_message_at' => 'datetime',

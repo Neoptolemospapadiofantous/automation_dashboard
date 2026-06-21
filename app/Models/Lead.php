@@ -36,6 +36,7 @@ class Lead extends Model
         'source',
         'status',
         'score',
+        'score_breakdown',
         'visitor_id',
         'captured',
         'notes',
@@ -48,6 +49,7 @@ class Lead extends Model
             'status' => LeadStatus::class,
             'captured' => 'array',
             'score' => 'integer',
+            'score_breakdown' => 'array',
             'last_contacted_at' => 'datetime',
         ];
     }
