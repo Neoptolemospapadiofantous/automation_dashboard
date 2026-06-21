@@ -120,11 +120,15 @@ function onDrop(event, status) {
     if (!lead || lead.status === status) return;
 
     // Optimistic move; the server broadcast confirms to everyone else.
+    // If the move isn't allowed (e.g. Won is final, or a 2-step demotion),
+    // the request 422s and we snap the card back to where it came from.
+    const previous = lead.status;
     lead.status = status;
     router.patch(route('leads.status', id), { status }, {
         preserveScroll: true,
         preserveState: true,
         only: [],
+        onError: () => { lead.status = previous; },
     });
 }
 
@@ -323,6 +327,17 @@ function submit() {
                             Create one manually
                         </button>
                     </div>
+                </div>
+                <!-- How moving leads works. The board enforces a one-way
+                     pipeline with a couple of escape hatches, so spell the
+                     rules out rather than letting reps discover them via
+                     rejected drags. -->
+                <div class="mb-4 flex flex-wrap items-start gap-x-4 gap-y-1 rounded-none border border-border-line bg-surface px-3 py-2 text-[11px] text-ink-dim">
+                    <span class="font-semibold text-ink-dim">Moving leads:</span>
+                    <span>Drag a card forward as it progresses (New → Qualified → Assigned → Won/Lost).</span>
+                    <span>Dragged to the wrong column? Move it back one step to fix it.</span>
+                    <span>Reopen a <strong class="font-semibold text-ink-dim">Lost</strong> lead by dragging it back to New.</span>
+                    <span><strong class="font-semibold text-ink-dim">Won</strong> is final — start a new lead instead of reopening.</span>
                 </div>
                 <div class="flex gap-2 overflow-x-auto pb-4">
                     <div

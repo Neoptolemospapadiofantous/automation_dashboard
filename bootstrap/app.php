@@ -51,6 +51,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhooks/stripe',
             'embed/*/launch',
             'embed/*/interact',
+            'embed/*/history',
+            'embed/*/conversation',
             // Public waitlist form on the coming-soon page. The gate
             // short-circuits before session middleware, so there's no CSRF
             // token to send; the controller is throttled + honeypotted.

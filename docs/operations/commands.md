@@ -28,6 +28,7 @@ scheduler's output surfaces failures to ops.
 | `conversations:prune` | `--days=N` (default 365), `--force` | **Opt-in** archival. Dry-run unless `--force`. App keeps all conversations forever by default; run only to reclaim storage. Messages cascade. | Manual |
 | `platform:set` | `{key?} {value?}` `--list` | Sets/lists editable `platform_settings` (public-stats scarcity: `founder_slots_remaining`, `next_cohort_label`, `featured_proof`, …). Writing busts the `/api/public/stats` cache. | Manual (operator) |
 | `mail:test` | `{to}` (recipient) | Sends a probe email through the configured mailer; prints resolved driver + from-address. Warns when `MAIL_MAILER=log`. | Manual |
+| `arch:graph-check` | _(none)_ | Rebuilds the auto-discovered architecture graph (backs the local-only `/architecture` page) and exits **non-zero** if it has drifted — node count no longer matches the `app/` classes on disk, or a node is orphaned. | Gate (`hermes-fast`) + manual |
 
 > `runtime:prune-sessions --days` overrides the window (floored at 1).
 > `platform:set` with no key, or `--list`, prints the current table (or

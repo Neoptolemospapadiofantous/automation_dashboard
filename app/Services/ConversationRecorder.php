@@ -21,7 +21,7 @@ class ConversationRecorder
      * (team_id, visitor_id) — adding agent_id would split a single visitor
      * session across rows if the team switched agents mid-chat.
      */
-    public function resolve(int $teamId, string $visitorId, ?int $leadId = null, string $channel = 'agent', ?int $agentId = null): Conversation
+    public function resolve(int $teamId, string $visitorId, ?int $leadId = null, string $channel = 'agent', ?int $agentId = null, ?string $visitorToken = null): Conversation
     {
         $conversation = Conversation::firstOrCreate(
             ['team_id' => $teamId, 'visitor_id' => $visitorId],
@@ -29,6 +29,7 @@ class ConversationRecorder
                 'agent_id' => $agentId,
                 'channel' => $channel,
                 'status' => 'active',
+                'visitor_token' => $visitorToken,
                 'started_at' => now(),
                 'last_message_at' => now(),
             ],
@@ -43,6 +44,13 @@ class ConversationRecorder
 
         if ($agentId && $conversation->agent_id !== $agentId) {
             $conversation->agent_id = $agentId;
+            $dirty = true;
+        }
+
+        // Back-fill the stable identity on rows that pre-date it (the per-chat
+        // visitor_id keys the row; the token groups a visitor's chats together).
+        if ($visitorToken && $conversation->visitor_token !== $visitorToken) {
+            $conversation->visitor_token = $visitorToken;
             $dirty = true;
         }
 
@@ -90,6 +98,26 @@ class ConversationRecorder
 
             return $message;
         });
+    }
+
+    /**
+     * Store a visitor's post-chat rating and end the conversation.
+     *
+     * Rating is one of Conversation::RATINGS; the comment is optional. Ending
+     * here matches the widget's "rate → reset" flow: a rated conversation is a
+     * finished one, so the next launch threads a fresh row.
+     */
+    public function rate(Conversation $conversation, string $rating, ?string $comment = null): void
+    {
+        $comment = $comment !== null ? trim($comment) : null;
+
+        $conversation->forceFill([
+            'rating' => $rating,
+            'feedback_comment' => $comment !== '' ? $comment : null,
+            'rated_at' => now(),
+        ])->save();
+
+        $this->end($conversation);
     }
 
     /**

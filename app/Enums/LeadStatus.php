@@ -5,12 +5,11 @@ namespace App\Enums;
 /**
  * The lifecycle a lead moves through, from capture to outcome.
  *
- * new -> engaging -> qualified -> assigned -> won | lost
+ * new -> qualified -> assigned -> won | lost
  */
 enum LeadStatus: string
 {
     case New = 'new';
-    case Engaging = 'engaging';
     case Qualified = 'qualified';
     case Assigned = 'assigned';
     case Won = 'won';
@@ -21,7 +20,6 @@ enum LeadStatus: string
     {
         return match ($this) {
             self::New => 'New',
-            self::Engaging => 'Engaging',
             self::Qualified => 'Qualified',
             self::Assigned => 'Assigned',
             self::Won => 'Won',
@@ -34,7 +32,6 @@ enum LeadStatus: string
     {
         return match ($this) {
             self::New => 'sky',
-            self::Engaging => 'amber',
             self::Qualified => 'violet',
             self::Assigned => 'blue',
             self::Won => 'green',

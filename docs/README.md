@@ -23,6 +23,7 @@ write a new phase doc that supersedes the prior one).
 - [authorization.md](./authorization.md) — roles, `TeamPolicy`, the `AuthorizesByTeamRole` trait — how team actions are gated (`app/Authorization`, `app/Policies`)
 - [architecture/state-machines.md](./architecture/state-machines.md) — the lifecycle state-machine pattern (Agent/Lead/Conversation transitions, `HasLifecycle`) (`app/Lifecycle`)
 - [architecture/data-model.md](./architecture/data-model.md) — the consolidated schema / ERD: entities, relationships, the `team_id`/`agent_id` tenancy spine (`app/Models`)
+- [architecture/full-application-graph.md](./architecture/full-application-graph.md) — whole-system graph (every layer in one map); backs the live local-only 3D `/architecture` page (`app/Support`)
 
 ### Business & domain
 - [business-model.md](./business-model.md) — the commercial model: plans, the 5 tiers, two-bucket credits, top-up packs, margins, how money flows through Stripe

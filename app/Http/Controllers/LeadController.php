@@ -223,7 +223,7 @@ class LeadController extends Controller
      * Routes through the LeadStateMachine so the typed event chain
      * (LeadStatusChanged / LeadQualified / LeadAssigned / LeadWon / LeadLost)
      * fires consistently with the rest of the app. Invalid transitions
-     * (e.g. dragging from Won back to Engaging) throw InvalidTransition
+     * (e.g. dragging from Won back to New) throw InvalidTransition
      * which the exception handler maps to 422 with a friendly message.
      */
     public function updateStatus(Request $request, Lead $lead): RedirectResponse

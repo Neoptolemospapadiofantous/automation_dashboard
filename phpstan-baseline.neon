@@ -261,43 +261,13 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$current_agent_id\.$#'
 			identifier: property.notFound
-			count: 6
+			count: 5
 			path: app/Http/Controllers/ConversationController.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
 			identifier: property.notFound
-			count: 6
-			path: app/Http/Controllers/ConversationController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$lead_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/ConversationController.php
-
-		-
-			message: '#^Method App\\Http\\Controllers\\ConversationController\:\:runSearch\(\) should return Illuminate\\Support\\Collection\<int, array\<string, mixed\>\> but returns Illuminate\\Support\\Collection\<int, array\{id\: int, conversation_id\: int\<0, max\>, role\: string, text\: mixed, sent_at\: mixed, lead_id\: mixed\}\>\.$#'
-			identifier: return.type
-			count: 1
-			path: app/Http/Controllers/ConversationController.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Message\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Http/Controllers/ConversationController.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Message\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: app/Http/Controllers/ConversationController.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,array\<string, mixed\>\>\:\:values\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
+			count: 5
 			path: app/Http/Controllers/ConversationController.php
 
 		-

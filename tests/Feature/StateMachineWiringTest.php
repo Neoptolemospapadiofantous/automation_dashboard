@@ -30,7 +30,7 @@ class StateMachineWiringTest extends TestCase
         Event::fake([LeadStatusChanged::class, LeadQualified::class, StateChanged::class]);
 
         $user = User::factory()->withPersonalTeam()->create();
-        $lead = Lead::factory()->status(LeadStatus::Engaging)->create([
+        $lead = Lead::factory()->status(LeadStatus::New)->create([
             'team_id' => $user->currentTeam->id,
         ]);
 
@@ -52,7 +52,7 @@ class StateMachineWiringTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->patch("/leads/{$lead->id}/status", ['status' => LeadStatus::Engaging->value])
+            ->patch("/leads/{$lead->id}/status", ['status' => LeadStatus::New->value])
             ->assertRedirect()
             ->assertSessionHasErrors('status');
 
@@ -92,7 +92,7 @@ class StateMachineWiringTest extends TestCase
         // PATCH via JSON to verify the exception handler renders 422 with
         // the structured payload (rather than 500 leaking the framework error).
         $this->actingAs($user)
-            ->patchJson("/leads/{$lead->id}/status", ['status' => LeadStatus::Engaging->value])
+            ->patchJson("/leads/{$lead->id}/status", ['status' => LeadStatus::New->value])
             ->assertStatus(422)
             ->assertJsonStructure(['error', 'from', 'to', 'reason']);
     }

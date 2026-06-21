@@ -14,7 +14,7 @@ use Tests\TestCase;
 
 /**
  * Coverage for every kanban category on the lead board:
- * New · Engaging · Qualified · Assigned · Won · Lost, plus the
+ * New · Qualified · Assigned · Won · Lost, plus the
  * "Unassigned" (no rep) state the LeadCard renders.
  *
  * The board columns are driven entirely by LeadStatus, so this pins the
@@ -55,7 +55,6 @@ class LeadBoardCategoriesTest extends TestCase
 
         $expected = [
             ['value' => 'new', 'label' => 'New', 'color' => 'sky'],
-            ['value' => 'engaging', 'label' => 'Engaging', 'color' => 'amber'],
             ['value' => 'qualified', 'label' => 'Qualified', 'color' => 'violet'],
             ['value' => 'assigned', 'label' => 'Assigned', 'color' => 'blue'],
             ['value' => 'won', 'label' => 'Won', 'color' => 'green'],
@@ -97,20 +96,19 @@ class LeadBoardCategoriesTest extends TestCase
     public static function validTransitions(): array
     {
         return [
-            'new → engaging' => [LeadStatus::New, LeadStatus::Engaging],
             'new → qualified' => [LeadStatus::New, LeadStatus::Qualified],
             'new → assigned' => [LeadStatus::New, LeadStatus::Assigned],
             'new → won' => [LeadStatus::New, LeadStatus::Won],
             'new → lost' => [LeadStatus::New, LeadStatus::Lost],
-            'engaging → qualified' => [LeadStatus::Engaging, LeadStatus::Qualified],
-            'engaging → assigned' => [LeadStatus::Engaging, LeadStatus::Assigned],
-            'engaging → won' => [LeadStatus::Engaging, LeadStatus::Won],
-            'engaging → lost' => [LeadStatus::Engaging, LeadStatus::Lost],
             'qualified → assigned' => [LeadStatus::Qualified, LeadStatus::Assigned],
             'qualified → won' => [LeadStatus::Qualified, LeadStatus::Won],
             'qualified → lost' => [LeadStatus::Qualified, LeadStatus::Lost],
             'assigned → won' => [LeadStatus::Assigned, LeadStatus::Won],
             'assigned → lost' => [LeadStatus::Assigned, LeadStatus::Lost],
+            // One-step demotions (undo a mis-drag) and reopening a dead lead.
+            'qualified → new (demotion)' => [LeadStatus::Qualified, LeadStatus::New],
+            'assigned → qualified (demotion)' => [LeadStatus::Assigned, LeadStatus::Qualified],
+            'lost → new (reopen)' => [LeadStatus::Lost, LeadStatus::New],
         ];
     }
 
@@ -130,7 +128,7 @@ class LeadBoardCategoriesTest extends TestCase
     }
 
     /**
-     * Backwards demotions and any move out of a terminal category. The
+     * Multi-step backward jumps and any move out of Won (terminal). The
      * endpoint surfaces InvalidTransition as 422 for the kanban UI.
      *
      * @return array<string, array{LeadStatus, LeadStatus}>
@@ -138,12 +136,11 @@ class LeadBoardCategoriesTest extends TestCase
     public static function invalidTransitions(): array
     {
         return [
-            'engaging → new (demotion)' => [LeadStatus::Engaging, LeadStatus::New],
-            'qualified → engaging (demotion)' => [LeadStatus::Qualified, LeadStatus::Engaging],
-            'assigned → qualified (demotion)' => [LeadStatus::Assigned, LeadStatus::Qualified],
+            // Multi-step demotions stay blocked — undo one column at a time.
+            'assigned → new (two-step demotion)' => [LeadStatus::Assigned, LeadStatus::New],
             'won → assigned (terminal)' => [LeadStatus::Won, LeadStatus::Assigned],
             'won → lost (terminal)' => [LeadStatus::Won, LeadStatus::Lost],
-            'lost → engaging (terminal)' => [LeadStatus::Lost, LeadStatus::Engaging],
+            'won → new (terminal)' => [LeadStatus::Won, LeadStatus::New],
         ];
     }
 

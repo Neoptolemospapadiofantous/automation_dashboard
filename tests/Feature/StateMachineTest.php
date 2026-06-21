@@ -24,17 +24,45 @@ class StateMachineTest extends TestCase
     {
         $lead = Lead::factory()->status(LeadStatus::New)->create();
 
-        $lead->transitionTo(LeadStatus::Engaging);
+        $lead->transitionTo(LeadStatus::Qualified);
 
-        $this->assertSame(LeadStatus::Engaging, $lead->fresh()->status);
+        $this->assertSame(LeadStatus::Qualified, $lead->fresh()->status);
     }
 
-    public function test_lead_cannot_transition_backwards(): void
+    public function test_lead_can_demote_one_step(): void
     {
+        // A mis-dragged card can be undone one column at a time.
         $lead = Lead::factory()->status(LeadStatus::Qualified)->create();
 
+        $lead->transitionTo(LeadStatus::New);
+
+        $this->assertSame(LeadStatus::New, $lead->fresh()->status);
+    }
+
+    public function test_lead_cannot_demote_more_than_one_step(): void
+    {
+        // Assigned → New skips a column — blocked; undo one step at a time.
+        $lead = Lead::factory()->status(LeadStatus::Assigned)->create();
+
         $this->expectException(InvalidArgumentException::class);
-        $lead->transitionTo(LeadStatus::Engaging);
+        $lead->transitionTo(LeadStatus::New);
+    }
+
+    public function test_lost_lead_can_be_reopened(): void
+    {
+        $lead = Lead::factory()->status(LeadStatus::Lost)->create();
+
+        $lead->transitionTo(LeadStatus::New);
+
+        $this->assertSame(LeadStatus::New, $lead->fresh()->status);
+    }
+
+    public function test_won_lead_is_terminal(): void
+    {
+        $lead = Lead::factory()->status(LeadStatus::Won)->create();
+
+        $this->expectException(InvalidArgumentException::class);
+        $lead->transitionTo(LeadStatus::New);
     }
 
     public function test_lead_terminal_states_have_no_outgoing_transitions(): void
@@ -49,7 +77,7 @@ class StateMachineTest extends TestCase
     {
         Event::fake([LeadQualified::class, LeadStatusChanged::class, StateChanged::class]);
 
-        $lead = Lead::factory()->status(LeadStatus::Engaging)->create();
+        $lead = Lead::factory()->status(LeadStatus::New)->create();
         $lead->transitionTo(LeadStatus::Qualified);
 
         Event::assertDispatched(LeadQualified::class);

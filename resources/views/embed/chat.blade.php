@@ -44,6 +44,7 @@
             display: flex;
             flex-direction: column;
             height: 100%;
+            position: relative; /* anchors the rating modal overlay */
         }
         header {
             padding: 14px 16px;
@@ -83,7 +84,7 @@
         }
         header .badge img { width: 100%; height: 100%; object-fit: cover; display: block; }
         header .close-btn {
-            margin-left: auto; flex: none;
+            flex: none;
             width: 30px; height: 30px; padding: 0;
             border: 1px solid transparent; border-radius: 0;
             background: transparent; color: var(--ink-dim);
@@ -227,6 +228,124 @@
             border-top: 1px solid var(--border-line); background: var(--bg-elev);
         }
         .powered a { color: var(--ink-dim); text-decoration: underline; text-underline-offset: 2px; }
+        /* Header secondary action (End chat). */
+        header .end-btn {
+            flex: none; margin-left: auto; height: 30px; padding: 0 10px;
+            border: 1px solid var(--border-line); border-radius: 0;
+            background: transparent; color: var(--ink-dim);
+            cursor: pointer; font-size: 11px; font-family: var(--font-mono);
+            letter-spacing: 0.03em;
+            transition: background .15s, color .15s, border-color .15s;
+        }
+        header .end-btn:hover { background: var(--surface-hi); color: var(--ink); border-color: var(--border-hi); }
+        /* Post-chat rating modal — overlays the thread, not the whole page. */
+        .rating-backdrop {
+            position: absolute; inset: 0; z-index: 20;
+            background: rgba(0, 0, 0, .35);
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px;
+        }
+        .rating-card {
+            background: var(--bg); border: 1px solid var(--border-hi);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .18);
+            width: 100%; max-width: 320px; padding: 18px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .rating-card h2 { font-size: 14px; font-weight: 600; margin: 0; }
+        .rating-card .opts { display: flex; gap: 8px; }
+        .rating-card .opt {
+            flex: 1; padding: 10px 4px; border: 1px solid var(--border-hi);
+            border-radius: 0; background: var(--bg); color: var(--ink-dim);
+            cursor: pointer; font-size: 12px; font-family: var(--font-mono);
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            transition: background .15s, color .15s, border-color .15s;
+        }
+        .rating-card .opt .emoji { font-size: 20px; line-height: 1; }
+        .rating-card .opt:hover { border-color: var(--ink); color: var(--ink); }
+        .rating-card .opt.selected { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+        .rating-card textarea {
+            width: 100%; min-height: 54px; resize: vertical;
+            border: 1px solid var(--border-hi); border-radius: 0;
+            padding: 8px 10px; font-size: 13px; font-family: inherit;
+            background: var(--bg); color: var(--ink); outline: none;
+        }
+        .rating-card textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+        .rating-card .actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .rating-card .actions button {
+            padding: 8px 14px; border-radius: 0; cursor: pointer;
+            font-size: 12px; font-family: var(--font-mono); letter-spacing: 0.03em;
+            transition: background .15s, color .15s, opacity .15s;
+        }
+        .rating-card .skip {
+            border: 1px solid transparent; background: transparent; color: var(--ink-mute);
+        }
+        .rating-card .skip:hover { color: var(--ink); }
+        .rating-card .submit {
+            border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent);
+        }
+        .rating-card .submit:hover:not(:disabled) { background: var(--bg); color: var(--accent); }
+        .rating-card .submit:disabled { opacity: .45; cursor: not-allowed; }
+        /* Home / landing view — shown on open (no active chat) and after a
+           reset. A clean start point: welcome + "new chat" + recent chats. */
+        #home {
+            flex: 1; overflow-y: auto; padding: 16px;
+            display: flex; flex-direction: column; gap: 14px;
+        }
+        .home-intro {
+            color: var(--ink-dim); font-size: 14px; line-height: 1.5;
+            border-left: 2px solid var(--accent); padding: 4px 0 4px 12px;
+        }
+        .newchat-btn {
+            border: 1px solid var(--accent); border-radius: 0;
+            background: var(--accent); color: var(--on-accent);
+            padding: 12px 14px; font-size: 13px; cursor: pointer;
+            font-family: var(--font-mono); letter-spacing: 0.03em;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: background .15s, color .15s;
+        }
+        .newchat-btn:hover { background: var(--bg); color: var(--accent); }
+        .history-head {
+            font-size: 11px; color: var(--ink-mute); font-family: var(--font-mono);
+            letter-spacing: 0.06em; text-transform: uppercase;
+            border-top: 1px solid var(--border-line); padding-top: 12px;
+        }
+        .history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+        .history-item {
+            border: 1px solid var(--border-line); border-radius: 0;
+            background: var(--bg); padding: 10px 12px; cursor: pointer;
+            display: flex; flex-direction: column; gap: 4px; text-align: left; width: 100%;
+            font-family: inherit; transition: background .15s, border-color .15s;
+        }
+        .history-item:hover { background: var(--surface-hi); border-color: var(--border-hi); }
+        .history-item .hi-top { display: flex; align-items: center; gap: 8px; }
+        .history-item .hi-title {
+            flex: 1; min-width: 0; font-size: 13px; color: var(--ink);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .history-item .hi-when { font-size: 10px; color: var(--ink-mute); font-family: var(--font-mono); flex: none; }
+        .hi-badge {
+            font-size: 10px; font-family: var(--font-mono); padding: 1px 6px; flex: none;
+            border: 1px solid var(--border-line); color: var(--ink-dim);
+        }
+        .hi-badge.good { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+        .hi-badge.ok   { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+        .hi-badge.bad  { background: #ffe4e6; color: #be123c; border-color: #fecdd3; }
+        /* Read-only transcript back bar (shown when reopening a past chat). */
+        .backbar {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            padding: 8px 12px; border-bottom: 1px solid var(--border-line); background: var(--bg-elev);
+        }
+        .backbar button {
+            border: 1px solid var(--border-line); border-radius: 0; background: transparent;
+            color: var(--ink-dim); cursor: pointer; padding: 6px 10px;
+            font-size: 11px; font-family: var(--font-mono); letter-spacing: 0.03em;
+            transition: background .15s, color .15s, border-color .15s;
+        }
+        .backbar button:hover { background: var(--surface-hi); color: var(--ink); border-color: var(--border-hi); }
+        .backbar .back-new { border-color: var(--accent); color: var(--accent); }
+        .backbar .back-new:hover { background: var(--accent); color: var(--on-accent); }
+        /* hidden must win over the flex/block display rules above. */
+        #home[hidden], .backbar[hidden], #thread[hidden], form[hidden] { display: none; }
         @media (prefers-reduced-motion: reduce) {
             #thread { scroll-behavior: auto; }
             .typing .dot, header .status-dot { animation: none; }
@@ -251,12 +370,25 @@
              independent of agent scripting, at every conversation. --}}
         <p class="ai-disclosure">AI assistant — not a person. You can ask for a human at any time.</p>
     </div>
+    <button type="button" id="fs-end" class="end-btn" aria-label="End chat and leave feedback" hidden>End chat</button>
     <button type="button" id="fs-close" class="close-btn" aria-label="Close chat">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
     </button>
 </header>
 
+<div id="backbar" class="backbar" hidden>
+    <button type="button" id="fs-back" class="back-btn">← Back</button>
+    <button type="button" id="fs-newchat-2" class="back-new">Start new chat</button>
+</div>
+
 <div id="thread" role="log" aria-live="polite"></div>
+
+<div id="home" hidden>
+    <p class="home-intro" id="home-intro" hidden></p>
+    <button type="button" id="fs-newchat" class="newchat-btn">Start new chat</button>
+    <div class="history-head" id="history-head" hidden>Recent conversations</div>
+    <ul id="history" class="history"></ul>
+</div>
 
 <form id="composer" autocomplete="off">
     <input id="msg" type="text" placeholder="Type a message…" required maxlength="2000" autofocus>
@@ -277,13 +409,26 @@
     var TITLE = {!! json_encode($title) !!};
     var WELCOME = {!! json_encode($welcome) !!};
     var STARTERS = {!! json_encode(array_values((array) $starters)) !!};
-    var STORAGE_KEY = 'fs_visitor_' + slug;
+    // TOKEN_KEY = stable browser identity (survives reset → groups a visitor's
+    // chats for the home screen). SESSION_KEY = the current chat session id
+    // (one runtime session + transcript row per chat; cleared on reset).
+    var TOKEN_KEY = 'fs_visitor_' + slug;
+    var SESSION_KEY = 'fs_session_' + slug;
     var thread = document.getElementById('thread');
+    var home = document.getElementById('home');
+    var backbar = document.getElementById('backbar');
     var form = document.getElementById('composer');
     var input = document.getElementById('msg');
     var sendBtn = document.getElementById('send');
     var closeBtn = document.getElementById('fs-close');
-    var visitorId = null;
+    var endBtn = document.getElementById('fs-end');
+    var newChatBtn = document.getElementById('fs-newchat');
+    var newChatBtn2 = document.getElementById('fs-newchat-2');
+    var backBtn = document.getElementById('fs-back');
+    var rated = false; // guards the post-chat rating prompt to once per conversation
+    var visitorId = null; // current chat session id
+    var token = null;     // stable visitor token
+    var pendingSend = null; // a host-API message to send once a new chat is live
     var csrf = document.querySelector('meta[name="csrf-token"]').content;
     var agentInitial = (TITLE || '?').trim().charAt(0).toUpperCase() || '?';
 
@@ -305,12 +450,52 @@
     }
 
     // --- localStorage identity helpers ---
-    function readVisitor() {
-        try { return window.localStorage.getItem(STORAGE_KEY) || null; } catch (e) { return null; }
+    function lsGet(k) { try { return window.localStorage.getItem(k) || null; } catch (e) { return null; } }
+    function lsSet(k, v) { if (v) { try { window.localStorage.setItem(k, v); } catch (e) {} } }
+    function lsDel(k) { try { window.localStorage.removeItem(k); } catch (e) {} }
+
+    // Mint an "embed-"+28-char id (same shape the backend validates/mints).
+    function mintId() {
+        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        var out = '';
+        var rand = new Uint8Array(28);
+        (window.crypto || window.msCrypto).getRandomValues(rand);
+        for (var i = 0; i < 28; i++) { out += chars[rand[i] % chars.length]; }
+        return 'embed-' + out;
     }
-    function writeVisitor(id) {
-        if (!id) return;
-        try { window.localStorage.setItem(STORAGE_KEY, id); } catch (e) {}
+
+    // The stable token must exist before any chat so history can group by it.
+    function ensureToken() {
+        token = lsGet(TOKEN_KEY);
+        if (!/^embed-[A-Za-z0-9]{16,48}$/.test(token || '')) {
+            token = mintId();
+            lsSet(TOKEN_KEY, token);
+        }
+        return token;
+    }
+
+    // --- view toggles: home (landing) / chat / read-only transcript ---
+    function showHome() {
+        home.hidden = false;
+        thread.hidden = true;
+        backbar.hidden = true;
+        form.hidden = true;
+        endBtn.hidden = true;
+        loadHistory();
+    }
+    function showChatView() {
+        home.hidden = true;
+        backbar.hidden = true;
+        thread.hidden = false;
+        form.hidden = false;
+        endBtn.hidden = false;
+    }
+    function showTranscriptView() {
+        home.hidden = true;
+        thread.hidden = false;
+        backbar.hidden = false;
+        form.hidden = true;
+        endBtn.hidden = true;
     }
 
     // --- safe markdown for AGENT message text only ---
@@ -552,22 +737,29 @@
         });
     }
 
-    async function launch() {
+    // Start (or resume) a chat session. `sessionId` keys the runtime session +
+    // transcript row; `token` is sent so the conversation is grouped under the
+    // stable visitor identity for the home screen.
+    async function launch(sessionId) {
+        showChatView();
+        thread.innerHTML = '';
+        rated = false;
+        input.disabled = false;
+        sendBtn.disabled = false;
         try {
-            var stored = readVisitor();
             var r = await callJson('/embed/' + encodeURIComponent(slug) + '/launch',
-                stored ? { visitor_id: stored } : {});
+                { visitor_id: sessionId, visitor_token: token });
             if (r.status !== 200) {
                 addSystem(r.body.error || 'Could not start the chat.');
                 sendBtn.disabled = true;
                 return;
             }
             visitorId = r.body.visitor_id;
-            writeVisitor(visitorId);
+            lsSet(SESSION_KEY, visitorId);
 
             var resumed = r.body.resumed && Array.isArray(r.body.transcript) && r.body.transcript.length;
             if (resumed) {
-                // Returning visitor: replay history, skip greeting + starters.
+                // Returning to a live session: replay history, skip greeting.
                 renderTranscript(r.body.transcript);
             } else {
                 // New thread: optional welcome, the greeting traces, then starters.
@@ -575,10 +767,104 @@
                 renderTraces(r.body.traces);
                 addQuickReplies(STARTERS);
             }
+            input.focus();
             toParent({ type: 'fs:ready' });
+            if (pendingSend) { var t = pendingSend; pendingSend = null; send(t); }
         } catch (e) {
             addSystem('Connection failed. Please refresh.');
         }
+    }
+
+    // Begin a brand-new chat: mint a fresh session id (so the engine greets
+    // rather than resuming) under the same stable visitor token. An optional
+    // firstText is sent once the session is live (host JS API from home).
+    function startNewChat(firstText) {
+        pendingSend = typeof firstText === 'string' ? firstText : null;
+        var sid = mintId();
+        lsSet(SESSION_KEY, sid);
+        launch(sid);
+    }
+
+    var RATING_LABEL = { good: '☺ Good', ok: '😐 OK', bad: '☹ Bad' };
+
+    function formatWhen(iso) {
+        if (!iso) return '';
+        try {
+            var d = new Date(iso);
+            var today = new Date();
+            var sameDay = d.toDateString() === today.toDateString();
+            return sameDay
+                ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        } catch (e) { return ''; }
+    }
+
+    // Fetch + render the visitor's last 5 conversations on the home screen.
+    function loadHistory() {
+        var intro = document.getElementById('home-intro');
+        intro.textContent = WELCOME || '';
+        intro.hidden = !WELCOME;
+        var list = document.getElementById('history');
+        var head = document.getElementById('history-head');
+        list.innerHTML = '';
+        head.hidden = true;
+        if (!token) return;
+        callJson('/embed/' + encodeURIComponent(slug) + '/history', { visitor_token: token })
+            .then(function (r) {
+                if (r.status !== 200 || !r.body || !Array.isArray(r.body.conversations) || !r.body.conversations.length) return;
+                head.hidden = false;
+                r.body.conversations.forEach(function (c) { list.appendChild(historyItem(c)); });
+            })
+            .catch(function () { /* best-effort: home still shows "new chat" */ });
+    }
+
+    function historyItem(c) {
+        var li = document.createElement('li');
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'history-item';
+
+        var top = document.createElement('div');
+        top.className = 'hi-top';
+
+        var title = document.createElement('span');
+        title.className = 'hi-title';
+        title.textContent = c.title || 'Conversation';
+        top.appendChild(title);
+
+        if (c.rating && RATING_LABEL[c.rating]) {
+            var badge = document.createElement('span');
+            badge.className = 'hi-badge ' + c.rating;
+            badge.textContent = RATING_LABEL[c.rating];
+            top.appendChild(badge);
+        }
+
+        var when = document.createElement('span');
+        when.className = 'hi-when';
+        when.textContent = formatWhen(c.last_message_at);
+        top.appendChild(when);
+
+        btn.appendChild(top);
+        btn.addEventListener('click', function () { openTranscript(c.id); });
+        li.appendChild(btn);
+        return li;
+    }
+
+    // Open a past conversation read-only (its runtime session may be gone).
+    function openTranscript(id) {
+        showTranscriptView();
+        thread.innerHTML = '';
+        callJson('/embed/' + encodeURIComponent(slug) + '/conversation',
+            { visitor_token: token, conversation_id: id })
+            .then(function (r) {
+                if (r.status !== 200 || !r.body || !Array.isArray(r.body.messages)) {
+                    addSystem('Could not load this conversation.');
+                    return;
+                }
+                if (!r.body.messages.length) { addSystem('No messages in this conversation.'); return; }
+                renderTranscript(r.body.messages);
+            })
+            .catch(function () { addSystem('Connection failed.'); });
     }
 
     async function send(text) {
@@ -593,6 +879,7 @@
         try {
             var r = await callJson('/embed/' + encodeURIComponent(slug) + '/interact', {
                 visitor_id: visitorId,
+                visitor_token: token,
                 message: text,
             });
             typing.remove();
@@ -600,14 +887,139 @@
                 addSystem(r.body.error || 'Could not deliver the message.');
             } else {
                 renderTraces(r.body.traces);
+                // Runtime reached a terminal flow state → prompt for a rating,
+                // then close the panel once they're done (autoEnded = true).
+                if (r.body.ended) showRating(true);
             }
         } catch (err) {
             typing.remove();
             addSystem('Connection failed.');
         } finally {
-            sendBtn.disabled = false;
-            input.focus();
+            // Don't re-enable the composer once the rating prompt has taken over.
+            if (!rated) {
+                sendBtn.disabled = false;
+                input.focus();
+            }
         }
+    }
+
+    // --- post-chat rating ---
+    // Two triggers: the runtime reaching a terminal flow state (send() passes
+    // r.body.ended, autoEnded=true), or the visitor tapping "End chat"
+    // (autoEnded=false). Both surface the same bad/ok/good + optional comment
+    // prompt and reset to a fresh conversation; when the runtime auto-ended,
+    // we also collapse the panel once the visitor is done rating.
+    function showRating(autoEnded) {
+        if (rated || document.getElementById('fs-rating')) return;
+        rated = true;
+        sendBtn.disabled = true;
+        input.disabled = true;
+
+        var backdrop = document.createElement('div');
+        backdrop.className = 'rating-backdrop';
+        backdrop.id = 'fs-rating';
+
+        var card = document.createElement('div');
+        card.className = 'rating-card';
+        card.setAttribute('role', 'dialog');
+        card.setAttribute('aria-modal', 'true');
+        card.setAttribute('aria-label', 'Rate this conversation');
+
+        var h = document.createElement('h2');
+        h.textContent = 'How did this conversation go?';
+        card.appendChild(h);
+
+        var opts = document.createElement('div');
+        opts.className = 'opts';
+        var chosen = null;
+        var submitBtn;
+        [
+            { value: 'bad',  emoji: '☹', label: 'Bad' },
+            { value: 'ok',   emoji: '😐', label: 'OK' },
+            { value: 'good', emoji: '☺', label: 'Good' }
+        ].forEach(function (r) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'opt';
+            b.setAttribute('aria-label', r.label);
+            var em = document.createElement('span');
+            em.className = 'emoji';
+            em.textContent = r.emoji;
+            b.appendChild(em);
+            b.appendChild(document.createTextNode(r.label));
+            b.addEventListener('click', function () {
+                chosen = r.value;
+                Array.prototype.slice.call(opts.children).forEach(function (c) { c.classList.remove('selected'); });
+                b.classList.add('selected');
+                if (submitBtn) submitBtn.disabled = false;
+            });
+            opts.appendChild(b);
+        });
+        card.appendChild(opts);
+
+        var comment = document.createElement('textarea');
+        comment.placeholder = 'Add a comment (optional)';
+        comment.maxLength = 2000;
+        card.appendChild(comment);
+
+        var actions = document.createElement('div');
+        actions.className = 'actions';
+
+        var skipBtn = document.createElement('button');
+        skipBtn.type = 'button';
+        skipBtn.className = 'skip';
+        skipBtn.textContent = 'Skip';
+        skipBtn.addEventListener('click', function () {
+            backdrop.remove();
+            resetConversation();
+            if (autoEnded) toParent({ type: 'fs:close' });
+        });
+
+        submitBtn = document.createElement('button');
+        submitBtn.type = 'button';
+        submitBtn.className = 'submit';
+        submitBtn.textContent = 'Submit';
+        submitBtn.disabled = true;
+        submitBtn.addEventListener('click', function () {
+            if (!chosen) return;
+            submitBtn.disabled = true;
+            submitFeedback(chosen, comment.value).then(function () {
+                backdrop.remove();
+                resetConversation();
+                if (autoEnded) toParent({ type: 'fs:close' });
+            });
+        });
+
+        actions.appendChild(skipBtn);
+        actions.appendChild(submitBtn);
+        card.appendChild(actions);
+
+        backdrop.appendChild(card);
+        document.body.appendChild(backdrop);
+        toParent({ type: 'fs:rating' });
+    }
+
+    function submitFeedback(rating, comment) {
+        if (!visitorId) return Promise.resolve();
+        return callJson('/embed/' + encodeURIComponent(slug) + '/feedback', {
+            visitor_id: visitorId,
+            rating: rating,
+            comment: comment || ''
+        }).catch(function () { /* best-effort: still reset on a failed POST */ });
+    }
+
+    // End the chat: drop the session id (keep the stable token so history
+    // persists), clear the thread, and return to the clean home/landing view.
+    function resetConversation() {
+        lsDel(SESSION_KEY);
+        visitorId = null;
+        rated = false;
+        thread.innerHTML = '';
+        input.disabled = false;
+        input.value = '';
+        sendBtn.disabled = false;
+        toParent({ type: 'fs:reset' });
+        showHome();
     }
 
     form.addEventListener('submit', function (e) {
@@ -620,18 +1032,39 @@
         toParent({ type: 'fs:close' });
     });
 
+    // "End chat" -> manual rating trigger (works even if the runtime hasn't
+    // reached a terminal flow state).
+    endBtn.addEventListener('click', function () {
+        showRating();
+    });
+
+    // Home screen: start a fresh chat.
+    newChatBtn.addEventListener('click', startNewChat);
+    // Transcript view: back to home, or start a fresh chat.
+    newChatBtn2.addEventListener('click', startNewChat);
+    backBtn.addEventListener('click', showHome);
+
     // Host JS API bridge: the loader relays window.flowstack.sendMessage()
     // and open() here.
     window.addEventListener('message', function (e) {
         var d = e.data || {};
         if (d.type === 'fs:send' && typeof d.text === 'string') {
-            send(d.text);
+            // A host-driven message starts a chat if we're on the home screen.
+            if (!visitorId) { startNewChat(d.text); } else { send(d.text); }
         } else if (d.type === 'fs:visible') {
-            input.focus();
+            if (!home.hidden) { /* on home, nothing to focus */ } else { input.focus(); }
         }
     });
 
-    launch();
+    // Boot: ensure the stable token exists, then resume an in-progress chat if
+    // there is one, otherwise land on the clean home screen.
+    ensureToken();
+    var existingSession = lsGet(SESSION_KEY);
+    if (/^embed-[A-Za-z0-9]{16,48}$/.test(existingSession || '')) {
+        launch(existingSession);
+    } else {
+        showHome();
+    }
 })();
 </script>
 </body>

@@ -1,22 +1,65 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import TextInput from '@/Components/TextInput.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
 
-defineProps({
+const props = defineProps({
     conversations: { type: Object, required: true },
+    feedback: { type: Array, default: () => [] },
+    filters: { type: Object, default: () => ({}) },
+    channel_options: { type: Array, default: () => [] },
     filter_lead: { type: Object, default: null },
 });
 
-const q = ref('');
-function search() {
-    router.get(route('conversations.search'), { q: q.value }, { preserveState: true });
+// Inline list filters (the old Search page lives here now). The keyword box
+// scans visitor id / lead name+email / message text server-side; the selects
+// narrow by channel / status / rating.
+const q = ref(props.filters.q ?? '');
+const channel = ref(props.filters.channel ?? '');
+const status = ref(props.filters.status ?? '');
+const ratingFilter = ref(props.filters.rating ?? '');
+
+function applyFilters() {
+    router.get(
+        route('conversations.index'),
+        {
+            q: q.value || undefined,
+            channel: channel.value || undefined,
+            status: status.value || undefined,
+            rating: ratingFilter.value || undefined,
+            lead_id: props.filter_lead?.id || undefined,
+        },
+        { preserveState: true, preserveScroll: true, replace: true },
+    );
+}
+
+// Selects apply immediately; the keyword box debounces so typing doesn't fire
+// a request per keystroke.
+let debounce;
+watch(q, () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(applyFilters, 350);
+});
+watch([channel, status, ratingFilter], applyFilters);
+
+function clearFilters() {
+    q.value = '';
+    channel.value = '';
+    status.value = '';
+    ratingFilter.value = '';
 }
 
 const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
+
+// Rating presentation: emoji + colour token, literal classes for Tailwind.
+const ratings = {
+    good: { emoji: '☺', label: 'Good', cls: 'bg-green-100 text-green-700' },
+    ok: { emoji: '😐', label: 'OK', cls: 'bg-amber-100 text-amber-700' },
+    bad: { emoji: '☹', label: 'Bad', cls: 'bg-rose-100 text-rose-700' },
+};
+const rating = (key) => ratings[key] ?? null;
 </script>
 
 <template>
@@ -44,10 +87,74 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
                     </Link>
                 </div>
 
-                <form class="mb-6 flex gap-2" @submit.prevent="search">
-                    <TextInput v-model="q" type="search" class="flex-1" placeholder="Search all conversations…" />
-                    <PrimaryButton>Search</PrimaryButton>
-                </form>
+                <!-- Recent feedback: the last 5 rated conversations for this
+                     agent, a quick read on how chats have been landing. -->
+                <div v-if="feedback.length" class="mb-6 rounded-none border border-border-line bg-bg shadow-sheet">
+                    <div class="flex items-center justify-between border-b border-border-line bg-bg-elev px-4 py-2">
+                        <span class="font-mono text-xs uppercase tracking-wider text-ink-dim">Recent feedback · last 5</span>
+                    </div>
+                    <ul class="divide-y divide-border-line">
+                        <li
+                            v-for="f in feedback"
+                            :key="f.id"
+                            class="flex cursor-pointer items-start gap-3 px-4 py-2.5 transition-colors hover:bg-surface-hi"
+                            @click="router.visit(route('conversations.show', f.id))"
+                        >
+                            <span
+                                class="mt-0.5 shrink-0 rounded-none px-2 py-0.5 font-mono text-xs"
+                                :class="rating(f.rating)?.cls"
+                            >{{ rating(f.rating)?.emoji }} {{ rating(f.rating)?.label }}</span>
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-sm font-medium text-ink">{{ f.name }}</p>
+                                <p v-if="f.comment" class="mt-0.5 text-xs text-ink-dim">{{ f.comment }}</p>
+                            </div>
+                            <span class="shrink-0 font-mono text-xs text-ink-mute">{{ fmt(f.rated_at) }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Inline filter bar: keyword + channel/status/rating selects.
+                     Filters apply live (keyword debounced, selects on change). -->
+                <div class="mb-6 flex flex-wrap items-center gap-2">
+                    <TextInput
+                        v-model="q"
+                        type="search"
+                        class="min-w-[16rem] flex-1"
+                        placeholder="Search visitor, lead or message text…"
+                    />
+                    <select
+                        v-model="channel"
+                        class="rounded-none border-border-line bg-bg font-mono text-sm text-ink focus:border-ink focus:ring-0"
+                    >
+                        <option value="">All channels</option>
+                        <option v-for="opt in channel_options" :key="opt" :value="opt">{{ opt }}</option>
+                    </select>
+                    <select
+                        v-model="status"
+                        class="rounded-none border-border-line bg-bg font-mono text-sm text-ink focus:border-ink focus:ring-0"
+                    >
+                        <option value="">All statuses</option>
+                        <option value="active">active</option>
+                        <option value="ended">ended</option>
+                    </select>
+                    <select
+                        v-model="ratingFilter"
+                        class="rounded-none border-border-line bg-bg font-mono text-sm text-ink focus:border-ink focus:ring-0"
+                    >
+                        <option value="">All ratings</option>
+                        <option value="good">☺ Good</option>
+                        <option value="ok">😐 OK</option>
+                        <option value="bad">☹ Bad</option>
+                    </select>
+                    <button
+                        v-if="q || channel || status || ratingFilter"
+                        type="button"
+                        class="font-mono text-xs text-ink-dim underline hover:text-ink"
+                        @click="clearFilters"
+                    >
+                        Clear ✕
+                    </button>
+                </div>
 
                 <div class="overflow-hidden rounded-none border border-border-line bg-bg shadow-sheet">
                     <table class="min-w-full divide-y divide-border-line text-sm">
@@ -57,6 +164,7 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
                                 <th class="px-4 py-3">Channel</th>
                                 <th class="px-4 py-3">Messages</th>
                                 <th class="px-4 py-3">Status</th>
+                                <th class="px-4 py-3">Rating</th>
                                 <th class="px-4 py-3">Last activity</th>
                             </tr>
                         </thead>
@@ -78,10 +186,18 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
                                         :class="c.status === 'ended' ? 'bg-surface-hi text-ink-dim' : 'bg-green-100 text-green-700'"
                                     >{{ c.status }}</span>
                                 </td>
+                                <td class="px-4 py-3">
+                                    <span
+                                        v-if="rating(c.rating)"
+                                        class="rounded-none px-2 py-0.5 font-mono text-xs"
+                                        :class="rating(c.rating).cls"
+                                    >{{ rating(c.rating).emoji }} {{ rating(c.rating).label }}</span>
+                                    <span v-else class="font-mono text-xs text-ink-mute">—</span>
+                                </td>
                                 <td class="px-4 py-3 font-mono text-ink-dim">{{ fmt(c.last_message_at) }}</td>
                             </tr>
                             <tr v-if="!conversations.data.length">
-                                <td colspan="5" class="px-4 py-14 text-center">
+                                <td colspan="6" class="px-4 py-14 text-center">
                                     <div class="flex flex-col items-center gap-3">
                                         <svg class="h-10 w-10 text-ink-mute" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.068.157 2.148.279 3.238.364.466.037.893.281 1.153.671L12 21l2.652-3.978c.26-.39.687-.634 1.153-.67 1.09-.086 2.17-.208 3.238-.365 1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />

@@ -29,7 +29,9 @@ class CaptureLeadTool implements Tool
     {
         return 'Save the visitor\'s contact details as a sales lead. Call this once you have AT '
             .'LEAST a name plus an email or phone number. Include everything you learned: '
-            .'company, what they need (notes), and your 0-100 qualification score.';
+            .'company, what they need (notes), and score the lead on three dimensions — '
+            .'fit, intent, and urgency — using the rubric in each field. The three add up '
+            .'to a 0-100 qualification score automatically.';
     }
 
     public function parametersSchema(): array
@@ -42,7 +44,36 @@ class CaptureLeadTool implements Tool
                 'phone' => ['type' => 'string', 'description' => 'Phone number, if provided'],
                 'company' => ['type' => 'string', 'description' => 'Company / organization'],
                 'notes' => ['type' => 'string', 'description' => 'What they need, in one or two sentences'],
-                'score' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 100, 'description' => 'Qualification score: fit + intent + urgency'],
+                'fit' => [
+                    'type' => 'integer',
+                    'minimum' => 0,
+                    'maximum' => 40,
+                    'description' => 'FIT (0-40): how well they match the ideal customer. '
+                        .'0-10 wrong audience / just browsing · 11-25 plausible fit, some signals · '
+                        .'26-40 clearly in the target market (right role, company, use case).',
+                ],
+                'intent' => [
+                    'type' => 'integer',
+                    'minimum' => 0,
+                    'maximum' => 35,
+                    'description' => 'INTENT (0-35): how concrete their buying interest is. '
+                        .'0-8 vague curiosity · 9-22 evaluating, asked real questions · '
+                        .'23-35 explicit intent (pricing, demo, "how do I start").',
+                ],
+                'urgency' => [
+                    'type' => 'integer',
+                    'minimum' => 0,
+                    'maximum' => 25,
+                    'description' => 'URGENCY (0-25): how soon they need a solution. '
+                        .'0-5 no timeline · 6-15 within a quarter / actively comparing · '
+                        .'16-25 immediate need or stated deadline.',
+                ],
+                'score' => [
+                    'type' => 'integer',
+                    'minimum' => 0,
+                    'maximum' => 100,
+                    'description' => 'Optional override: a direct 0-100 score. Prefer fit+intent+urgency instead.',
+                ],
             ],
             'required' => ['name'],
         ];
@@ -61,14 +92,15 @@ class CaptureLeadTool implements Tool
             'company' => trim((string) ($args['company'] ?? '')) ?: null,
         ]);
 
+        [$score, $breakdown] = $this->resolveScore($args);
+
         $attributes = [
             'name' => trim((string) ($args['name'] ?? '')) ?: '(no name)',
             'phone' => trim((string) ($args['phone'] ?? '')) ?: null,
             'company' => trim((string) ($args['company'] ?? '')) ?: null,
             'notes' => trim((string) ($args['notes'] ?? '')) ?: null,
-            // leads.score is NOT NULL — default to a neutral 50 when the
-            // model didn't score (it usually does; this is the safety net).
-            'score' => isset($args['score']) ? max(0, min(100, (int) $args['score'])) : 50,
+            'score' => $score,
+            'score_breakdown' => $breakdown,
             'status' => LeadStatus::New->value,
             'source' => 'chat',
             'captured' => $capturedFields,
@@ -99,5 +131,40 @@ class CaptureLeadTool implements Tool
             'lead_id' => $lead->id,
             'message' => 'Lead saved. The team will follow up shortly.',
         ];
+    }
+
+    /**
+     * Resolve the final 0-100 score plus its explainable breakdown.
+     *
+     * Preferred path: the model returns fit (0-40), intent (0-35) and
+     * urgency (0-25); we clamp each to its band and SUM them server-side
+     * so the score is always the sum of its parts (no model arithmetic to
+     * trust). When no sub-scores are supplied we fall back to the legacy
+     * flat `score` arg, and finally to a neutral 50 (leads.score is NOT
+     * NULL). The breakdown is only stored when sub-scores were given.
+     *
+     * @param  array<string, mixed>  $args
+     * @return array{0: int, 1: array<string, int>|null}
+     */
+    private function resolveScore(array $args): array
+    {
+        $hasBreakdown = isset($args['fit']) || isset($args['intent']) || isset($args['urgency']);
+
+        if ($hasBreakdown) {
+            $fit = max(0, min(40, (int) ($args['fit'] ?? 0)));
+            $intent = max(0, min(35, (int) ($args['intent'] ?? 0)));
+            $urgency = max(0, min(25, (int) ($args['urgency'] ?? 0)));
+
+            return [
+                $fit + $intent + $urgency,
+                ['fit' => $fit, 'intent' => $intent, 'urgency' => $urgency],
+            ];
+        }
+
+        if (isset($args['score'])) {
+            return [max(0, min(100, (int) $args['score'])), null];
+        }
+
+        return [50, null];
     }
 }

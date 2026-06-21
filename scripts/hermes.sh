@@ -119,6 +119,17 @@ else
   record WARN migrations "migrate:status failed (DB may be unavailable)"
 fi
 
+# ── 5a. Architecture graph integrity ──────────────────────────────────────────
+# The /architecture page auto-discovers every app/ class into a dependency graph.
+# This guards against drift: node count must match the class files on disk and no
+# node may be left orphaned (e.g. a controller silently falling off the map).
+log "=== ARCH GRAPH ==="
+if php artisan arch:graph-check > "$LOG_DIR/arch-graph.log" 2>&1; then
+  record PASS arch-graph "$(tail -1 "$LOG_DIR/arch-graph.log")"
+else
+  record FAIL arch-graph "graph drifted — see data/logs/arch-graph.log"
+fi
+
 # ── 5b. Composer security audit (fast, no network needed) ─────────────────────
 log "=== COMPOSER AUDIT ==="
 if composer audit --no-dev --format=plain > "$LOG_DIR/composer-audit.log" 2>&1; then

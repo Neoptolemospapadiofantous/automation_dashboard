@@ -79,6 +79,18 @@ const scoreColor = computed(() => {
     if (s >= 40) return 'text-amber-600';
     return 'text-ink';
 });
+
+// Explainable score breakdown (fit/intent/urgency), each with its own
+// max. Only present when the agent scored across all three dimensions.
+const scoreBreakdown = computed(() => {
+    const b = props.lead.score_breakdown;
+    if (!b) return null;
+    return [
+        { key: 'fit', label: 'Fit', value: b.fit ?? 0, max: 40 },
+        { key: 'intent', label: 'Intent', value: b.intent ?? 0, max: 35 },
+        { key: 'urgency', label: 'Urgency', value: b.urgency ?? 0, max: 25 },
+    ];
+});
 </script>
 
 <template>
@@ -126,6 +138,23 @@ const scoreColor = computed(() => {
                         <div class="mt-2 flex items-baseline gap-2">
                             <span class="font-mono text-2xl font-semibold" :class="scoreColor">{{ lead.score ?? '—' }}</span>
                             <span class="text-xs text-ink-mute">/ 100</span>
+                        </div>
+                        <div v-if="scoreBreakdown" class="mt-3 space-y-1.5">
+                            <div
+                                v-for="d in scoreBreakdown"
+                                :key="d.key"
+                                class="flex items-center gap-2 text-[11px]"
+                                :title="`${d.label}: ${d.value} of ${d.max}`"
+                            >
+                                <span class="w-12 flex-shrink-0 text-ink-dim">{{ d.label }}</span>
+                                <span class="h-1.5 flex-1 rounded-none bg-surface-hi">
+                                    <span
+                                        class="block h-1.5 rounded-none bg-ink"
+                                        :style="{ width: `${(d.value / d.max) * 100}%` }"
+                                    />
+                                </span>
+                                <span class="w-9 text-right font-mono tabular-nums text-ink-dim">{{ d.value }}/{{ d.max }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
