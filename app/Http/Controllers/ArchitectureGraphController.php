@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Support\ArchitectureGraph;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -12,12 +14,17 @@ use Inertia\Response;
  * dispatch edges, colored by layer). The flat Mermaid source still lives in
  * docs/architecture/full-application-graph.md and is parsed out for an optional
  * 2D view. Registered only in the local environment (see routes/web.php), so it
- * never reaches production or the route-smoke test.
+ * never reaches production or the route-smoke test. Restricted to the team owner
+ * (the highest role) — it's an engineering/ops surface, not for members.
  */
 class ArchitectureGraphController extends Controller
 {
-    public function __invoke(): Response
+    use AuthorizesByTeamRole;
+
+    public function __invoke(Request $request): Response
     {
+        $this->requireOwner($request, 'view the Hermes operator pages');
+
         $file = base_path('docs/architecture/full-application-graph.md');
         $markdown = is_file($file) ? (string) file_get_contents($file) : '';
 
