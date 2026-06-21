@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Conversation;
 use App\Models\Lead;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -13,6 +14,9 @@ use Inertia\Response;
 
 class ConversationController extends Controller
 {
+    /** Messages loaded per transcript page (newest window first, then lazy "load earlier"). */
+    private const TRANSCRIPT_PAGE = 50;
+
     /**
      * List the current team's conversations, most recent first.
      */
@@ -152,11 +156,59 @@ class ConversationController extends Controller
         );
 
         $conversation->load('lead:id,name,email');
-        $messages = $conversation->messages()->orderBy('sequence')->get();
+
+        // Load only the most recent window; older turns lazy-load via messages().
+        // Pulled newest-first then reversed so the page renders oldest→newest.
+        $messages = $conversation->messages()
+            ->orderByDesc('sequence')
+            ->limit(self::TRANSCRIPT_PAGE)
+            ->get()
+            ->reverse()
+            ->values();
+
+        $oldestLoaded = $messages->first();
+        $hasMore = $oldestLoaded !== null
+            && $conversation->messages()
+                ->where('sequence', '<', $oldestLoaded->getAttribute('sequence'))
+                ->exists();
 
         return Inertia::render('Conversations/Show', [
             'conversation' => $conversation,
             'messages' => $messages,
+            'messagesHasMore' => $hasMore,
+        ]);
+    }
+
+    /**
+     * Older transcript turns (lazy "load earlier"). Returns up to one page of
+     * messages strictly before the given sequence cursor, oldest→newest.
+     */
+    public function messages(Request $request, Conversation $conversation): JsonResponse
+    {
+        $team = $request->user()->currentTeam;
+        abort_unless($conversation->getAttribute('team_id') === $team->getAttribute('id'), 403);
+        abort_unless(
+            $conversation->getAttribute('agent_id') === $team->getAttribute('current_agent_id'),
+            404,
+        );
+
+        $before = $request->integer('before');
+
+        $batch = $conversation->messages()
+            ->when($before > 0, fn ($q) => $q->where('sequence', '<', $before))
+            ->orderByDesc('sequence')
+            ->limit(self::TRANSCRIPT_PAGE)
+            ->get();
+
+        $oldest = $batch->last(); // newest-first, so last() is the oldest in the batch
+        $hasMore = $oldest !== null
+            && $conversation->messages()
+                ->where('sequence', '<', $oldest->getAttribute('sequence'))
+                ->exists();
+
+        return response()->json([
+            'messages' => $batch->reverse()->values(),
+            'has_more' => $hasMore,
         ]);
     }
 

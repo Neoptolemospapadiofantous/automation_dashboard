@@ -11,6 +11,7 @@ use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Lead;
 use App\Models\Team;
 use App\Services\LeadDelegator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,9 @@ use Inertia\Response;
 class LeadController extends Controller
 {
     use AuthorizesByTeamRole;
+
+    /** Cards loaded per kanban column before the "Load more" button appears. */
+    private const BOARD_PAGE = 25;
 
     public function __construct(protected LeadDelegator $delegator) {}
 
@@ -36,14 +40,96 @@ class LeadController extends Controller
         }
         $filters = $this->parseFilters($request);
 
-        // Phase G: scope by the team's current agent so the picker swaps
-        // data. forAgent(null) returns no rows — a team mid-onboarding
-        // gets bounced to the wizard before reaching this page anyway.
-        // withCount('conversations') powers the conversation-count chip on
-        // LeadCard so users can jump from a lead to its transcripts in one
-        // click. Single subquery per row — cheap with the conversations
-        // table's lead_id index.
-        $leads = Lead::query()
+        // Each column loads only its first page; the rest lazy-load per column
+        // via board(). Counts/has-more are per status so the board can show
+        // "loaded / total" and gate the "Load more" button.
+        $board = $this->boardQuery($request, $team, $filters);
+
+        $leads = collect();
+        $counts = [];
+        $hasMore = [];
+        foreach (LeadStatus::board() as $status) {
+            $value = $status['value'];
+            $total = (clone $board)->where('status', $value)->count();
+            $rows = (clone $board)->where('status', $value)
+                ->latest()
+                ->limit(self::BOARD_PAGE)
+                ->get();
+            $leads = $leads->concat($rows);
+            $counts[$value] = $total;
+            $hasMore[$value] = $total > $rows->count();
+        }
+
+        // Distinct lead sources for this team (filter dropdown). Cheap
+        // groupBy — same index as the source filter applies.
+        $sources = Lead::query()
+            ->where('team_id', $team->id)
+            ->forAgent($team->current_agent_id)
+            ->whereNotNull('source')
+            ->distinct()
+            ->orderBy('source')
+            ->pluck('source')
+            ->all();
+
+        return Inertia::render('Leads/Index', [
+            'leads' => $leads->values(),
+            'leadCounts' => $counts,
+            'leadHasMore' => $hasMore,
+            'statuses' => LeadStatus::board(),
+            'members' => $team->allUsers()->map->only('id', 'name')->values(),
+            'sources' => $sources,
+            'filters' => $filters,
+        ]);
+    }
+
+    /**
+     * Next page of cards for one kanban column (lazy "Load more"). Offset-based
+     * over the same filtered, created-at-desc query the board uses; the client
+     * merges results into a Map keyed by id, so any overlap from concurrent
+     * inserts dedupes harmlessly.
+     */
+    public function board(Request $request): JsonResponse
+    {
+        $team = $request->user()->currentTeam;
+        if (! $team instanceof Team) {
+            abort(403, 'Sign in to a team first.');
+        }
+
+        $status = (string) $request->query('status', '');
+        abort_unless(
+            in_array($status, array_map(fn ($s) => $s['value'], LeadStatus::board()), true),
+            422,
+            'Unknown lead status.',
+        );
+
+        $offset = max(0, $request->integer('offset'));
+        $filters = $this->parseFilters($request);
+
+        $column = $this->boardQuery($request, $team, $filters)->where('status', $status);
+        $total = (clone $column)->count();
+        $rows = $column->latest()->offset($offset)->limit(self::BOARD_PAGE)->get();
+
+        return response()->json([
+            'leads' => $rows,
+            'has_more' => $total > $offset + $rows->count(),
+        ]);
+    }
+
+    /**
+     * The agent-scoped, filtered base query shared by the board view and its
+     * per-column "Load more" endpoint, so both apply identical scoping.
+     *
+     * Phase G: scope by the team's current agent so the picker swaps data.
+     * forAgent(null) returns no rows. withCount('conversations') powers the
+     * conversation-count chip on LeadCard — single subquery per row, cheap
+     * with the conversations table's lead_id index.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return Builder<Lead>
+     */
+    protected function boardQuery(Request $request, Team $team, array $filters): Builder
+    {
+        return Lead::query()
             ->where('team_id', $team->id)
             ->forAgent($team->current_agent_id)
             ->when($filters['mine'], fn ($q) => $q->where('assigned_to', $request->user()->id))
@@ -66,28 +152,7 @@ class LeadController extends Controller
                 });
             })
             ->with('assignee:id,name')
-            ->withCount('conversations')
-            ->latest()
-            ->get();
-
-        // Distinct lead sources for this team (filter dropdown). Cheap
-        // groupBy — same index as the source filter applies.
-        $sources = Lead::query()
-            ->where('team_id', $team->id)
-            ->forAgent($team->current_agent_id)
-            ->whereNotNull('source')
-            ->distinct()
-            ->orderBy('source')
-            ->pluck('source')
-            ->all();
-
-        return Inertia::render('Leads/Index', [
-            'leads' => $leads,
-            'statuses' => LeadStatus::board(),
-            'members' => $team->allUsers()->map->only('id', 'name')->values(),
-            'sources' => $sources,
-            'filters' => $filters,
-        ]);
+            ->withCount('conversations');
     }
 
     /**
