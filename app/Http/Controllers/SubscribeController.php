@@ -7,10 +7,10 @@ use App\Billing\Plan;
 use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Team;
 use App\Services\Billing\StripeClient;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 /**
  * Handles the subscription Checkout flow:
@@ -31,7 +31,7 @@ class SubscribeController extends Controller
     /**
      * Create a Checkout session for the chosen plan + redirect the browser.
      */
-    public function start(Request $request, string $planKey): RedirectResponse
+    public function start(Request $request, string $planKey): HttpResponse
     {
         $this->requireOwner($request, 'subscribe to a plan');
 
@@ -73,7 +73,11 @@ class SubscribeController extends Controller
             ],
         );
 
-        return redirect()->away($session->url);
+        // Inertia::location returns a 409 + X-Inertia-Location for XHR visits
+        // (so the client does a full-page nav to Stripe), or a 302 otherwise.
+        // A plain redirect()->away() would be followed by Inertia's XHR and
+        // blocked by CORS at checkout.stripe.com.
+        return Inertia::location($session->url);
     }
 
     /**

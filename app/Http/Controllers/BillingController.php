@@ -8,11 +8,11 @@ use App\Billing\TopUpPack;
 use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Team;
 use App\Services\Billing\StripeClient;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 /**
  * Billing UI + credit top-up flow.
@@ -100,7 +100,7 @@ class BillingController extends Controller
      * StripeWebhookController when checkout.session.completed fires —
      * this controller just orchestrates the redirect to Stripe.
      */
-    public function topup(Request $request, StripeClient $stripe): RedirectResponse
+    public function topup(Request $request, StripeClient $stripe): HttpResponse
     {
         $this->requireOwner($request, 'buy credit top-ups');
 
@@ -147,8 +147,9 @@ class BillingController extends Controller
             metadata: $metadata,
         );
 
-        // Inertia POST → away-redirect to Stripe. The frontend follows.
-        return redirect()->away($session->url);
+        // Inertia::location → full-page nav to Stripe (a plain away-redirect
+        // would be followed by Inertia's XHR and blocked by CORS at Stripe).
+        return Inertia::location($session->url);
     }
 
     /**
@@ -175,7 +176,7 @@ class BillingController extends Controller
      * Cancellations come back through customer.subscription.deleted in
      * StripeWebhookController which downgrades the team to Free.
      */
-    public function portal(Request $request, StripeClient $stripe): RedirectResponse
+    public function portal(Request $request, StripeClient $stripe): HttpResponse
     {
         $this->requireOwner($request, 'manage the subscription');
 
@@ -206,6 +207,6 @@ class BillingController extends Controller
             ]);
         }
 
-        return redirect()->away($session->url);
+        return Inertia::location($session->url);
     }
 }
