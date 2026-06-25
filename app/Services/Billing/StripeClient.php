@@ -95,6 +95,9 @@ class StripeClient
                 'metadata' => array_merge(['team_id' => (string) $team->id], $metadata),
             ],
             'allow_promotion_codes' => true,
+            // Skip card collection when a 100%-off promo brings the total to 0;
+            // paid subscriptions (total > 0) still collect a card as normal.
+            'payment_method_collection' => 'if_required',
         ]);
     }
 
