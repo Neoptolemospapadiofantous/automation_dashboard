@@ -1,0 +1,231 @@
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Http;
+
+/**
+ * Provider liveness tripwire. The Stripe credit ledger (revenue) and the
+ * provider API balances (cost) are SEPARATE ledgers — a funded customer
+ * can still hit a dead provider. This pings each provider with a 1-token
+ * request and flags empty/throttled balances BEFORE a customer does.
+ *
+ * Detection (live state — money runs out without warning):
+ *   - Anthropic  POST /v1/messages         400 "credit balance too low" = empty
+ *   - OpenAI     POST /v1/embeddings       429 insufficient_quota       = empty
+ *                (also kills RAG: every agent's KB retrieval needs embeddings)
+ *   - Gemini     POST :generateContent     429 free_tier RESOURCE_EXHAUSTED
+ *                = free-tier/throttled (demo-only, not production-viable)
+ *
+ * Writes data/agents/provider-health/findings.json in the same schema the
+ * system-check agent uses, so the hermes-slack project delivers FAIL/WARN
+ * findings without any change there. No Slack/SES is touched in this repo.
+ */
+class ProviderHealthCheck extends Command
+{
+    protected $signature = 'providers:health-check';
+
+    protected $description = 'Ping Anthropic/OpenAI/Gemini liveness and flag empty/throttled providers.';
+
+    public function handle(): int
+    {
+        $checks = [
+            $this->checkAnthropic(),
+            $this->checkOpenAi(),
+            $this->checkGemini(),
+        ];
+
+        $pass = $warn = $fail = 0;
+        foreach ($checks as $c) {
+            match ($c['status']) {
+                'PASS' => $pass++,
+                'WARN' => $warn++,
+                default => $fail++,
+            };
+        }
+
+        $overall = $fail > 0 ? 'FAIL' : ($warn > 0 ? 'WARN' : 'PASS');
+        $ts = now()->utc()->toIso8601ZuluString();
+
+        $this->writeFindings($overall, $pass, $warn, $fail, $checks, $ts);
+
+        foreach ($checks as $c) {
+            $line = sprintf('%s — %s: %s', $c['status'], $c['check'], $c['detail']);
+            match ($c['status']) {
+                'PASS' => $this->components->info($line),
+                'WARN' => $this->components->warn($line),
+                default => $this->components->error($line),
+            };
+        }
+
+        return $fail > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * @return array{check: string, status: string, detail: string}
+     */
+    protected function checkAnthropic(): array
+    {
+        $key = (string) config('runtime.providers.anthropic.api_key');
+        $base = rtrim((string) config('runtime.providers.anthropic.base_url'), '/');
+        $model = (string) config('runtime.providers.anthropic.model_default');
+
+        if ($key === '') {
+            return $this->finding('provider-anthropic', 'FAIL', 'ANTHROPIC_API_KEY is not set');
+        }
+
+        try {
+            $res = Http::timeout(15)
+                ->withHeaders([
+                    'x-api-key' => $key,
+                    'anthropic-version' => '2023-06-01',
+                ])
+                ->post($base.'/v1/messages', [
+                    'model' => $model,
+                    'max_tokens' => 1,
+                    'messages' => [['role' => 'user', 'content' => 'ping']],
+                ]);
+        } catch (\Throwable $e) {
+            return $this->finding('provider-anthropic', 'WARN', 'unreachable: '.$e->getMessage());
+        }
+
+        $body = strtolower($res->body());
+        if ($res->status() === 400 && str_contains($body, 'credit balance is too low')) {
+            return $this->finding('provider-anthropic', 'FAIL', 'credit balance too low — default (Haiku) chat is DEAD; fund Anthropic');
+        }
+        if ($res->status() === 401 || $res->status() === 403) {
+            return $this->finding('provider-anthropic', 'FAIL', 'auth rejected (HTTP '.$res->status().') — key invalid/revoked');
+        }
+        if ($res->successful()) {
+            return $this->finding('provider-anthropic', 'PASS', 'funded — '.$model.' answered a 1-token ping');
+        }
+
+        return $this->finding('provider-anthropic', 'WARN', 'unexpected HTTP '.$res->status().': '.substr($res->body(), 0, 160));
+    }
+
+    /**
+     * @return array{check: string, status: string, detail: string}
+     */
+    protected function checkOpenAi(): array
+    {
+        $key = (string) config('runtime.providers.openai.api_key');
+        $base = rtrim((string) config('runtime.providers.openai.base_url'), '/');
+        $model = (string) config('runtime.embeddings.model');
+
+        if ($key === '') {
+            return $this->finding('provider-openai', 'FAIL', 'OPENAI_API_KEY is not set — embeddings/RAG cannot run');
+        }
+
+        try {
+            $res = Http::timeout(15)
+                ->withToken($key)
+                ->post($base.'/v1/embeddings', [
+                    'model' => $model,
+                    'input' => 'ping',
+                ]);
+        } catch (\Throwable $e) {
+            return $this->finding('provider-openai', 'WARN', 'unreachable: '.$e->getMessage());
+        }
+
+        $body = strtolower($res->body());
+        if ($res->status() === 429 && str_contains($body, 'insufficient_quota')) {
+            return $this->finding('provider-openai', 'FAIL', 'insufficient_quota — embeddings/RAG DEAD for every agent; OpenAI funding is non-negotiable');
+        }
+        if ($res->status() === 401 || $res->status() === 403) {
+            return $this->finding('provider-openai', 'FAIL', 'auth rejected (HTTP '.$res->status().') — key invalid/revoked');
+        }
+        if ($res->successful()) {
+            return $this->finding('provider-openai', 'PASS', 'funded — '.$model.' embeddings reachable');
+        }
+        if ($res->status() === 429) {
+            return $this->finding('provider-openai', 'WARN', 'rate-limited (429, not insufficient_quota) — transient');
+        }
+
+        return $this->finding('provider-openai', 'WARN', 'unexpected HTTP '.$res->status().': '.substr($res->body(), 0, 160));
+    }
+
+    /**
+     * @return array{check: string, status: string, detail: string}
+     */
+    protected function checkGemini(): array
+    {
+        $key = (string) config('runtime.providers.google.api_key');
+        $base = rtrim((string) config('runtime.providers.google.base_url'), '/');
+        $model = (string) config('runtime.providers.google.model_default');
+
+        if ($key === '') {
+            return $this->finding('provider-gemini', 'WARN', 'GEMINI_API_KEY is not set');
+        }
+
+        try {
+            $res = Http::timeout(15)
+                ->post($base.'/v1beta/models/'.$model.':generateContent?key='.urlencode($key), [
+                    'contents' => [['parts' => [['text' => 'ping']]]],
+                    'generationConfig' => ['maxOutputTokens' => 1],
+                ]);
+        } catch (\Throwable $e) {
+            return $this->finding('provider-gemini', 'WARN', 'unreachable: '.$e->getMessage());
+        }
+
+        $body = strtolower($res->body());
+        if ($res->status() === 429 && str_contains($body, 'free_tier')) {
+            return $this->finding('provider-gemini', 'WARN', 'free-tier quota (RESOURCE_EXHAUSTED) — demo-only, not production-viable; move to a paid Cloud-billing project');
+        }
+        if ($res->status() === 429) {
+            return $this->finding('provider-gemini', 'WARN', 'rate-limited (429) — throttled');
+        }
+        if ($res->status() === 401 || $res->status() === 403) {
+            return $this->finding('provider-gemini', 'FAIL', 'auth rejected (HTTP '.$res->status().') — key invalid/revoked');
+        }
+        if ($res->successful()) {
+            // A 200 does NOT prove a paid tier — free tier also answers until
+            // it throttles. Treat as PASS but say so, so we don't over-trust it.
+            return $this->finding('provider-gemini', 'PASS', 'reachable — '.$model.' answered (tier unverified; 429 free_tier under load = still free)');
+        }
+
+        return $this->finding('provider-gemini', 'WARN', 'unexpected HTTP '.$res->status().': '.substr($res->body(), 0, 160));
+    }
+
+    /**
+     * @return array{check: string, status: string, detail: string}
+     */
+    protected function finding(string $check, string $status, string $detail): array
+    {
+        return ['check' => $check, 'status' => $status, 'detail' => $detail];
+    }
+
+    /**
+     * @param  array<int, array{check: string, status: string, detail: string}>  $checks
+     */
+    protected function writeFindings(string $overall, int $pass, int $warn, int $fail, array $checks, string $ts): void
+    {
+        $dir = base_path('data/agents/provider-health');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        $findings = [
+            'ts' => $ts,
+            'overall' => $overall,
+            'pass' => $pass,
+            'warn' => $warn,
+            'fail' => $fail,
+            'checks' => $checks,
+        ];
+        file_put_contents(
+            $dir.'/findings.json',
+            json_encode($findings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n"
+        );
+
+        file_put_contents(
+            $dir.'/last_run.json',
+            json_encode([
+                'agent' => 'provider-health',
+                'state' => 'idle',
+                'ts' => $ts,
+                'summary' => $overall,
+            ], JSON_PRETTY_PRINT)."\n"
+        );
+    }
+}

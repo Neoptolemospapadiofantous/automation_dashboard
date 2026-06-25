@@ -74,6 +74,12 @@ system_warn=$(jq_field "data/agents/system-check/findings.json" "warn")
 system_fail=$(jq_field "data/agents/system-check/findings.json" "fail")
 echo "| System Check | $system_overall | $(jq_age data/agents/system-check/findings.json) | ${system_pass} PASS / ${system_warn} WARN / ${system_fail} FAIL |"
 
+provider_overall=$(jq_field "data/agents/provider-health/findings.json" "overall")
+provider_pass=$(jq_field "data/agents/provider-health/findings.json" "pass")
+provider_warn=$(jq_field "data/agents/provider-health/findings.json" "warn")
+provider_fail=$(jq_field "data/agents/provider-health/findings.json" "fail")
+echo "| Provider Health | $provider_overall | $(jq_age data/agents/provider-health/findings.json) | ${provider_pass} PASS / ${provider_warn} WARN / ${provider_fail} FAIL |"
+
 # ── Last lifecycle ────────────────────────────────────────────────────────────
 echo ""
 echo "## Last lifecycle"
