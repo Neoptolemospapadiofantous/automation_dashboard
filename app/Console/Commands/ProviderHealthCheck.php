@@ -67,9 +67,9 @@ class ProviderHealthCheck extends Command
      */
     protected function checkAnthropic(): array
     {
-        $key = (string) config('runtime.providers.anthropic.api_key');
-        $base = rtrim((string) config('runtime.providers.anthropic.base_url'), '/');
-        $model = (string) config('runtime.providers.anthropic.model_default');
+        $key = (string) config('runtime.llm.anthropic.api_key');
+        $base = rtrim((string) config('runtime.llm.anthropic.base_url'), '/');
+        $model = (string) config('runtime.llm.anthropic.model_default');
 
         if ($key === '') {
             return $this->finding('provider-anthropic', 'FAIL', 'ANTHROPIC_API_KEY is not set');
@@ -109,8 +109,8 @@ class ProviderHealthCheck extends Command
      */
     protected function checkOpenAi(): array
     {
-        $key = (string) config('runtime.providers.openai.api_key');
-        $base = rtrim((string) config('runtime.providers.openai.base_url'), '/');
+        $key = (string) config('runtime.embeddings.openai_api_key');
+        $base = rtrim((string) config('runtime.embeddings.openai_base_url'), '/');
         $model = (string) config('runtime.embeddings.model');
 
         if ($key === '') {
@@ -150,9 +150,9 @@ class ProviderHealthCheck extends Command
      */
     protected function checkGemini(): array
     {
-        $key = (string) config('runtime.providers.google.api_key');
-        $base = rtrim((string) config('runtime.providers.google.base_url'), '/');
-        $model = (string) config('runtime.providers.google.model_default');
+        $key = (string) config('runtime.llm.google.api_key');
+        $base = rtrim((string) config('runtime.llm.google.base_url'), '/');
+        $model = (string) config('runtime.llm.google.model_default');
 
         if ($key === '') {
             return $this->finding('provider-gemini', 'WARN', 'GEMINI_API_KEY is not set');
