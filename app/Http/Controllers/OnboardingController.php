@@ -94,8 +94,8 @@ class OnboardingController extends Controller
         // and seeding an empty published config would falsely tick the
         // dashboard checklist's 'Publish behavior' step. Re-clicks never
         // overwrite an existing agent's config.
-        $tier = (string) ($data['model_tier'] ?? AgentConfigVersion::DEFAULT_TIER);
-        if ($existing === null && $tier !== AgentConfigVersion::DEFAULT_TIER) {
+        $tier = (string) ($data['model_tier'] ?? AgentConfigVersion::defaultTier());
+        if ($existing === null && $tier !== AgentConfigVersion::defaultTier()) {
             AgentConfigVersion::create([
                 'agent_id' => $agent->id,
                 'version' => 1,

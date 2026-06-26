@@ -71,21 +71,37 @@ class AgentConfigVersion extends Model
         'enhanced' => 'sonnet',
     ];
 
+    /**
+     * Hard floor: the cheapest known tier, guaranteed to exist. Used as the
+     * ultimate fallback when even the configured default_tier is invalid.
+     */
     public const DEFAULT_TIER = 'haiku';
 
     /**
+     * The out-of-box tier for new/unconfigured agents. Env-driven
+     * (RUNTIME_DEFAULT_TIER) so prod can point it at whichever provider is
+     * actually funded; falls back to the hard floor if misconfigured.
+     */
+    public static function defaultTier(): string
+    {
+        $tier = (string) config('runtime.default_tier', self::DEFAULT_TIER);
+        $tier = self::LEGACY_TIER_ALIASES[$tier] ?? $tier;
+
+        return array_key_exists($tier, (array) config('runtime.tiers')) ? $tier : self::DEFAULT_TIER;
+    }
+
+    /**
      * The agent's live quality tier key. Legacy keys alias to their
-     * lineup equivalent; unknown/absent values degrade to the cheapest
-     * tier — bad data lands on the cheap model at the cheap price,
-     * never the reverse.
+     * lineup equivalent; unknown/absent values degrade to the configured
+     * default tier — bad data lands on the funded default, never a dead one.
      */
     public static function publishedTier(int $agentId): string
     {
         $config = static::publishedConfig($agentId);
-        $tier = (string) ($config['model_tier'] ?? self::DEFAULT_TIER);
+        $tier = (string) ($config['model_tier'] ?? self::defaultTier());
         $tier = self::LEGACY_TIER_ALIASES[$tier] ?? $tier;
 
-        return array_key_exists($tier, (array) config('runtime.tiers')) ? $tier : self::DEFAULT_TIER;
+        return array_key_exists($tier, (array) config('runtime.tiers')) ? $tier : self::defaultTier();
     }
 
     /**

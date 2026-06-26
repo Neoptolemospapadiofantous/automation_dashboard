@@ -91,6 +91,13 @@ return [
     | docs/operations/pricing-audit.md): all five model IDs valid, all
     | five rate pairs exact. Re-verify when bumping any model env.
     */
+    // Tier every new/unconfigured agent falls back to. Point this at a
+    // FUNDED provider's tier (e.g. 'gemini') so a fresh signup's agent
+    // answers out of the box instead of landing on a dead default. Must be
+    // a key in 'tiers' below; invalid values degrade to the hard floor
+    // (AgentConfigVersion::DEFAULT_TIER = 'haiku').
+    'default_tier' => env('RUNTIME_DEFAULT_TIER', 'haiku'),
+
     'tiers' => array_merge([
         'haiku' => [
             'provider' => 'anthropic',

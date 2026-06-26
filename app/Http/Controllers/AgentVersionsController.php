@@ -239,7 +239,7 @@ class AgentVersionsController extends Controller
         return [
             'instructions' => trim((string) ($data['instructions'] ?? '')),
             'greeting' => trim((string) ($data['greeting'] ?? '')),
-            'model_tier' => (string) ($data['model_tier'] ?? AgentConfigVersion::DEFAULT_TIER),
+            'model_tier' => (string) ($data['model_tier'] ?? AgentConfigVersion::defaultTier()),
         ];
     }
 
