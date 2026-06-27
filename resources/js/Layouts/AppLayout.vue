@@ -180,6 +180,12 @@ const handleMobileNavClick = (event) => {
                                 </template>
                                 Agents
                             </SidebarLink>
+                            <SidebarLink :href="route('agents.actions.index')" active-pattern="agents.actions.*">
+                                <template #icon>
+                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>
+                                </template>
+                                Actions
+                            </SidebarLink>
                             <SidebarLink :href="route('agents.versions.index')" active-pattern="agents.versions.*">
                                 <template #icon>
                                     <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
@@ -479,6 +485,7 @@ const handleMobileNavClick = (event) => {
                             <div class="px-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Workspace</div>
                             <div class="space-y-0.5">
                                 <SidebarLink :href="route('agents.index')" :active-pattern="['agents.index', 'agents.show']">Agents</SidebarLink>
+                                <SidebarLink :href="route('agents.actions.index')" active-pattern="agents.actions.*">Actions</SidebarLink>
                                 <SidebarLink :href="route('agents.versions.index')" active-pattern="agents.versions.*">Versions</SidebarLink>
                                 <SidebarLink :href="route('install.index')" active-pattern="install.*">Install</SidebarLink>
                                 <SidebarLink :href="route('billing.index')" active-pattern="billing.*">Billing</SidebarLink>

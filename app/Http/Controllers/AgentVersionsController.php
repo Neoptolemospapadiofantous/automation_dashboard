@@ -85,28 +85,10 @@ class AgentVersionsController extends Controller
         $this->requireCapability($request, fn (Role $r) => $r->canUpdateAgent(), 'edit agent behavior');
         $agent = $this->currentAgentOrAbort($request);
 
-        $config = $this->validateConfig($request);
-
-        DB::transaction(function () use ($agent, $config): void {
-            $draft = AgentConfigVersion::query()
-                ->where('agent_id', $agent->id)
-                ->where('status', AgentConfigVersion::STATUS_DRAFT)
-                ->lockForUpdate()
-                ->first();
-
-            if ($draft) {
-                $draft->update(['config' => $config]);
-
-                return;
-            }
-
-            AgentConfigVersion::create([
-                'agent_id' => $agent->id,
-                'version' => $this->nextVersion($agent->id),
-                'status' => AgentConfigVersion::STATUS_DRAFT,
-                'config' => $config,
-            ]);
-        });
+        // Merge-preserving: only the behavior keys are patched, so a draft's
+        // staged automations (authored on the Actions page) survive a
+        // behavior save and vice versa.
+        AgentConfigVersion::patchDraft($agent->id, $this->validateConfig($request));
 
         return back();
     }

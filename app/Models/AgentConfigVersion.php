@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * One saved version of an agent's operator-editable behavior config.
@@ -60,6 +61,42 @@ class AgentConfigVersion extends Model
             ->first();
 
         return $row?->config;
+    }
+
+    /**
+     * Merge a partial config patch into the agent's single draft, creating
+     * the draft (seeded from the published config) if none exists. Used by
+     * the behavior editor and the Actions editor — two pages that write
+     * disjoint keys of the SAME draft, so each must preserve the other's
+     * keys instead of replacing the whole config. Row-locked so concurrent
+     * saves can't lose a key or duplicate the draft.
+     *
+     * @param  array<string, mixed>  $patch
+     */
+    public static function patchDraft(int $agentId, array $patch): void
+    {
+        DB::transaction(function () use ($agentId, $patch): void {
+            $draft = static::query()
+                ->where('agent_id', $agentId)
+                ->where('status', self::STATUS_DRAFT)
+                ->lockForUpdate()
+                ->first();
+
+            if ($draft) {
+                $draft->update(['config' => array_merge($draft->config ?? [], $patch)]);
+
+                return;
+            }
+
+            $base = static::publishedConfig($agentId) ?? [];
+
+            static::create([
+                'agent_id' => $agentId,
+                'version' => (int) static::query()->where('agent_id', $agentId)->max('version') + 1,
+                'status' => self::STATUS_DRAFT,
+                'config' => array_merge($base, $patch),
+            ]);
+        });
     }
 
     /**

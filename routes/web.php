@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AgentActionsController;
 use App\Http\Controllers\AgentAnalyticsController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\AgentVersionsController;
@@ -78,6 +79,16 @@ Route::middleware([
     Route::get('/agents/versions/{version}/export', [AgentVersionsController::class, 'export'])
         ->whereNumber('version')
         ->name('agents.versions.export');
+
+    // Operator Actions editor — author the agent's n8n automations. Writes
+    // the SAME draft as the behavior editor (under config.automations), so it
+    // shares the publish/rollback lifecycle. Registered before the
+    // /agents/{agent} wildcard for the same slug-swallowing reason as above.
+    Route::get('/agents/actions', [AgentActionsController::class, 'index'])
+        ->name('agents.actions.index');
+    Route::post('/agents/actions', [AgentActionsController::class, 'save'])
+        ->middleware('throttle:60,1')
+        ->name('agents.actions.save');
 
     // Per-agent analytics. Slug-bound. Lives at /agents/{slug}/analytics so it
     // sits naturally alongside agents.show; must come BEFORE the wildcard
