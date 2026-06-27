@@ -27,6 +27,8 @@ write a new phase doc that supersedes the prior one).
 
 ### Business & domain
 - [business-model.md](./business-model.md) — the commercial model: plans, the 5 tiers, two-bucket credits, top-up packs, margins, how money flows through Stripe
+- [competitors.md](./competitors.md) — the competitive landscape (Chatbase, SiteGPT, CustomGPT, Intercom Fin, Tidio/Lyro, Crisp, Voiceflow, GoHighLevel) and where Flowstack wins: talk + do via the automation wedge
+- [competitive-one-pager.md](./competitive-one-pager.md) — **presentation-ready** one-pager: the full comparison table, the two-category framing, why we win, honest risks, the positioning line
 - [glossary.md](./glossary.md) — domain vocabulary (Team / Agent / Lead / Visitor / Credit / Tier / Flow / Tool …), each grounded in code
 
 ### Security
@@ -44,6 +46,7 @@ write a new phase doc that supersedes the prior one).
 - [operations/pricing-audit.md](./operations/pricing-audit.md) — provider rates verified 2026-06-11, credit economics, margin matrix, standing invariants
 - [agent-lifecycle.md](./agent-lifecycle.md) — **operator guide**: the full signup → teach → publish → install → leads journey (mirrored by the dashboard setup checklist)
 - [runtime-native.md](./runtime-native.md) — **the current engine**: Flowstack-owned LLM runtime (Anthropic + RAG), the only engine; the legacy engine was removed
+- [phase-16-automations.md](./phase-16-automations.md) — **agent → n8n webhook tool-call** (the wedge): `call_automation`, SSRF guard, HMAC signing, sync/async modes, billing-before-firing, `automation_runs` audit, circuit breaker
 - [phase-15-voiceflow-wrapper.md](./phase-15-voiceflow-wrapper.md) — full legacy-engine wrapper (typed subclients, evaluations, environments, session + org webhooks); historical, superseded by the native runtime
 - [voiceflow/README.md](./voiceflow/README.md) — archived legacy-engine API reference dump (vendor docs, frozen — kept for historical reference)
 
