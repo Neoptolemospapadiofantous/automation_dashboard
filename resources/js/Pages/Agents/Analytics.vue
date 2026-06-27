@@ -216,11 +216,11 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
                     <p class="mt-1 text-xs text-ink-dim">
                         When conversations are started, by hour (UTC). Use this to time your support hours.
                     </p>
-                    <div class="mt-4 flex items-end gap-1">
+                    <div class="mt-4 flex items-end gap-1 overflow-x-auto">
                         <div
                             v-for="(count, hour) in hourly"
                             :key="hour"
-                            class="flex flex-1 flex-col items-center gap-1"
+                            class="flex min-w-[14px] flex-1 flex-col items-center gap-1"
                             :title="`${hour}:00 — ${count} conversation${count === 1 ? '' : 's'}`"
                         >
                             <div

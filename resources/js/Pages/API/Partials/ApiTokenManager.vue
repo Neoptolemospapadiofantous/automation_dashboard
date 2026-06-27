@@ -145,13 +145,13 @@ const deleteApiToken = () => {
                     <!-- API Token List -->
                     <template #content>
                         <div class="space-y-2">
-                            <div v-for="token in tokens" :key="token.id" class="flex items-center justify-between border border-transparent border-b-border-line px-2 py-2 transition-colors hover:border-ink">
-                                <div class="break-all">
+                            <div v-for="token in tokens" :key="token.id" class="flex items-center justify-between gap-2 border border-transparent border-b-border-line px-2 py-2 transition-colors hover:border-ink">
+                                <div class="min-w-0 break-all">
                                     {{ token.name }}
                                 </div>
 
-                                <div class="flex items-center ms-2">
-                                    <div v-if="token.last_used_ago" class="text-sm text-ink-dim">
+                                <div class="flex shrink-0 items-center ms-2">
+                                    <div v-if="token.last_used_ago" class="hidden text-sm text-ink-dim sm:block">
                                         Last used {{ token.last_used_ago }}
                                     </div>
 

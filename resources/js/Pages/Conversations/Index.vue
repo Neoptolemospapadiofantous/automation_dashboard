@@ -119,7 +119,7 @@ const rating = (key) => ratings[key] ?? null;
                     <TextInput
                         v-model="q"
                         type="search"
-                        class="min-w-[16rem] flex-1"
+                        class="w-full flex-1 sm:w-auto sm:min-w-[16rem]"
                         placeholder="Search visitor, lead or message text…"
                     />
                     <select
@@ -156,7 +156,7 @@ const rating = (key) => ratings[key] ?? null;
                     </button>
                 </div>
 
-                <div class="overflow-hidden rounded-none border border-border-line bg-bg shadow-sheet">
+                <div class="overflow-x-auto rounded-none border border-border-line bg-bg shadow-sheet">
                     <table class="min-w-full divide-y divide-border-line text-sm">
                         <thead class="bg-bg-elev text-left font-mono text-xs uppercase tracking-wider text-ink-dim">
                             <tr>

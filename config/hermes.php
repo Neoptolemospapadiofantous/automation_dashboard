@@ -12,11 +12,13 @@ return [
     | is intentionally stricter than Role::Owner, scoped to the platform
     | engineer rather than any team's owner.
     |
-    | Set HERMES_OPERATOR_EMAILS to a comma-separated list of emails.
+    | Set HERMES_OPERATOR_EMAILS to a comma-separated list of emails. The
+    | founder is always included so the admin tier works even before the env
+    | var is configured (he is the sole admin until others are allowlisted).
     |
     */
-    'operators' => array_values(array_filter(array_map(
-        'trim',
-        explode(',', (string) env('HERMES_OPERATOR_EMAILS', '')),
-    ))),
+    'operators' => array_values(array_unique(array_filter(array_merge(
+        array_map('trim', explode(',', (string) env('HERMES_OPERATOR_EMAILS', ''))),
+        ['neoptolemos.papadiofantous@gmail.com'],
+    )))),
 ];

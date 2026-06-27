@@ -296,7 +296,8 @@ function openPortal() {
                     <div class="border-b border-border-line px-5 py-3 text-sm font-semibold text-ink">
                         Recent credit activity
                     </div>
-                    <table v-if="transactions.length" class="min-w-full divide-y divide-border-line text-sm">
+                    <div v-if="transactions.length" class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-border-line text-sm">
                         <thead class="bg-bg-elev">
                             <tr>
                                 <th class="px-4 py-2.5 text-left font-semibold text-ink-dim">Time</th>
@@ -314,6 +315,7 @@ function openPortal() {
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                     <EmptyState
                         v-else
                         title="No credit activity yet"

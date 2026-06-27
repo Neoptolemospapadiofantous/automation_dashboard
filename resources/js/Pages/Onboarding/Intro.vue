@@ -190,7 +190,7 @@ function continueOn() {
 
                     <div v-if="form.errors.website" class="text-xs text-rose-600">{{ form.errors.website }}</div>
 
-                    <div class="bp-rise flex items-center justify-between border-t border-border-line pt-5" style="--rise-delay: 420ms">
+                    <div class="bp-rise flex flex-col gap-3 border-t border-border-line pt-5 sm:flex-row sm:items-center sm:justify-between" style="--rise-delay: 420ms">
                         <p class="text-xs text-ink-mute">
                             You can change all of this later in account settings.
                         </p>

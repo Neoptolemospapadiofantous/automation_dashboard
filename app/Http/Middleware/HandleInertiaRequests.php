@@ -42,6 +42,12 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
 
+            // Platform-engineer (Hermes operator) flag for the admin nav.
+            // Stricter than team Owner — scoped to the allowlist in
+            // config('hermes.operators'), which always includes the founder.
+            'isAdmin' => fn () => $request->user() !== null
+                && in_array($request->user()->email, config('hermes.operators', []), true),
+
             // Surface session flash payloads under a stable key so Vue pages
             // can read them via $page.props.flash. Inertia does NOT auto-
             // share session keys — without this, controllers' ->with('flash.x')

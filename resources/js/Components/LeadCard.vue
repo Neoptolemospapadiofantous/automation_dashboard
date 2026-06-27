@@ -109,7 +109,7 @@ function onAssignChange(e) {
             </div>
             <button
                 type="button"
-                class="shrink-0 text-xs text-ink-mute opacity-0 transition hover:text-rose-500 group-hover:opacity-100"
+                class="shrink-0 text-xs text-ink-mute opacity-0 transition hover:text-rose-500 group-hover:opacity-100 max-sm:opacity-100"
                 title="Delete lead"
                 aria-label="Delete lead"
                 @click="$emit('delete', lead)"
@@ -121,7 +121,7 @@ function onAssignChange(e) {
         <!-- Delegation: collapsed at rest, revealed on hover/focus so the
              resting card stays compact and columns scan faster. -->
         <div
-            class="max-h-0 overflow-hidden opacity-0 transition-all duration-150 group-hover:mt-1.5 group-hover:max-h-12 group-hover:opacity-100 group-focus-within:mt-1.5 group-focus-within:max-h-12 group-focus-within:opacity-100"
+            class="max-h-0 overflow-hidden opacity-0 transition-all duration-150 group-hover:mt-1.5 group-hover:max-h-12 group-hover:opacity-100 group-focus-within:mt-1.5 group-focus-within:max-h-12 group-focus-within:opacity-100 max-sm:mt-1.5 max-sm:max-h-12 max-sm:opacity-100"
             @mousedown.stop
             @dragstart.stop
         >

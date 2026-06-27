@@ -93,12 +93,12 @@ const alignmentClasses = computed(() => {
         >
             <div
                 v-show="open"
-                class="absolute z-50 rounded-none shadow-sheet"
+                class="absolute z-50 max-h-[calc(100vh-5rem)] max-w-[calc(100vw-1rem)] overflow-y-auto rounded-none shadow-sheet"
                 :class="[widthClass, placementClass, alignmentClasses]"
                 style="display: none;"
                 @click="open = false"
             >
-                <div class="rounded-none border border-border-line" :class="contentClasses">
+                <div class="overflow-x-hidden rounded-none border border-border-line" :class="contentClasses">
                     <slot name="content" />
                 </div>
             </div>

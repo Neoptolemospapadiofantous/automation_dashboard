@@ -24,6 +24,8 @@ const teamAgents = computed(() => page.props.teamAgents ?? []);
 // Latest product-news headline shown in the top bar (where the page title
 // used to be). Shared globally via HandleInertiaRequests; null hides it.
 const latestHeadline = computed(() => page.props.latestHeadline ?? null);
+const isAdmin = computed(() => page.props.isAdmin === true);
+const hasRoute = (name) => route().has(name);
 const showMobileNav = ref(false);
 
 const markNotificationsRead = () => {
@@ -198,6 +200,25 @@ const handleMobileNavClick = (event) => {
                             </SidebarLink>
                         </div>
                     </div>
+
+                    <!-- Admin group (platform engineer only) -->
+                    <div v-if="isAdmin">
+                        <div class="px-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Admin</div>
+                        <div class="space-y-0.5">
+                            <SidebarLink v-if="hasRoute('hermes.metrics')" :href="route('hermes.metrics')" active-pattern="hermes.metrics">
+                                <template #icon>
+                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605" /></svg>
+                                </template>
+                                Metrics
+                            </SidebarLink>
+                            <SidebarLink v-if="hasRoute('architecture.graph')" :href="route('architecture.graph')" active-pattern="architecture.graph">
+                                <template #icon>
+                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" /></svg>
+                                </template>
+                                Architecture
+                            </SidebarLink>
+                        </div>
+                    </div>
                 </nav>
 
                 <!-- Credit meter -->
@@ -272,7 +293,7 @@ const handleMobileNavClick = (event) => {
                     <!-- Hamburger (mobile) -->
                     <button
                         type="button"
-                        class="inline-flex items-center justify-center rounded-none p-1.5 text-ink-dim hover:bg-surface-hi lg:hidden"
+                        class="-ml-1.5 inline-flex items-center justify-center rounded-none p-2.5 text-ink-dim hover:bg-surface-hi lg:hidden"
                         @click="showMobileNav = true"
                     >
                         <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -461,6 +482,13 @@ const handleMobileNavClick = (event) => {
                                 <SidebarLink :href="route('agents.versions.index')" active-pattern="agents.versions.*">Versions</SidebarLink>
                                 <SidebarLink :href="route('install.index')" active-pattern="install.*">Install</SidebarLink>
                                 <SidebarLink :href="route('billing.index')" active-pattern="billing.*">Billing</SidebarLink>
+                            </div>
+                        </div>
+                        <div v-if="isAdmin">
+                            <div class="px-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Admin</div>
+                            <div class="space-y-0.5">
+                                <SidebarLink v-if="hasRoute('hermes.metrics')" :href="route('hermes.metrics')" active-pattern="hermes.metrics">Metrics</SidebarLink>
+                                <SidebarLink v-if="hasRoute('architecture.graph')" :href="route('architecture.graph')" active-pattern="architecture.graph">Architecture</SidebarLink>
                             </div>
                         </div>
                     </nav>

@@ -192,12 +192,12 @@ const displayableRole = (role) => {
                 <!-- Pending Team Member Invitation List -->
                 <template #content>
                     <div class="space-y-6">
-                        <div v-for="invitation in team.team_invitations" :key="invitation.id" class="flex items-center justify-between">
-                            <div class="text-ink-dim">
+                        <div v-for="invitation in team.team_invitations" :key="invitation.id" class="flex items-center justify-between gap-2">
+                            <div class="min-w-0 break-all text-ink-dim">
                                 {{ invitation.email }}
                             </div>
 
-                            <div class="flex items-center">
+                            <div class="flex shrink-0 items-center">
                                 <!-- Cancel Team Invitation -->
                                 <button
                                     v-if="userPermissions.canRemoveTeamMembers"
@@ -231,15 +231,15 @@ const displayableRole = (role) => {
                 <!-- Team Member List -->
                 <template #content>
                     <div class="space-y-2">
-                        <div v-for="user in team.users" :key="user.id" class="flex items-center justify-between border border-transparent border-b-border-line px-2 py-2 transition-colors hover:border-ink">
-                            <div class="flex items-center">
-                                <img class="size-8 rounded-full object-cover" :src="user.profile_photo_url" :alt="user.name">
-                                <div class="ms-4">
+                        <div v-for="user in team.users" :key="user.id" class="flex items-center justify-between gap-2 border border-transparent border-b-border-line px-2 py-2 transition-colors hover:border-ink">
+                            <div class="flex min-w-0 items-center">
+                                <img class="size-8 shrink-0 rounded-full object-cover" :src="user.profile_photo_url" :alt="user.name">
+                                <div class="ms-4 truncate">
                                     {{ user.name }}
                                 </div>
                             </div>
 
-                            <div class="flex items-center">
+                            <div class="flex shrink-0 items-center">
                                 <!-- Manage Team Member Role -->
                                 <button
                                     v-if="userPermissions.canUpdateTeamMembers && availableRoles.length"

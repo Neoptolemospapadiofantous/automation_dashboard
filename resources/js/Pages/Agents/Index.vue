@@ -121,7 +121,7 @@ function relativeTime(iso) {
                     </Link>
                 </div>
 
-                <div class="overflow-hidden rounded-none border border-border-line bg-bg shadow-sheet">
+                <div class="overflow-x-auto rounded-none border border-border-line bg-bg shadow-sheet">
                     <table class="min-w-full divide-y divide-border-line text-sm">
                         <thead class="bg-bg-elev">
                             <tr>

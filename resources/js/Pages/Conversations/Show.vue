@@ -147,7 +147,7 @@ const deleteUpstream = async () => {
                         :class="m.role === 'user' ? 'justify-end' : 'justify-start'"
                     >
                         <div
-                            class="max-w-[80%] rounded-none px-4 py-2 text-sm"
+                            class="max-w-[80%] whitespace-pre-wrap break-words rounded-none px-4 py-2 text-sm"
                             :class="m.role === 'user' ? 'bg-ink text-bg' : 'bg-surface-hi text-ink'"
                         >
                             <p>{{ m.text }}</p>

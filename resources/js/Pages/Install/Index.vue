@@ -402,7 +402,7 @@ const previewLauncher = computed(() => form.launcher_text || 'Chat with us');
                         </p>
 
                         <div class="mt-4 flex flex-wrap items-end gap-2">
-                            <div class="min-w-[16rem] flex-1">
+                            <div class="w-full flex-1 sm:min-w-[16rem]">
                                 <InputLabel for="new_domain" value="Add a host" />
                                 <TextInput
                                     id="new_domain"

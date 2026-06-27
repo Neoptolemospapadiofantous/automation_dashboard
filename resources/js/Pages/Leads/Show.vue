@@ -168,7 +168,7 @@ const scoreBreakdown = computed(() => {
                     <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
                         <div>
                             <dt class="text-xs text-ink-dim">Email</dt>
-                            <dd class="mt-0.5 text-ink-dim">
+                            <dd class="mt-0.5 break-all text-ink-dim">
                                 <a v-if="lead.email" :href="`mailto:${lead.email}`" class="text-violet underline hover:text-ink-dim">{{ lead.email }}</a>
                                 <span v-else class="text-ink-mute">—</span>
                             </dd>

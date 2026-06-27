@@ -432,8 +432,8 @@ function submit() {
         <DialogModal :show="showCreate" @close="showCreate = false">
             <template #title>New lead</template>
             <template #content>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="col-span-2">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div class="sm:col-span-2">
                         <InputLabel for="name" value="Name" />
                         <TextInput id="name" v-model="form.name" type="text" class="mt-1 block w-full" />
                         <InputError :message="form.errors.name" class="mt-1" />

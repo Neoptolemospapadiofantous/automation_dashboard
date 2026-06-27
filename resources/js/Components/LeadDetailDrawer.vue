@@ -94,7 +94,7 @@ const capturedRows = computed(() => {
                 </div>
                 <button
                     type="button"
-                    class="rounded-none p-1.5 text-ink-mute transition hover:bg-surface-hi hover:text-ink"
+                    class="-mr-1 rounded-none p-2.5 text-ink-mute transition hover:bg-surface-hi hover:text-ink"
                     aria-label="Close"
                     @click="emit('close')"
                 >
