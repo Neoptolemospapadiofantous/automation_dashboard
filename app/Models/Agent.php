@@ -58,6 +58,7 @@ class Agent extends Model
         'team_id',
         'name',
         'slug',
+        'automation_secret',
         'status',
         'mode',
         'runtime_mode',
@@ -68,12 +69,25 @@ class Agent extends Model
         'last_health_ok',
     ];
 
+    /**
+     * Never serialize the signing secret into Inertia props / JSON — it's a
+     * credential. Read it explicitly via $agent->automation_secret server-side.
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'automation_secret',
+    ];
+
     protected function casts(): array
     {
         return [
             'auto_escalate_low_confidence' => 'boolean',
             'widget_config' => 'array',
             'allowed_domains' => 'array',
+            // HMAC secret for signing outbound automation webhooks (agent →
+            // n8n). Encrypted at rest; never serialized to the operator UI.
+            'automation_secret' => 'encrypted',
             'last_health_check_at' => 'datetime',
             'last_health_ok' => 'boolean',
         ];
@@ -152,6 +166,9 @@ class Agent extends Model
     {
         static::creating(function (Agent $agent) {
             $agent->slug ??= self::generateSlug($agent->team_id);
+            // Every agent gets a signing secret at birth so automations work
+            // the instant an operator configures one (no separate provisioning).
+            $agent->automation_secret ??= Str::random(40);
         });
     }
 

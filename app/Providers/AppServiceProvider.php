@@ -6,6 +6,8 @@ use App\Runtime\AgentRuntime;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\Contracts\Runtime;
 use App\Runtime\Knowledge\KnowledgeBase;
+use App\Runtime\Automation\OutboundGuard;
+use App\Runtime\Tools\CallAutomationTool;
 use App\Runtime\Tools\CaptureLeadTool;
 use App\Runtime\Tools\EndSessionTool;
 use App\Runtime\Tools\QueryKnowledgeTool;
@@ -33,6 +35,10 @@ class AppServiceProvider extends ServiceProvider
         // (the registry holds tool instances, the store holds clients).
         $this->app->singleton(KnowledgeStore::class, KnowledgeBase::class);
 
+        // OutboundGuard takes an optional callable resolver the container
+        // can't autowire — bind it to its production default (real DNS).
+        $this->app->bind(OutboundGuard::class, fn (): OutboundGuard => new OutboundGuard);
+
         $this->app->singleton(ToolRegistry::class, function ($app): ToolRegistry {
             $registry = new ToolRegistry;
             $registry->register(new CaptureLeadTool);
@@ -40,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
             $registry->register(new EndSessionTool);
             $registry->register(new SetVariableTool);
             $registry->register($app->make(RequestHandoffTool::class));
+            $registry->register($app->make(CallAutomationTool::class));
 
             return $registry;
         });

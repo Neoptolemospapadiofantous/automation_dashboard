@@ -198,4 +198,38 @@ return [
         'prune_days' => (int) env('RUNTIME_SESSION_PRUNE_DAYS', 30),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Automations (agent → n8n webhook tool-call)
+    |--------------------------------------------------------------------------
+    |
+    | The agent can call configured automations as tools (chat = brain, n8n =
+    | hands). Each call is HMAC-signed with the agent's automation_secret and
+    | passes an SSRF guard before any request leaves the box.
+    |
+    | enabled: master feature flag. Off → call_automation is never offered and
+    |   no webhook ever fires (kill switch for the whole subsystem).
+    |
+    | allow_private_hosts: SSRF guard escape hatch. PRODUCTION MUST keep this
+    |   false — it blocks calls to loopback/private/link-local IPs (incl. the
+    |   169.254.169.254 cloud metadata endpoint). Local dev sets it true so the
+    |   agent can reach the localhost:5678 n8n during development.
+    |
+    | sync_timeout: hard wall-clock cap (seconds) for request-response mode.
+    |   Beyond this the call is abandoned; fire-and-forget mode queues instead.
+    |
+    | max_response_bytes: cap on the body we read back from a sync call, so a
+    |   misbehaving endpoint can't blow up the turn's token budget.
+    */
+    'automation' => [
+        'enabled' => (bool) env('RUNTIME_AUTOMATION_ENABLED', false),
+        'allow_private_hosts' => (bool) env('RUNTIME_AUTOMATION_ALLOW_PRIVATE', false),
+        'sync_timeout' => (int) env('RUNTIME_AUTOMATION_SYNC_TIMEOUT', 6),
+        'max_response_bytes' => (int) env('RUNTIME_AUTOMATION_MAX_RESPONSE_BYTES', 16384),
+        // Circuit breaker: after this many consecutive failures for one
+        // action, pause it for the cooldown (seconds) instead of re-firing.
+        'breaker_threshold' => (int) env('RUNTIME_AUTOMATION_BREAKER_THRESHOLD', 5),
+        'breaker_cooldown' => (int) env('RUNTIME_AUTOMATION_BREAKER_COOLDOWN', 60),
+    ],
+
 ];

@@ -5,6 +5,7 @@ namespace App\Runtime\Flow;
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
 use App\Models\RuntimeUsage;
+use App\Runtime\Automation\AutomationCatalog;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\LLM\LlmRouter;
 use App\Runtime\Session\ConversationContext;
@@ -58,13 +59,24 @@ class FlowExecutor
         // is "we don't have a confident answer".
         $citations = $lowConfidence ? [] : $retrieval['citations'];
 
-        $system = $this->systemPrompt($context->agent, $state, $context, $retrieval['text'], $lowConfidence);
+        // Operator-configured automations this agent can run as tools. Read
+        // once: feeds both the system-prompt catalog and the offered toolset.
+        $automations = AutomationCatalog::forAgent($context->agent->id);
+
+        $system = $this->systemPrompt($context->agent, $state, $context, $retrieval['text'], $lowConfidence, $automations);
 
         // Low confidence → make sure the model CAN escalate even if the
         // current state didn't expose request_handoff.
         $toolNames = $lowConfidence
             ? array_values(array_unique([...$state->tools, 'request_handoff']))
             : $state->tools;
+
+        // Offer call_automation whenever the feature is on and the agent has a
+        // published automation — without making every flow state list it.
+        if ((bool) config('runtime.automation.enabled', false) && ! $automations->isEmpty()) {
+            $toolNames = array_values(array_unique([...$toolNames, 'call_automation']));
+        }
+
         $specs = $this->tools->specs($toolNames);
 
         // Quality tier (Versions page): resolves provider + model for every
@@ -206,7 +218,7 @@ class FlowExecutor
      * Base identity + guardrails + state instructions + remembered
      * variables + auto-RAG context for this turn.
      */
-    protected function systemPrompt(Agent $agent, State $state, ConversationContext $context, string $kbContext, bool $lowConfidence): string
+    protected function systemPrompt(Agent $agent, State $state, ConversationContext $context, string $kbContext, bool $lowConfidence, ?AutomationCatalog $automations = null): string
     {
         $company = (string) ($agent->team->name ?? 'the company');
 
@@ -248,6 +260,13 @@ class FlowExecutor
 
         if ($kbContext !== '') {
             $parts[] = "Knowledge-base context for this turn:\n".$kbContext;
+        }
+
+        // Tell the model which automations it may run and when (the
+        // call_automation tool dispatches by the action name listed here).
+        $catalog = $automations?->promptCatalog() ?? '';
+        if ($catalog !== '') {
+            $parts[] = $catalog;
         }
 
         if ($lowConfidence) {
