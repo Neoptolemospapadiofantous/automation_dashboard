@@ -5,6 +5,7 @@ use App\Http\Controllers\AgentAnalyticsController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\AgentVersionsController;
 use App\Http\Controllers\ArchitectureGraphController;
+use App\Http\Controllers\AutomationActivityController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ConversationController;
@@ -89,6 +90,11 @@ Route::middleware([
     Route::post('/agents/actions', [AgentActionsController::class, 'save'])
         ->middleware('throttle:60,1')
         ->name('agents.actions.save');
+
+    // Automation activity — read-only view of the automation_runs audit log
+    // for the current agent. Before the /agents/{agent} wildcard.
+    Route::get('/agents/activity', [AutomationActivityController::class, 'index'])
+        ->name('agents.activity.index');
 
     // Per-agent analytics. Slug-bound. Lives at /agents/{slug}/analytics so it
     // sits naturally alongside agents.show; must come BEFORE the wildcard
