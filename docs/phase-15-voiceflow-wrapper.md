@@ -14,8 +14,9 @@ supersedes: docs/phase-5-voiceflow.md
 > replaced by the native runtime in `app/Runtime/` (`AgentRuntime`,
 > `FlowExecutor`, `LlmRouter`), so the wrapper described here no longer exists in
 > the codebase. This doc is kept only as a record of what was built and why. The
-> engine-specific endpoint/wrapper detail it used to contain now lives only in
-> the archived reference under [[docs/voiceflow/README|docs/voiceflow/]].
+> engine-specific endpoint/wrapper detail it used to contain moved to the
+> `docs/voiceflow/` archive, itself removed from the repo in `76ee819` —
+> git history only.
 
 ## What this phase delivered
 
@@ -69,7 +70,7 @@ The legacy `voiceflow_*` DB columns referenced by the webhook persistence here
 ## Where the old detail went
 
 The full per-method coverage map, the engine's endpoint catalogue, the wrapper
-plan, and the webhook event schema that this phase documented in detail are
-preserved in the archived reference under
-[[docs/voiceflow/README|docs/voiceflow/]] for anyone who needs the historical
-specifics.
+plan, and the webhook event schema that this phase documented in detail were
+preserved in the `docs/voiceflow/` archive, which was later removed from the
+repo (`76ee819`) — recover it via git history if the historical specifics are
+ever needed.

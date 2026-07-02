@@ -5,8 +5,8 @@
 > **fully removed** and replaced by the native runtime in `app/Runtime/`
 > (`AgentRuntime`, `FlowExecutor`, `LlmRouter`). This doc is kept as a
 > historical record of what the phase did and why. The third-party API/endpoint
-> detail it used to contain now lives only in the archived reference under
-> [[docs/voiceflow/README|docs/voiceflow/]].
+> detail it used to contain moved to the `docs/voiceflow/` archive, which was
+> itself removed from the repo in `76ee819` — git history only.
 
 ## What this phase delivered
 
@@ -54,9 +54,9 @@ legacy `voiceflow_*` DB columns from this era were renamed to `visitor_id` /
 ## Where the old detail went
 
 The engine-specific API contract, session/interact flow, trace types, and
-configuration keys that this phase originally documented are preserved in the
-archived reference under [[docs/voiceflow/README|docs/voiceflow/]] for anyone
-who needs the historical specifics.
+configuration keys that this phase originally documented were preserved in the
+`docs/voiceflow/` archive, which was later removed from the repo (`76ee819`) —
+recover it via git history if the historical specifics are ever needed.
 
 ## Next
 

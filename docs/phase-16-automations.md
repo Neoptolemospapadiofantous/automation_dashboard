@@ -10,8 +10,12 @@ This is the feature that moves Flowstack from "a chatbot" into "an AI agent +
 automation platform" (the GoHighLevel category, not the Chatbase category —
 see [competitors.md](./competitors.md)). Chat = the brain, n8n = the hands.
 
-> Status: **backend shipped + tested** (this doc). The operator UI to author
-> actions is the remaining piece — see [Remaining work](#remaining-work).
+> Status: **shipped end-to-end.** Backend (this doc), the operator Actions UI
+> (`998ec50`, gated to Hermes operators in `04e4b58` — automations are a
+> managed service, clients only see Activity), the read-only Activity view
+> over `automation_runs` (`d8a4113`), redirect rejection in the SSRF guard
+> (`625c4ef`), and connection pinning to vetted IPs (`38734d2`) have all
+> landed — see [Remaining work](#remaining-work).
 
 ---
 
@@ -124,10 +128,12 @@ per agent). It is **not** the old Voiceflow `webhook_secret` (that authenticated
 a credential is infrastructure — it must not roll back when an operator reverts
 a behavior version.
 
-> Residual risk: a TOCTOU DNS-rebinding window exists between the guard's
-> resolution and the HTTP request (the Http client re-resolves). The short
-> timeout + re-guarding in the caller shrink it; pinning the connection to the
-> validated IP is a future hardening step.
+> The TOCTOU DNS-rebinding window between the guard's resolution and the HTTP
+> request was closed in `38734d2`: the caller pins the connection to the
+> guard-vetted IPs (`CURLOPT_RESOLVE`) so the request can only reach an address
+> that passed vetting. Redirect responses are also rejected (`625c4ef`,
+> `allow_redirects` off) — an n8n webhook target never legitimately redirects,
+> and following one would bypass the guard.
 
 ## Billing, idempotency, reliability
 
@@ -162,12 +168,12 @@ what we sell back to operators).
 
 ## Remaining work
 
-1. **Operator "Actions" UI** — a dashboard page to author/edit automations and
-   publish them through `AgentConfigVersion` (the data shape above is already
-   honored end-to-end; there's just no authoring screen yet).
-2. **Automation activity view** — surface `automation_runs` in the dashboard.
-3. **Connection pinning** — close the DNS-rebinding window (pin the request to
-   the guard-validated IP).
+1. ~~**Operator "Actions" UI**~~ — shipped in `998ec50` (`/agents/actions`,
+   `AgentActionsController`), gated to Hermes operators in `04e4b58`.
+2. ~~**Automation activity view**~~ — shipped in `d8a4113` (`/agents/activity`,
+   `AutomationActivityController` over `automation_runs`).
+3. ~~**Connection pinning**~~ — shipped in `38734d2` (requests pinned to the
+   guard-validated IPs; redirects rejected in `625c4ef`).
 4. **n8n side** — a reusable "verify Flowstack signature" sub-workflow/node.
 
 ## Tests

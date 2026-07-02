@@ -3,8 +3,9 @@
 Pull conversations that happened **inside the legacy engine** (its preview
 chat, the embedded widget, or anything before local storage existed) into the
 [[phase-6-conversation-storage|local conversation store]] via the legacy
-engine's transcript/analytics API (legacy-engine specifics; see the archived
-reference under [[docs/voiceflow/transcripts/README|docs/voiceflow/]]).
+engine's transcript/analytics API (legacy-engine specifics — the
+`docs/voiceflow/` archive that documented them was removed from the repo in
+`76ee819`; git history only).
 
 ## What shipped
 
@@ -41,5 +42,5 @@ The backfill spoke to the legacy engine's analytics host: a search call
 (`POST .../transcript/project/{projectID}`, paged via `take`/`skip`) and a
 get call (`GET .../transcript/{transcriptID}`), both authed with the engine's
 raw API key in the `authorization` header (no Bearer). Full endpoint shapes
-are legacy-engine specifics; see the archived reference under
-[[docs/voiceflow/transcripts/README|docs/voiceflow/]].
+are legacy-engine specifics — the `docs/voiceflow/` archive that held them
+was removed from the repo in `76ee819` (git history only).

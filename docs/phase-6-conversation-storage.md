@@ -80,8 +80,9 @@ thin and the same path is reused by the capture webhook.
 - **Backfill/reconcile job**: nightly transcript search to fill any gaps
   (e.g. conversations that happened via the embedded widget, not our proxy).
 - All legacy-engine calls go through the engine client, queued, with
-  the fail-fast timeout policy already in place. (Legacy-engine specifics; see
-  the archived reference under [[docs/voiceflow/transcripts/README|docs/voiceflow/]].)
+  the fail-fast timeout policy already in place. (Legacy-engine specifics —
+  the `docs/voiceflow/` archive that documented them was removed from the
+  repo in `76ee819`; git history only.)
 
 ## Search & indexing (scale path)
 

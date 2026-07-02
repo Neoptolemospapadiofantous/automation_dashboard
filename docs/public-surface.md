@@ -10,8 +10,12 @@ The dashboard's externally-reachable, non-session-authenticated routes.
 | `GET /embed/{slug}` | agent must be `active` | Standalone chat page served into the customer-site iframe (`frame-ancestors *`). Carries the AI Act Art. 50 disclosure in the header |
 | `POST /embed/{slug}/launch` | agent must be `active` + team credits | Opens a visitor session (30-day cookie). Throttled `60/min/IP`; free-greeting daily cap per team, then debits. |
 | `POST /embed/{slug}/interact` | agent must be `active` + team credits | Visitor message → native engine → traces. Throttled + billed `(1+replies)×tier` |
+| `POST /embed/{slug}/feedback` | agent must be `active` | Visitor thumbs-rating on their own conversation, then ends it. Scoped to the `(team, visitor)` pair. Throttled `30/min/IP` |
+| `POST /embed/{slug}/history` | agent must be `active` | Visitor's own conversation list for the widget home screen. Scoped by visitor token (the bearer capability). Throttled `120/min/IP` |
+| `POST /embed/{slug}/conversation` | agent must be `active` | Single transcript for the widget "reopen" view. Token-scoped — the conversation id alone is not authority. Throttled `120/min/IP` |
+| `POST /waitlist` | none (anonymous) | Pre-launch waitlist capture (the coming-soon page posts here). Throttled `10/min/IP`, CSRF-exempt, allowlisted in the ComingSoon gate |
 | `POST /webhooks/stripe` | Stripe signature (`whsec`, constant-time) | Inbound Stripe events (checkout, invoices, subscription lifecycle). Deliberately not IP-throttled — signature is the guard; throttling would drop renewal bursts |
-| `GET /` | none | Static framework Welcome page — serves no tenant data |
+| `GET /` | none | Redirects to `/dashboard` (authenticated) or `/login` — serves no content or tenant data itself. Pre-launch, the ComingSoon gate intercepts it with the waitlist page |
 
 > Historical note: the three legacy inbound webhook receivers were
 > removed with the legacy engine (2026-06-11) — no inbound
@@ -43,6 +47,7 @@ GET <DASHBOARD_URL>/api/public/stats
   "founder_slots_remaining": 47,
   "founder_slots_total": 100,
   "next_cohort_label": "Rolling intake",
+  "next_cohort_open_at": null,
   "featured_proof": null,
 
   "teams_count": 2,
@@ -74,6 +79,7 @@ GET <DASHBOARD_URL>/api/public/stats
 | `founder_slots_remaining` | `platform_settings` | yes (CLI) | Scarcity counter — operator decrements by hand |
 | `founder_slots_total` | `platform_settings` | yes | Cohort denominator |
 | `next_cohort_label` | `platform_settings` | yes | Free-form (date / week / "Rolling") |
+| `next_cohort_open_at` | `platform_settings` | yes | Founder-cohort open date (`YYYY-MM-DD` or ISO) — drives the landing announcement-bar countdown; `null` → landing shows a static "now open" state |
 | `featured_proof` | `platform_settings` | yes | One-line testimonial — **render as text only** (XSS rule) |
 | `teams_count` | `teams` table count | no | Total customer accounts |
 | `agents_active` | `agents WHERE status='active'` count | no | Provisioned + running agents |

@@ -2,8 +2,8 @@
 
 Ground the agent (and the dashboard) in your own content — pricing, FAQs,
 product docs — via the knowledge-base API the runtime exposed at the time
-(legacy-engine specifics; see the archived reference under
-[[docs/voiceflow/knowledge-base/README|docs/voiceflow/]]).
+(legacy-engine specifics — the `docs/voiceflow/` archive that documented
+them was removed from the repo in `76ee819`; git history only).
 
 ## What shipped
 
@@ -25,8 +25,8 @@ product docs — via the knowledge-base API the runtime exposed at the time
 At the time, list/create-document and query ran against the legacy engine's
 hosted KB endpoints, each authed with the engine's raw API key. The query
 body carried the project id, the question, and the environment alias.
-(Legacy-engine specifics; see the archived reference under
-[[docs/voiceflow/knowledge-base/README|docs/voiceflow/]].)
+(Legacy-engine specifics — archived in `docs/voiceflow/`, since removed
+from the repo in `76ee819`; git history only.)
 
 ## Usage
 

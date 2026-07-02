@@ -48,7 +48,7 @@ write a new phase doc that supersedes the prior one).
 - [runtime-native.md](./runtime-native.md) — **the current engine**: Flowstack-owned LLM runtime (Anthropic + RAG), the only engine; the legacy engine was removed
 - [phase-16-automations.md](./phase-16-automations.md) — **agent → n8n webhook tool-call** (the wedge): `call_automation`, SSRF guard, HMAC signing, sync/async modes, billing-before-firing, `automation_runs` audit, circuit breaker
 - [phase-15-voiceflow-wrapper.md](./phase-15-voiceflow-wrapper.md) — full legacy-engine wrapper (typed subclients, evaluations, environments, session + org webhooks); historical, superseded by the native runtime
-- [voiceflow/README.md](./voiceflow/README.md) — archived legacy-engine API reference dump (vendor docs, frozen — kept for historical reference)
+- `docs/voiceflow/` — the archived legacy-engine API reference dump was **removed from the repo** with the native-runtime merge (`76ee819`); recover via git history if ever needed
 
 ### Pipeline + UX
 - [phase-3-leads.md](./phase-3-leads.md) — [[phase-3-leads|kanban board, live updates]]

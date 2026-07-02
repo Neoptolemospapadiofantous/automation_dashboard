@@ -698,6 +698,14 @@ partners, step 3 becomes a background job. The rest stays the same.
 
 ### Files
 
+> **Note (auto-synced 2026-07-02):** the pool infrastructure below was
+> deleted with the native-runtime merge (`76ee819`) —
+> `app/Provisioning/{PoolAllocator, PoolExhausted}.php`, the pool commands,
+> and `tests/Feature/PoolAllocatorTest.php` no longer exist, and the pool
+> table was dropped by `2026_06_11_100000_drop_voiceflow_schema.php`. The
+> `docs/voiceflow/` archive referenced in this doc was removed in the same
+> merge (git history only). List kept as the historical record.
+
 - `database/migrations/2026_06_03_220000_create_voiceflow_project_pool_table.php`
 - The project-pool entry model (encrypted credentials, $hidden mirrors Agent)
 - `app/Provisioning/{PoolAllocator, PoolExhausted}.php`

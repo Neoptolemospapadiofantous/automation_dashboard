@@ -14,12 +14,18 @@ interconnected" target, then maintained as we close gaps.
 /dashboard            Pipeline at a glance
 /chat                 Talk to your agent as if you were a lead
 /leads                Kanban board (drag, assign, delete)
-/conversations        Transcript history (paginated)
+/conversations        Transcript history (paginated) + inline full-text
+                      search filters (Scout/Typesense — the standalone
+                      /conversations/search page was merged in here)
 /conversations/{id}   Single transcript
-/conversations/search Full-text + Scout/Typesense
 /knowledge            Per-agent KB (list, add URL/file, query, inspect, delete)
 /agents               Agent CRUD + create dialog + plan gate
 /agents/{slug}        Per-agent settings (name + activity counters)
+/agents/{slug}/analytics  Per-agent analytics
+/agents/versions      Versioned agent behavior (draft → publish → rollback)
+/agents/actions       Operator-gated n8n Actions authoring (Hermes tier only)
+/agents/activity      Read-only automation_runs activity view
+/install              "Install on your website" — embed snippet + widget config
 /billing              Plan, credits, top-up dialog, transaction history
 /onboarding           One-step managed signup → /onboarding/done
 /profile, /teams      Jetstream defaults
@@ -86,8 +92,9 @@ on `/chat/*` and `/embed/*`, per-agent Knowledge Base CRUD + query on
 `/knowledge`, and conversation/transcript management on `/conversations`.
 There are no outbound vendor API calls and no inbound engine webhooks:
 lead capture, KB retrieval, and session lifecycle are all in-process. The
-archived reference for the removed third-party engine lives under
-[docs/voiceflow/](../voiceflow/README.md) for historical context only.
+archived reference for the removed third-party engine (`docs/voiceflow/`)
+was removed from the repo with the native-runtime merge (`76ee819`) — it
+survives only in git history.
 
 ## Open interconnection gaps (ranked by leverage)
 

@@ -1,5 +1,13 @@
 # Phase 2 — Real-time backbone
 
+> **Note (auto-synced 2026-07-02):** the tick *demo* pieces below were
+> removed in `a1e6e43` (dead `/dashboard/tick` route cleanup):
+> `app/Events/DashboardTick.php`, `DashboardTickController`,
+> `resources/js/Components/LiveTick.vue`, `tests/Feature/DashboardTickTest.php`.
+> The backbone itself survives — `resources/js/echo.js` and
+> `resources/js/composables/useEcho.js` still power the live lead updates
+> shipped in [[phase-3-leads|Phase 3]].
+
 Prove the live-update pipeline end to end with a "live tick" feature every
 connected browser receives instantly — no polling, no reload.
 
