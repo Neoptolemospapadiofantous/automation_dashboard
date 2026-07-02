@@ -113,6 +113,31 @@ if [[ -f .env ]]; then
   fi
 fi
 
+# ── 8. Outbound HTTP hardening ─────────────────────────────────────────────────
+# a) Every app/ Http:: call site must set an explicit ->timeout( somewhere in
+#    the file — a hung upstream must never hold a worker forever.
+# timeout( may open the chain (Http::timeout(...)) or sit mid-chain (->timeout(...)).
+missing_timeout=""
+while IFS= read -r f; do
+  grep -Eq -- "(->|Http::)timeout\(" "$f" || missing_timeout+="$f,"
+done < <(grep -rl "Http::" app/ --include="*.php" 2>/dev/null)
+if [[ -n "$missing_timeout" ]]; then
+  n=$(echo "${missing_timeout%,}" | tr ',' '\n' | wc -l)
+  record MEDIUM "http-missing-timeout" "$n Http:: call site(s) without ->timeout(): ${missing_timeout%,}"
+fi
+
+# b) Regression tripwires for the SSRF hardening on operator-supplied webhook
+#    URLs (AUDIT-2026-07-02): redirects disabled + connection pinned to the
+#    vetted IPs. If either disappears from AutomationCaller, flag it.
+caller="app/Runtime/Automation/AutomationCaller.php"
+if [[ -f "$caller" ]]; then
+  grep -q "'allow_redirects' => false" "$caller" \
+    || record HIGH "webhook-follows-redirects" "AutomationCaller no longer disables redirect-following — SSRF guard bypass via 3xx (see AUDIT-2026-07-02)"
+  # Match the option assignment, not the comment that mentions it.
+  grep -q "CURLOPT_RESOLVE =>" "$caller" \
+    || record HIGH "webhook-dns-rebinding" "AutomationCaller no longer pins connections to vetted IPs — DNS-rebinding TOCTOU reopened (see AUDIT-2026-07-02)"
+fi
+
 # ── Write findings + summary ───────────────────────────────────────────────────
 overall="PASS"
 [[ $critical -gt 0 ]] && overall="FAIL"
