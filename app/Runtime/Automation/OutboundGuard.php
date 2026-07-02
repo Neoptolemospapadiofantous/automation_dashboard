@@ -20,26 +20,36 @@ namespace App\Runtime\Automation;
  *   3. DNS resolution + per-address vetting — EVERY A/AAAA record the host
  *      resolves to must be a public address. Resolving here (not just
  *      inspecting the literal host) is what defeats a hostname that points at
- *      a private IP, and shrinks the DNS-rebinding window to the gap between
- *      this check and the request.
+ *      a private IP.
+ *   4. Pinning — the returned `pin` entries (CURLOPT_RESOLVE format) let the
+ *      caller force curl to connect to exactly the addresses vetted above
+ *      instead of re-resolving, closing the DNS-rebinding TOCTOU window
+ *      between this check and the request.
  *
  * allow_private_hosts (config) flips checks 1+3 off for local development.
  * It MUST stay false in production.
  */
 class OutboundGuard
 {
-    public function __construct(
-        /** @var callable(string): list<string>  Hostname → resolved IPs. Injectable for tests. */
-        private $resolver = null,
-    ) {
-        $this->resolver ??= self::defaultResolver(...);
+    /** @var callable(string): list<string>  Hostname → resolved IPs. */
+    private $resolver;
+
+    /**
+     * @param  (callable(string): list<string>)|null  $resolver  Injectable for tests; defaults to real DNS.
+     */
+    public function __construct(?callable $resolver = null)
+    {
+        $this->resolver = $resolver ?? self::defaultResolver(...);
     }
 
     /**
      * Validate a target URL or throw BlockedAutomationUrl. Returns the parsed
-     * components on success (so the caller doesn't re-parse).
+     * components on success (so the caller doesn't re-parse), plus `pin`:
+     * CURLOPT_RESOLVE entries ("host:port:ip1,ip2") the caller MUST pass to
+     * curl so the request connects to these vetted addresses and never
+     * re-resolves. Empty for literal-IP hosts (no DNS to rebind).
      *
-     * @return array{scheme: string, host: string, ips: list<string>}
+     * @return array{scheme: string, host: string, ips: list<string>, pin: list<string>}
      */
     public function assertSafe(string $url): array
     {
@@ -66,7 +76,8 @@ class OutboundGuard
 
         // A bracketed/literal IP host skips DNS but still gets vetted.
         $literalIp = trim($host, '[]');
-        if (filter_var($literalIp, FILTER_VALIDATE_IP)) {
+        $isLiteral = filter_var($literalIp, FILTER_VALIDATE_IP) !== false;
+        if ($isLiteral) {
             $ips = [$literalIp];
         } else {
             $ips = ($this->resolver)($host);
@@ -85,7 +96,13 @@ class OutboundGuard
             }
         }
 
-        return ['scheme' => $scheme, 'host' => $host, 'ips' => array_values($ips)];
+        $pin = [];
+        if (! $isLiteral) {
+            $port = $parts['port'] ?? ($scheme === 'https' ? 443 : 80);
+            $pin = ["{$host}:{$port}:".implode(',', $ips)];
+        }
+
+        return ['scheme' => $scheme, 'host' => $host, 'ips' => $ips, 'pin' => $pin];
     }
 
     /**

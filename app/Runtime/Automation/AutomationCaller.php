@@ -32,7 +32,7 @@ class AutomationCaller
     public function send(AutomationAction $action, array $arguments, string $secret): array
     {
         // SSRF guard BEFORE anything leaves the box.
-        $this->guard->assertSafe($action->url);
+        $vetted = $this->guard->assertSafe($action->url);
 
         $body = (string) json_encode([
             'action' => $action->name,
@@ -47,13 +47,18 @@ class AutomationCaller
         try {
             // Redirects are never followed: the SSRF guard vetted only the
             // original URL, so a 3xx to a private host would bypass it (and
-            // re-send the signature headers to the new target).
+            // re-send the signature headers to the new target). Pinning the
+            // connection to the vetted addresses (CURLOPT_RESOLVE) stops curl
+            // re-resolving the host — DNS can't rebind between check and send.
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'User-Agent' => 'Flowstack-Automations/1',
                 ...$this->signer->headers($secret, $body),
             ])
-                ->withOptions(['allow_redirects' => false])
+                ->withOptions([
+                    'allow_redirects' => false,
+                    'curl' => [CURLOPT_RESOLVE => $vetted['pin']],
+                ])
                 ->timeout($timeout)
                 ->withBody($body, 'application/json')
                 ->post($action->url);

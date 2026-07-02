@@ -94,6 +94,34 @@ class OutboundGuardTest extends TestCase
         $this->assertSame('localhost', $result['host']);
     }
 
+    public function test_pin_entries_target_vetted_addresses(): void
+    {
+        $result = $this->guard('93.184.216.34')->assertSafe('https://n8n.flowstack.run/webhook/abc');
+
+        // CURLOPT_RESOLVE format — curl connects here instead of re-resolving,
+        // so DNS can't rebind between the check and the request.
+        $this->assertSame(['n8n.flowstack.run:443:93.184.216.34'], $result['pin']);
+    }
+
+    public function test_pin_respects_explicit_port_and_joins_all_addresses(): void
+    {
+        config(['runtime.automation.allow_private_hosts' => true]);
+
+        $result = (new OutboundGuard(fn (string $host): array => ['127.0.0.1', '::1']))
+            ->assertSafe('http://localhost:5678/webhook/abc');
+
+        $this->assertSame(['localhost:5678:127.0.0.1,::1'], $result['pin']);
+    }
+
+    public function test_pin_is_empty_for_literal_ip_host(): void
+    {
+        // No DNS involved → nothing to rebind, nothing to pin.
+        $result = $this->guard('unused')->assertSafe('https://203.0.113.7/webhook');
+
+        $this->assertSame(['203.0.113.7'], $result['ips']);
+        $this->assertSame([], $result['pin']);
+    }
+
     public function test_is_public_ip_classification(): void
     {
         $guard = new OutboundGuard(fn () => []);
