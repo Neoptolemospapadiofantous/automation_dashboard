@@ -230,6 +230,7 @@ const urlHint = computed(() =>
                                     v-model="param.name"
                                     type="text"
                                     maxlength="64"
+                                    aria-label="Parameter name"
                                     class="block w-full rounded-none border-border-hi bg-bg font-mono text-xs text-ink focus:border-ink focus:ring-1 focus:ring-ink"
                                     placeholder="order_id"
                                 />
@@ -238,6 +239,7 @@ const urlHint = computed(() =>
                             <div class="sm:col-span-2">
                                 <select
                                     v-model="param.type"
+                                    aria-label="Parameter type"
                                     class="block w-full rounded-none border-border-hi bg-bg text-xs text-ink focus:border-ink focus:ring-1 focus:ring-ink"
                                 >
                                     <option v-for="t in paramTypes" :key="t" :value="t">{{ t }}</option>
@@ -248,6 +250,7 @@ const urlHint = computed(() =>
                                     v-model="param.description"
                                     type="text"
                                     maxlength="200"
+                                    aria-label="Parameter description"
                                     class="block w-full rounded-none border-border-hi bg-bg text-xs text-ink focus:border-ink focus:ring-1 focus:ring-ink"
                                     placeholder="The order number to look up"
                                 />
@@ -263,6 +266,7 @@ const urlHint = computed(() =>
                                 </label>
                                 <button
                                     type="button"
+                                    aria-label="Remove parameter"
                                     class="font-mono text-xs text-rose-600 hover:underline"
                                     @click="removeParam(i, j)"
                                 >

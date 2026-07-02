@@ -79,6 +79,7 @@ const pretty = (v) => (v == null ? '' : JSON.stringify(v, null, 2));
             <div class="flex flex-wrap items-center gap-2">
                 <select
                     v-model="status"
+                    aria-label="Filter by status"
                     class="rounded-none border-border-hi bg-bg text-sm text-ink focus:border-ink focus:ring-1 focus:ring-ink"
                     @change="applyFilters"
                 >
@@ -87,6 +88,7 @@ const pretty = (v) => (v == null ? '' : JSON.stringify(v, null, 2));
                 </select>
                 <select
                     v-model="action"
+                    aria-label="Filter by action"
                     class="rounded-none border-border-hi bg-bg text-sm text-ink focus:border-ink focus:ring-1 focus:ring-ink"
                     @change="applyFilters"
                 >

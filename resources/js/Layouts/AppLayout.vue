@@ -305,6 +305,7 @@ const handleMobileNavClick = (event) => {
                     <!-- Hamburger (mobile) -->
                     <button
                         type="button"
+                        aria-label="Open navigation"
                         class="-ml-1.5 inline-flex items-center justify-center rounded-none p-2.5 text-ink-dim hover:bg-surface-hi lg:hidden"
                         @click="showMobileNav = true"
                     >
@@ -353,7 +354,7 @@ const handleMobileNavClick = (event) => {
                         <!-- Notifications bell -->
                         <Dropdown align="right" width="80">
                             <template #trigger>
-                                <button type="button" class="relative inline-flex items-center rounded-none p-2 text-ink-dim hover:bg-surface-hi">
+                                <button type="button" aria-label="Notifications" class="relative inline-flex items-center rounded-none p-2 text-ink-dim hover:bg-surface-hi">
                                     <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                                     </svg>
@@ -433,7 +434,7 @@ const handleMobileNavClick = (event) => {
                         <Link :href="route('dashboard')" @click="showMobileNav = false">
                             <ApplicationMark class="block h-8 w-auto" />
                         </Link>
-                        <button type="button" class="rounded-none p-2 text-ink-dim hover:bg-surface-hi" @click="showMobileNav = false">
+                        <button type="button" aria-label="Close navigation" class="rounded-none p-2 text-ink-dim hover:bg-surface-hi" @click="showMobileNav = false">
                             <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
