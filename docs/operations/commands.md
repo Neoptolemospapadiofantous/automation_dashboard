@@ -29,6 +29,9 @@ scheduler's output surfaces failures to ops.
 | `platform:set` | `{key?} {value?}` `--list` | Sets/lists editable `platform_settings` (public-stats scarcity: `founder_slots_remaining`, `next_cohort_label`, `featured_proof`, …). Writing busts the `/api/public/stats` cache. | Manual (operator) |
 | `mail:test` | `{to}` (recipient) | Sends a probe email through the configured mailer; prints resolved driver + from-address. Warns when `MAIL_MAILER=log`. | Manual |
 | `arch:graph-check` | _(none)_ | Rebuilds the auto-discovered architecture graph (backs the local-only `/architecture` page) and exits **non-zero** if it has drifted — node count no longer matches the `app/` classes on disk, or a node is orphaned. | Gate (`hermes-fast`) + manual |
+| `agents:terminal` | `--team=` `--agent=` `--visitor=terminal-cli` `--message=` `--no-bill` | Interactive CLI chat with an agent on the native runtime; resumes per `--visitor`, bills like `ChatController`. `--message` = one-shot scripted turn. | Manual (operator) |
+| `agents:collab` | `--agents=<id,…>` `--topic=` `--rounds=1` `--room=` `--reset` `--no-bill` | Round-table of 2+ agents (may span teams); every turn billed to the speaker's team and recorded to the room ledger under `data/agents/rooms/`. | Manual (operator) |
+| `agents:ingest-project` | `{path}` `--team=2` `--name=` `--reset` | Creates/reuses a per-project agent and ingests the project's markdown docs into its knowledge base (≤ 60 files, ≤ 200 KB each). | Manual (operator) |
 
 > `runtime:prune-sessions --days` overrides the window (floored at 1).
 > `platform:set` with no key, or `--list`, prints the current table (or
@@ -105,6 +108,15 @@ reclaim storage, and only with `--force` after checking the dry run.
 `platform:set` curates the public-stats scarcity values the marketing
 site reads (see [[public-surface]]); `mail:test` verifies mail delivery
 config. Both manual.
+
+### Agent CLIs
+
+`agents:terminal`, `agents:collab`, `agents:ingest-project` — operator
+surfaces on the native runtime (terminal chat, multi-agent rooms,
+per-project knowledge agents). Design + billing model in
+[phase-17-agent-collab.md](../phase-17-agent-collab.md). `--no-bill` is
+dev-only; operator sessions bill normally so CLI usage never drifts the
+books.
 
 ## Related
 
