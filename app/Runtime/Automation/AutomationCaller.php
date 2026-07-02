@@ -25,9 +25,9 @@ class AutomationCaller
      * @param  array<string, mixed>  $arguments  Validated tool arguments.
      * @return array{http_status: int, body: string, duration_ms: int}
      *
-     * @throws BlockedAutomationUrl  URL failed the SSRF guard — never sent.
-     * @throws AutomationTimeout     Endpoint too slow / unreachable.
-     * @throws AutomationFailed      Non-2xx response or transport error.
+     * @throws BlockedAutomationUrl URL failed the SSRF guard — never sent.
+     * @throws AutomationTimeout Endpoint too slow / unreachable.
+     * @throws AutomationFailed Non-2xx response or transport error.
      */
     public function send(AutomationAction $action, array $arguments, string $secret): array
     {
@@ -45,11 +45,15 @@ class AutomationCaller
         $started = hrtime(true);
 
         try {
+            // Redirects are never followed: the SSRF guard vetted only the
+            // original URL, so a 3xx to a private host would bypass it (and
+            // re-send the signature headers to the new target).
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'User-Agent' => 'Flowstack-Automations/1',
                 ...$this->signer->headers($secret, $body),
             ])
+                ->withOptions(['allow_redirects' => false])
                 ->timeout($timeout)
                 ->withBody($body, 'application/json')
                 ->post($action->url);
@@ -60,7 +64,9 @@ class AutomationCaller
 
         $durationMs = (int) ((hrtime(true) - $started) / 1_000_000);
 
-        if ($response->failed()) {
+        // failed() only covers 4xx/5xx — reject 3xx explicitly, a webhook
+        // target never legitimately redirects.
+        if ($response->redirect() || $response->failed()) {
             throw new AutomationFailed(
                 "Endpoint returned HTTP {$response->status()}.",
                 $response->status(),

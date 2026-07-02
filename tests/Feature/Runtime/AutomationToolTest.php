@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Runtime;
 
+use App\Jobs\DispatchAutomationJob;
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
 use App\Models\AutomationRun;
@@ -117,6 +118,40 @@ class AutomationToolTest extends TestCase
         $this->assertSame($startBalance, $context->agent->team->fresh()->totalCredits());
     }
 
+    public function test_redirect_response_fails_and_is_never_followed(): void
+    {
+        // A vetted public endpoint answering 3xx must be treated as a failure:
+        // following it would re-run the request against a URL the SSRF guard
+        // never saw (here: the cloud metadata endpoint).
+        $this->stubResolverPublic();
+        Http::fake([
+            'n8n.flowstack.run/*' => Http::response('', 302, ['Location' => 'http://169.254.169.254/latest/meta-data/']),
+            '*' => Http::response('should never be reached', 200),
+        ]);
+
+        $context = $this->context([
+            ['name' => 'redirector', 'description' => 'x', 'url' => 'https://n8n.flowstack.run/webhook/redirect', 'mode' => 'sync', 'credit_cost' => 3],
+        ]);
+
+        $out = app(ToolRegistry::class)->dispatch(
+            new ToolCall('t1', 'call_automation', ['action' => 'redirector', 'arguments' => []]),
+            $context,
+        );
+
+        $this->assertStringContainsString('failed', $out['content']);
+
+        // Exactly one request — to the original URL, never the Location target.
+        Http::assertSentCount(1);
+        Http::assertNotSent(fn ($request): bool => str_contains($request->url(), '169.254.169.254'));
+
+        $this->assertDatabaseHas('automation_runs', [
+            'agent_id' => $context->agent->id,
+            'action' => 'redirector',
+            'status' => AutomationRun::STATUS_FAILED,
+            'http_status' => 302,
+        ]);
+    }
+
     public function test_out_of_credits_never_sends(): void
     {
         $this->stubResolverPublic();
@@ -155,7 +190,7 @@ class AutomationToolTest extends TestCase
         );
 
         $this->assertFalse($out['is_error']);
-        Queue::assertPushed(\App\Jobs\DispatchAutomationJob::class);
+        Queue::assertPushed(DispatchAutomationJob::class);
         $this->assertDatabaseHas('automation_runs', [
             'action' => 'sync_crm',
             'mode' => 'async',
