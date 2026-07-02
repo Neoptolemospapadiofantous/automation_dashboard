@@ -391,7 +391,12 @@
 </div>
 
 <form id="composer" autocomplete="off">
-    <input id="msg" type="text" placeholder="Type a message…" required maxlength="2000" autofocus>
+    {{-- No `autofocus` attribute: Chrome logs a "Blocked autofocusing"
+         console error for it in cross-origin iframes (every embedding
+         site sees it on load). Focus is handled in JS instead — on init
+         and on the widget's fs:visible message — which covers the
+         standalone hosted page too. --}}
+    <input id="msg" type="text" placeholder="Type a message…" required maxlength="2000">
     <button type="submit" id="send" aria-label="Send">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.27 3.13a.6.6 0 0 1 .82-.73l16.5 8.06a.6.6 0 0 1 0 1.08l-16.5 8.06a.6.6 0 0 1-.82-.73L6 12zm0 0h7"/></svg>
     </button>
