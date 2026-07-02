@@ -21,7 +21,7 @@ In ONE message:
 
 ### Step 3 — Spawn the 5 specialists in parallel
 Same as /hermes-fleet — read `scripts/fleet_agents.json`, spawn one Agent tool call per agent in a single message:
-- `route-auditor`, `inertia-page-scanner`, `migration-watcher`, `voiceflow-surface-sentinel`, `doc-syncer`
+- `route-auditor`, `inertia-page-scanner`, `migration-watcher`, `runtime-surface-sentinel`, `doc-syncer`
 
 Important: tell `doc-syncer` to **report only, do not apply edits** by prepending its prompt with "PLAN MODE: report findings only; do not Edit/Write any file."
 
@@ -47,7 +47,7 @@ Write `data/agents/fleet/<TS>/PLAN.md`:
 date: <YYYY-MM-DD>
 type: fleet-plan
 status: pending-review
-agents: [route-auditor, inertia-page-scanner, migration-watcher, voiceflow-surface-sentinel, doc-syncer]
+agents: [route-auditor, inertia-page-scanner, migration-watcher, runtime-surface-sentinel, doc-syncer]
 tags: [hermes, fleet, plan]
 ---
 # Fleet PLAN — <YYYY-MM-DD HH:MM UTC>

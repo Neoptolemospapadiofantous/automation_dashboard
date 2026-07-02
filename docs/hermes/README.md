@@ -116,7 +116,7 @@ flowchart LR
 | `scripts/hermes_learn.py` | Learning loop (deterministic) — snapshots history + mines git for escaped-bug/coverage/flake signals → reviewable manifest proposals (`composer hermes-learn`, periodic) |
 | `docs/hermes/effectiveness.md` | Generated "is Hermes working?" report — KPI charts + regression check |
 | `docs/hermes/manifest.json` | **The trunk** — the project graph every Hermes check reads from (subsystems → docs/tests/checks/edges, + canonical docs) |
-| `scripts/fleet_agents.json` | 5 specialist agent definitions (route-auditor, inertia-page-scanner, migration-watcher, voiceflow-surface-sentinel, doc-syncer) — consumed by `.claude/commands/hermes-fleet.md` |
+| `scripts/fleet_agents.json` | 5 specialist agent definitions (route-auditor, inertia-page-scanner, migration-watcher, runtime-surface-sentinel, doc-syncer) — consumed by `.claude/commands/hermes-fleet.md` |
 | `scripts/agents/audit_sentinel.sh` | No-LLM collector — writes `data/agents/audit-sentinel/findings.json` (security/risk scan) |
 | `scripts/agents/update_inspector.sh` | No-LLM collector — writes `data/agents/update-inspector/findings.json` (composer + pnpm outdated) |
 | `scripts/agents/system_check.sh` | No-LLM collector — writes `data/agents/system-check/findings.json` (runtime health) |

@@ -1,5 +1,5 @@
 ---
-description: Run the 5-agent automation_dashboard fleet (route-auditor, inertia-page-scanner, migration-watcher, voiceflow-surface-sentinel, doc-syncer) within this interactive session. Free under Anthropic's post-2026-06-15 billing — subscription, not the programmatic credit pool.
+description: Run the 5-agent automation_dashboard fleet (route-auditor, inertia-page-scanner, migration-watcher, runtime-surface-sentinel, doc-syncer) within this interactive session. Free under Anthropic's post-2026-06-15 billing — subscription, not the programmatic credit pool.
 ---
 
 You are the Hermes Fleet Coordinator for automation_dashboard (Laravel 12 + Inertia/Vue 3 + Jetstream + Voiceflow). Execute the following workflow end-to-end. Read this entire file before starting — every step is required.
@@ -30,10 +30,10 @@ Read `scripts/fleet_agents.json` to get the exact `prompt` field for each of the
 | `route-auditor` | `general-purpose` | `scripts/fleet_agents.json` → `route-auditor.prompt` |
 | `inertia-page-scanner` | `general-purpose` | `scripts/fleet_agents.json` → `inertia-page-scanner.prompt` |
 | `migration-watcher` | `general-purpose` | `scripts/fleet_agents.json` → `migration-watcher.prompt` |
-| `voiceflow-surface-sentinel` | `general-purpose` | `scripts/fleet_agents.json` → `voiceflow-surface-sentinel.prompt` |
+| `runtime-surface-sentinel` | `general-purpose` | `scripts/fleet_agents.json` → `runtime-surface-sentinel.prompt` |
 | `doc-syncer` | `general-purpose` | `scripts/fleet_agents.json` → `doc-syncer.prompt` |
 
-Pass each agent its full prompt verbatim. Each specialist either reports findings (`route-auditor`, `inertia-page-scanner`, `migration-watcher`, `voiceflow-surface-sentinel`) or also applies its own targeted edits (`doc-syncer` — see its prompt).
+Pass each agent its full prompt verbatim. Each specialist either reports findings (`route-auditor`, `inertia-page-scanner`, `migration-watcher`, `runtime-surface-sentinel`) or also applies its own targeted edits (`doc-syncer` — see its prompt).
 
 ## Step 4 — Synthesize and apply fixes
 
@@ -79,7 +79,7 @@ date: <YYYY-MM-DD>
 type: fleet
 baseline_overall: <PASS|WARN|FAIL>
 final_overall: <PASS|WARN|FAIL>
-agents: [route-auditor, inertia-page-scanner, migration-watcher, voiceflow-surface-sentinel, doc-syncer]
+agents: [route-auditor, inertia-page-scanner, migration-watcher, runtime-surface-sentinel, doc-syncer]
 tags: [hermes, fleet]
 ---
 # Fleet Run — <YYYY-MM-DD HH:MM UTC>
@@ -97,7 +97,7 @@ tags: [hermes, fleet]
 ### Migration Watcher
 <findings>
 
-### Voiceflow Surface Sentinel
+### Runtime Surface Sentinel
 <findings>
 
 ### Doc Syncer
@@ -134,7 +134,7 @@ graph TB
     C --> RA[route-auditor]
     C --> IS[inertia-page-scanner]
     C --> MW[migration-watcher]
-    C --> VS[voiceflow-surface-sentinel]
+    C --> VS[runtime-surface-sentinel]
     C --> DS[doc-syncer]
 
     classDef pass fill:#d4f4dd,stroke:#34a853

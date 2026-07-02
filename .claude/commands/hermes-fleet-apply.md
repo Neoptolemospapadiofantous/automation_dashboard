@@ -80,7 +80,7 @@ type: fleet
 baseline_overall: <from plan>
 final_overall: <from verification>
 applied_from_plan: data/agents/fleet/<plan TS>/PLAN.md
-agents: [route-auditor, inertia-page-scanner, migration-watcher, voiceflow-surface-sentinel, doc-syncer]
+agents: [route-auditor, inertia-page-scanner, migration-watcher, runtime-surface-sentinel, doc-syncer]
 tags: [hermes, fleet, applied]
 ---
 # Fleet Run (applied) — <YYYY-MM-DD HH:MM UTC>

@@ -184,7 +184,7 @@ Read `scripts/fleet_agents.json`. In ONE message containing FIVE Agent tool call
 - `route-auditor` (subagent_type: `general-purpose`) — pass the `route-auditor.prompt` field verbatim
 - `inertia-page-scanner` (subagent_type: `general-purpose`) — pass the `inertia-page-scanner.prompt` field verbatim
 - `migration-watcher` (subagent_type: `general-purpose`) — pass the `migration-watcher.prompt` field verbatim
-- `voiceflow-surface-sentinel` (subagent_type: `general-purpose`) — pass the `voiceflow-surface-sentinel.prompt` field verbatim
+- `runtime-surface-sentinel` (subagent_type: `general-purpose`) — pass the `runtime-surface-sentinel.prompt` field verbatim
 - `doc-syncer` (subagent_type: `general-purpose`) — pass the `doc-syncer.prompt` field verbatim
 
 Collect all 5 reports.
