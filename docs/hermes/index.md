@@ -54,6 +54,10 @@ Every concern that has an agent slash command also has a no-LLM collector. The c
 
 Every agent run writes a session note here with frontmatter for [[#Search by frontmatter|dataview queries]]. Naming convention: `<TYPE>-<YYYY-MM-DD>_<HH-MM>.md`.
 
+### 2026-07
+
+- 2026-07-02 11:23 UTC — [[AUDIT-2026-07-02_11-23|Audit]] — WARN, 0 critical / 1 high / 1 medium confirmed
+
 ### 2026-06
 
 - 2026-06-21 11:52 UTC — [[AUDIT-2026-06-21_11-52|Audit]] — PASS, 0 critical / 0 high / 0 medium confirmed
