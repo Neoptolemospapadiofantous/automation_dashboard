@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Authorization\Role;
 use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
+use App\Http\Controllers\Concerns\AuthorizesHermesOperator;
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
 use App\Models\AutomationRun;
@@ -26,10 +27,15 @@ use Inertia\Response;
  * controller is the translation layer to/from the JSON-Schema shape the
  * runtime (AutomationAction) reads. Nothing here fires a webhook — that only
  * happens at conversation time, behind the SSRF guard and the master flag.
+ *
+ * Automations are a managed service: Flowstack configures every client's
+ * actions, so this authoring surface is gated to the Hermes operator tier.
+ * Clients get the read-only Activity view, not this editor.
  */
 class AgentActionsController extends Controller
 {
     use AuthorizesByTeamRole;
+    use AuthorizesHermesOperator;
 
     private const MAX_ACTIONS = 25;
 
@@ -39,6 +45,7 @@ class AgentActionsController extends Controller
 
     public function index(Request $request): Response
     {
+        $this->requireHermesOperator($request);
         $agent = $this->currentAgent($request);
 
         $draftConfig = null;
@@ -76,6 +83,7 @@ class AgentActionsController extends Controller
      */
     public function save(Request $request): RedirectResponse
     {
+        $this->requireHermesOperator($request);
         $this->requireCapability($request, fn (Role $r) => $r->canUpdateAgent(), 'edit agent automations');
         $agent = $this->currentAgentOrAbort($request);
 

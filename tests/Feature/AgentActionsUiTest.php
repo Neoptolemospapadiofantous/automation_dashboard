@@ -18,14 +18,43 @@ class AgentActionsUiTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @return array{0: User, 1: Agent} */
-    private function userWithAgent(): array
+    /**
+     * Authoring Actions is a managed-service surface gated to Hermes operators,
+     * so the acting user is registered into the operator allowlist.
+     *
+     * @return array{0: User, 1: Agent}
+     */
+    private function userWithAgent(bool $operator = true): array
     {
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create();
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
 
+        if ($operator) {
+            config(['hermes.operators' => array_merge(config('hermes.operators', []), [$user->email])]);
+        }
+
         return [$user, $agent];
+    }
+
+    public function test_index_forbidden_for_non_operator(): void
+    {
+        [$user] = $this->userWithAgent(operator: false);
+        config(['hermes.operators' => []]);
+
+        $this->actingAs($user)->get(route('agents.actions.index'))->assertForbidden();
+    }
+
+    public function test_save_forbidden_for_non_operator(): void
+    {
+        [$user] = $this->userWithAgent(operator: false);
+        config(['hermes.operators' => []]);
+
+        $this->actingAs($user)->post(route('agents.actions.save'), [
+            'automations' => [[
+                'name' => 'x', 'url' => 'https://n8n.flowstack.run/a', 'mode' => 'sync', 'credit_cost' => 1, 'parameters' => [],
+            ]],
+        ])->assertForbidden();
     }
 
     public function test_index_renders_seeded_from_published(): void

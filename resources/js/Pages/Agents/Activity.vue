@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 
@@ -11,6 +11,8 @@ const props = defineProps({
     actionOptions: { type: Array, default: () => [] },
     summary: { type: Object, default: () => ({ total: 0, success: 0, success_rate: null, credits_charged: 0 }) },
 });
+
+const isAdmin = computed(() => usePage().props.isAdmin === true);
 
 const status = ref(props.filters.status ?? '');
 const action = ref(props.filters.action ?? '');
@@ -161,7 +163,7 @@ const pretty = (v) => (v == null ? '' : JSON.stringify(v, null, 2));
                                             Runs appear here once the agent calls one of its actions in a conversation.
                                         </p>
                                     </div>
-                                    <Link :href="route('agents.actions.index')" class="text-xs font-medium text-ink underline hover:text-ink-dim">
+                                    <Link v-if="isAdmin" :href="route('agents.actions.index')" class="text-xs font-medium text-ink underline hover:text-ink-dim">
                                         Configure actions →
                                     </Link>
                                 </div>

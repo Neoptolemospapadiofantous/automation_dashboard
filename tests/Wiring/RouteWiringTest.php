@@ -39,6 +39,19 @@ class RouteWiringTest extends TestCase
         'policy.show',          // Jetstream terms & privacy feature disabled
     ];
 
+    /**
+     * Operator routes registered only inside app()->environment('local')
+     * in routes/web.php — absent here (testing) and in production by
+     * design. Their sidebar links are guarded with hasRoute(), so Ziggy
+     * never evaluates them where the route is missing.
+     *
+     * @var list<string>
+     */
+    private const LOCAL_ONLY_ROUTES = [
+        'hermes.metrics',       // Hermes effectiveness KPIs (local ops page)
+        'architecture.graph',   // Mermaid render of the architecture doc
+    ];
+
     public function test_every_route_action_exists(): void
     {
         $failures = [];
@@ -110,7 +123,8 @@ class RouteWiringTest extends TestCase
 
         $missing = [];
         foreach ($referenced as $name) {
-            if (in_array($name, self::UNROUTED_FEATURE_FLAGGED, true)) {
+            if (in_array($name, self::UNROUTED_FEATURE_FLAGGED, true)
+                || in_array($name, self::LOCAL_ONLY_ROUTES, true)) {
                 continue;
             }
 
