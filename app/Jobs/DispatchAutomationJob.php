@@ -36,8 +36,15 @@ class DispatchAutomationJob implements ShouldQueue
 
     public int $tries = 3;
 
-    /** @var list<int> */
-    public array $backoff = [10, 30];
+    /**
+     * Seconds to wait before each retry (read by the queue worker).
+     *
+     * @return list<int>
+     */
+    public function backoff(): array
+    {
+        return [10, 30];
+    }
 
     /**
      * @param  array<string, mixed>  $arguments

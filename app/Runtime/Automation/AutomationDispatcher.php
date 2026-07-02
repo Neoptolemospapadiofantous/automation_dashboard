@@ -7,6 +7,7 @@ use App\Billing\Exceptions\OutOfCredits;
 use App\Jobs\DispatchAutomationJob;
 use App\Models\Agent;
 use App\Models\AutomationRun;
+use App\Models\Team;
 use App\Runtime\Models\RuntimeSession;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -65,8 +66,12 @@ class AutomationDispatcher
         }
 
         // Bill BEFORE firing. Out of credits → no webhook leaves the box.
+        $team = $agent->team;
+        if (! $team instanceof Team) {
+            return $this->fail($run, AutomationRun::STATUS_FAILED, 'Agent has no team to bill.', trip: false, agentId: $agent->id, action: $action->name);
+        }
         try {
-            $this->credits->consume($agent->team, $action->creditCost, $agent->id, [
+            $this->credits->consume($team, $action->creditCost, $agent->id, [
                 'reason_detail' => 'automation',
                 'action' => $action->name,
                 'automation_run_id' => $run->id,

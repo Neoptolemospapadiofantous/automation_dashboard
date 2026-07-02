@@ -3,10 +3,10 @@
 namespace App\Providers;
 
 use App\Runtime\AgentRuntime;
+use App\Runtime\Automation\OutboundGuard;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\Contracts\Runtime;
 use App\Runtime\Knowledge\KnowledgeBase;
-use App\Runtime\Automation\OutboundGuard;
 use App\Runtime\Tools\CallAutomationTool;
 use App\Runtime\Tools\CaptureLeadTool;
 use App\Runtime\Tools\EndSessionTool;

@@ -1,18 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$current_agent_id\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Actions/Agents/DeleteAgent.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:agents\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Actions/Agents/DeleteAgent.php
-
-		-
 			message: '#^Unused App\\Actions\\Fortify\\ResetUserPassword\:\:reset$#'
 			identifier: shipmonk.deadMethod
 			count: 1
@@ -398,12 +386,6 @@ parameters:
 
 		-
 			message: '#^Method App\\Models\\Agent\:\:messages\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Agent.php
-
-		-
-			message: '#^Method App\\Models\\Agent\:\:team\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
 			count: 1
 			path: app/Models/Agent.php

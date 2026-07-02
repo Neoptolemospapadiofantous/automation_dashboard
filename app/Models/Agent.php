@@ -181,6 +181,7 @@ class Agent extends Model
         return $slug;
     }
 
+    /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);

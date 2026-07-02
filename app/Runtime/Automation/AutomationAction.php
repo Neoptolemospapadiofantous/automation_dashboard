@@ -67,14 +67,29 @@ class AutomationAction
 
     /**
      * The line describing this action in the system-prompt catalog, so the
-     * model knows the action exists and when to call it.
+     * model knows the action exists, when to call it, and what arguments it
+     * expects (the call_automation tool takes free-form arguments — this
+     * schema is the model's only source for their shape).
      */
     public function catalogLine(): string
     {
         $desc = $this->description !== '' ? $this->description : 'No description provided.';
         $timing = $this->isAsync() ? 'runs in the background' : 'returns a result';
 
-        return "- {$this->name} ({$timing}): {$desc}";
+        $line = "- {$this->name} ({$timing}): {$desc}";
+
+        $properties = $this->parameters['properties'] ?? [];
+        if (is_object($properties)) {
+            $properties = get_object_vars($properties);
+        }
+        if (is_array($properties) && $properties !== []) {
+            $schema = json_encode($this->parameters);
+            if ($schema !== false) {
+                $line .= " Arguments (JSON Schema): {$schema}";
+            }
+        }
+
+        return $line;
     }
 
     /**
