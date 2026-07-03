@@ -767,10 +767,13 @@
                 // Returning to a live session: replay history, skip greeting.
                 renderTranscript(r.body.transcript);
             } else {
-                // New thread: optional welcome, the greeting traces, then starters.
+                // New thread: optional welcome, the greeting traces, then the
+                // quick-reply chips — configured starters plus the FAQ
+                // categories (tapping one is answered for free, no AI call).
                 addWelcome(WELCOME);
                 renderTraces(r.body.traces);
-                addQuickReplies(STARTERS);
+                var chips = Array.isArray(r.body.chips) ? r.body.chips : [];
+                addQuickReplies(STARTERS.concat(chips));
             }
             input.focus();
             toParent({ type: 'fs:ready' });

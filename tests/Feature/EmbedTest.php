@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Agent;
+use App\Models\AgentConfigVersion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -121,6 +122,109 @@ class EmbedTest extends TestCase
 
         // (1 user message + 1 reply) × haiku multiplier 1 = 2 credits.
         $this->assertSame(98, $agent->team->fresh()->credit_balance);
+    }
+
+    public function test_canned_answer_short_circuits_without_llm_or_credits(): void
+    {
+        $agent = $this->makeAgent('active');
+        $agent->team->forceFill(['credit_balance' => 100])->save();
+        $this->publishCanned($agent, [
+            ['category' => 'Pricing', 'keywords' => ['cost', 'how much'], 'answer' => 'Plans start at $99/mo.'],
+        ]);
+
+        // No Anthropic fake on purpose — a canned hit must never touch the LLM.
+        Http::fake();
+
+        $this->postJson("/embed/{$agent->slug}/interact", [
+            'visitor_id' => 'embed-canned',
+            'message' => 'how much does it cost?',
+        ])->assertOk()
+            ->assertJsonPath('traces.0.payload.message', 'Plans start at $99/mo.')
+            ->assertJsonPath('traces.0.payload.canned', true);
+
+        Http::assertNothingSent();
+        // FAQ turns are free — balance is untouched.
+        $this->assertSame(100, $agent->team->fresh()->credit_balance);
+    }
+
+    public function test_canned_answer_served_even_when_out_of_credits(): void
+    {
+        $agent = $this->makeAgent('active');
+        $agent->team->forceFill(['credit_balance' => 0])->save();
+        $this->publishCanned($agent, [
+            ['category' => 'Pricing', 'keywords' => ['cost'], 'answer' => 'Plans start at $99/mo.'],
+        ]);
+        Http::fake();
+
+        // The typed path would 402 out of credits; a canned hit answers anyway.
+        $this->postJson("/embed/{$agent->slug}/interact", [
+            'visitor_id' => 'embed-canned-2',
+            'message' => 'Pricing',
+        ])->assertOk()
+            ->assertJsonPath('traces.0.payload.canned', true);
+
+        Http::assertNothingSent();
+    }
+
+    public function test_non_matching_message_falls_through_to_the_llm(): void
+    {
+        $agent = $this->makeAgent('active');
+        $agent->team->forceFill(['credit_balance' => 100])->save();
+        $this->publishCanned($agent, [
+            ['category' => 'Pricing', 'keywords' => ['cost'], 'answer' => 'From $99.'],
+        ]);
+
+        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
+        Http::fake([
+            'api.anthropic.com/*' => Http::response([
+                'content' => [['type' => 'text', 'text' => 'We integrate with Slack!']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 5, 'output_tokens' => 5],
+            ], 200),
+        ]);
+
+        $this->postJson("/embed/{$agent->slug}/interact", [
+            'visitor_id' => 'embed-fallthrough',
+            'message' => 'do you integrate with Slack?',
+        ])->assertOk();
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'anthropic'));
+        // LLM turn billed normally: (1 + 1) × 1.
+        $this->assertSame(98, $agent->team->fresh()->credit_balance);
+    }
+
+    public function test_launch_exposes_canned_chips(): void
+    {
+        $agent = $this->makeAgent('active');
+        $this->publishCanned($agent, [
+            ['category' => 'Pricing', 'keywords' => ['cost'], 'answer' => 'From $99.'],
+            ['category' => 'Features', 'keywords' => ['feature'], 'answer' => 'Lots.'],
+        ]);
+
+        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
+        Http::fake([
+            'api.anthropic.com/*' => Http::response([
+                'content' => [['type' => 'text', 'text' => 'Hi!']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 1, 'output_tokens' => 1],
+            ], 200),
+        ]);
+
+        $this->postJson("/embed/{$agent->slug}/launch", ['visitor_id' => 'embed-chips'])
+            ->assertOk()
+            ->assertJsonPath('chips', ['Pricing', 'Features']);
+    }
+
+    /** @param list<array<string, mixed>> $canned */
+    private function publishCanned(Agent $agent, array $canned): void
+    {
+        AgentConfigVersion::create([
+            'agent_id' => $agent->id,
+            'version' => 1,
+            'status' => 'published',
+            'config' => ['canned_answers' => $canned],
+            'published_at' => now(),
+        ]);
     }
 
     private function makeAgent(string $status): Agent

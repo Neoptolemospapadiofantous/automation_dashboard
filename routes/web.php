@@ -3,6 +3,7 @@
 use App\Http\Controllers\AgentActionsController;
 use App\Http\Controllers\AgentAnalyticsController;
 use App\Http\Controllers\AgentController;
+use App\Http\Controllers\AgentFaqController;
 use App\Http\Controllers\AgentVersionsController;
 use App\Http\Controllers\ArchitectureGraphController;
 use App\Http\Controllers\AutomationActivityController;
@@ -90,6 +91,16 @@ Route::middleware([
     Route::post('/agents/actions', [AgentActionsController::class, 'save'])
         ->middleware('throttle:60,1')
         ->name('agents.actions.save');
+
+    // Operator FAQ editor — author the agent's deterministic canned answers
+    // (served without an LLM call). Writes the SAME draft (config.canned_answers)
+    // so it shares the publish/rollback lifecycle. Before the /agents/{agent}
+    // wildcard for the same slug-swallowing reason.
+    Route::get('/agents/faq', [AgentFaqController::class, 'index'])
+        ->name('agents.faq.index');
+    Route::post('/agents/faq', [AgentFaqController::class, 'save'])
+        ->middleware('throttle:60,1')
+        ->name('agents.faq.save');
 
     // Automation activity — read-only view of the automation_runs audit log
     // for the current agent. Before the /agents/{agent} wildcard.

@@ -9,6 +9,7 @@ use App\Models\Agent;
 use App\Models\AgentConfigVersion;
 use App\Models\Conversation;
 use App\Models\Team;
+use App\Runtime\Canned\CannedAnswers;
 use App\Runtime\Contracts\Runtime;
 use App\Runtime\Exceptions\RuntimeException;
 use App\Runtime\Models\RuntimeSession;
@@ -165,6 +166,7 @@ class EmbedController extends Controller
                 'resumed' => true,
                 'transcript' => $this->runtime->transcript($agent, $visitorId),
                 'traces' => [],
+                'chips' => CannedAnswers::forAgent($agent->id)->chips(),
             ]);
         }
 
@@ -219,6 +221,7 @@ class EmbedController extends Controller
             'resumed' => false,
             'transcript' => [],
             'traces' => $traces,
+            'chips' => CannedAnswers::forAgent($agent->id)->chips(),
         ]);
     }
 
@@ -286,6 +289,24 @@ class EmbedController extends Controller
         $team = $agent->team;
         if (! $team instanceof Team) {
             return response()->json(['error' => 'Agent misconfigured.'], 503);
+        }
+
+        // Deterministic FAQ shortcut FIRST: a chip tap or a keyword-matched
+        // question is answered from stored config with no LLM call and no
+        // credit charge. Checked before the credit pre-check on purpose, so
+        // canned answers keep working even when the team is out of credits.
+        if ($canned = CannedAnswers::forAgent($agent->id)->match($data['message'])) {
+            $visitorToken = $this->resolveVisitorToken((string) $request->input('visitor_token', ''));
+            $conversation = $this->recordConversation($agent, $data['visitor_id'], $visitorToken);
+            $this->recordMessage($conversation, 'user', $data['message']);
+            $this->broadcastEmbed($team->id, 'user', $data['message']);
+            $this->recordMessage($conversation, 'agent', $canned->answer);
+            $this->broadcastEmbed($team->id, 'agent', $canned->answer);
+
+            return response()->json([
+                'traces' => [['type' => 'text', 'payload' => ['message' => $canned->answer, 'citations' => [], 'canned' => true]]],
+                'ended' => false,
+            ]);
         }
 
         // Pre-check only — the debit happens AFTER the engine replies so the
