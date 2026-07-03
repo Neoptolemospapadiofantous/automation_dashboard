@@ -10,10 +10,8 @@ import InputLabel from '@/Components/InputLabel.vue';
 import EmptyState from '@/Components/EmptyState.vue';
 
 const props = defineProps({
-    agent: { type: Object, default: null },
     draftActions: { type: Array, default: null }, // null = no draft yet
     publishedActions: { type: Array, default: () => [] },
-    hasDraft: { type: Boolean, default: false },
     enabled: { type: Boolean, default: false },
     allowPrivateHosts: { type: Boolean, default: false },
     modes: { type: Array, default: () => ['sync', 'async'] },

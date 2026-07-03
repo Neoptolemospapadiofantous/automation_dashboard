@@ -22,7 +22,7 @@ version: 1
 
 suppressions:
   - finding: XSS_RISK
-    location: resources/js/Pages/Conversations/Index.vue:111
+    location: resources/js/Pages/Conversations/Index.vue:230  # pagination v-html; line drifts as the file grows — the inline @hermes-keep beside it is the durable anchor
     reason: |
       Laravel paginator labels are server-controlled HTML entities (&laquo; / &raquo;
       for previous/next), not user input. The `link.label` field comes from

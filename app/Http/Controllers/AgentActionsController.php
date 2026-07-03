@@ -64,11 +64,9 @@ class AgentActionsController extends Controller
         }
 
         return Inertia::render('Agents/Actions', [
-            'agent' => $agent ? ['id' => $agent->id, 'name' => $agent->name, 'slug' => $agent->slug] : null,
-            // Edit the draft when one exists, else seed from what's live.
+            // Edit the draft when one exists (null = no draft), else seed from what's live.
             'draftActions' => $draftConfig !== null ? $this->toUi($draftConfig['automations'] ?? []) : null,
             'publishedActions' => $this->toUi($publishedConfig['automations'] ?? []),
-            'hasDraft' => $draftConfig !== null,
             'enabled' => (bool) config('runtime.automation.enabled', false),
             'allowPrivateHosts' => (bool) config('runtime.automation.allow_private_hosts', false),
             'modes' => [AutomationRun::MODE_SYNC, AutomationRun::MODE_ASYNC],
