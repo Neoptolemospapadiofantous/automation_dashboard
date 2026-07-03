@@ -7,6 +7,7 @@ use App\Models\Lead;
 use App\Models\User;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\Contracts\Runtime;
+use App\Runtime\LLM\SystemPrompt;
 use App\Runtime\Models\RuntimeSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -275,7 +276,8 @@ class DialogPathTest extends TestCase
         $system = '';
         foreach (Http::recorded() as [$request, $response]) {
             if (str_contains($request->url(), 'api.anthropic.com')) {
-                $system = (string) ($request->data()['system'] ?? '');
+                // system is now cacheable blocks (SystemPrompt::blocks); flatten.
+                $system = SystemPrompt::toText($request->data()['system'] ?? '');
             }
         }
 

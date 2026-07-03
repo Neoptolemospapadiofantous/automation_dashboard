@@ -6,6 +6,7 @@ use App\Models\Agent;
 use App\Models\AgentConfigVersion;
 use App\Models\User;
 use App\Runtime\Contracts\Runtime;
+use App\Runtime\LLM\SystemPrompt;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -153,7 +154,7 @@ class AgentVersionsTest extends TestCase
         app(Runtime::class)->launch($agent, 'v-cfg-1');
 
         Http::assertSent(function ($request): bool {
-            $system = (string) $request->data()['system'];
+            $system = SystemPrompt::toText($request->data()['system'] ?? '');
 
             return str_contains($system, 'Always ask about practice size.')
                 && str_contains($system, 'Mention the March webinar.'); // greeting turn
@@ -183,7 +184,7 @@ class AgentVersionsTest extends TestCase
 
         app(Runtime::class)->launch($agent, 'v-cfg-2');
 
-        Http::assertSent(fn ($request): bool => ! str_contains((string) $request->data()['system'], 'DRAFT ONLY'));
+        Http::assertSent(fn ($request): bool => ! str_contains(SystemPrompt::toText($request->data()['system'] ?? ''), 'DRAFT ONLY'));
     }
 
     private function owner(): User

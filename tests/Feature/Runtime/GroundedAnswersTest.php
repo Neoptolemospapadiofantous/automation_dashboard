@@ -293,7 +293,7 @@ class GroundedAnswersTest extends TestCase
             /** @param list<CompletionResult> $queue */
             public function __construct(private array $queue) {}
 
-            public function complete(string $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
+            public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
             {
                 return array_shift($this->queue) ?? new CompletionResult('', [], [['type' => 'text', 'text' => '']], 'end_turn', 0, 0);
             }

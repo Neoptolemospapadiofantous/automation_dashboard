@@ -21,7 +21,12 @@ use Throwable;
  */
 class GeminiClient implements LlmClient
 {
-    public function complete(string $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
+    /**
+     * @param  string|list<array<string, mixed>>  $system  System prompt (blocks flattened to text; Gemini has no explicit cache control)
+     * @param  list<array<string, mixed>>  $messages  Canonical messages
+     * @param  list<array<string, mixed>>  $tools  Canonical tool specs
+     */
+    public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
     {
         $apiKey = (string) config('runtime.llm.google.api_key');
         if ($apiKey === '') {
@@ -31,7 +36,7 @@ class GeminiClient implements LlmClient
         $model = $model ?? (string) config('runtime.llm.google.model_default');
 
         $payload = [
-            'systemInstruction' => ['parts' => [['text' => $system]]],
+            'systemInstruction' => ['parts' => [['text' => SystemPrompt::toText($system)]]],
             'contents' => $this->toGeminiContents($messages),
             'generationConfig' => [
                 'maxOutputTokens' => $maxTokens ?? (int) config('runtime.llm.google.max_tokens', config('runtime.llm.anthropic.max_tokens')),

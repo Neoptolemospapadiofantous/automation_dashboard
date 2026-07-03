@@ -26,11 +26,11 @@ class AnthropicClient implements LlmClient
     /**
      * Run one completion turn.
      *
-     * @param  string  $system  System prompt (assembled by the flow executor)
+     * @param  string|list<array<string, mixed>>  $system  System prompt (string, or cacheable blocks from SystemPrompt::blocks)
      * @param  list<array<string, mixed>>  $messages  Anthropic-format messages
      * @param  list<array<string, mixed>>  $tools  Anthropic-format tool specs
      */
-    public function complete(string $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
+    public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
     {
         $apiKey = (string) config('runtime.llm.anthropic.api_key');
         if ($apiKey === '') {
@@ -40,6 +40,8 @@ class AnthropicClient implements LlmClient
         $payload = [
             'model' => $model ?? (string) config('runtime.llm.anthropic.model_default'),
             'max_tokens' => $maxTokens ?? (int) config('runtime.llm.anthropic.max_tokens'),
+            // Blocks carrying cache_control (from SystemPrompt::blocks) ride
+            // through verbatim so Anthropic caches the stable prefix.
             'system' => $system,
             'messages' => $messages,
         ];

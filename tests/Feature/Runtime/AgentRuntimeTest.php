@@ -7,6 +7,7 @@ use App\Models\Lead;
 use App\Models\User;
 use App\Runtime\AgentRuntime;
 use App\Runtime\Contracts\KnowledgeStore;
+use App\Runtime\LLM\SystemPrompt;
 use App\Runtime\Models\RuntimeSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -115,7 +116,7 @@ class AgentRuntimeTest extends TestCase
                 return false;
             }
 
-            return str_contains((string) $request->data()['system'], 'Starter plan costs $99 per month.');
+            return str_contains(SystemPrompt::toText($request->data()['system'] ?? ''), 'Starter plan costs $99 per month.');
         });
     }
 

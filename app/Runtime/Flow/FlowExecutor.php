@@ -8,6 +8,7 @@ use App\Models\RuntimeUsage;
 use App\Runtime\Automation\AutomationCatalog;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\LLM\LlmRouter;
+use App\Runtime\LLM\SystemPrompt;
 use App\Runtime\Session\ConversationContext;
 use App\Runtime\Session\SessionManager;
 use App\Runtime\Support\CaptureLeadBackstop;
@@ -217,13 +218,22 @@ class FlowExecutor
     /**
      * Base identity + guardrails + state instructions + remembered
      * variables + auto-RAG context for this turn.
+     *
+     * Returns canonical system blocks: a STABLE prefix (persona, operator
+     * instructions, automation catalog — identical across a conversation)
+     * carrying the cache breakpoint, followed by the DYNAMIC per-turn content
+     * (objective, visitor facts, KB context). Anthropic caches the stable
+     * prefix; other providers flatten to text (see SystemPrompt).
+     *
+     * @return string|list<array<string, mixed>>
      */
-    protected function systemPrompt(Agent $agent, State $state, ConversationContext $context, string $kbContext, bool $lowConfidence, ?AutomationCatalog $automations = null): string
+    protected function systemPrompt(Agent $agent, State $state, ConversationContext $context, string $kbContext, bool $lowConfidence, ?AutomationCatalog $automations = null): string|array
     {
         $company = (string) ($agent->team->name ?? 'the company');
 
-        $parts = [];
-        $parts[] = "You are {$agent->name}, the website chat assistant for {$company}. "
+        // ── STABLE prefix (cacheable — same every turn of a conversation) ──
+        $stable = [];
+        $stable[] = "You are {$agent->name}, the website chat assistant for {$company}. "
             .'Be warm, concise (2-4 sentences per reply), and helpful. Mirror the visitor\'s '
             .'language. Never invent product facts, prices, or policies — only state what the '
             .'knowledge-base context or tool results tell you. You are an AI assistant: never '
@@ -235,14 +245,23 @@ class FlowExecutor
         $published = AgentConfigVersion::publishedConfig($agent->id);
         $instructions = trim((string) ($published['instructions'] ?? ''));
         if ($instructions !== '') {
-            $parts[] = "Operator instructions (follow alongside the rules above):\n".$instructions;
+            $stable[] = "Operator instructions (follow alongside the rules above):\n".$instructions;
         }
 
-        $parts[] = 'Current objective: '.$state->prompt;
+        // Which automations the model may run and when (the call_automation
+        // tool dispatches by the action name listed here).
+        $catalog = $automations?->promptCatalog() ?? '';
+        if ($catalog !== '') {
+            $stable[] = $catalog;
+        }
+
+        // ── DYNAMIC suffix (per-turn — never cached) ──
+        $dynamic = [];
+        $dynamic[] = 'Current objective: '.$state->prompt;
 
         $greetingHint = trim((string) ($published['greeting'] ?? ''));
         if ($greetingHint !== '' && $context->userMessage === self::OPENING_MESSAGE) {
-            $parts[] = 'Greeting guidance from the operator: '.$greetingHint;
+            $dynamic[] = 'Greeting guidance from the operator: '.$greetingHint;
         }
 
         $vars = array_filter(
@@ -255,27 +274,20 @@ class FlowExecutor
             foreach ($vars as $k => $v) {
                 $lines[] = "- {$k}: {$v}";
             }
-            $parts[] = "Known facts about this visitor (do not re-ask):\n".implode("\n", $lines);
+            $dynamic[] = "Known facts about this visitor (do not re-ask):\n".implode("\n", $lines);
         }
 
         if ($kbContext !== '') {
-            $parts[] = "Knowledge-base context for this turn:\n".$kbContext;
-        }
-
-        // Tell the model which automations it may run and when (the
-        // call_automation tool dispatches by the action name listed here).
-        $catalog = $automations?->promptCatalog() ?? '';
-        if ($catalog !== '') {
-            $parts[] = $catalog;
+            $dynamic[] = "Knowledge-base context for this turn:\n".$kbContext;
         }
 
         if ($lowConfidence) {
-            $parts[] = 'IMPORTANT: The knowledge base has no confident answer to the visitor\'s current '
+            $dynamic[] = 'IMPORTANT: The knowledge base has no confident answer to the visitor\'s current '
                 .'question. Do NOT guess or invent an answer. Briefly tell the visitor you\'ll connect them '
                 .'with a teammate who can help, and call the request_handoff tool.';
         }
 
-        return implode("\n\n", $parts);
+        return SystemPrompt::blocks($stable, $dynamic);
     }
 
     /**

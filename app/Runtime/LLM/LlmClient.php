@@ -21,10 +21,13 @@ interface LlmClient
     /**
      * Run one completion turn.
      *
-     * @param  string  $system  System prompt
+     * @param  string|list<array<string, mixed>>  $system  System prompt — a plain
+     *                                                     string, or canonical (Anthropic-shaped) text blocks where a block may
+     *                                                     carry `cache_control` to mark a cacheable prefix (see SystemPrompt).
+     *                                                     Providers without explicit caching flatten blocks to text.
      * @param  list<array<string, mixed>>  $messages  Canonical messages
      * @param  list<array<string, mixed>>  $tools  Canonical tool specs
      *                                             ({name, description, input_schema})
      */
-    public function complete(string $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult;
+    public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult;
 }

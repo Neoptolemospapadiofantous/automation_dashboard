@@ -17,7 +17,12 @@ use Throwable;
  */
 class OpenAiClient implements LlmClient
 {
-    public function complete(string $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
+    /**
+     * @param  string|list<array<string, mixed>>  $system  System prompt (blocks flattened to text; OpenAI caches implicitly server-side)
+     * @param  list<array<string, mixed>>  $messages  Canonical messages
+     * @param  list<array<string, mixed>>  $tools  Canonical tool specs
+     */
+    public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
     {
         $apiKey = (string) config('runtime.llm.openai.api_key');
         if ($apiKey === '') {
@@ -66,12 +71,13 @@ class OpenAiClient implements LlmClient
      * Canonical → OpenAI messages. tool_use blocks become assistant
      * tool_calls; tool_result blocks become role:tool messages.
      *
+     * @param  string|list<array<string, mixed>>  $system
      * @param  list<array<string, mixed>>  $messages
      * @return list<array<string, mixed>>
      */
-    protected function toOpenAiMessages(string $system, array $messages): array
+    protected function toOpenAiMessages(string|array $system, array $messages): array
     {
-        $out = [['role' => 'system', 'content' => $system]];
+        $out = [['role' => 'system', 'content' => SystemPrompt::toText($system)]];
 
         foreach ($messages as $message) {
             $content = $message['content'] ?? '';

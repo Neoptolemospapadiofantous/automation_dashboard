@@ -92,4 +92,34 @@ class AnthropicClientTest extends TestCase
             $this->assertStringContainsString('max_tokens required', $e->getMessage());
         }
     }
+
+    public function test_system_cache_blocks_ride_through_verbatim(): void
+    {
+        Http::fake([
+            'api.anthropic.com/*' => Http::response([
+                'content' => [['type' => 'text', 'text' => 'ok']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 5, 'output_tokens' => 1],
+            ]),
+        ]);
+
+        // A cacheable stable prefix + a per-turn dynamic block, as
+        // SystemPrompt::blocks produces it — the cache_control marker must
+        // reach Anthropic unchanged so the stable prefix is cached.
+        $system = [
+            ['type' => 'text', 'text' => 'STABLE persona and rules', 'cache_control' => ['type' => 'ephemeral']],
+            ['type' => 'text', 'text' => 'DYNAMIC per-turn context'],
+        ];
+
+        (new AnthropicClient)->complete($system, [['role' => 'user', 'content' => 'hi']]);
+
+        Http::assertSent(function ($request): bool {
+            $sent = $request->data()['system'];
+
+            return is_array($sent)
+                && ($sent[0]['cache_control']['type'] ?? null) === 'ephemeral'
+                && $sent[0]['text'] === 'STABLE persona and rules'
+                && ! array_key_exists('cache_control', $sent[1]);
+        });
+    }
 }

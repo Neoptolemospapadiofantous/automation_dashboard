@@ -5,6 +5,7 @@ namespace Tests\Security;
 use App\Models\Agent;
 use App\Models\User;
 use App\Runtime\Contracts\Runtime;
+use App\Runtime\LLM\SystemPrompt;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -102,7 +103,7 @@ class HeadersTest extends TestCase
         app(Runtime::class)->launch($agent, 'v-art50');
 
         Http::assertSent(function ($request): bool {
-            $system = (string) $request->data()['system'];
+            $system = SystemPrompt::toText($request->data()['system'] ?? '');
 
             return str_contains($system, 'never claim to be human')
                 || str_contains($system, 'You are an AI assistant');
