@@ -48,6 +48,12 @@ class HandleInertiaRequests extends Middleware
             'isAdmin' => fn () => $request->user() !== null
                 && in_array($request->user()->email, config('hermes.operators', []), true),
 
+            // Whether the agent → n8n automation subsystem is live. When off,
+            // the Actions surface presents as "coming soon" (the master flag
+            // gates the whole feature — see phase-16). Flip
+            // RUNTIME_AUTOMATION_ENABLED to turn the real editor back on.
+            'automationsEnabled' => fn () => (bool) config('runtime.automation.enabled', false),
+
             // Surface session flash payloads under a stable key so Vue pages
             // can read them via $page.props.flash. Inertia does NOT auto-
             // share session keys — without this, controllers' ->with('flash.x')

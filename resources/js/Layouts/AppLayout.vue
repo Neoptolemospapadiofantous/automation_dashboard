@@ -25,6 +25,7 @@ const teamAgents = computed(() => page.props.teamAgents ?? []);
 // used to be). Shared globally via HandleInertiaRequests; null hides it.
 const latestHeadline = computed(() => page.props.latestHeadline ?? null);
 const isAdmin = computed(() => page.props.isAdmin === true);
+const automationsEnabled = computed(() => page.props.automationsEnabled === true);
 const hasRoute = (name) => route().has(name);
 const showMobileNav = ref(false);
 
@@ -185,6 +186,9 @@ const handleMobileNavClick = (event) => {
                                     <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>
                                 </template>
                                 Actions
+                                <template v-if="!automationsEnabled" #badge>
+                                    <span class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-mute">Soon</span>
+                                </template>
                             </SidebarLink>
                             <SidebarLink v-if="isAdmin" :href="route('agents.faq.index')" active-pattern="agents.faq.*">
                                 <template #icon>
@@ -498,7 +502,12 @@ const handleMobileNavClick = (event) => {
                             <div class="px-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Workspace</div>
                             <div class="space-y-0.5">
                                 <SidebarLink :href="route('agents.index')" :active-pattern="['agents.index', 'agents.show']">Agents</SidebarLink>
-                                <SidebarLink v-if="isAdmin" :href="route('agents.actions.index')" active-pattern="agents.actions.*">Actions</SidebarLink>
+                                <SidebarLink v-if="isAdmin" :href="route('agents.actions.index')" active-pattern="agents.actions.*">
+                                    Actions
+                                    <template v-if="!automationsEnabled" #badge>
+                                        <span class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-mute">Soon</span>
+                                    </template>
+                                </SidebarLink>
                                 <SidebarLink v-if="isAdmin" :href="route('agents.faq.index')" active-pattern="agents.faq.*">FAQ</SidebarLink>
                                 <SidebarLink :href="route('agents.activity.index')" active-pattern="agents.activity.*">Activity</SidebarLink>
                                 <SidebarLink :href="route('agents.versions.index')" active-pattern="agents.versions.*">Versions</SidebarLink>

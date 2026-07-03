@@ -57,6 +57,19 @@ class AgentActionsUiTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_shares_automations_enabled_flag_that_gates_the_coming_soon_state(): void
+    {
+        [$user] = $this->userWithAgent();
+
+        config(['runtime.automation.enabled' => false]);
+        $this->actingAs($user)->get(route('agents.actions.index'))
+            ->assertInertia(fn ($page) => $page->where('automationsEnabled', false));
+
+        config(['runtime.automation.enabled' => true]);
+        $this->actingAs($user)->get(route('agents.actions.index'))
+            ->assertInertia(fn ($page) => $page->where('automationsEnabled', true));
+    }
+
     public function test_index_renders_seeded_from_published(): void
     {
         [$user, $agent] = $this->userWithAgent();

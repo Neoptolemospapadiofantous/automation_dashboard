@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -77,18 +77,27 @@ const urlHint = computed(() =>
         />
 
         <div class="mx-auto max-w-5xl space-y-6 px-4 pb-12 pt-8 sm:px-6">
-            <!-- Kill-switch notice -->
+            <!-- Coming soon: the automation subsystem is turned off
+                 (RUNTIME_AUTOMATION_ENABLED). The editor unlocks automatically
+                 once it's enabled, so this is the whole surface until then. -->
             <div
                 v-if="!enabled"
-                class="rounded-none border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+                class="rounded-none border border-border-line bg-bg p-8 text-center shadow-sheet"
             >
-                <p class="font-medium">Automations are turned off for this workspace.</p>
-                <p class="mt-0.5 text-xs">
-                    You can author and publish actions now, but the agent won't call them until automations are enabled
-                    (master flag <code class="font-mono">RUNTIME_AUTOMATION_ENABLED</code>).
+                <span class="bp-ref">AGENT/ACTIONS</span>
+                <h2 class="mt-3 text-lg font-medium text-ink">Actions — coming soon</h2>
+                <p class="mx-auto mt-2 max-w-xl text-sm text-ink-dim">
+                    Actions let the agent call your n8n workflows mid-conversation — look up an order, open a
+                    ticket, sync a CRM — and use the result in its reply. We're wiring this up; the authoring
+                    editor will appear here once it's live.
+                </p>
+                <p class="mt-3 font-mono text-xs text-ink-mute">
+                    Meanwhile, see <Link :href="route('agents.activity.index')" class="underline hover:text-ink-dim">Activity</Link>
+                    for the automation run log.
                 </p>
             </div>
 
+            <template v-if="enabled">
             <!-- Live summary -->
             <div class="rounded-none border border-border-line bg-bg p-5 shadow-sheet">
                 <span class="bp-ref">AGENT/ACTIONS</span>
@@ -292,6 +301,7 @@ const urlHint = computed(() =>
                     Publishing stages every draft change — behavior and actions — live on the next message.
                 </p>
             </div>
+            </template>
         </div>
     </AppLayout>
 </template>
