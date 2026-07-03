@@ -10,6 +10,11 @@
 
 return [
 
+    // The agent that backs the marketing landing site's chat widget. Used by
+    // LandingFaqSeeder to target the right agent per environment; null falls
+    // back to team 1's current agent (the landing agent everywhere).
+    'landing_agent_slug' => env('LANDING_AGENT_SLUG'),
+
     /*
     |--------------------------------------------------------------------------
     | LLM
