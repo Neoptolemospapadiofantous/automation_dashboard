@@ -4,6 +4,7 @@ namespace Tests\Feature\Commands;
 
 use App\Models\Agent;
 use App\Models\User;
+use App\Runtime\Contracts\KnowledgeStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -94,6 +95,62 @@ class AgentsCommandsTest extends TestCase
             '--topic' => 'x',
             '--no-bill' => true,
         ])->assertExitCode(1);
+    }
+
+    public function test_ingest_project_targets_an_existing_agent_by_slug(): void
+    {
+        // Fake OpenAI embeddings so ingestion never hits the network.
+        config(['runtime.embeddings.dimensions' => 4]);
+        Http::fake([
+            'api.anthropic.com/*' => Http::response([
+                'content' => [['type' => 'text', 'text' => 'x']], 'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 1, 'output_tokens' => 1],
+            ]),
+            'api.openai.com/*' => function ($request) {
+                $data = [];
+                foreach (array_values((array) $request->data()['input']) as $i => $text) {
+                    $data[] = ['index' => $i, 'embedding' => [1.0, 0.0, 0.0, 0.0]];
+                }
+
+                return Http::response(['data' => $data]);
+            },
+        ]);
+
+        $agent = $this->currentAgent(100);
+
+        $dir = sys_get_temp_dir().'/kb-'.uniqid();
+        mkdir($dir);
+        file_put_contents($dir.'/pricing.md', "# Pricing\n\nStarter is EUR 99 per month.");
+
+        try {
+            $this->artisan('agents:ingest-project', [
+                'path' => $dir,
+                '--agent' => $agent->slug,
+            ])->assertExitCode(0);
+        } finally {
+            @unlink($dir.'/pricing.md');
+            @rmdir($dir);
+        }
+
+        $kb = app(KnowledgeStore::class);
+        $this->assertNotEmpty($kb->listDocuments($agent->id));
+    }
+
+    public function test_ingest_project_errors_on_unknown_agent(): void
+    {
+        $dir = sys_get_temp_dir().'/kb-'.uniqid();
+        mkdir($dir);
+        file_put_contents($dir.'/x.md', '# X');
+
+        try {
+            $this->artisan('agents:ingest-project', [
+                'path' => $dir,
+                '--agent' => 'no-such-agent-slug',
+            ])->assertExitCode(1);
+        } finally {
+            @unlink($dir.'/x.md');
+            @rmdir($dir);
+        }
     }
 
     private function currentAgent(int $balance): Agent

@@ -18,11 +18,12 @@ class AgentsIngestProject extends Command
 {
     protected $signature = 'agents:ingest-project
         {path : Project directory (absolute, or relative to your home)}
-        {--team=2 : Team that owns the project agent}
+        {--agent= : Ingest into an EXISTING agent (id, slug, or name) instead of a per-project one}
+        {--team=2 : Team that owns the project agent (ignored when --agent is set)}
         {--name= : Agent name (defaults to the project folder name)}
         {--reset : Delete the agent\'s existing documents first}';
 
-    protected $description = 'Ingest a project\'s docs into a per-project agent\'s knowledge base.';
+    protected $description = 'Ingest a directory of markdown docs into an agent\'s knowledge base (per-project, or an existing agent via --agent).';
 
     /** Skip heavy / irrelevant trees. */
     private const SKIP_DIRS = ['node_modules', 'vendor', '.git', 'dist', 'build', 'coverage', '.next'];
@@ -38,15 +39,28 @@ class AgentsIngestProject extends Command
             return self::FAILURE;
         }
 
-        $team = Team::find($this->option('team'));
-        if (! $team instanceof Team) {
-            $this->components->error('No team with id '.$this->option('team').'.');
+        // Target an existing agent by id/slug/name (e.g. the landing agent),
+        // or fall back to the per-project find-or-create on a team.
+        if ($needle = (string) $this->option('agent')) {
+            $agent = $this->findExistingAgent($needle);
+            if (! $agent instanceof Agent) {
+                $this->components->error('No agent matching «'.$needle.'».');
 
-            return self::FAILURE;
+                return self::FAILURE;
+            }
+            $team = $agent->team;
+            $name = $agent->name;
+        } else {
+            $team = Team::find($this->option('team'));
+            if (! $team instanceof Team) {
+                $this->components->error('No team with id '.$this->option('team').'.');
+
+                return self::FAILURE;
+            }
+
+            $name = (string) ($this->option('name') ?: basename($path));
+            $agent = $this->findOrCreateAgent($team, $name);
         }
-
-        $name = (string) ($this->option('name') ?: basename($path));
-        $agent = $this->findOrCreateAgent($team, $name);
 
         if ($this->option('reset')) {
             foreach ($kb->listDocuments($agent->id) as $doc) {
@@ -62,7 +76,8 @@ class AgentsIngestProject extends Command
             return self::SUCCESS;
         }
 
-        $this->components->info("Ingesting «{$name}» → agent #{$agent->id} (team {$team->name})");
+        $teamLabel = $team instanceof Team ? $team->name : 'no team';
+        $this->components->info("Ingesting «{$name}» → agent #{$agent->id} (team {$teamLabel})");
 
         $rows = [];
         $ok = 0;
@@ -80,6 +95,16 @@ class AgentsIngestProject extends Command
         $this->components->info("Ingested {$ok}/".count($files).' docs. Chat: php artisan agents:terminal --agent='.$agent->id.' --no-bill');
 
         return $ok > 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    /** Resolve an existing agent globally by id, slug, or name (slugs are unique). */
+    private function findExistingAgent(string $needle): ?Agent
+    {
+        return Agent::query()
+            ->where('id', $needle)
+            ->orWhere('slug', $needle)
+            ->orWhere('name', $needle)
+            ->first();
     }
 
     private function findOrCreateAgent(Team $team, string $name): Agent
