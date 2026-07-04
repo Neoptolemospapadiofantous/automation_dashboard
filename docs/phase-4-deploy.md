@@ -43,3 +43,22 @@ bin/deploy.sh --status        # poll Forge for the deploy result
 
 The deploy hook URL is a secret and is never committed — `git check-ignore`
 confirms `.forge-deploy` is ignored; only `.forge-deploy.example` is tracked.
+
+## Live behaviour (verified 2026-07-04)
+
+The prod site has Forge **Quick Deploy** enabled, so **a plain push to `main`
+already triggers the deploy** — Forge runs the server-side script on the push
+webhook. `bin/deploy.sh` does the right thing either way:
+
+- With no `.forge-deploy` file (and `FORGE_DEPLOY_HOOK` unset), it pushes, prints
+  `! No Forge deploy hook configured — pushed, but did not trigger a deploy`, and
+  exits 0. **The deploy still happens** via Quick Deploy. The hook is only needed
+  to trigger a deploy *without* pushing, or to use `--status` polling.
+- `main` is a protected branch (14 required checks); the Hermes pre-push audit
+  gate runs first and the push reports `Bypassed rule violations` — expected.
+- `public/build` is gitignored, so Forge rebuilds assets server-side; never
+  commit built assets.
+
+To confirm a deploy landed **without SSH**, fetch a public asset over HTTPS and
+grep for a change marker, e.g.
+`curl https://app.flowstack.run/widget/<slug>.js | grep <marker>`.
