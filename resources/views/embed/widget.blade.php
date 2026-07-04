@@ -65,7 +65,7 @@
         '#fs-embed-frame-wrap.open.in{opacity:1;transform:translateY(0);}',
         '@media (prefers-reduced-motion:reduce){#fs-embed-frame-wrap{transition:none;}}',
         '#fs-embed-frame{width:100%;height:100%;border:0;}',
-        '@media (max-width:480px){#fs-embed-frame-wrap{bottom:0;left:0;right:0;top:0;width:100%;height:100%;}#fs-embed-teaser{display:none !important;}}'
+        '@media (max-width:480px){#fs-embed-frame-wrap{bottom:0;left:0;right:0;top:0;width:100%;height:100%;}#fs-embed-teaser{display:none !important;}html.fs-open #fs-embed-btn{display:none;}}'
     ].join('');
     var style = document.createElement('style');
     style.textContent = css;
@@ -112,6 +112,9 @@
     function open() {
         if (opened) return;
         opened = true; unread = 0;
+        // Fullscreen (mobile) hides the launcher via CSS so it can't overlap the
+        // composer; the iframe's own header close button takes over.
+        document.documentElement.classList.add('fs-open');
         wrap.classList.add('open');
         // Next frame: add .in so the slide+fade-in transition runs.
         requestAnimationFrame(function () { requestAnimationFrame(function () { wrap.classList.add('in'); }); });
@@ -123,6 +126,7 @@
     function close() {
         if (!opened) return;
         opened = false;
+        document.documentElement.classList.remove('fs-open');
         wrap.classList.remove('open'); wrap.classList.remove('in'); setIcon();
         btn.setAttribute('aria-expanded', 'false');
         emit('close');

@@ -12,7 +12,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $agentName }} · Chat</title>
     <style>
@@ -44,10 +44,19 @@
             display: flex;
             flex-direction: column;
             height: 100%;
+            /* Dynamic viewport height tracks the mobile URL bar / keyboard so the
+               composer never hides behind browser chrome on the standalone page. */
+            height: 100dvh;
             position: relative; /* anchors the rating modal overlay */
+            /* Notched phones (widget goes fullscreen ≤480px): keep content clear
+               of the rounded corners / camera cutout in landscape. viewport-fit=cover
+               above opts us into the safe-area env() values; they resolve to 0 on
+               desktop, so these are no-ops off-device. */
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
         }
         header {
-            padding: 14px 16px;
+            padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
             border-bottom: 1px solid var(--border-line);
             display: flex;
             align-items: center;
@@ -154,10 +163,14 @@
             border-top: 1px solid var(--border-line);
             gap: 8px; background: var(--bg); align-items: stretch;
         }
+        /* When the branding footer is hidden the composer is the bottom-most
+           element, so it must carry the home-indicator inset itself. */
+        body.fs-nobrand form { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
         form input {
             flex: 1; padding: 10px 12px;
+            /* 16px is the floor that stops iOS Safari zooming the page on focus. */
             border: 1px solid var(--border-hi); border-radius: 0;
-            font-size: 14px; outline: none;
+            font-size: 16px; outline: none;
             background: var(--bg); color: var(--ink);
         }
         form input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
@@ -222,7 +235,7 @@
             40%           { transform: scale(1);  opacity: 1; }
         }
         .powered {
-            text-align: center; padding: 6px 12px;
+            text-align: center; padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
             color: var(--ink-mute); font-size: 10px;
             font-family: var(--font-mono); letter-spacing: 0.06em;
             border-top: 1px solid var(--border-line); background: var(--bg-elev);
@@ -266,7 +279,8 @@
         .rating-card textarea {
             width: 100%; min-height: 54px; resize: vertical;
             border: 1px solid var(--border-hi); border-radius: 0;
-            padding: 8px 10px; font-size: 13px; font-family: inherit;
+            /* 16px: same iOS no-zoom floor as the composer input. */
+            padding: 8px 10px; font-size: 16px; font-family: inherit;
             background: var(--bg); color: var(--ink); outline: none;
         }
         .rating-card textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
@@ -352,7 +366,7 @@
         }
     </style>
 </head>
-<body>
+<body class="{{ $showBranding ? '' : 'fs-nobrand' }}">
 <header>
     <div class="badge">
         @if ($avatar !== '')

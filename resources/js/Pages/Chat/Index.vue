@@ -213,7 +213,7 @@ const capturedEntries = () => Object.entries(captured.value);
             <div class="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
                 <!-- Conversation -->
                 <div class="lg:col-span-2">
-                    <div class="flex h-[32rem] flex-col overflow-hidden rounded-none border border-border-line bg-bg shadow-sheet">
+                    <div class="flex h-[70vh] min-h-[24rem] flex-col overflow-hidden rounded-none border border-border-line bg-bg shadow-sheet lg:h-[32rem]">
                         <div v-if="!configured" class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-700">
                             Your agent isn't set up yet.
                             <Link :href="route('agents.index')" class="font-medium underline">Finish onboarding</Link>
