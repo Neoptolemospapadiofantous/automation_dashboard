@@ -71,6 +71,25 @@ class AutomationCatalog
     }
 
     /**
+     * Lookup by the stable config id — survives renames, so a queued run can
+     * still resolve its action after the operator renamed it.
+     */
+    public function findById(string $id): ?AutomationAction
+    {
+        if ($id === '') {
+            return null;
+        }
+
+        foreach ($this->all() as $action) {
+            if ($action->id === $id) {
+                return $action;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * The "Available automations" block injected into the system prompt, or
      * '' when the agent has none configured.
      */

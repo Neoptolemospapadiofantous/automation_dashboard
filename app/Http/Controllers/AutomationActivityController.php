@@ -38,7 +38,10 @@ class AutomationActivityController extends Controller
                 in_array($statusFilter, self::STATUSES, true),
                 fn ($q) => $q->where('status', $statusFilter),
             )
-            ->when($actionFilter !== '', fn ($q) => $q->where('action', $actionFilter))
+            // The filter value is the action's stable identity: its config
+            // ULID (action_id), or the name for rows written before ids
+            // existed — so a renamed action's history stays one group.
+            ->when($actionFilter !== '', fn ($q) => $q->whereRaw('coalesce(action_id, action) = ?', [$actionFilter]))
             ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString()
@@ -65,13 +68,29 @@ class AutomationActivityController extends Controller
         $total = (int) $byStatus->sum();
         $success = (int) ($byStatus[AutomationRun::STATUS_SUCCESS] ?? 0);
 
+        // One filter option per action identity (action_id, or name for
+        // pre-id rows), labelled with the name from its most recent run — a
+        // renamed action shows up once, under its current name.
+        $latestRunIds = (clone $base)
+            ->selectRaw('max(id) as id')
+            ->groupByRaw('coalesce(action_id, action)')
+            ->pluck('id');
+        $actionOptions = AutomationRun::query()
+            ->whereIn('id', $latestRunIds)
+            ->orderBy('action')
+            ->get(['action', 'action_id'])
+            ->map(fn (AutomationRun $r): array => [
+                'value' => $r->action_id ?? $r->action,
+                'label' => $r->action,
+            ])
+            ->values()
+            ->all();
+
         return Inertia::render('Agents/Activity', [
             'runs' => $runs,
             'filters' => ['status' => $statusFilter, 'action' => $actionFilter],
             'statuses' => self::STATUSES,
-            // Action names that actually appear in the log — the filter only
-            // offers real values.
-            'actionOptions' => (clone $base)->distinct()->orderBy('action')->pluck('action')->all(),
+            'actionOptions' => $actionOptions,
             'summary' => [
                 'total' => $total,
                 'success' => $success,

@@ -56,7 +56,7 @@ class AutomationToolTest extends TestCase
         ]);
 
         $context = $this->context([
-            ['name' => 'lookup_order', 'description' => 'Look up an order', 'url' => 'https://n8n.flowstack.run/webhook/orders', 'mode' => 'sync', 'credit_cost' => 3],
+            ['id' => '01JZLOOKUPORDER00000000000', 'name' => 'lookup_order', 'description' => 'Look up an order', 'url' => 'https://n8n.flowstack.run/webhook/orders', 'mode' => 'sync', 'credit_cost' => 3],
         ]);
         $startBalance = $context->agent->team->totalCredits();
 
@@ -68,10 +68,12 @@ class AutomationToolTest extends TestCase
         $this->assertFalse($out['is_error']);
         $this->assertStringContainsString('A-100', $out['content']);
 
-        // Audit row written and marked success with the upstream status.
+        // Audit row written and marked success with the upstream status. The
+        // stable config id is recorded so the run stays linked across renames.
         $this->assertDatabaseHas('automation_runs', [
             'agent_id' => $context->agent->id,
             'action' => 'lookup_order',
+            'action_id' => '01JZLOOKUPORDER00000000000',
             'mode' => 'sync',
             'status' => AutomationRun::STATUS_SUCCESS,
             'http_status' => 200,

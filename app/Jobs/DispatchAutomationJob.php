@@ -62,7 +62,11 @@ class DispatchAutomationJob implements ShouldQueue
         }
 
         $agent = $run->agent;
-        $action = AutomationCatalog::forAgent($run->agent_id)->find($run->action);
+        // Resolve by the stable id first — a rename between enqueue and
+        // execution must not orphan the run — falling back to the name for
+        // pre-id rows.
+        $catalog = AutomationCatalog::forAgent($run->agent_id);
+        $action = $catalog->findById((string) $run->action_id) ?? $catalog->find($run->action);
         if ($agent === null || $action === null) {
             $run->forceFill([
                 'status' => AutomationRun::STATUS_FAILED,
@@ -82,13 +86,13 @@ class DispatchAutomationJob implements ShouldQueue
                 'response' => ['body' => Str::limit($result['body'], 4000)],
             ])->save();
 
-            $breaker->recordSuccess($run->agent_id, $action->name);
+            $breaker->recordSuccess($run->agent_id, $action->breakerKey());
         } catch (BlockedAutomationUrl $e) {
             $run->forceFill(['status' => AutomationRun::STATUS_BLOCKED, 'error' => Str::limit($e->getMessage(), 500)])->save();
             // Bad URL — don't retry or trip the breaker.
         } catch (AutomationTimeout|AutomationFailed $e) {
             $status = $e instanceof AutomationTimeout ? AutomationRun::STATUS_TIMEOUT : AutomationRun::STATUS_FAILED;
-            $breaker->recordFailure($run->agent_id, $action->name);
+            $breaker->recordFailure($run->agent_id, $action->breakerKey());
 
             // Let the queue retry transient failures; on the last attempt,
             // persist the terminal status so the row isn't stuck pending.

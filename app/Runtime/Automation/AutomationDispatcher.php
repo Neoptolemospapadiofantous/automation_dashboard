@@ -37,7 +37,7 @@ class AutomationDispatcher
     public function dispatch(Agent $agent, AutomationAction $action, array $arguments, ?RuntimeSession $session = null): array
     {
         // Breaker: a flapping endpoint is paused — don't bill or fire.
-        if ($this->breaker->isOpen($agent->id, $action->name)) {
+        if ($this->breaker->isOpen($agent->id, $action->breakerKey())) {
             return [
                 'status' => 'paused',
                 'message' => "The {$action->name} automation is temporarily paused after repeated failures. Try again shortly.",
@@ -49,6 +49,7 @@ class AutomationDispatcher
             'agent_id' => $agent->id,
             'runtime_session_id' => $session?->id,
             'action' => $action->name,
+            'action_id' => $action->id !== '' ? $action->id : null,
             'mode' => $action->mode,
             'status' => AutomationRun::STATUS_PENDING,
             'idempotency_key' => (string) Str::uuid(),
@@ -62,13 +63,13 @@ class AutomationDispatcher
         try {
             $this->guard->assertSafe($action->url);
         } catch (BlockedAutomationUrl $e) {
-            return $this->fail($run, AutomationRun::STATUS_BLOCKED, $e->getMessage(), trip: false, agentId: $agent->id, action: $action->name);
+            return $this->fail($run, AutomationRun::STATUS_BLOCKED, $e->getMessage(), trip: false, agentId: $agent->id, action: $action);
         }
 
         // Bill BEFORE firing. Out of credits → no webhook leaves the box.
         $team = $agent->team;
         if (! $team instanceof Team) {
-            return $this->fail($run, AutomationRun::STATUS_FAILED, 'Agent has no team to bill.', trip: false, agentId: $agent->id, action: $action->name);
+            return $this->fail($run, AutomationRun::STATUS_FAILED, 'Agent has no team to bill.', trip: false, agentId: $agent->id, action: $action);
         }
         try {
             $this->credits->consume($team, $action->creditCost, $agent->id, [
@@ -115,7 +116,7 @@ class AutomationDispatcher
                 'response' => $this->trimForStorage(['body' => $result['body']]),
             ])->save();
 
-            $this->breaker->recordSuccess($agent->id, $action->name);
+            $this->breaker->recordSuccess($agent->id, $action->breakerKey());
 
             return [
                 'status' => 'ok',
@@ -126,20 +127,20 @@ class AutomationDispatcher
         } catch (BlockedAutomationUrl $e) {
             // Misconfiguration, not endpoint flapping — record but DON'T trip
             // the breaker (retrying won't help a bad URL).
-            return $this->fail($run, AutomationRun::STATUS_BLOCKED, $e->getMessage(), trip: false, agentId: $agent->id, action: $action->name);
+            return $this->fail($run, AutomationRun::STATUS_BLOCKED, $e->getMessage(), trip: false, agentId: $agent->id, action: $action);
         } catch (AutomationTimeout $e) {
-            return $this->fail($run, AutomationRun::STATUS_TIMEOUT, $e->getMessage(), trip: true, agentId: $agent->id, action: $action->name);
+            return $this->fail($run, AutomationRun::STATUS_TIMEOUT, $e->getMessage(), trip: true, agentId: $agent->id, action: $action);
         } catch (AutomationFailed $e) {
             $run->forceFill(['http_status' => $e->httpStatus])->save();
 
-            return $this->fail($run, AutomationRun::STATUS_FAILED, $e->getMessage(), trip: true, agentId: $agent->id, action: $action->name);
+            return $this->fail($run, AutomationRun::STATUS_FAILED, $e->getMessage(), trip: true, agentId: $agent->id, action: $action);
         }
     }
 
     /**
      * @return array{status: string, message: string, run_id: int}
      */
-    private function fail(AutomationRun $run, string $status, string $error, bool $trip, int $agentId, string $action): array
+    private function fail(AutomationRun $run, string $status, string $error, bool $trip, int $agentId, AutomationAction $action): array
     {
         $run->forceFill([
             'status' => $status,
@@ -147,20 +148,20 @@ class AutomationDispatcher
         ])->save();
 
         if ($trip) {
-            $this->breaker->recordFailure($agentId, $action);
+            $this->breaker->recordFailure($agentId, $action->breakerKey());
         }
 
         Log::warning('Automation call failed', [
             'automation_run_id' => $run->id,
             'agent_id' => $agentId,
-            'action' => $action,
+            'action' => $action->name,
             'status' => $status,
         ]);
 
         return [
             'status' => 'error',
             'run_id' => $run->id,
-            'message' => "The {$action} automation didn't complete ({$status}). A teammate can follow up.",
+            'message' => "The {$action->name} automation didn't complete ({$status}). A teammate can follow up.",
         ];
     }
 

@@ -78,7 +78,7 @@ class AgentActionsUiTest extends TestCase
             'version' => 1,
             'status' => AgentConfigVersion::STATUS_PUBLISHED,
             'config' => ['instructions' => 'be nice', 'automations' => [
-                ['name' => 'lookup_order', 'url' => 'https://n8n.flowstack.run/webhook/o', 'mode' => 'sync', 'credit_cost' => 3,
+                ['id' => '01JZFAKEULID00000000000000', 'name' => 'lookup_order', 'url' => 'https://n8n.flowstack.run/webhook/o', 'mode' => 'sync', 'credit_cost' => 3,
                     'parameters' => ['type' => 'object', 'properties' => ['id' => ['type' => 'string', 'description' => 'order id']], 'required' => ['id']]],
             ]],
         ]);
@@ -88,6 +88,7 @@ class AgentActionsUiTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Agents/Actions')
                 ->has('publishedActions', 1)
+                ->where('publishedActions.0.id', '01JZFAKEULID00000000000000')
                 ->where('publishedActions.0.name', 'lookup_order')
                 ->where('publishedActions.0.parameters.0.name', 'id')
                 ->where('publishedActions.0.parameters.0.required', true)
@@ -173,6 +174,43 @@ class AgentActionsUiTest extends TestCase
                 'name' => 'insecure', 'url' => 'http://n8n.flowstack.run/webhook/x', 'mode' => 'sync', 'credit_cost' => 1, 'parameters' => [],
             ]],
         ])->assertSessionHasErrors('automations.0.url');
+    }
+
+    public function test_save_mints_stable_id_and_rename_preserves_it(): void
+    {
+        [$user, $agent] = $this->userWithAgent();
+
+        $payload = fn (string $name, string $id = '') => ['automations' => [[
+            'id' => $id, 'name' => $name, 'url' => 'https://n8n.flowstack.run/webhook/o', 'mode' => 'sync', 'credit_cost' => 1, 'parameters' => [],
+        ]]];
+
+        // First save: no id sent → one is minted.
+        $this->actingAs($user)->post(route('agents.actions.save'), $payload('lookup_order'))->assertRedirect();
+        $draft = fn () => AgentConfigVersion::where('agent_id', $agent->id)->where('status', 'draft')->firstOrFail();
+        $minted = $draft()->config['automations'][0]['id'];
+        $this->assertSame(26, strlen($minted), 'a ULID id is minted for a new action');
+
+        // Rename, round-tripping the id → id survives, name changes.
+        $this->actingAs($user)->post(route('agents.actions.save'), $payload('find_order', $minted))->assertRedirect();
+        $action = $draft()->config['automations'][0];
+        $this->assertSame($minted, $action['id'], 'rename must keep the stable id');
+        $this->assertSame('find_order', $action['name']);
+    }
+
+    public function test_save_replaces_unknown_client_id_with_fresh_ulid(): void
+    {
+        [$user, $agent] = $this->userWithAgent();
+
+        // An id the agent never minted (forged or copied from another agent)
+        // must not be honoured — history can't be grafted onto it.
+        $this->actingAs($user)->post(route('agents.actions.save'), ['automations' => [[
+            'id' => '01JZFORGEDID00000000000000', 'name' => 'ping', 'url' => 'https://n8n.flowstack.run/webhook/p', 'mode' => 'sync', 'credit_cost' => 1, 'parameters' => [],
+        ]]])->assertRedirect();
+
+        $draft = AgentConfigVersion::where('agent_id', $agent->id)->where('status', 'draft')->firstOrFail();
+        $id = $draft->config['automations'][0]['id'];
+        $this->assertNotSame('01JZFORGEDID00000000000000', $id);
+        $this->assertSame(26, strlen($id));
     }
 
     public function test_save_rejects_duplicate_names(): void

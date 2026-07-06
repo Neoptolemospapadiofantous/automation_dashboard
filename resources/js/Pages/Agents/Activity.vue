@@ -93,7 +93,9 @@ const pretty = (v) => (v == null ? '' : JSON.stringify(v, null, 2));
                     @change="applyFilters"
                 >
                     <option value="">All actions</option>
-                    <option v-for="a in actionOptions" :key="a" :value="a">{{ a }}</option>
+                    <!-- value = the action's stable identity (id, or name for
+                         pre-id runs), so the filter survives renames -->
+                    <option v-for="a in actionOptions" :key="a.value" :value="a.value">{{ a.label }}</option>
                 </select>
                 <button
                     v-if="status || action"

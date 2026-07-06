@@ -18,8 +18,11 @@ const props = defineProps({
     paramTypes: { type: Array, default: () => ['string', 'number', 'boolean'] },
 });
 
+// `id` is the action's stable identity (minted server-side) — round-tripped
+// untouched so a rename keeps its activity history linked.
 const clone = (rows) =>
     rows.map((a) => ({
+        id: a.id ?? '',
         name: a.name ?? '',
         description: a.description ?? '',
         url: a.url ?? '',
@@ -42,7 +45,7 @@ const err = (i, field) => form.errors[`automations.${i}.${field}`];
 const paramErr = (i, j, field) => form.errors[`automations.${i}.parameters.${j}.${field}`];
 
 const addAction = () =>
-    form.automations.push({ name: '', description: '', url: '', mode: 'sync', credit_cost: 1, parameters: [] });
+    form.automations.push({ id: '', name: '', description: '', url: '', mode: 'sync', credit_cost: 1, parameters: [] });
 const removeAction = (i) => form.automations.splice(i, 1);
 
 const addParam = (i) =>

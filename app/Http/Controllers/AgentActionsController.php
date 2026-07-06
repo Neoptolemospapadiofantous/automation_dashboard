@@ -11,6 +11,7 @@ use App\Models\AutomationRun;
 use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -85,7 +86,7 @@ class AgentActionsController extends Controller
         $this->requireCapability($request, fn (Role $r) => $r->canUpdateAgent(), 'edit agent automations');
         $agent = $this->currentAgentOrAbort($request);
 
-        $automations = $this->validateAndNormalize($request);
+        $automations = $this->validateAndNormalize($request, $agent);
 
         AgentConfigVersion::patchDraft($agent->id, ['automations' => $automations]);
 
@@ -100,14 +101,20 @@ class AgentActionsController extends Controller
      * snake_case (mirroring AutomationAction) and duplicates are rejected so
      * the operator sees the collision instead of silently losing an action.
      *
+     * Every action carries a stable ULID `id`: the editor round-trips it, so
+     * a rename keeps the id and the activity history stays linked. Only ids
+     * already minted for this agent are honoured — anything else (new row,
+     * forged or duplicated id) gets a fresh ULID.
+     *
      * @return list<array<string, mixed>>
      */
-    protected function validateAndNormalize(Request $request): array
+    protected function validateAndNormalize(Request $request, Agent $agent): array
     {
         $httpsOnly = ! (bool) config('runtime.automation.allow_private_hosts', false);
 
         $data = $request->validate([
             'automations' => ['present', 'array', 'max:'.self::MAX_ACTIONS],
+            'automations.*.id' => ['nullable', 'string', 'max:26'],
             'automations.*.name' => ['required', 'string', 'max:64'],
             'automations.*.description' => ['nullable', 'string', 'max:500'],
             'automations.*.url' => ['required', 'string', 'max:2000', 'url'],
@@ -120,9 +127,18 @@ class AgentActionsController extends Controller
             'automations.*.parameters.*.required' => ['boolean'],
         ]);
 
+        $known = $this->knownActionIds($agent);
+
         $out = [];
         $seenNames = [];
+        $seenIds = [];
         foreach ($data['automations'] as $i => $raw) {
+            $id = trim((string) ($raw['id'] ?? ''));
+            if ($id === '' || ! isset($known[$id]) || isset($seenIds[$id])) {
+                $id = (string) Str::ulid();
+            }
+            $seenIds[$id] = true;
+
             $name = $this->normalizeName((string) $raw['name']);
             if ($name === '') {
                 throw ValidationException::withMessages([
@@ -150,6 +166,7 @@ class AgentActionsController extends Controller
             }
 
             $out[] = [
+                'id' => $id,
                 'name' => $name,
                 'description' => trim((string) ($raw['description'] ?? '')),
                 'url' => $url,
@@ -229,6 +246,7 @@ class AgentActionsController extends Controller
             }
 
             $ui[] = [
+                'id' => trim((string) ($a['id'] ?? '')),
                 'name' => (string) $a['name'],
                 'description' => (string) ($a['description'] ?? ''),
                 'url' => (string) $a['url'],
@@ -241,6 +259,32 @@ class AgentActionsController extends Controller
         }
 
         return $ui;
+    }
+
+    /**
+     * Ids already minted for this agent's actions (draft + published) — the
+     * only ids a save may claim, so history can't be grafted onto an
+     * unrelated action.
+     *
+     * @return array<string, true>
+     */
+    private function knownActionIds(Agent $agent): array
+    {
+        $known = [];
+        foreach (AgentConfigVersion::query()
+            ->where('agent_id', $agent->id)
+            ->whereIn('status', [AgentConfigVersion::STATUS_DRAFT, AgentConfigVersion::STATUS_PUBLISHED])
+            ->get() as $v) {
+            $automations = $v->config['automations'] ?? [];
+            foreach (is_array($automations) ? $automations : [] as $a) {
+                $id = is_array($a) ? trim((string) ($a['id'] ?? '')) : '';
+                if ($id !== '') {
+                    $known[$id] = true;
+                }
+            }
+        }
+
+        return $known;
     }
 
     private function normalizeName(string $name): string

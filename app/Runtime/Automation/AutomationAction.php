@@ -16,9 +16,12 @@ use App\Models\AutomationRun;
 class AutomationAction
 {
     /**
+     * @param  string  $id  Stable ULID minted by the Actions editor; survives
+     *                      renames. '' for entries saved before ids existed.
      * @param  array<string, mixed>  $parameters  JSON Schema for arguments.
      */
     public function __construct(
+        public readonly string $id,
         public readonly string $name,
         public readonly string $description,
         public readonly string $url,
@@ -51,6 +54,7 @@ class AutomationAction
             : ['type' => 'object', 'properties' => (object) []];
 
         return new self(
+            id: trim((string) ($raw['id'] ?? '')),
             name: $name,
             description: trim((string) ($raw['description'] ?? '')),
             url: $url,
@@ -63,6 +67,16 @@ class AutomationAction
     public function isAsync(): bool
     {
         return $this->mode === AutomationRun::MODE_ASYNC;
+    }
+
+    /**
+     * Cache key fragment for the circuit breaker. The stable id when there is
+     * one, so a rename doesn't silently reset a tripped breaker; the name for
+     * pre-id config entries.
+     */
+    public function breakerKey(): string
+    {
+        return $this->id !== '' ? $this->id : $this->name;
     }
 
     /**

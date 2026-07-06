@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $agent_id
  * @property int|null $runtime_session_id
  * @property string $action
+ * @property string|null $action_id
  * @property string $mode
  * @property string $status
  * @property string $idempotency_key
@@ -49,6 +50,7 @@ class AutomationRun extends Model
         'agent_id',
         'runtime_session_id',
         'action',
+        'action_id',
         'mode',
         'status',
         'idempotency_key',
