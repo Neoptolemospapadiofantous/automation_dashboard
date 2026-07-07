@@ -261,7 +261,7 @@ function openPortal() {
                     <!-- Starter / Operator: normal usage bar + top-up button. -->
                     <div v-else class="rounded-none border border-border-line bg-bg p-5 sm:col-span-2">
                         <div class="flex items-center justify-between">
-                            <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Credit usage this period</div>
+                            <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Conversation-credit usage this period</div>
                             <div class="font-mono text-xs tabular-nums text-ink-dim">{{ usedPercent }}%</div>
                         </div>
                         <div class="mt-2 h-2 w-full overflow-hidden rounded-none bg-surface-hi">
@@ -281,7 +281,7 @@ function openPortal() {
                             </div>
                         </div>
                         <div class="mt-3 text-xs text-ink-dim">
-                            Each user message and each agent reply consumes credits — 1× on Claude Haiku/Gemini, more on smarter models (see the Versions page). Your monthly allowance resets on renewal; purchased top-up credits roll over until used.
+                            Each user message and each agent reply consumes conversation credits — 1× on Claude Haiku/Gemini, more on smarter models (see the Versions page). Your monthly allowance resets on renewal; purchased top-up credits roll over until used.
                         </div>
                         <div v-if="billing?.allows_topups" class="mt-4">
                             <PrimaryButton type="button" @click="openTopup">
