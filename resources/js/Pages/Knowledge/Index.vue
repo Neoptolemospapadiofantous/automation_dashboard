@@ -300,16 +300,19 @@ const description = computed(() => {
                                 <span class="shrink-0 rounded-none px-2 py-0.5 font-mono text-[10px] font-medium" :class="statusTone(d.status?.type)">
                                     {{ d.status?.type || '—' }}
                                 </span>
+                                <!-- Always visible below sm: touch devices have no hover
+                                     to reveal these, so hover-only would make documents
+                                     unmanageable on mobile. -->
                                 <button
                                     type="button"
-                                    class="text-xs text-ink-mute opacity-0 transition group-hover:opacity-100 hover:text-ink"
+                                    class="text-xs text-ink-mute transition hover:text-ink sm:opacity-0 sm:group-hover:opacity-100"
                                     @click="inspect(d.documentID)"
                                 >
                                     Inspect
                                 </button>
                                 <button
                                     type="button"
-                                    class="text-xs text-ink-mute opacity-0 transition group-hover:opacity-100 hover:text-rose-600"
+                                    class="text-xs text-ink-mute transition hover:text-rose-600 sm:opacity-0 sm:group-hover:opacity-100"
                                     @click="destroy(d.documentID, d.data?.name)"
                                 >
                                     Delete
@@ -335,7 +338,7 @@ const description = computed(() => {
                                 <p class="rounded-none bg-bg-elev border border-border-line p-3 text-sm text-ink">{{ answer }}</p>
                                 <div v-if="sourceChunks.length" class="mt-3 space-y-2">
                                     <p class="font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Sources</p>
-                                    <div v-for="(c, i) in sourceChunks" :key="i" class="rounded-none border border-border-line p-2 text-xs text-ink-dim">
+                                    <div v-for="(c, i) in sourceChunks" :key="i" class="break-words rounded-none border border-border-line p-2 text-xs text-ink-dim">
                                         <span v-if="c.source" class="font-medium text-ink">{{ c.source }}: </span>{{ c.content }}
                                     </div>
                                 </div>
@@ -364,7 +367,7 @@ const description = computed(() => {
                                     <div
                                         v-for="(c, i) in (inspecting.chunks ?? [])"
                                         :key="c.chunkID || i"
-                                        class="rounded-none border border-border-line p-2 text-xs leading-relaxed text-ink-dim"
+                                        class="break-words rounded-none border border-border-line p-2 text-xs leading-relaxed text-ink-dim"
                                     >
                                         {{ c.content }}
                                     </div>

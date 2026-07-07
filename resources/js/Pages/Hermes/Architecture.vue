@@ -272,8 +272,7 @@ onBeforeUnmount(() => {
                 <div v-show="mode === '3d'" class="relative">
                     <div
                         ref="graphEl"
-                        class="w-full overflow-hidden rounded-xl border border-gray-800 bg-[#0b1120]"
-                        style="height: 680px"
+                        class="h-[420px] w-full overflow-hidden rounded-xl border border-gray-800 bg-[#0b1120] sm:h-[680px]"
                     />
                     <!-- Layer name floating over each cluster, tracking the 3D scene. -->
                     <div class="pointer-events-none absolute inset-0 overflow-hidden">

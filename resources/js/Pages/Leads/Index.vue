@@ -472,7 +472,7 @@ function submit() {
             </template>
             <template #footer>
                 <SecondaryButton @click="showCreate = false">Cancel</SecondaryButton>
-                <PrimaryButton class="ms-3" :class="{ 'opacity-50': form.processing }" :disabled="form.processing" @click="submit">
+                <PrimaryButton class="sm:ms-3" :class="{ 'opacity-50': form.processing }" :disabled="form.processing" @click="submit">
                     Create
                 </PrimaryButton>
             </template>

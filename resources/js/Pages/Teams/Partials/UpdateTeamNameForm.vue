@@ -44,9 +44,9 @@ const updateTeamName = () => {
                 <div class="flex items-center mt-2">
                     <img class="size-12 rounded-full object-cover" :src="team.owner.profile_photo_url" :alt="team.owner.name">
 
-                    <div class="ms-4 leading-tight">
-                        <div class="text-ink">{{ team.owner.name }}</div>
-                        <div class="text-ink-dim text-sm">
+                    <div class="ms-4 min-w-0 leading-tight">
+                        <div class="truncate text-ink">{{ team.owner.name }}</div>
+                        <div class="truncate text-ink-dim text-sm">
                             {{ team.owner.email }}
                         </div>
                     </div>

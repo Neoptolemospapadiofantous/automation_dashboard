@@ -322,7 +322,7 @@ const displayableRole = (role) => {
                 </SecondaryButton>
 
                 <PrimaryButton
-                    class="ms-3"
+                    class="sm:ms-3"
                     :class="{ 'opacity-25': updateRoleForm.processing }"
                     :disabled="updateRoleForm.processing"
                     @click="updateRole"
@@ -348,7 +348,7 @@ const displayableRole = (role) => {
                 </SecondaryButton>
 
                 <DangerButton
-                    class="ms-3"
+                    class="sm:ms-3"
                     :class="{ 'opacity-25': leaveTeamForm.processing }"
                     :disabled="leaveTeamForm.processing"
                     @click="leaveTeam"
@@ -374,7 +374,7 @@ const displayableRole = (role) => {
                 </SecondaryButton>
 
                 <DangerButton
-                    class="ms-3"
+                    class="sm:ms-3"
                     :class="{ 'opacity-25': removeTeamMemberForm.processing }"
                     :disabled="removeTeamMemberForm.processing"
                     @click="removeTeamMember"

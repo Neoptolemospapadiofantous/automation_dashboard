@@ -220,7 +220,7 @@ const deleteApiToken = () => {
                 </SecondaryButton>
 
                 <PrimaryButton
-                    class="ms-3"
+                    class="sm:ms-3"
                     :class="{ 'opacity-25': updateApiTokenForm.processing }"
                     :disabled="updateApiTokenForm.processing"
                     @click="updateApiToken"
@@ -246,7 +246,7 @@ const deleteApiToken = () => {
                 </SecondaryButton>
 
                 <DangerButton
-                    class="ms-3"
+                    class="sm:ms-3"
                     :class="{ 'opacity-25': deleteApiTokenForm.processing }"
                     :disabled="deleteApiTokenForm.processing"
                     @click="deleteApiToken"

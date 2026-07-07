@@ -21,10 +21,10 @@ const { visible, options, accept, reject } = useConfirmState();
             <SecondaryButton @click="reject">
                 {{ options.cancelText }}
             </SecondaryButton>
-            <DangerButton v-if="options.dangerous" class="ms-3" @click="accept">
+            <DangerButton v-if="options.dangerous" class="sm:ms-3" @click="accept">
                 {{ options.buttonText }}
             </DangerButton>
-            <PrimaryButton v-else class="ms-3" @click="accept">
+            <PrimaryButton v-else class="sm:ms-3" @click="accept">
                 {{ options.buttonText }}
             </PrimaryButton>
         </template>
