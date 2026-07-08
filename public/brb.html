@@ -1,0 +1,100 @@
+<!doctype html>
+<!--
+    Static "be right back" page, served DIRECTLY by nginx (error_page
+    502/503/504) when PHP-FPM is dead or hung — no PHP, no build assets,
+    no external requests, so it works while everything else is down.
+
+    Wired in the Forge nginx config for app.flowstack.run:
+
+        error_page 502 503 504 /brb.html;
+        location = /brb.html { internal; }
+
+    The meta refresh re-requests the original URL every 30s, so visitors
+    land back on the real page the moment the app answers again.
+    Deployed with the repo (public/) — present in every release.
+-->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="refresh" content="30">
+    <meta name="robots" content="noindex">
+    <title>Be right back — Flowstack</title>
+    <style>
+        :root {
+            --bg: #FFFFFF; --bg-elev: #FAFAFA;
+            --ink: #000000; --ink-dim: #525252; --ink-mute: #8A8A8A;
+            --violet: #5145E5;
+            --line: rgba(0, 0, 0, 0.06); --line-strong: rgba(0, 0, 0, 0.14);
+            --elevation: 6px 6px 0 rgba(0, 0, 0, 0.06);
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #000000; --bg-elev: #0A0A0A;
+                --ink: #FFFFFF; --ink-dim: #B8B8B8; --ink-mute: #6B6B6B;
+                --violet: #6D63F0;
+                --line: rgba(255, 255, 255, 0.06); --line-strong: rgba(255, 255, 255, 0.14);
+                --elevation: 6px 6px 0 rgba(255, 255, 255, 0.05);
+            }
+        }
+        * { box-sizing: border-box; margin: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+            background: var(--bg-elev);
+            background-image:
+                linear-gradient(to right, var(--line) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+            background-size: 32px 32px;
+            color: var(--ink);
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+        }
+        .sheet {
+            width: 100%; max-width: 26rem;
+            background: var(--bg);
+            border: 1px solid var(--line-strong);
+            box-shadow: var(--elevation);
+            padding: 2rem;
+        }
+        .ref {
+            font-family: ui-monospace, "JetBrains Mono", monospace;
+            font-size: 0.6875rem; letter-spacing: 0.22em; text-transform: uppercase;
+            color: var(--violet);
+        }
+        .dot {
+            display: inline-block; width: 8px; height: 8px;
+            border: 1px solid var(--violet); background: transparent;
+            margin-right: 6px; vertical-align: baseline;
+            animation: pulse 2.4s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+        h1 { margin-top: 1rem; font-size: 1.5rem; font-weight: 600; line-height: 1.2; }
+        p { margin-top: 0.75rem; font-size: 0.875rem; line-height: 1.6; color: var(--ink-dim); }
+        a { color: var(--ink); }
+        .rule { height: 1px; background: var(--line-strong); margin: 1.25rem 0; }
+        .annot {
+            font-family: ui-monospace, "JetBrains Mono", monospace;
+            font-size: 0.75rem; letter-spacing: 0.04em; color: var(--ink-mute);
+        }
+    </style>
+</head>
+<body>
+    <main class="sheet">
+        <span class="ref"><span class="dot" aria-hidden="true"></span>SYS/BRB</span>
+        <h1>Be right back.</h1>
+        <p>
+            Flowstack is momentarily offline for maintenance. This page retries
+            on its own every 30&nbsp;seconds — no need to refresh.
+        </p>
+        <p>
+            In a hurry? Email
+            <a href="mailto:hello@flowstack.run">hello@flowstack.run</a>
+            and a human will pick it up.
+        </p>
+        <div class="rule" aria-hidden="true"></div>
+        <p class="annot">FLOWSTACK STUDIO · AUTO-RETRY ACTIVE</p>
+    </main>
+</body>
+</html>
