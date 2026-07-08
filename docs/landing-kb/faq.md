@@ -18,10 +18,17 @@ about your setup changes.
 
 What ships at Starter is the agent itself — the chat experience, knowledge base,
 transcripts, and lead routing into your real-time dashboard. Wiring it into your
-CRM, helpdesk, internal APIs or anything bespoke sits inside the Custom-build
+CRM, helpdesk, internal APIs or anything bespoke sits inside the custom build
 engagement, which we scope to your specific stack: fixed scope, credentials
-encrypted in your isolated tenant, and you keep the code. The 30-minute audit
-covers what you'd need wired up.
+encrypted in your isolated tenant, and you keep the code. The free 30-minute
+audit covers what you'd need wired up.
+
+## Is there a free trial?
+
+No free trial — the €99/month Starter plan is the way to try the product: every
+feature is on, and you can cancel anytime with no lock-in. The only free offer
+is the 30-minute audit for custom build work: a free call that ends in a
+written, fixed-scope proposal within 48 hours, yours to keep either way.
 
 ## When do I need a custom build instead of the off-the-shelf agent?
 

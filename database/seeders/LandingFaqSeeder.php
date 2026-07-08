@@ -104,27 +104,27 @@ class LandingFaqSeeder extends Seeder
             [
                 'category' => 'Pricing',
                 'keywords' => ['price', 'pricing', 'cost', 'how much', 'plan', 'plans', 'credits'],
-                'answer' => 'Starter is €99/mo (1 agent, 2,500 conversation credits) and Operator is €399/mo (up to 5 agents, 25,000 credits). Both include every feature and cancel anytime — no lock-in. Full details at flowstack.run/pricing.',
+                'answer' => 'Starter is €99/mo (1 agent, 2,500 conversation credits) and Operator is €399/mo (up to 5 agents, 25,000 credits). Both include every feature and cancel anytime — no lock-in. Prices exclude VAT. Full details at flowstack.run/pricing.',
             ],
             [
                 'category' => 'What it does',
                 'keywords' => ['what do you do', 'what is this', 'what does the agent', 'how does it work', 'what can'],
-                'answer' => 'Flowstack gives your website an AI agent that greets every visitor, then qualifies leads or answers sales, support and onboarding questions from the knowledge you upload — pushing qualified leads into a real-time dashboard with full transcripts. One agent goes live in about 60 seconds.',
+                'answer' => 'Flowstack fixes three things: automations run your repetitive work, your data lands in one live view, and a chat agent on your site answers every inbound — qualifying leads or answering sales, support and onboarding questions from the knowledge you upload, with every transcript in a real-time dashboard. The chat agent goes live in about 60 seconds.',
             ],
             [
                 'category' => 'Getting started',
-                'keywords' => ['get started', 'getting started', 'sign up', 'signup', 'trial', 'how do i start', 'try'],
-                'answer' => 'Pick a role, upload your knowledge, and embed the widget — one agent is live in about 60 seconds, from €99/mo, and you can cancel anytime.',
+                'keywords' => ['get started', 'getting started', 'sign up', 'signup', 'trial', 'free trial', 'free', 'how do i start', 'try'],
+                'answer' => "Pick a role, upload your knowledge, and embed the widget — one agent is live in about 60 seconds, from €99/mo, cancel anytime. There's no free trial; Starter is the way to try it, and the free 30-minute audit is the way in for custom build work.",
             ],
             [
                 'category' => 'Custom build',
-                'keywords' => ['custom', 'integration', 'integrate', 'crm', 'bespoke', 'api', 'own llm'],
-                'answer' => 'The off-the-shelf agent covers about 80% of use cases. For bespoke flows, integrations (CRM, telephony, internal tools), your own LLM or your own UI, we do a fixed-scope 4–6 week custom build and you keep the code. Book the 30-minute audit to scope it.',
+                'keywords' => ['custom', 'integration', 'integrate', 'crm', 'bespoke', 'api', 'own llm', 'audit'],
+                'answer' => 'The off-the-shelf agent covers about 80% of use cases. For bespoke flows, integrations (CRM, telephony, internal tools), automation pipelines, your own LLM or your own UI, we do a fixed-scope 4–6 week custom build and you keep the code. Start with the free 30-minute audit at flowstack.run/audit — you get a written, fixed-scope proposal within 48 hours, yours to keep either way.',
             ],
             [
                 'category' => 'Talk to a human',
-                'keywords' => ['human', 'talk to someone', 'contact', 'sales', 'book a call', 'demo', 'speak to'],
-                'answer' => "Happy to connect you with a human — book the 30-minute audit on the site, or tell me what you're after and I'll pass it to the team.",
+                'keywords' => ['human', 'talk to someone', 'contact', 'sales', 'book a call', 'demo', 'speak to', 'email'],
+                'answer' => "Happy to connect you with a human — book the free 30-minute audit at flowstack.run/audit, email hello@flowstack.run, or tell me what you're after and I'll pass it to the team.",
             ],
         ];
     }
