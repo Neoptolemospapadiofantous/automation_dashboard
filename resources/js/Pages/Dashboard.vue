@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { router, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import { useEcho } from '@/composables/useEcho';
@@ -83,6 +83,14 @@ const colorBar = (color) => ({
 }[color] || 'bg-ink-mute');
 
 const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)));
+
+// Where you actually go from here — grounds the page below the numbers.
+const shortcuts = [
+    { ref: 'GO/CHAT', label: 'Test your agent', hint: 'Talk to it the way a lead would.', route: 'chat.index' },
+    { ref: 'GO/KB', label: 'Add knowledge', hint: 'Ground its answers in your own docs.', route: 'knowledge.index' },
+    { ref: 'GO/INSTALL', label: 'Install the widget', hint: 'Put the agent on your website.', route: 'install.index' },
+    { ref: 'GO/INBOX', label: 'Read conversations', hint: 'Every transcript, newest first.', route: 'conversations.index' },
+];
 </script>
 
 <template>
@@ -147,7 +155,7 @@ const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)
                     >
                         <span class="bp-ref absolute bottom-2 right-2">DASH/{{ String(i + 1).padStart(2, '0') }}</span>
                         <p class="font-mono text-xs uppercase tracking-wider text-ink-mute">{{ c.label }}</p>
-                        <p class="mt-2 pr-10 font-mono text-2xl font-semibold leading-none" :class="c.tone === 'violet' ? 'text-violet' : toneClass(c.tone)">{{ c.value }}</p>
+                        <p class="mt-2 pr-10 font-mono text-3xl font-semibold leading-none" :class="c.tone === 'violet' ? 'text-violet' : toneClass(c.tone)">{{ c.value }}</p>
                     </div>
                 </div>
 
@@ -187,13 +195,37 @@ const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)
                                 </span>
                             </li>
                         </ul>
-                        <p v-else class="bp-annot">No assigned leads yet.</p>
+                        <div v-else class="flex items-center gap-3 rounded-none border border-border-line bg-bg-elev px-3 py-2.5">
+                            <span class="bp-dot" aria-hidden="true" />
+                            <p class="bp-annot">No assigned leads yet — assign from the Leads board.</p>
+                        </div>
 
-                        <div class="mt-4 border-t border-border-line pt-3 text-xs text-ink-dim">
-                            <span class="font-mono font-medium text-ink">{{ stats.active_conversations }}</span> active ·
-                            <span class="font-mono font-medium text-ink">{{ stats.messages }}</span> messages stored
+                        <!-- Conversation volume — real figures, not a footnote. -->
+                        <div class="mt-4 grid grid-cols-2 gap-3 border-t border-border-line pt-4">
+                            <div>
+                                <p class="font-mono text-xs uppercase tracking-wider text-ink-mute">Active convos</p>
+                                <p class="mt-1 font-mono text-xl font-semibold leading-none text-ink">{{ stats.active_conversations }}</p>
+                            </div>
+                            <div>
+                                <p class="font-mono text-xs uppercase tracking-wider text-ink-mute">Messages stored</p>
+                                <p class="mt-1 font-mono text-xl font-semibold leading-none text-ink">{{ stats.messages }}</p>
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Shortcuts — where you go from here -->
+                <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <Link
+                        v-for="s in shortcuts"
+                        :key="s.ref"
+                        :href="route(s.route)"
+                        class="bp-node group relative rounded-none p-4 shadow-sheet transition-colors hover:border-ink"
+                    >
+                        <span class="bp-ref">{{ s.ref }}</span>
+                        <p class="mt-2 text-sm font-medium text-ink group-hover:underline">{{ s.label }}</p>
+                        <p class="bp-annot mt-1 leading-snug">{{ s.hint }}</p>
+                    </Link>
                 </div>
             </div>
         </div>
