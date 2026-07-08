@@ -28,6 +28,19 @@ const refLabel = computed(() => ({
     forgot: 'ACCESS/RESET',
 }[mode.value]));
 
+// Human heading + supporting line, per mode — the tabs switch modes, these
+// say where you are.
+const heading = computed(() => ({
+    login: 'Welcome back',
+    register: 'Create your account',
+    forgot: 'Reset your password',
+}[mode.value]));
+const subline = computed(() => ({
+    login: 'Sign in to your workspace.',
+    register: 'Set up your workspace and agent in minutes.',
+    forgot: "We'll email you a secure reset link.",
+}[mode.value]));
+
 // The segmented control has two segments; `forgot` sits under the sign-in one.
 const tabs = [
     { key: 'login', label: 'Sign in' },
@@ -101,11 +114,15 @@ const submitForgot = () => {
             </button>
         </div>
 
-        <!-- Mono reference line — re-labels per mode. -->
-        <div class="mt-5 mb-5 flex items-center gap-2">
-            <span class="bp-ref">{{ refLabel }}</span>
-            <span class="bp-dim flex-1" aria-hidden="true" />
+        <!-- Mode header: human heading left, mono sheet reference right. -->
+        <div class="mt-6 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <h2 class="text-lg font-semibold leading-6 text-ink">{{ heading }}</h2>
+                <p class="mt-1 text-sm text-ink-dim">{{ subline }}</p>
+            </div>
+            <span class="bp-ref mt-1 flex-shrink-0">{{ refLabel }}</span>
         </div>
+        <div class="bp-dim mb-6 mt-4" aria-hidden="true" />
 
         <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
             {{ status }}

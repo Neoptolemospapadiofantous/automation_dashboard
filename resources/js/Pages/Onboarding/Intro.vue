@@ -88,7 +88,7 @@ function continueOn() {
                 <h1 class="bp-rise break-words text-2xl font-semibold text-ink" style="--rise-delay: 60ms">Welcome to {{ team.name }}.</h1>
                 <p class="bp-rise mt-2 text-ink-dim" style="--rise-delay: 100ms">
                     A couple of quick questions to tailor your setup. None are required —
-                    skip and we'll still provision your AI agent right away.
+                    skip and we'll still provision your chat agent right away.
                 </p>
 
                 <p
