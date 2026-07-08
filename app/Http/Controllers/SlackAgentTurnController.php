@@ -24,6 +24,11 @@ use Illuminate\Http\Request;
  * ecosystem SHARED.md §3.1 — 200 `{reply}`, 402 out of credits, anything
  * else renders as "temporarily unavailable" in Slack.
  *
+ * Local-team tool by design — Slack is the development team's surface, so
+ * this endpoint refuses to serve in production (mirrors hermes-slack's
+ * `slack:listen`, which likewise won't run in prod). The deployed app keeps
+ * the route but always answers 503 there.
+ *
  * Auth is one shared bearer token (SLACK_AGENT_TURN_TOKEN) mapping the whole
  * workspace to a single team (SLACK_AGENT_TURN_TEAM_ID) — coarse by design;
  * there is no per-Slack-user identity (SHARED.md §3.3). Session continuity
@@ -44,6 +49,10 @@ class SlackAgentTurnController extends Controller
 
     public function __invoke(Request $request): JsonResponse
     {
+        if (app()->isProduction()) {
+            return response()->json(['error' => 'Slack agent turns are local-only.'], 503);
+        }
+
         $expected = (string) config('services.slack.agent_turn_token');
         if ($expected === '') {
             return response()->json(['error' => 'Slack agent turns are not configured.'], 503);

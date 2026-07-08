@@ -16,6 +16,16 @@ class SlackAgentTurnTest extends TestCase
 
     public function test_503s_when_token_is_not_configured(): void
     {
+        config(['services.slack.agent_turn_token' => '']);
+
+        $this->turn()->assertStatus(503);
+    }
+
+    public function test_503s_in_production_even_when_configured(): void
+    {
+        $this->makeAgent();
+        $this->app['env'] = 'production';
+
         $this->turn()->assertStatus(503);
     }
 
