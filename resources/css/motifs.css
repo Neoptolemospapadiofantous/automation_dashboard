@@ -48,10 +48,17 @@
     box-shadow: var(--elevation);
   }
 
-  /* Blueprint panel: crisp translucent fill over a grid, hairline border. */
+  /* Blueprint panel: crisp translucent fill over a grid, hairline border.
+     Recipe kept in sync with the landing's globals.css. */
   .glass {
-    background: color-mix(in oklab, var(--bg-elev) 80%, transparent);
+    background: color-mix(in oklab, var(--bg-elev) 78%, transparent);
     border: 1px solid var(--border-line);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+  .glass-strong {
+    background: color-mix(in oklab, var(--bg-elev) 92%, transparent);
+    border: 1px solid var(--border-hi);
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
   }

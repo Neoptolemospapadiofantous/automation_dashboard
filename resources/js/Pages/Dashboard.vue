@@ -78,7 +78,7 @@ const toneClass = (tone) => ({
 }[tone] || 'text-ink');
 
 const colorBar = (color) => ({
-    sky: 'bg-sky-400', amber: 'bg-amber-400', violet: 'bg-violet-400',
+    sky: 'bg-sky-400', amber: 'bg-amber-400', violet: 'bg-violet',
     blue: 'bg-blue-400', green: 'bg-green-400', rose: 'bg-rose-400',
 }[color] || 'bg-ink-mute');
 
