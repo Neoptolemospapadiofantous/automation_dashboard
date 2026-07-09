@@ -1,13 +1,18 @@
 <!doctype html>
 <!--
-    Static "be right back" page, served DIRECTLY by nginx (error_page
-    502/503/504) when PHP-FPM is dead or hung — no PHP, no build assets,
-    no external requests, so it works while everything else is down.
+    Static "be right back" page, served DIRECTLY by nginx (error_page)
+    when PHP-FPM is dead or hung — no PHP, no build assets, no external
+    requests, so it works while everything else is down.
 
-    Wired in the Forge nginx config for app.flowstack.run:
+    LIVE wiring in the Forge nginx config for app.flowstack.run
+    (applied 2026-07-08; the landing site carries the same pattern):
 
-        error_page 502 503 504 /brb.html;
+        error_page 502 503 504 =503 /brb.html;
         location = /brb.html { internal; }
+
+    The `=503` is load-bearing: Cloudflare replaces origin 502/504
+    responses with its own branded error page, but passes origin 503
+    bodies through — without it this page never reaches visitors.
 
     The meta refresh re-requests the original URL every 30s, so visitors
     land back on the real page the moment the app answers again.
