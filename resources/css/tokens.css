@@ -1,5 +1,5 @@
 /*
- * Flowstack design tokens — "two sheets, one ink".
+ * Flowstack design tokens — "two sheets, one ink, one signal".
  *
  * CANONICAL copy:  automation-landing/branding/tokens.css   (this file)
  * VENDORED copy:   automation_dashboard/resources/css/tokens.css
@@ -8,8 +8,10 @@
  *   :root / .sheet-black — the black sheet (marketing site)
  *   .sheet-white         — the white sheet (dashboard app, embed chat)
  *
- * The accent names (--violet, --cyan) intentionally resolve to the ink
- * color, so recoloring the whole brand later is a one-block edit here.
+ * The brand is monochrome plus ONE signal accent (--violet, kept under
+ * its legacy name — code, not copy): plotter yellow since 2026-07-09,
+ * #F5C518 on black / #8A6A00 on white (contrast-checked). Every other
+ * accent slot stays ink so nothing else competes with the signal.
  * The brand owns --radius (hard edges everywhere).
  */
 
@@ -24,8 +26,8 @@
   --ink:          #FFFFFF;
   --ink-dim:      #B8B8B8;
   --ink-mute:     #6B6B6B;
-  --violet:       #FFFFFF;
-  --violet-soft:  #E5E5E5;
+  --violet:       #F5C518;
+  --violet-soft:  #C79E13;
   --cyan:         #FFFFFF;
   --cyan-soft:    #E5E5E5;
   --success:      #FFFFFF;
@@ -50,8 +52,8 @@
   --ink:          #000000;
   --ink-dim:      #525252;
   --ink-mute:     #8A8A8A;
-  --violet:       #000000;
-  --violet-soft:  #1F1F1F;
+  --violet:       #8A6A00;
+  --violet-soft:  #6B5200;
   --cyan:         #000000;
   --cyan-soft:    #1F1F1F;
   --success:      #000000;
