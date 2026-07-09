@@ -108,6 +108,38 @@ class BillingDisplayMathTest extends TestCase
     /**
      * @return array{0: User, 1: Team}
      */
+    /**
+     * Plan::Free shares the "Starter" label with the paid entry tier, so
+     * the Billing UI must key "Current plan" off a real Stripe
+     * subscription, never the label — otherwise an unpaid team sees
+     * "Current plan" on the €99 card and cannot buy Starter at all
+     * (the bug found in the 2026-07-09 buying-journey verification).
+     */
+    public function test_subscribed_flag_reflects_stripe_status_not_plan_label(): void
+    {
+        [$user, $team] = $this->teamWith(monthly: 0);
+
+        // Fresh unpaid team: label says Starter, but NOT subscribed.
+        $this->actingAs($user->fresh())
+            ->get(route('billing.index'))
+            ->assertInertia(fn ($page) => $page
+                ->where('billing.plan_label', 'Starter')
+                ->where('billing.subscribed', false)
+            );
+
+        // Webhook lands → status active → same label, now subscribed.
+        $team->forceFill(['stripe_subscription_status' => 'active'])->save();
+        $this->actingAs($user->fresh())
+            ->get(route('billing.index'))
+            ->assertInertia(fn ($page) => $page->where('billing.subscribed', true));
+
+        // Cancellation downgrades → subscribable again.
+        $team->forceFill(['stripe_subscription_status' => 'canceled'])->save();
+        $this->actingAs($user->fresh())
+            ->get(route('billing.index'))
+            ->assertInertia(fn ($page) => $page->where('billing.subscribed', false));
+    }
+
     private function teamWith(int $monthly, int $topup = 0): array
     {
         $user = User::factory()->withPersonalTeam()->create();

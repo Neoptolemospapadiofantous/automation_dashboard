@@ -82,7 +82,10 @@ const subscribeForm = useForm({});
 const cycle = ref('monthly');
 
 function subscribe(planKey) {
-    if (billing.value?.plan_label?.toLowerCase() === planKey) return; // already on it
+    // "Already on it" only counts with a live Stripe subscription —
+    // Plan::Free shares the "Starter" label, so an unpaid team must
+    // still be able to buy Starter.
+    if (billing.value?.subscribed && billing.value?.plan_label?.toLowerCase() === planKey) return;
     if (! billing.value?.is_owner) return; // server enforces; UI matches
     const query = cycle.value === 'annual' ? '?cycle=annual' : '';
     subscribeForm.post(`/subscribe/${planKey}${query}`);
@@ -235,7 +238,7 @@ function openPortal() {
                                     Annual not yet available — billed monthly.
                                 </div>
 
-                                <div class="mt-2 text-[11px] font-medium text-ink underline" v-if="billing?.plan_label !== p.label">
+                                <div class="mt-2 text-[11px] font-medium text-ink underline" v-if="!(billing?.subscribed && billing?.plan_label === p.label)">
                                     Subscribe →
                                 </div>
                                 <div class="mt-2 text-[11px] font-medium text-ink-mute" v-else>
@@ -255,6 +258,21 @@ function openPortal() {
                         <p class="mt-3 text-xs text-ink-dim">
                             Custom plans run on a negotiated credit budget — there's no fixed monthly cap. Contact your account
                             owner for adjustments.
+                        </p>
+                    </div>
+
+                    <!-- Not subscribed yet: no monthly allowance has been granted,
+                         so a usage bar would read "2,500/2,500 used" for a team
+                         that used nothing. Point at the subscribe cards instead. -->
+                    <div v-else-if="!billing?.subscribed" class="rounded-none border border-border-line bg-bg p-5 sm:col-span-2">
+                        <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Conversation credits</div>
+                        <p class="mt-2 text-sm text-ink-dim">
+                            No active subscription yet — pick a plan above and your monthly
+                            conversation credits activate the moment checkout completes.
+                        </p>
+                        <p v-if="billing?.topup_balance > 0" class="mt-2 text-sm text-ink-dim">
+                            You still have <span class="font-mono font-medium tabular-nums">{{ fmtNum(billing.topup_balance) }}</span>
+                            rolled-over top-up credits available.
                         </p>
                     </div>
 
