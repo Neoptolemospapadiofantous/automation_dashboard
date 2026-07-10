@@ -3,7 +3,9 @@
 Flowstack fixes three things: busywork done by hand, data stuck in silos, and
 leads left waiting. We build automations that run the repetitive work, aggregate
 your data from scattered tools into one live view, and put a chat agent on your
-site that answers every inbound. One product, end to end, from €99/mo.
+site that answers every inbound. One product, end to end. The chat is
+self-serve from €99/mo; the automations and data pipelines are scoped custom
+builds — pricing per project, starting with the free 30-minute audit.
 
 The chat agent is the part you can switch on today, self-serve: a chat
 experience you embed on your website (as a floating widget or a hosted chat
