@@ -20,6 +20,7 @@ const q = ref(props.filters.q ?? '');
 const channel = ref(props.filters.channel ?? '');
 const status = ref(props.filters.status ?? '');
 const ratingFilter = ref(props.filters.rating ?? '');
+const needsHuman = ref(!!props.filters.needs_human);
 
 function applyFilters() {
     router.get(
@@ -29,6 +30,7 @@ function applyFilters() {
             channel: channel.value || undefined,
             status: status.value || undefined,
             rating: ratingFilter.value || undefined,
+            needs_human: needsHuman.value ? 1 : undefined,
             lead_id: props.filter_lead?.id || undefined,
         },
         { preserveState: true, preserveScroll: true, replace: true },
@@ -42,13 +44,14 @@ watch(q, () => {
     clearTimeout(debounce);
     debounce = setTimeout(applyFilters, 350);
 });
-watch([channel, status, ratingFilter], applyFilters);
+watch([channel, status, ratingFilter, needsHuman], applyFilters);
 
 function clearFilters() {
     q.value = '';
     channel.value = '';
     status.value = '';
     ratingFilter.value = '';
+    needsHuman.value = false;
 }
 
 const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
@@ -146,8 +149,13 @@ const rating = (key) => ratings[key] ?? null;
                         <option value="ok">😐 OK</option>
                         <option value="bad">☹ Bad</option>
                     </select>
+                    <!-- Never-miss-a-lead view: escalated + still open. -->
+                    <label class="inline-flex cursor-pointer items-center gap-1.5 rounded-none border border-border-line bg-bg px-3 py-2 font-mono text-sm" :class="needsHuman ? 'border-violet text-ink' : 'text-ink-dim'">
+                        <input v-model="needsHuman" type="checkbox" class="rounded-none border-border-hi text-ink focus:ring-ink" />
+                        Needs human
+                    </label>
                     <button
-                        v-if="q || channel || status || ratingFilter"
+                        v-if="q || channel || status || ratingFilter || needsHuman"
                         type="button"
                         class="font-mono text-xs text-ink-dim underline hover:text-ink"
                         @click="clearFilters"
@@ -185,6 +193,10 @@ const rating = (key) => ratings[key] ?? null;
                                         class="rounded-none px-2 py-0.5 font-mono text-xs"
                                         :class="c.status === 'ended' ? 'bg-surface-hi text-ink-dim' : 'bg-green-100 text-green-700'"
                                     >{{ c.status }}</span>
+                                    <span
+                                        v-if="c.meta?.handoff_requested && c.status !== 'ended'"
+                                        class="ml-1 rounded-none border border-violet px-2 py-0.5 font-mono text-xs text-violet"
+                                    >{{ c.meta?.human_takeover ? 'live' : 'needs human' }}</span>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span

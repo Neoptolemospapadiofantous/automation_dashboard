@@ -64,7 +64,8 @@ class ConversationRecorder
     /**
      * Append a single message to a conversation and keep counters in sync.
      *
-     * @param  'user'|'agent'|'system'  $role
+     * @param  'user'|'agent'|'human'|'system'  $role  'human' = a team member
+     *                                                 replying live during a takeover
      * @param  array<string, mixed>|null  $payload
      * @param  list<array<string, mixed>>|null  $citations  KB sources that grounded an agent answer
      */

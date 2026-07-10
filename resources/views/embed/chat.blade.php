@@ -756,6 +756,56 @@
         });
     }
 
+    // --- human takeover ---
+    // When the conversation is escalated (handoff) or a teammate has taken
+    // over, the widget polls for TEAM replies — those arrive from the
+    // dashboard, not as responses to the visitor's own messages. AI replies
+    // still come inline via /interact, so polling only for 'human'-role
+    // messages can never duplicate anything.
+    var humanSeq = 0;          // sequence cursor for delivered team replies
+    var pollTimer = null;
+    var teamJoinedShown = false;
+
+    function handleHandoffState(body) {
+        if (!body) return;
+        if (typeof body.last_seq === 'number' && body.last_seq > humanSeq) humanSeq = body.last_seq;
+        if (body.takeover && !teamJoinedShown) {
+            teamJoinedShown = true;
+            addSystem('A teammate has joined the conversation.');
+        }
+        if ((body.handoff || body.takeover) && !pollTimer) startPolling();
+        if (body.ended) stopPolling();
+    }
+
+    function startPolling() {
+        if (pollTimer) return;
+        pollTimer = setInterval(pollTeamReplies, 4000);
+    }
+
+    function stopPolling() {
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+
+    async function pollTeamReplies() {
+        if (!visitorId) return;
+        try {
+            var r = await callJson('/embed/' + encodeURIComponent(slug) + '/poll',
+                { visitor_id: visitorId, after: humanSeq });
+            if (r.status !== 200) return;
+            var msgs = Array.isArray(r.body.messages) ? r.body.messages : [];
+            msgs.forEach(function (m) {
+                if (m.sequence > humanSeq) humanSeq = m.sequence;
+                if (!teamJoinedShown) {
+                    teamJoinedShown = true;
+                    addSystem('A teammate has joined the conversation.');
+                }
+                addMsg('agent', m.text);
+            });
+            if (r.body.ended) { stopPolling(); return; }
+            if (!r.body.handoff && !r.body.takeover) stopPolling();
+        } catch (e) { /* transient — next tick retries */ }
+    }
+
     // Start (or resume) a chat session. `sessionId` keys the runtime session +
     // transcript row; `token` is sent so the conversation is grouped under the
     // stable visitor identity for the home screen.
@@ -789,6 +839,7 @@
                 var chips = Array.isArray(r.body.chips) ? r.body.chips : [];
                 addQuickReplies(STARTERS.concat(chips));
             }
+            handleHandoffState(r.body);
             input.focus();
             toParent({ type: 'fs:ready' });
             if (pendingSend) { var t = pendingSend; pendingSend = null; send(t); }
@@ -909,6 +960,7 @@
                 addSystem(r.body.error || 'Could not deliver the message.');
             } else {
                 renderTraces(r.body.traces);
+                handleHandoffState(r.body);
                 // Runtime reached a terminal flow state → prompt for a rating,
                 // then close the panel once they're done (autoEnded = true).
                 if (r.body.ended) showRating(true);

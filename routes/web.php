@@ -204,6 +204,14 @@ Route::middleware([
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
     Route::get('/conversations/{conversation}/messages', [ConversationController::class, 'messages'])
         ->name('conversations.messages');
+    // Human takeover: reply to the visitor live from the dashboard (first
+    // reply pauses the AI), release hands the conversation back to it.
+    Route::post('/conversations/{conversation}/reply', [ConversationController::class, 'reply'])
+        ->middleware('throttle:60,1')
+        ->name('conversations.reply');
+    Route::post('/conversations/{conversation}/release', [ConversationController::class, 'release'])
+        ->middleware('throttle:30,1')
+        ->name('conversations.release');
     Route::post('/conversations/{conversation}/end-upstream', [ConversationController::class, 'endUpstream'])
         ->middleware('throttle:30,1')
         ->name('conversations.end-upstream');
@@ -275,6 +283,11 @@ Route::post('/embed/{slug}/feedback', [EmbedController::class, 'feedback'])
 Route::post('/embed/{slug}/history', [EmbedController::class, 'history'])
     ->middleware('throttle:120,1')
     ->name('embed.history');
+// Human-takeover poll: the widget checks for team-member replies every few
+// seconds while a handoff is active (4s cadence ≈ 15/min — well inside).
+Route::post('/embed/{slug}/poll', [EmbedController::class, 'poll'])
+    ->middleware('throttle:60,1')
+    ->name('embed.poll');
 Route::post('/embed/{slug}/conversation', [EmbedController::class, 'transcript'])
     ->middleware('throttle:120,1')
     ->name('embed.conversation');

@@ -4,6 +4,7 @@ namespace App\Runtime\Tools;
 
 use App\Enums\LeadStatus;
 use App\Events\LeadSaved;
+use App\Models\Conversation;
 use App\Models\Lead;
 use App\Runtime\Contracts\Tool;
 use App\Runtime\Session\ConversationContext;
@@ -104,6 +105,10 @@ class CaptureLeadTool implements Tool
             'status' => LeadStatus::New->value,
             'source' => 'chat',
             'captured' => $capturedFields,
+            // Ties the lead to the chat session that produced it — the
+            // escalation contact-check and the conversation↔lead link both
+            // key on this (a lead without it looks anonymous to handoff).
+            'visitor_id' => $context->session->visitor_id,
         ];
 
         if ($email !== '') {
@@ -122,6 +127,16 @@ class CaptureLeadTool implements Tool
                 'email' => null,
             ]);
         }
+
+        // Link the visitor's conversation to the lead so the transcript view
+        // shows who you're talking to (and "All conversations with X" works).
+        rescue(fn () => Conversation::query()
+            ->where('team_id', $context->agent->team_id)
+            ->where('visitor_id', $context->session->visitor_id)
+            ->whereNull('lead_id')
+            ->latest('id')
+            ->limit(1)
+            ->update(['lead_id' => $lead->id]), report: true);
 
         // Live kanban update — non-fatal if broadcasting is unconfigured.
         rescue(fn () => broadcast(new LeadSaved($lead->fresh()))->toOthers(), report: false);

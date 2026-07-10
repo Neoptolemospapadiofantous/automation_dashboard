@@ -12,6 +12,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property array<string, mixed>|null $meta
+ */
 class Conversation extends Model
 {
     /** @use HasFactory<ConversationFactory> */

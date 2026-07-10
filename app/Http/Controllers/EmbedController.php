@@ -158,8 +158,11 @@ class EmbedController extends Controller
         $visitorToken = $this->resolveVisitorToken((string) $request->input('visitor_token', ''));
 
         // Returning visitor with a live session → resume: restore the
-        // transcript, no greeting, no LLM call, no charge.
+        // transcript, no greeting, no LLM call, no charge. Handoff/takeover
+        // state rides along so the widget resumes polling for team replies.
         if ($this->runtime->hasSession($agent, $visitorId)) {
+            $conversation = $this->latestConversation($agent, $visitorId);
+
             return $this->launchResponse($slug, $visitorId, [
                 'visitor_id' => $visitorId,
                 'agent_name' => $agent->name,
@@ -167,6 +170,9 @@ class EmbedController extends Controller
                 'transcript' => $this->runtime->transcript($agent, $visitorId),
                 'traces' => [],
                 'chips' => CannedAnswers::forAgent($agent->id)->chips(),
+                'handoff' => (bool) ($conversation->meta['handoff_requested'] ?? false),
+                'takeover' => $this->takeoverActive($conversation),
+                'last_seq' => $this->lastHumanSequence($conversation),
             ]);
         }
 
@@ -212,7 +218,7 @@ class EmbedController extends Controller
                 continue;
             }
             $this->recordMessage($conversation, 'agent', $text, (array) ($trace['payload']['citations'] ?? []));
-            $this->broadcastEmbed($team->id, 'agent', $text);
+            $this->broadcastEmbed($team->id, 'agent', $text, $conversation?->id);
         }
 
         return $this->launchResponse($slug, $visitorId, [
@@ -222,6 +228,9 @@ class EmbedController extends Controller
             'transcript' => [],
             'traces' => $traces,
             'chips' => CannedAnswers::forAgent($agent->id)->chips(),
+            'handoff' => false,
+            'takeover' => false,
+            'last_seq' => 0,
         ]);
     }
 
@@ -291,21 +300,45 @@ class EmbedController extends Controller
             return response()->json(['error' => 'Agent misconfigured.'], 503);
         }
 
+        $visitorToken = $this->resolveVisitorToken((string) $request->input('visitor_token', ''));
+        $conversation = $this->recordConversation($agent, $data['visitor_id'], $visitorToken);
+
+        // Human takeover: a teammate owns this conversation. Record + relay
+        // the visitor's message to the dashboard and skip the AI entirely —
+        // no LLM call, no credit charge. Team replies reach the visitor via
+        // the poll endpoint.
+        if ($this->takeoverActive($conversation)) {
+            $this->recordMessage($conversation, 'user', $data['message']);
+            $this->broadcastEmbed($team->id, 'user', $data['message'], $conversation?->id);
+
+            return response()->json([
+                'traces' => [],
+                'ended' => false,
+                'handoff' => true,
+                'takeover' => true,
+            ]);
+        }
+
         // Deterministic FAQ shortcut FIRST: a chip tap or a keyword-matched
         // question is answered from stored config with no LLM call and no
         // credit charge. Checked before the credit pre-check on purpose, so
         // canned answers keep working even when the team is out of credits.
-        if ($canned = CannedAnswers::forAgent($agent->id)->match($data['message'])) {
-            $visitorToken = $this->resolveVisitorToken((string) $request->input('visitor_token', ''));
-            $conversation = $this->recordConversation($agent, $data['visitor_id'], $visitorToken);
+        // SKIPPED once the conversation is escalated: a handoff turn belongs
+        // to the LLM (it's mid contact-capture) — live-tested 2026-07-10, a
+        // visitor's "call me about the Operator plan" contact reply keyword-
+        // matched the Pricing chip and the lead was silently lost.
+        $handoffPending = (bool) (($conversation->meta ?? [])['handoff_requested'] ?? false);
+        if (! $handoffPending && ($canned = CannedAnswers::forAgent($agent->id)->match($data['message']))) {
             $this->recordMessage($conversation, 'user', $data['message']);
-            $this->broadcastEmbed($team->id, 'user', $data['message']);
+            $this->broadcastEmbed($team->id, 'user', $data['message'], $conversation?->id);
             $this->recordMessage($conversation, 'agent', $canned->answer);
-            $this->broadcastEmbed($team->id, 'agent', $canned->answer);
+            $this->broadcastEmbed($team->id, 'agent', $canned->answer, $conversation?->id);
 
             return response()->json([
                 'traces' => [['type' => 'text', 'payload' => ['message' => $canned->answer, 'citations' => [], 'canned' => true]]],
                 'ended' => false,
+                'handoff' => (bool) ($conversation?->meta['handoff_requested'] ?? false),
+                'takeover' => false,
             ]);
         }
 
@@ -322,10 +355,8 @@ class EmbedController extends Controller
 
         // Record + echo the visitor's message before the engine call, so the
         // dashboard transcript + lead board update live.
-        $visitorToken = $this->resolveVisitorToken((string) $request->input('visitor_token', ''));
-        $conversation = $this->recordConversation($agent, $data['visitor_id'], $visitorToken);
         $this->recordMessage($conversation, 'user', $data['message']);
-        $this->broadcastEmbed($team->id, 'user', $data['message']);
+        $this->broadcastEmbed($team->id, 'user', $data['message'], $conversation?->id);
 
         try {
             $traces = $this->runtime->sendText($agent, $data['visitor_id'], $data['message']);
@@ -358,7 +389,7 @@ class EmbedController extends Controller
                 continue;
             }
             $this->recordMessage($conversation, 'agent', $text, (array) ($trace['payload']['citations'] ?? []));
-            $this->broadcastEmbed($team->id, 'agent', $text);
+            $this->broadcastEmbed($team->id, 'agent', $text, $conversation?->id);
         }
 
         // Terminal flow state → mark the conversation ended (dashboard replay)
@@ -368,9 +399,20 @@ class EmbedController extends Controller
             rescue(fn () => $this->recorder->end($conversation), report: true);
         }
 
+        // Handoff may have been flagged DURING this turn (the tool or the
+        // low-confidence backstop) — re-read the conversation row so the
+        // widget learns to start polling for team replies immediately.
+        $handoff = false;
+        if ($conversation !== null) {
+            $conversation->refresh();
+            $handoff = (bool) ($conversation->meta['handoff_requested'] ?? false);
+        }
+
         return response()->json([
             'traces' => $traces,
             'ended' => $ended,
+            'handoff' => $handoff,
+            'takeover' => false,
         ]);
     }
 
@@ -422,6 +464,49 @@ class EmbedController extends Controller
      * identity and acts as the bearer capability, so a visitor only ever sees
      * their own chats. Pre-token rows (null visitor_token) never match.
      */
+    /**
+     * POST /embed/{slug}/poll
+     *
+     * The visitor side of human takeover. The widget polls this (only while
+     * handoff/takeover is active) to receive TEAM-MEMBER replies, which —
+     * unlike AI replies — are not responses to the visitor's own requests.
+     * Returns only 'human'-role messages after the client's cursor, so AI
+     * replies (delivered inline via interact) are never duplicated.
+     */
+    public function poll(string $slug, Request $request): JsonResponse
+    {
+        $agent = $this->resolveAgent($slug);
+
+        if ($denied = $this->originDenied($agent, $request)) {
+            return $denied;
+        }
+
+        $data = $request->validate([
+            'visitor_id' => ['required', 'string', 'max:255'],
+            'after' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $conversation = $this->latestConversation($agent, (string) $data['visitor_id']);
+        if ($conversation === null) {
+            return response()->json(['messages' => [], 'handoff' => false, 'takeover' => false, 'ended' => false]);
+        }
+
+        $messages = DB::table('messages')
+            ->where('conversation_id', $conversation->id)
+            ->where('role', 'human')
+            ->where('sequence', '>', (int) ($data['after'] ?? 0))
+            ->orderBy('sequence')
+            ->limit(50)
+            ->get(['role', 'text', 'sequence', 'sent_at']);
+
+        return response()->json([
+            'messages' => $messages,
+            'handoff' => (bool) (($conversation->meta ?? [])['handoff_requested'] ?? false),
+            'takeover' => $this->takeoverActive($conversation),
+            'ended' => $conversation->status === 'ended',
+        ]);
+    }
+
     public function history(string $slug, Request $request): JsonResponse
     {
         $agent = $this->resolveAgent($slug);
@@ -490,7 +575,7 @@ class EmbedController extends Controller
         // Eloquent's dynamic-property type noise (matches the dashboard list).
         $rows = DB::table('messages')
             ->where('conversation_id', $conversation->id)
-            ->whereIn('role', ['user', 'agent'])
+            ->whereIn('role', ['user', 'agent', 'human'])
             ->orderBy('sequence')
             ->get(['role', 'text', 'sent_at']);
 
@@ -569,7 +654,7 @@ class EmbedController extends Controller
         }
     }
 
-    protected function broadcastEmbed(int $teamId, string $role, string $text): void
+    protected function broadcastEmbed(int $teamId, string $role, string $text, ?int $conversationId = null): void
     {
         rescue(fn () => broadcast(new LeadMessage(
             teamId: $teamId,
@@ -577,7 +662,44 @@ class EmbedController extends Controller
             role: $role,
             text: $text,
             at: now()->toIso8601String(),
+            conversationId: $conversationId,
         )), report: false);
+    }
+
+    /**
+     * A teammate has taken over this conversation from the dashboard — the
+     * AI stays out until they release it.
+     */
+    protected function takeoverActive(?Conversation $conversation): bool
+    {
+        return $conversation !== null
+            && (bool) (($conversation->meta ?? [])['human_takeover'] ?? false)
+            && $conversation->status !== 'ended';
+    }
+
+    protected function latestConversation(Agent $agent, string $visitorId): ?Conversation
+    {
+        return Conversation::query()
+            ->where('team_id', $agent->team_id)
+            ->where('visitor_id', $visitorId)
+            ->latest('id')
+            ->first();
+    }
+
+    /**
+     * Highest sequence among team-member ('human') messages — the widget's
+     * polling cursor, so replies are never re-delivered.
+     */
+    protected function lastHumanSequence(?Conversation $conversation): int
+    {
+        if ($conversation === null) {
+            return 0;
+        }
+
+        return (int) DB::table('messages')
+            ->where('conversation_id', $conversation->id)
+            ->where('role', 'human')
+            ->max('sequence');
     }
 
     protected function sessionEnded(Agent $agent, string $visitorId): bool

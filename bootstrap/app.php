@@ -53,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'embed/*/interact',
             'embed/*/history',
             'embed/*/conversation',
+            'embed/*/poll',
             // Public waitlist form on the coming-soon page. The gate
             // short-circuits before session middleware, so there's no CSRF
             // token to send; the controller is throttled + honeypotted.

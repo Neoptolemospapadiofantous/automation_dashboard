@@ -21,7 +21,8 @@ class LeadMessage implements ShouldBroadcast, ShouldQueue
     use SerializesModels;
 
     /**
-     * @param  'user'|'agent'  $role
+     * @param  'user'|'agent'|'human'  $role  'human' = a team member replying
+     *                                        during a takeover.
      */
     public function __construct(
         public int $teamId,
@@ -29,6 +30,7 @@ class LeadMessage implements ShouldBroadcast, ShouldQueue
         public string $role,
         public string $text,
         public string $at,
+        public ?int $conversationId = null,
     ) {}
 
     public function broadcastOn(): PrivateChannel
@@ -48,6 +50,7 @@ class LeadMessage implements ShouldBroadcast, ShouldQueue
     {
         return [
             'lead_id' => $this->leadId,
+            'conversation_id' => $this->conversationId,
             'role' => $this->role,
             'text' => $this->text,
             'at' => $this->at,
