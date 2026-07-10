@@ -20,9 +20,43 @@ class Chunker
     public function chunk(string $text): array
     {
         $budget = max(200, ((int) config('runtime.rag.chunk_size_tokens')) * 4);
-        $overlap = max(0, ((int) config('runtime.rag.chunk_overlap_tokens')) * 4);
 
         $text = trim(preg_replace("/\r\n?/", "\n", $text) ?? '');
+        if ($text === '') {
+            return [];
+        }
+
+        // Markdown headings are hard retrieval boundaries: a section is the
+        // natural per-topic unit, and packing unrelated sections into one
+        // chunk dilutes its embedding until nothing clears the answer
+        // confidence threshold (a whole six-topic FAQ as a single chunk
+        // scored ~0.38 against a question it answered verbatim). Documents
+        // without headings keep the plain paragraph-packing behavior.
+        $sections = preg_split('/\n(?=#{1,6}[ \t])/', $text) ?: [$text];
+        if (count($sections) > 1) {
+            $chunks = [];
+            foreach ($sections as $section) {
+                foreach ($this->chunkSection(trim($section), $budget) as $chunk) {
+                    $chunks[] = $chunk;
+                }
+            }
+
+            return array_values(array_filter($chunks, fn (string $c): bool => $c !== ''));
+        }
+
+        return $this->chunkSection($text, $budget);
+    }
+
+    /**
+     * Paragraph-pack one heading-free block of text into budget-sized
+     * chunks (the original whole-document strategy).
+     *
+     * @return list<string>
+     */
+    protected function chunkSection(string $text, int $budget): array
+    {
+        $overlap = max(0, ((int) config('runtime.rag.chunk_overlap_tokens')) * 4);
+
         if ($text === '') {
             return [];
         }

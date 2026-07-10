@@ -39,6 +39,47 @@ class KnowledgeChunkingTest extends TestCase
         }
     }
 
+    public function test_markdown_headings_are_chunk_boundaries(): void
+    {
+        // Six short sections easily fit one 2000-char budget together — the
+        // old packer returned the whole doc as ONE diluted chunk. Headings
+        // must force per-topic chunks so retrieval scores stay sharp.
+        $doc = implode("\n\n", [
+            '# Frequently asked questions',
+            "## What does it cost?\n\nStarter is 99 euro per month.",
+            "## Is there a free trial?\n\nNo free trial; Starter is the way to try it.",
+            "## How fast can I go live?\n\nAbout 60 seconds: pick a role and embed the widget.",
+        ]);
+
+        $chunks = (new Chunker)->chunk($doc);
+
+        $this->assertCount(4, $chunks);
+        $this->assertStringStartsWith('## What does it cost?', $chunks[1]);
+        $this->assertStringContainsString('60 seconds', $chunks[3]);
+        // No section bleeds into a neighbour's chunk.
+        $this->assertStringNotContainsString('free trial', $chunks[1]);
+    }
+
+    public function test_oversized_section_still_splits_within_budget(): void
+    {
+        config(['runtime.rag.chunk_size_tokens' => 50, 'runtime.rag.chunk_overlap_tokens' => 0]);
+
+        $long = [];
+        for ($i = 1; $i <= 8; $i++) {
+            $long[] = "Sentence {$i} of the pricing section carries enough words to consume budget.";
+        }
+        $doc = "## Pricing\n\n".implode("\n\n", $long)."\n\n## Contact\n\nEmail us anytime.";
+
+        $chunks = (new Chunker)->chunk($doc);
+
+        $budget = 50 * 4;
+        foreach ($chunks as $chunk) {
+            $this->assertLessThanOrEqual($budget, mb_strlen($chunk));
+        }
+        // The tiny trailing section survives as its own chunk.
+        $this->assertStringContainsString('Email us anytime.', implode(' ', $chunks));
+    }
+
     public function test_cosine_similarity_math(): void
     {
         $v = new VectorSearch;
