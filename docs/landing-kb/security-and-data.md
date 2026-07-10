@@ -10,7 +10,7 @@
   interacting with an AI assistant (EU AI Act transparency), and visitors can
   ask for a human at any time.
 - Visitor conversations are **not** used to train AI models.
-- Custom-build engagements run in an **isolated tenant**, with any credentials
+- Custom build engagements run in an **isolated tenant**, with any credentials
   you provide **encrypted** — you keep the code.
 - Flowstack operates under **EU / Cyprus** jurisdiction; the supervisory
   authority is the Office of the Commissioner for Personal Data Protection in

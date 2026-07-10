@@ -22,10 +22,8 @@ anytime — there is no lock-in. There is no free trial: the €99 Starter plan 
 the way to try the product, and cancelling is one click.
 
 The automations and data pipelines — the operations layer behind the chat — are
-built to order in the custom build engagement. The chat is the front door; we
-build what runs behind it. The way in is the free 30-minute audit.
-
-End to end the pipeline is: chat answers the front door (intake) → automations
-run the busywork → data is aggregated from your tools into one source of truth →
-everything lands on one live, audited dashboard. It's the same automation stack
-Flowstack runs its own growth on.
+built to order in the custom build engagement; the way in is the free
+30-minute audit. End to end the pipeline is: chat answers the front door
+(intake) → automations run the busywork → data is aggregated from your tools
+into one source of truth → everything lands on one live, audited dashboard.
+It's the same automation stack Flowstack runs its own growth on.

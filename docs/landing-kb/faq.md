@@ -43,7 +43,20 @@ No. The product is yours to trial and cancel anytime — no monthly minimums, no
 exit fees. Custom builds are fixed-scope and you keep the code; if you outgrow
 us, you walk with everything we shipped.
 
+## How do conversation credits work?
+
+Each visitor message and each agent reply consumes conversation credits. On the
+fastest response tier that's 1 credit per message; smarter tiers cost more per
+message (you pick the tier per agent and can change it anytime). Your monthly
+allowance resets on renewal; purchased top-up credits roll over until used.
+
 ## How fast can I go live?
 
 One agent goes live in about 60 seconds: pick a role, upload your knowledge, and
 embed the widget on your site.
+
+## How do I talk to a human?
+
+Three ways: book the free 30-minute audit at flowstack.run/audit (a human runs
+it), email hello@flowstack.run, or ask this chat to pass your details to the
+team and someone will follow up.
