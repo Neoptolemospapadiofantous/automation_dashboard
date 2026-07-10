@@ -4,7 +4,8 @@ The off-the-shelf agent covers the standardisable ~80% of use cases. The custom
 build engagement is for the rest — the chat is the front door, and we build
 what runs behind it: automations wired to your stack (CRM, Sheets, internal
 tools), lead sourcing, enrichment and outreach pipelines, data moved between
-your tools into one live dashboard, with every run fully audited.
+your tools into one live dashboard, with every run fully audited. It's the
+same automation stack Flowstack runs its own growth on.
 
 ## When you need it
 

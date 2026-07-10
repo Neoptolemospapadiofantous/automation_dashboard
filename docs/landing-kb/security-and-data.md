@@ -1,22 +1,26 @@
 # Security and data
 
-This covers what we can state today. Some formal security documentation is still
-being finalised — if a visitor asks something specific that isn't answered here,
-the agent should offer to connect them with a human rather than guess.
-
 ## What we can confirm
 
+- The legal documents are in force and public on the website:
+  **Privacy Policy** (flowstack.run/privacy), **Terms of Service**
+  (flowstack.run/terms), **Security** (flowstack.run/security) and the
+  **Data Processing Agreement (DPA)** (flowstack.run/dpa).
+- Every conversation opens with a clear disclosure that the visitor is
+  interacting with an AI assistant (EU AI Act transparency), and visitors can
+  ask for a human at any time.
+- Visitor conversations are **not** used to train AI models.
 - Custom-build engagements run in an **isolated tenant**, with any credentials
   you provide **encrypted** — you keep the code.
-- Flowstack operates under **EU / Cyprus** jurisdiction; the relevant supervisory
+- Flowstack operates under **EU / Cyprus** jurisdiction; the supervisory
   authority is the Office of the Commissioner for Personal Data Protection in
   Cyprus (dataprotection.gov.cy).
-- A **Data Processing Agreement (DPA)** is available on the website.
 - Every conversation is captured as a transcript in your dashboard, visible only
   to your team.
 
 ## What to do with detailed security questions
 
 For specifics not listed above — encryption-at-rest details, backup and disaster
-recovery, sub-processors, certifications — connect the visitor with a human. Do
-not state controls that aren't confirmed here.
+recovery, sub-processors, certifications — point the visitor at
+flowstack.run/security or connect them with a human. Do not state controls that
+aren't confirmed here.
