@@ -20,7 +20,8 @@ bottom for what "green" means and how to re-audit).
    for spec in "Starter Monthly:9900:month" "Operator Monthly:39900:month" \
                "Starter Annual:99000:year" "Operator Annual:399000:year"; do
      IFS=: read -r nick amount interval <<<"$spec"
-     curl -s -u "$KEY:" https://api.stripe.com/v1/prices \
+     curl -s https://api.stripe.com/v1/prices \
+       -H "Authorization: Bearer $KEY" \
        -d "unit_amount=$amount" -d currency=eur \
        -d "recurring[interval]=$interval" -d "nickname=$nick" \
        -d "product_data[name]=Flowstack $nick"
