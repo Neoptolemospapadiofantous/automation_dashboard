@@ -160,7 +160,7 @@ class QualityTierTest extends TestCase
         $this->assertSame(3, AgentConfigVersion::creditsPerMessage($agent->id));
     }
 
-    public function test_onboarding_with_haiku_tier_seeds_nothing(): void
+    public function test_onboarding_with_haiku_tier_seeds_starter_config(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
 
@@ -169,10 +169,14 @@ class QualityTierTest extends TestCase
             'model_tier' => 'haiku',
         ])->assertRedirect(route('onboarding.done'));
 
-        // Haiku is the default — no config row, so the dashboard
-        // checklist's 'Publish behavior' step stays meaningful.
-        $this->assertSame(0, AgentConfigVersion::count());
+        // Every fresh agent gets a published v1: goal-shaped starter
+        // instructions + a static greeting (served without an LLM call).
+        // Haiku stays the default tier at 1 credit per message.
+        $this->assertSame(1, AgentConfigVersion::count());
         $agent = $user->currentTeam->fresh()->currentAgent;
+        $config = AgentConfigVersion::publishedConfig($agent->id);
+        $this->assertNotSame('', (string) $config['instructions']);
+        $this->assertNotSame('', (string) $config['greeting']);
         $this->assertSame(1, AgentConfigVersion::creditsPerMessage($agent->id));
     }
 

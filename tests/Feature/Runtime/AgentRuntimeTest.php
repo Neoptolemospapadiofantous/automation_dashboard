@@ -3,6 +3,7 @@
 namespace Tests\Feature\Runtime;
 
 use App\Models\Agent;
+use App\Models\AgentConfigVersion;
 use App\Models\Lead;
 use App\Models\User;
 use App\Runtime\AgentRuntime;
@@ -47,6 +48,56 @@ class AgentRuntimeTest extends TestCase
         $session = RuntimeSession::where('visitor_id', 'v1')->first();
         $this->assertSame('discovery', $session->flow_state); // greeting autoNext
         $this->assertNotEmpty($session->history);
+    }
+
+    public function test_launch_with_published_greeting_skips_the_llm(): void
+    {
+        Http::fake();
+
+        $agent = $this->agent();
+        AgentConfigVersion::create([
+            'agent_id' => $agent->id,
+            'version' => 1,
+            'status' => AgentConfigVersion::STATUS_PUBLISHED,
+            'config' => ['instructions' => '', 'greeting' => 'Hi! Welcome to Acme.', 'model_tier' => 'haiku'],
+            'published_at' => now(),
+        ]);
+
+        $traces = app(AgentRuntime::class)->launch($agent, 'v-static');
+
+        // Served verbatim — zero tokens, no API call.
+        $this->assertSame('Hi! Welcome to Acme.', $traces[0]['payload']['message']);
+        Http::assertNothingSent();
+
+        // Session state matches what an LLM greeting turn would have left:
+        // greeting auto-advanced, history seeded for the next turn.
+        $session = RuntimeSession::where('visitor_id', 'v-static')->first();
+        $this->assertSame('discovery', $session->flow_state);
+        $this->assertCount(2, $session->history);
+    }
+
+    public function test_wrapup_state_can_escalate_to_a_human(): void
+    {
+        Http::fake([
+            'api.anthropic.com/*' => Http::sequence()
+                ->push($this->toolUseResponse('request_handoff', ['reason' => 'Visitor asked for a human.']))
+                ->push($this->textResponse('Connecting you with the team now.')),
+        ]);
+
+        $agent = $this->agent();
+        $this->seedSession($agent, 'v-wrap', 'wrapup');
+
+        $traces = app(AgentRuntime::class)->sendText($agent, 'v-wrap', 'Can I talk to a real person?');
+
+        $this->assertSame('Connecting you with the team now.', $traces[0]['payload']['message']);
+        // wrapup offers the escalation + lead-correction tools alongside
+        // query_kb and end_session.
+        Http::assertSent(function (Request $request): bool {
+            $names = array_column((array) ($request->data()['tools'] ?? []), 'name');
+
+            return in_array('request_handoff', $names, true)
+                && in_array('capture_lead', $names, true);
+        });
     }
 
     public function test_launch_resets_a_prior_session(): void

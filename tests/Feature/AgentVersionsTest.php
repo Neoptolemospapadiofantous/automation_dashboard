@@ -151,13 +151,20 @@ class AgentVersionsTest extends TestCase
             'published_at' => now(),
         ]);
 
-        app(Runtime::class)->launch($agent, 'v-cfg-1');
+        // A published greeting short-circuits launch: served verbatim,
+        // no LLM call at all.
+        $traces = app(Runtime::class)->launch($agent, 'v-cfg-1');
+        $this->assertSame('Mention the March webinar.', $traces[0]['payload']['message']);
+        Http::assertNothingSent();
+
+        // The first real turn injects the published instructions into the
+        // engine's system prompt.
+        app(Runtime::class)->sendText($agent, 'v-cfg-1', 'What do you offer?');
 
         Http::assertSent(function ($request): bool {
             $system = SystemPrompt::toText($request->data()['system'] ?? '');
 
-            return str_contains($system, 'Always ask about practice size.')
-                && str_contains($system, 'Mention the March webinar.'); // greeting turn
+            return str_contains($system, 'Always ask about practice size.');
         });
     }
 

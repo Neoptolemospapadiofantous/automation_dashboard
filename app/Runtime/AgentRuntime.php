@@ -3,6 +3,7 @@
 namespace App\Runtime;
 
 use App\Models\Agent;
+use App\Models\AgentConfigVersion;
 use App\Runtime\Contracts\Runtime;
 use App\Runtime\Flow\FlowExecutor;
 use App\Runtime\Flow\LeadCaptureFlow;
@@ -37,6 +38,23 @@ class AgentRuntime implements Runtime
     public function launch(Agent $agent, string $visitorId): array
     {
         $session = $this->sessions->reset($agent, $visitorId, $this->flow->initial());
+
+        // Operator-authored greeting → serve it verbatim: zero tokens and an
+        // instant open instead of a full LLM turn. History is seeded in the
+        // exact shape execute() would have produced (synthetic user prompt +
+        // assistant text blocks) so transcript replay, trimming, and the
+        // next turn's context all behave identically.
+        $greeting = trim((string) ((AgentConfigVersion::publishedConfig($agent->id) ?? [])['greeting'] ?? ''));
+        if ($greeting !== '') {
+            $initial = $this->flow->resolve($this->flow->initial());
+            $session->flow_state = $initial->autoNext ?? $this->flow->initial();
+            $this->sessions->appendHistory($session, [
+                ['role' => 'user', 'content' => FlowExecutor::OPENING_MESSAGE],
+                ['role' => 'assistant', 'content' => [['type' => 'text', 'text' => $greeting]]],
+            ]);
+
+            return [['type' => 'text', 'payload' => ['message' => $greeting]]];
+        }
 
         $result = $this->executor->execute(
             new ConversationContext($agent, $session, FlowExecutor::OPENING_MESSAGE),

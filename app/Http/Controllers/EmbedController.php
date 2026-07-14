@@ -180,9 +180,13 @@ class EmbedController extends Controller
         // anything yet), which makes them a token-burn vector for bots
         // spread across IPs (the per-IP throttle alone can't see that).
         // Past the daily allowance, a launch debits the tier multiplier —
-        // real traffic spikes keep working, paid for.
+        // real traffic spikes keep working, paid for. Agents with a
+        // published static greeting are exempt: their launch never reaches
+        // an LLM (AgentRuntime serves the greeting verbatim), so there are
+        // no tokens to protect and nothing to charge for.
+        $staticGreeting = trim((string) ((AgentConfigVersion::publishedConfig($agent->id) ?? [])['greeting'] ?? '')) !== '';
         $cap = max(0, (int) config('runtime.safety.free_greetings_per_day'));
-        $greetings = (int) Cache::increment($this->greetingCounterKey($team->id));
+        $greetings = $staticGreeting ? 0 : (int) Cache::increment($this->greetingCounterKey($team->id));
         if ($greetings === 1) {
             // First hit today sets the expiry; increments don't touch TTL.
             Cache::put($this->greetingCounterKey($team->id), 1, now()->addDays(2));

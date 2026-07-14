@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\IngestOnboardingWebsite;
+use App\Models\AgentConfigVersion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class OnboardingProfileTest extends TestCase
@@ -40,6 +43,43 @@ class OnboardingProfileTest extends TestCase
             'team_size' => '2-5',
             'website' => 'https://acme.example.com',
         ], $team->profile);
+    }
+
+    public function test_website_dispatches_kb_auto_ingest(): void
+    {
+        Queue::fake();
+        $user = User::factory()->withPersonalTeam()->create();
+
+        $this->actingAs($user)
+            ->post(route('onboarding.start'), [
+                'website' => 'https://acme.example.com',
+            ])
+            ->assertRedirect();
+
+        $agent = $user->currentTeam->fresh()->currentAgent;
+        Queue::assertPushed(
+            IngestOnboardingWebsite::class,
+            fn (IngestOnboardingWebsite $job) => $job->agentId === $agent->id
+                && $job->url === 'https://acme.example.com',
+        );
+    }
+
+    public function test_use_case_shapes_starter_config(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+
+        $this->actingAs($user)
+            ->post(route('onboarding.start'), [
+                'use_case' => 'customer_support',
+            ])
+            ->assertRedirect();
+
+        $agent = $user->currentTeam->fresh()->currentAgent;
+        $config = AgentConfigVersion::publishedConfig($agent->id);
+        $this->assertStringContainsString('support', (string) $config['instructions']);
+        // The static greeting carries the team name and is served verbatim
+        // at launch — no LLM call.
+        $this->assertStringContainsString($user->currentTeam->name, (string) $config['greeting']);
     }
 
     public function test_empty_profile_does_not_overwrite_existing(): void

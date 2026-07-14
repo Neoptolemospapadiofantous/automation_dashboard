@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Agents\CreateAgent;
+use App\Jobs\IngestOnboardingWebsite;
 use App\Lifecycle\OnboardingState;
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
@@ -89,25 +90,87 @@ class OnboardingController extends Controller
             ->first();
         $agent = $existing ?: (new CreateAgent)->execute($team, $data['name'] ?? 'Default agent');
 
-        // Seed the quality tier chosen in the wizard. Only for NON-standard
-        // picks on a freshly created agent: standard is the default anyway,
-        // and seeding an empty published config would falsely tick the
-        // dashboard checklist's 'Publish behavior' step. Re-clicks never
-        // overwrite an existing agent's config.
+        // Seed a published v1 shaped by the wizard: goal-specific starter
+        // instructions plus a static greeting (served verbatim at launch —
+        // no LLM call, instant open), alongside the chosen quality tier.
+        // This is real published behavior, so it honestly ticks the
+        // checklist's 'Publish behavior' step. Re-clicks never overwrite
+        // an existing agent's config.
         $tier = (string) ($data['model_tier'] ?? AgentConfigVersion::defaultTier());
-        if ($existing === null && $tier !== AgentConfigVersion::defaultTier()) {
+        if ($existing === null) {
+            [$instructions, $greeting] = $this->starterTemplate((string) ($data['use_case'] ?? 'other'), (string) $team->getAttribute('name'));
             AgentConfigVersion::create([
                 'agent_id' => $agent->id,
                 'version' => 1,
                 'status' => AgentConfigVersion::STATUS_PUBLISHED,
-                'config' => ['instructions' => '', 'greeting' => '', 'model_tier' => $tier],
+                'config' => ['instructions' => $instructions, 'greeting' => $greeting, 'model_tier' => $tier],
                 'published_at' => now(),
             ]);
+        }
+
+        // Auto-ingest the website they told us about so the agent can answer
+        // real product questions from its very first conversation. Queued —
+        // onboarding never blocks on an external fetch, and failures are
+        // silent (the KB page still offers manual ingestion).
+        if ($existing === null && isset($profile['website'])) {
+            IngestOnboardingWebsite::dispatch($agent->id, (string) $profile['website']);
         }
 
         // Managed signups are activated atomically by CreateAgent — no
         // credential-paste step. Go straight to Done.
         return redirect()->route('onboarding.done');
+    }
+
+    /**
+     * Goal-shaped starter behavior published as config v1, so a brand-new
+     * agent acts like the goal the customer picked instead of a blank slate.
+     * Instructions ride the cached system-prompt prefix; the greeting is
+     * served statically at launch. Operators refine both on the Versions page.
+     *
+     * @return array{0: string, 1: string} [instructions, greeting]
+     */
+    protected function starterTemplate(string $useCase, string $company): array
+    {
+        return match ($useCase) {
+            'lead_capture' => [
+                'Your primary goal is turning interested visitors into leads. Answer their '
+                    .'questions helpfully, and as soon as someone shows genuine interest, ask for '
+                    .'their name and email so the team can follow up. Never let an interested '
+                    .'visitor leave without offering to take their details.',
+                "Hi! Welcome to {$company} — happy to help. What brought you here today?",
+            ],
+            'customer_support' => [
+                'Your primary goal is resolving support questions from the knowledge base. If you '
+                    .'cannot resolve an issue confidently, or the visitor seems frustrated, hand '
+                    .'off to a human right away instead of guessing. Take contact details whenever '
+                    .'a follow-up is needed.',
+                "Hi, you've reached {$company} support. What can I help you with?",
+            ],
+            'scheduling' => [
+                'Your primary goal is booking appointments. When a visitor wants to meet, collect '
+                    .'their name, email, and preferred day and time, then confirm the team will '
+                    .'send a confirmation. Keep the exchange short and friendly.',
+                "Hi! Welcome to {$company}. Would you like to book a time with us, or do you have a question first?",
+            ],
+            'qualification' => [
+                'Your primary goal is qualifying prospects. Ask brief questions to understand what '
+                    .'they need, their timeline, and their situation before taking contact details, '
+                    .'and score each lead carefully on fit, intent, and urgency.',
+                "Hi! Welcome to {$company}. Tell me a bit about what you're looking for and I'll point you the right way.",
+            ],
+            'faq' => [
+                'Your primary goal is answering questions accurately from the knowledge base. Keep '
+                    .'answers short and to the point. Only ask for contact details when the visitor '
+                    .'wants a follow-up, and hand off to a human when the knowledge base has no answer.',
+                "Hi! I can answer questions about {$company}. What would you like to know?",
+            ],
+            default => [
+                'Help visitors with whatever they need: answer questions from the knowledge base, '
+                    .'take contact details when a follow-up makes sense, and hand off to a human '
+                    .'when a question is beyond you.',
+                "Hi! Welcome to {$company}. How can I help today?",
+            ],
+        };
     }
 
     public function done(Request $request): Response|RedirectResponse

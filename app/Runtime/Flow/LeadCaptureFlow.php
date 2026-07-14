@@ -48,8 +48,11 @@ class LeadCaptureFlow extends Flow
             'wrapup' => new State(
                 prompt: 'Their contact details are saved. Confirm that a teammate will follow up '
                     .'shortly, answer any remaining questions from the knowledge base, and close '
-                    .'warmly. Call end_session when they say goodbye or have nothing further.',
-                tools: ['query_kb', 'end_session'],
+                    .'warmly. If they correct or add contact details, save the fix with '
+                    .'capture_lead. Escalate with request_handoff if they ask for a human or need '
+                    .'something you cannot answer. Call end_session when they say goodbye or have '
+                    .'nothing further.',
+                tools: ['query_kb', 'capture_lead', 'request_handoff', 'end_session'],
                 onToolSuccess: ['end_session' => 'ended'],
             ),
 
