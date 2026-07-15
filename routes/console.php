@@ -26,6 +26,11 @@ Schedule::command('runtime:spend-check')->dailyAt('5:45');
 // contacted within the grace window (assignee if set, else owner).
 Schedule::command('leads:follow-up-nudges')->dailyAt('8:00');
 
+// Monday-morning proof-of-value: last week's numbers + the open work
+// lists (KB gaps, uncontacted leads) to each team owner. Quiet weeks
+// send nothing — see the command.
+Schedule::command('teams:weekly-digest')->weeklyOn(1, '8:10');
+
 // Provider liveness tripwire: ping Anthropic/OpenAI/Gemini balances so an
 // empty/throttled provider pages us (via the hermes-slack findings.json
 // reader) instead of failing silently in front of a paying customer. The
