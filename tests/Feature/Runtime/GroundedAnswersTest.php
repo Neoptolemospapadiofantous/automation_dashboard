@@ -12,6 +12,7 @@ use App\Runtime\Flow\FlowExecutor;
 use App\Runtime\LLM\AnthropicClient;
 use App\Runtime\LLM\CompletionResult;
 use App\Runtime\LLM\ToolCall;
+use App\Runtime\Models\KbGap;
 use App\Runtime\Models\RuntimeSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -59,6 +60,49 @@ class GroundedAnswersTest extends TestCase
         $this->assertTrue((bool) ($session->variables['handoff_requested'] ?? false));
 
         Notification::assertSentTo($owner, HandoffRequestedNotification::class);
+    }
+
+    public function test_low_confidence_turn_records_a_kb_gap_and_repeats_increment(): void
+    {
+        Notification::fake();
+
+        $this->ownerWithAgent($agent, autoEscalate: true);
+        $this->fakeKnowledge(hasDocuments: true, topScore: 0.20, title: 'Pricing FAQ');
+        $this->fakeLlm(
+            $this->textResult('Let me get a teammate.'),
+            $this->textResult('Let me get a teammate.'),
+        );
+
+        $this->seedSession($agent, 'v1', 'discovery');
+        app(AgentRuntime::class)->sendText($agent, 'v1', 'Do you support SAML SSO?');
+
+        $gap = KbGap::query()->where('agent_id', $agent->id)->first();
+        $this->assertNotNull($gap);
+        $this->assertSame('Do you support SAML SSO?', $gap->question);
+        $this->assertSame(1, $gap->asked_count);
+        $this->assertEqualsWithDelta(0.20, $gap->top_score, 0.001);
+
+        // Same question, different visitor, different casing/whitespace →
+        // one row, count bumped (the panel ranks by demand).
+        $this->seedSession($agent, 'v2', 'discovery');
+        app(AgentRuntime::class)->sendText($agent, 'v2', 'do you   support saml sso?');
+
+        $this->assertSame(1, KbGap::query()->where('agent_id', $agent->id)->count());
+        $this->assertSame(2, $gap->fresh()->asked_count);
+    }
+
+    public function test_high_confidence_turn_records_no_kb_gap(): void
+    {
+        Notification::fake();
+
+        $this->ownerWithAgent($agent, autoEscalate: true);
+        $this->fakeKnowledge(hasDocuments: true, topScore: 0.92, title: 'Pricing FAQ');
+        $this->fakeLlm($this->textResult('Starter is 99/month.'));
+
+        $this->seedSession($agent, 'v1', 'discovery');
+        app(AgentRuntime::class)->sendText($agent, 'v1', 'what does starter cost?');
+
+        $this->assertSame(0, KbGap::query()->count());
     }
 
     public function test_high_confidence_answers_normally_with_citations_and_no_escalation(): void

@@ -171,6 +171,9 @@ Route::middleware([
     Route::patch('/leads/{lead}/status', [LeadController::class, 'updateStatus'])
         ->middleware('throttle:120,1')
         ->name('leads.status');
+    Route::patch('/leads/{lead}/contacted', [LeadController::class, 'markContacted'])
+        ->middleware('throttle:60,1')
+        ->name('leads.contacted');
     Route::patch('/leads/{lead}/notes', [LeadController::class, 'updateNotes'])
         ->middleware('throttle:120,1')
         ->name('leads.notes');
@@ -247,6 +250,10 @@ Route::middleware([
     Route::post('/knowledge/query', [KnowledgeBaseController::class, 'query'])
         ->middleware('throttle:60,1')
         ->name('knowledge.query');
+    // Registered before /knowledge/{documentID} so "gaps" isn't bound as a document id.
+    Route::delete('/knowledge/gaps/{gap}', [KnowledgeBaseController::class, 'resolveGap'])
+        ->middleware('throttle:30,1')
+        ->name('knowledge.gaps.resolve');
     Route::get('/knowledge/{documentID}', [KnowledgeBaseController::class, 'show'])
         ->where('documentID', '[A-Za-z0-9_\-]+')
         ->name('knowledge.show');

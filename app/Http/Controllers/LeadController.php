@@ -360,6 +360,22 @@ class LeadController extends Controller
     }
 
     /**
+     * "I reached out" — stamps last_contacted_at so the follow-up nudge
+     * stands down and the lead page can show contact recency.
+     */
+    public function markContacted(Request $request, Lead $lead): JsonResponse
+    {
+        $this->authorizeLead($request, $lead);
+
+        $lead->forceFill(['last_contacted_at' => now()])->save();
+
+        return response()->json([
+            'ok' => true,
+            'last_contacted_at' => $lead->last_contacted_at?->toIso8601String(),
+        ]);
+    }
+
+    /**
      * Ensure the lead belongs to the user's current team.
      */
     protected function authorizeLead(Request $request, Lead $lead): void

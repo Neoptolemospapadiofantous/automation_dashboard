@@ -8,6 +8,7 @@ use App\Models\Conversation;
 use App\Models\CreditTransaction;
 use App\Models\Lead;
 use App\Models\Message;
+use App\Models\RuntimeUsage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -113,6 +114,60 @@ class AgentAnalyticsTest extends TestCase
                 ->where('totals.qualified', 3) // 2 qualified + 1 won
                 ->where('totals.won', 1)
                 ->where('totals.credits_spent', 50)
+            );
+    }
+
+    public function test_quality_totals_escalation_csat_deflection_kb_hit(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $team = $user->currentTeam;
+        $agent = Agent::factory()->for($team)->create();
+
+        // 4 conversations: 1 escalated; 3 rated (2 good, 1 bad).
+        Conversation::factory()->for($team)->create([
+            'agent_id' => $agent->id,
+            'started_at' => now()->subDays(2),
+            'meta' => ['handoff_requested' => true],
+        ]);
+        Conversation::factory()->count(2)->for($team)->create([
+            'agent_id' => $agent->id,
+            'started_at' => now()->subDays(2),
+            'rating' => 'good',
+            'rated_at' => now()->subDay(),
+        ]);
+        Conversation::factory()->for($team)->create([
+            'agent_id' => $agent->id,
+            'started_at' => now()->subDays(2),
+            'rating' => 'bad',
+            'rated_at' => now()->subDay(),
+        ]);
+
+        // Runtime counters: 8 LLM turns (6 KB-grounded) + 2 canned deflections.
+        RuntimeUsage::create([
+            'team_id' => $team->id,
+            'agent_id' => $agent->id,
+            'date' => now()->startOfDay(),
+            'tier' => 'haiku',
+            'turns' => 8,
+            'tokens_in' => 100,
+            'tokens_out' => 100,
+            'canned_turns' => 2,
+            'kb_hits' => 6,
+            'low_confidence_turns' => 1,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('agents.analytics', $agent->slug))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('totals.escalated', 1)
+                ->where('totals.escalation_rate', 25)     // 1 of 4 (JSON drops the .0)
+                ->where('totals.rated', 3)
+                ->where('totals.csat', 66.7)              // 2 good of 3 rated
+                ->where('totals.canned_turns', 2)
+                ->where('totals.deflection_rate', 20)     // 2 of (2+8)
+                ->where('totals.llm_turns', 8)
+                ->where('totals.kb_hit_rate', 75)         // 6 of 8
             );
     }
 

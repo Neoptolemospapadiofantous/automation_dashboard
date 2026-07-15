@@ -8,6 +8,7 @@ use App\Events\LeadMessage;
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
 use App\Models\Conversation;
+use App\Models\RuntimeUsage;
 use App\Models\Team;
 use App\Runtime\Canned\CannedAnswers;
 use App\Runtime\Contracts\Runtime;
@@ -337,6 +338,10 @@ class EmbedController extends Controller
             $this->broadcastEmbed($team->id, 'user', $data['message'], $conversation?->id);
             $this->recordMessage($conversation, 'agent', $canned->answer);
             $this->broadcastEmbed($team->id, 'agent', $canned->answer, $conversation?->id);
+
+            // Deflection-rate bookkeeping for the analytics page — a canned
+            // turn cost zero tokens/credits, and that saving should be visible.
+            rescue(fn () => RuntimeUsage::recordCanned($agent, AgentConfigVersion::publishedTier($agent->id)), report: false);
 
             return response()->json([
                 'traces' => [['type' => 'text', 'payload' => ['message' => $canned->answer, 'citations' => [], 'canned' => true]]],

@@ -8,6 +8,7 @@ use App\Models\Conversation;
 use App\Models\CreditTransaction;
 use App\Models\Lead;
 use App\Models\Message;
+use App\Models\RuntimeUsage;
 use App\Models\Team;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -152,6 +153,35 @@ class AgentAnalyticsController extends Controller
         $qualifyRate = $leads > 0 ? round(($qualified / $leads) * 100, 1) : 0.0;
         $winRate = $qualified > 0 ? round(($won / $qualified) * 100, 1) : 0.0;
 
+        // Quality metrics — how well the agent handles what it's asked.
+        $escalated = Conversation::query()
+            ->where('agent_id', $agentId)
+            ->whereBetween('started_at', [$start, $end])
+            ->where('meta->handoff_requested', true)
+            ->count();
+
+        $ratings = Conversation::query()
+            ->where('agent_id', $agentId)
+            ->whereNotNull('rating')
+            ->whereBetween('rated_at', [$start, $end])
+            ->selectRaw('rating, count(*) as c')
+            ->groupBy('rating')
+            ->pluck('c', 'rating');
+        $good = (int) ($ratings['good'] ?? 0);
+        $rated = (int) $ratings->sum();
+
+        // Per-day runtime counters: LLM turns, canned deflections, grounded
+        // (KB-hit) turns, low-confidence turns. Written by FlowExecutor /
+        // the embed canned path; date column is day-granular.
+        $usage = RuntimeUsage::query()
+            ->where('agent_id', $agentId)
+            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+            ->selectRaw('coalesce(sum(turns),0) as turns, coalesce(sum(canned_turns),0) as canned, coalesce(sum(kb_hits),0) as kb_hits')
+            ->first();
+        $turns = (int) ($usage->turns ?? 0);
+        $canned = (int) ($usage->canned ?? 0);
+        $kbHits = (int) ($usage->kb_hits ?? 0);
+
         return [
             'conversations' => $conversations,
             'messages' => $messages,
@@ -162,6 +192,14 @@ class AgentAnalyticsController extends Controller
             'capture_rate' => $captureRate,
             'qualify_rate' => $qualifyRate,
             'win_rate' => $winRate,
+            'escalated' => $escalated,
+            'escalation_rate' => $conversations > 0 ? round(($escalated / $conversations) * 100, 1) : 0.0,
+            'rated' => $rated,
+            'csat' => $rated > 0 ? round(($good / $rated) * 100, 1) : null,
+            'canned_turns' => $canned,
+            'deflection_rate' => ($canned + $turns) > 0 ? round(($canned / ($canned + $turns)) * 100, 1) : 0.0,
+            'llm_turns' => $turns,
+            'kb_hit_rate' => $turns > 0 ? round(($kbHits / $turns) * 100, 1) : 0.0,
         ];
     }
 

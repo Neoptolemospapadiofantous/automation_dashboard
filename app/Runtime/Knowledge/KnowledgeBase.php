@@ -24,6 +24,12 @@ class KnowledgeBase implements KnowledgeStore
 
     public function ingestDocument(int $agentId, string $title, string $content, array $metadata = []): int
     {
+        // Dedupe fingerprint. Re-ingesting the same URL REPLACES the old
+        // document (that's a refresh), and byte-identical content never
+        // duplicates regardless of source — the guard the 5x-duplicate
+        // prod incident showed was missing.
+        $metadata['content_hash'] = hash('sha256', $content);
+
         $chunks = $this->chunker->chunk($content);
         // Embed BEFORE the transaction — long HTTP calls don't belong
         // inside a DB transaction.
@@ -31,6 +37,16 @@ class KnowledgeBase implements KnowledgeStore
         $model = $this->embeddings->model();
 
         return DB::transaction(function () use ($agentId, $title, $content, $metadata, $chunks, $vectors, $model): int {
+            KbDocument::query()
+                ->where('agent_id', $agentId)
+                ->where(function ($q) use ($metadata): void {
+                    $q->where('metadata->content_hash', $metadata['content_hash']);
+                    if (isset($metadata['source_url'])) {
+                        $q->orWhere('source_url', (string) $metadata['source_url']);
+                    }
+                })
+                ->delete(); // chunks cascade via document_id FK
+
             $document = KbDocument::create([
                 'agent_id' => $agentId,
                 'title' => $title,

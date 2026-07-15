@@ -9,6 +9,7 @@ use App\Runtime\Automation\AutomationCatalog;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\LLM\LlmRouter;
 use App\Runtime\LLM\SystemPrompt;
+use App\Runtime\Models\KbGap;
 use App\Runtime\Session\ConversationContext;
 use App\Runtime\Session\SessionManager;
 use App\Runtime\Support\CaptureLeadBackstop;
@@ -56,6 +57,16 @@ class FlowExecutor
         // best score; citations ride out on the assistant message.
         $retrieval = $this->retrieve($context->agent->id, $context->userMessage);
         $lowConfidence = $this->isLowConfidence($context->agent, $retrieval);
+
+        // KB-gap capture: persist the question the KB couldn't answer so the
+        // Knowledge page can show operators exactly what to add. Best-effort —
+        // never fail the visitor's turn over bookkeeping.
+        if ($lowConfidence) {
+            rescue(
+                fn () => KbGap::record($context->agent->id, $context->userMessage, $retrieval['top_score']),
+                report: true,
+            );
+        }
         // On a low-confidence turn we don't claim sources — the whole point
         // is "we don't have a confident answer".
         $citations = $lowConfidence ? [] : $retrieval['citations'];
@@ -194,7 +205,13 @@ class FlowExecutor
 
         // Durable cost rollup (runtime_usage) — sessions are ephemeral, this
         // survives resets/pruning. Best-effort: never fail the visitor's turn.
-        rescue(fn () => RuntimeUsage::record($context->agent, $tokensIn, $tokensOut, $tier), report: true);
+        // kbHit = this turn's answer was grounded in confident retrieval;
+        // together with low_confidence_turns it powers the KB-hit-rate tile.
+        $kbHit = $retrieval['attempted'] && ! $lowConfidence && $retrieval['citations'] !== [];
+        rescue(
+            fn () => RuntimeUsage::record($context->agent, $tokensIn, $tokensOut, $tier, kbHit: $kbHit, lowConfidence: $lowConfidence),
+            report: true,
+        );
 
         if (trim($finalText) === '') {
             $finalText = 'Thanks — a teammate will follow up shortly.';

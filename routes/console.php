@@ -22,6 +22,10 @@ Schedule::command('credits:reconcile')->dailyAt('5:30');
 // Token-spend tripwire: yesterday's platform-wide LLM cost vs SLA ceiling.
 Schedule::command('runtime:spend-check')->dailyAt('5:45');
 
+// Speed-to-lead backstop: one-time nudge for captured leads nobody has
+// contacted within the grace window (assignee if set, else owner).
+Schedule::command('leads:follow-up-nudges')->dailyAt('8:00');
+
 // Provider liveness tripwire: ping Anthropic/OpenAI/Gemini balances so an
 // empty/throttled provider pages us (via the hermes-slack findings.json
 // reader) instead of failing silently in front of a paying customer. The

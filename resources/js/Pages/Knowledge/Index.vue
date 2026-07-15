@@ -13,6 +13,7 @@ import { confirm } from '@/Composables/useConfirm';
 const props = defineProps({
     configured: { type: Boolean, default: false },
     documents: { type: Array, default: () => [] },
+    gaps: { type: Array, default: () => [] },
     total: { type: Number, default: 0 },
     error: { type: String, default: null },
     filter: { type: Object, default: () => ({ type: null }) },
@@ -128,6 +129,19 @@ async function ask() {
     } finally {
         querying.value = false;
     }
+}
+
+// --- Knowledge gaps (unanswered questions work list) -------------------------
+function resolveGap(id) {
+    router.delete(route('knowledge.gaps.resolve', id), { preserveScroll: true });
+}
+
+function timeAgo(iso) {
+    const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.round(mins / 60);
+    if (hours < 48) return `${hours}h ago`;
+    return `${Math.round(hours / 24)}d ago`;
 }
 
 // --- Helpers ----------------------------------------------------------------
@@ -343,6 +357,38 @@ const description = computed(() => {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Knowledge gaps — questions the KB couldn't answer -->
+                        <div v-if="gaps.length" class="shadow-sheet rounded-none border border-border-line bg-bg p-5">
+                            <div class="mb-1 flex items-center justify-between">
+                                <h3 class="text-sm font-semibold text-ink">Knowledge gaps</h3>
+                                <span class="font-mono text-[10px] uppercase tracking-wider text-ink-mute">{{ gaps.length }} open</span>
+                            </div>
+                            <p class="mb-3 text-xs text-ink-dim">
+                                Visitors asked these and the agent had no confident answer — each one escalated to a teammate.
+                                Add the missing content above, then mark it resolved.
+                            </p>
+                            <ul class="divide-y divide-border-line">
+                                <li v-for="g in gaps" :key="g.id" class="group flex items-start gap-3 py-2.5">
+                                    <span class="mt-0.5 shrink-0 rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink" :title="`asked ${g.asked_count} time${g.asked_count === 1 ? '' : 's'}`">
+                                        ×{{ g.asked_count }}
+                                    </span>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="break-words text-sm text-ink">{{ g.question }}</div>
+                                        <div class="mt-0.5 font-mono text-[11px] text-ink-dim">
+                                            best match {{ Math.round(g.top_score * 100) }}% · last asked {{ timeAgo(g.last_asked_at) }}
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        class="shrink-0 text-xs text-ink-mute transition hover:text-ink sm:opacity-0 sm:group-hover:opacity-100"
+                                        @click="resolveGap(g.id)"
+                                    >
+                                        Resolve
+                                    </button>
+                                </li>
+                            </ul>
                         </div>
 
                         <!-- Inspect panel — chunks of a single document -->

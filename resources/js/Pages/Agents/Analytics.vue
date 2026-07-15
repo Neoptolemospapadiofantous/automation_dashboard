@@ -163,6 +163,42 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
                     </div>
                 </div>
 
+                <!-- Answer quality -->
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="rounded-none border border-border-line bg-bg p-5">
+                        <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">Escalation rate</p>
+                        <p class="mt-2 font-mono text-3xl font-semibold text-ink">{{ totals.escalation_rate }}%</p>
+                        <p class="mt-1 text-xs text-ink-dim">
+                            {{ fmt(totals.escalated) }} of {{ fmt(totals.conversations) }} conversations asked for a human
+                        </p>
+                    </div>
+                    <div class="rounded-none border border-border-line bg-bg p-5">
+                        <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">Satisfaction</p>
+                        <p class="mt-2 font-mono text-3xl font-semibold text-ink">
+                            <template v-if="totals.csat !== null">{{ totals.csat }}%</template>
+                            <template v-else>—</template>
+                        </p>
+                        <p class="mt-1 text-xs text-ink-dim">
+                            <template v-if="totals.csat !== null">rated good by {{ fmt(totals.rated) }} visitor{{ totals.rated === 1 ? '' : 's' }}</template>
+                            <template v-else>no visitor ratings yet</template>
+                        </p>
+                    </div>
+                    <div class="rounded-none border border-border-line bg-bg p-5">
+                        <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">Canned deflection</p>
+                        <p class="mt-2 font-mono text-3xl font-semibold text-ink">{{ totals.deflection_rate }}%</p>
+                        <p class="mt-1 text-xs text-ink-dim">
+                            {{ fmt(totals.canned_turns) }} answers served free, before the model
+                        </p>
+                    </div>
+                    <div class="rounded-none border border-border-line bg-bg p-5">
+                        <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">KB hit rate</p>
+                        <p class="mt-2 font-mono text-3xl font-semibold text-ink">{{ totals.kb_hit_rate }}%</p>
+                        <p class="mt-1 text-xs text-ink-dim">
+                            of {{ fmt(totals.llm_turns) }} model turns grounded in your knowledge base
+                        </p>
+                    </div>
+                </div>
+
                 <div class="grid gap-6 lg:grid-cols-2">
                     <!-- Funnel -->
                     <div class="rounded-none border border-border-line bg-bg p-5">

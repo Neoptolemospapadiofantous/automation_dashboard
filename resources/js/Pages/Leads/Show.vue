@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
+import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -40,6 +41,19 @@ function saveNotes() {
             preserveState: true,
         });
     }, 600);
+}
+
+// --- Mark contacted ---------------------------------------------------------
+const lastContactedAt = ref(props.lead.last_contacted_at ?? null);
+const contactSaving = ref(false);
+async function markContacted() {
+    contactSaving.value = true;
+    try {
+        const { data } = await axios.patch(route('leads.contacted', props.lead.id));
+        lastContactedAt.value = data.last_contacted_at;
+    } finally {
+        contactSaving.value = false;
+    }
 }
 
 // --- Assign ---------------------------------------------------------------
@@ -161,9 +175,22 @@ const scoreBreakdown = computed(() => {
 
                 <!-- Contact -->
                 <div class="bp-node shadow-sheet rounded-none p-5">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between gap-3">
                         <h3 class="text-sm font-semibold text-ink-dim">Contact</h3>
-                        <span class="bp-ref">LEAD/CONTACT</span>
+                        <div class="flex items-center gap-3">
+                            <span class="text-[11px] text-ink-dim">
+                                {{ lastContactedAt ? `Last contacted ${fmt(lastContactedAt)}` : 'Not contacted yet' }}
+                            </span>
+                            <button
+                                type="button"
+                                class="rounded-none border border-border-hi px-2.5 py-1 text-xs font-medium text-ink transition hover:bg-surface-hi disabled:opacity-50"
+                                :disabled="contactSaving"
+                                @click="markContacted"
+                            >
+                                {{ contactSaving ? 'Saving…' : 'Mark contacted' }}
+                            </button>
+                            <span class="bp-ref hidden sm:inline">LEAD/CONTACT</span>
+                        </div>
                     </div>
                     <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
                         <div>

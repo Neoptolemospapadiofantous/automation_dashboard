@@ -46,6 +46,57 @@ class KnowledgeBaseTest extends TestCase
         $this->assertSame($doc->chunks()->count(), $doc->chunk_count);
     }
 
+    public function test_reingesting_same_url_replaces_instead_of_duplicating(): void
+    {
+        $this->fakeEmbeddings();
+
+        $agent = $this->agent();
+        $kb = app(KnowledgeStore::class);
+
+        $meta = ['source' => 'url', 'source_url' => 'https://acme.example.com'];
+        $kb->ingestDocument($agent->id, 'Homepage', 'Old homepage copy about our product.', $meta);
+        $newId = $kb->ingestDocument($agent->id, 'Homepage', 'New homepage copy — repositioned.', $meta);
+
+        // One document survives, carrying the fresh content (a refresh, not a dupe).
+        $docs = KbDocument::query()->where('agent_id', $agent->id)->get();
+        $this->assertCount(1, $docs);
+        $this->assertSame($newId, $docs->first()->id);
+        $this->assertStringContainsString('repositioned', $docs->first()->raw_content);
+    }
+
+    public function test_reingesting_identical_content_never_duplicates(): void
+    {
+        $this->fakeEmbeddings();
+
+        $agent = $this->agent();
+        $kb = app(KnowledgeStore::class);
+
+        $kb->ingestDocument($agent->id, 'Policies', 'Our refund policy is 30 days.', ['source' => 'text']);
+        $kb->ingestDocument($agent->id, 'Policies', 'Our refund policy is 30 days.', ['source' => 'text']);
+
+        $this->assertSame(1, KbDocument::query()->where('agent_id', $agent->id)->count());
+
+        // Different content is a genuinely new document.
+        $kb->ingestDocument($agent->id, 'Hours', 'We are open 9 to 5.', ['source' => 'text']);
+        $this->assertSame(2, KbDocument::query()->where('agent_id', $agent->id)->count());
+    }
+
+    public function test_dedupe_is_agent_scoped(): void
+    {
+        $this->fakeEmbeddings();
+
+        $agentA = $this->agent();
+        $agentB = $this->agent();
+        $kb = app(KnowledgeStore::class);
+
+        $kb->ingestDocument($agentA->id, 'Doc', 'Shared identical content.', ['source' => 'text']);
+        $kb->ingestDocument($agentB->id, 'Doc', 'Shared identical content.', ['source' => 'text']);
+
+        // Same bytes, different tenants — both keep their copy.
+        $this->assertSame(1, KbDocument::query()->where('agent_id', $agentA->id)->count());
+        $this->assertSame(1, KbDocument::query()->where('agent_id', $agentB->id)->count());
+    }
+
     public function test_search_ranks_by_cosine_and_filters_threshold(): void
     {
         config(['runtime.rag.min_similarity' => 0.5]);

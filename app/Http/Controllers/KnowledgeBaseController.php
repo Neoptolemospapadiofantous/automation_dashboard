@@ -12,6 +12,7 @@ use App\Models\Team;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\LLM\AnthropicClient;
 use App\Runtime\Models\KbDocument;
+use App\Runtime\Models\KbGap;
 use App\Support\PublicWebPage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -76,9 +77,32 @@ class KnowledgeBaseController extends Controller
             }
         }
 
+        // The KB-gap work list: questions visitors asked that retrieval
+        // couldn't answer confidently, ranked by demand. Resolving = the
+        // operator added the missing content (or judged it noise) — either
+        // way the row is done and deleted.
+        $gaps = [];
+        if ($agent !== null) {
+            $gaps = KbGap::query()
+                ->where('agent_id', $agent->id)
+                ->orderByDesc('asked_count')
+                ->orderByDesc('last_asked_at')
+                ->limit(20)
+                ->get()
+                ->map(fn (KbGap $g) => [
+                    'id' => (int) $g->id,
+                    'question' => (string) $g->question,
+                    'asked_count' => (int) $g->asked_count,
+                    'top_score' => round((float) $g->top_score, 2),
+                    'last_asked_at' => (string) $g->last_asked_at->toIso8601String(),
+                ])
+                ->all();
+        }
+
         return Inertia::render('Knowledge/Index', [
             'configured' => $configured && $agent !== null,
             'documents' => $documents,
+            'gaps' => $gaps,
             'total' => count($documents),
             'error' => $configured ? null : 'Set OPENAI_API_KEY to enable this agent\'s knowledge base.',
             'filter' => ['type' => $filter],
@@ -216,6 +240,22 @@ class KnowledgeBaseController extends Controller
         $agent = $this->currentAgentOrAbort($request);
 
         $this->knowledge->deleteDocument($agent->id, (int) $documentID);
+
+        return back();
+    }
+
+    /**
+     * Resolve a KB gap — the operator added the missing content (or judged
+     * the question noise). Adding knowledge and clearing its work list are
+     * the same capability.
+     */
+    public function resolveGap(Request $request, KbGap $gap): RedirectResponse
+    {
+        $this->requireCapability($request, fn (Role $r) => $r->canAddKnowledge(), 'manage knowledge gaps');
+        $agent = $this->currentAgentOrAbort($request);
+        abort_unless($gap->agent_id === $agent->id, 403);
+
+        $gap->delete();
 
         return back();
     }

@@ -12,7 +12,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property Carbon|null $last_contacted_at
+ * @property Carbon|null $follow_up_nudged_at
+ */
 class Lead extends Model
 {
     /** @use HasFactory<LeadFactory> */
@@ -51,6 +56,7 @@ class Lead extends Model
             'score' => 'integer',
             'score_breakdown' => 'array',
             'last_contacted_at' => 'datetime',
+            'follow_up_nudged_at' => 'datetime',
         ];
     }
 

@@ -6,6 +6,9 @@ use App\Enums\LeadStatus;
 use App\Events\LeadSaved;
 use App\Models\Conversation;
 use App\Models\Lead;
+use App\Models\Team;
+use App\Models\User;
+use App\Notifications\LeadCapturedNotification;
 use App\Runtime\Contracts\Tool;
 use App\Runtime\Session\ConversationContext;
 
@@ -140,6 +143,19 @@ class CaptureLeadTool implements Tool
 
         // Live kanban update — non-fatal if broadcasting is unconfigured.
         rescue(fn () => broadcast(new LeadSaved($lead->fresh()))->toOthers(), report: false);
+
+        // Speed-to-lead: tell the owner the moment a NEW lead lands (updates
+        // to an existing lead stay quiet — same visitor correcting details).
+        // Assignment mail is separate and fires only when a rep is delegated.
+        if ($lead->wasRecentlyCreated) {
+            rescue(function () use ($lead, $context): void {
+                $team = $context->agent->team;
+                $owner = $team instanceof Team ? $team->owner : null;
+                if ($owner instanceof User) {
+                    $owner->notify(new LeadCapturedNotification($lead));
+                }
+            }, report: true);
+        }
 
         return [
             'status' => 'saved',
