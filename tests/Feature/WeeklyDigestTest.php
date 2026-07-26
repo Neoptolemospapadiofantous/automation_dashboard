@@ -61,6 +61,62 @@ class WeeklyDigestTest extends TestCase
         });
     }
 
+    public function test_digest_names_the_team_and_neutralizes_markdown_in_gaps(): void
+    {
+        Notification::fake();
+
+        $owner = User::factory()->withPersonalTeam()->create();
+        $team = $owner->currentTeam;
+        $team->forceFill(['name' => 'Acme Rentals'])->save();
+        $agent = Agent::factory()->for($team)->create(['status' => 'active']);
+
+        Conversation::factory()->for($team)->create([
+            'agent_id' => $agent->id,
+            'started_at' => now()->subDays(2),
+        ]);
+        KbGap::record($agent->id, '[pay here](https://phish.example)', 0.1);
+
+        $this->artisan('teams:weekly-digest')->assertSuccessful();
+
+        Notification::assertSentTo($owner, WeeklyDigestEmail::class, function (WeeklyDigestEmail $n) use ($owner): bool {
+            $mail = $n->toMail($owner);
+            $subjectNamesTeam = str_contains($mail->subject, 'Acme Rentals');
+            // The gap question keeps its literal text but its markdown link
+            // syntax is escaped so it can't render as a live link.
+            $gapLine = collect($mail->introLines)->first(fn (string $l): bool => str_contains($l, 'pay here'));
+
+            return $subjectNamesTeam
+                && $gapLine !== null
+                && str_contains($gapLine, '\\[pay here\\]')
+                && ! str_contains($gapLine, '](https');
+        });
+    }
+
+    public function test_per_agent_lines_include_disabled_agent_traffic(): void
+    {
+        Notification::fake();
+
+        $owner = User::factory()->withPersonalTeam()->create();
+        $team = $owner->currentTeam;
+        $active = Agent::factory()->for($team)->create(['status' => 'active', 'name' => 'Active bot']);
+        $disabled = Agent::factory()->for($team)->create(['status' => 'disabled', 'name' => 'Old bot']);
+
+        Conversation::factory()->for($team)->create(['agent_id' => $active->id, 'started_at' => now()->subDay()]);
+        Conversation::factory()->count(2)->for($team)->create(['agent_id' => $disabled->id, 'started_at' => now()->subDay()]);
+
+        $this->artisan('teams:weekly-digest')->assertSuccessful();
+
+        Notification::assertSentTo($owner, WeeklyDigestEmail::class, function (WeeklyDigestEmail $n): bool {
+            $byName = collect($n->stats['agents'])->keyBy('name');
+
+            // Headline counts all 3; both agents appear so the lines sum to it.
+            return $n->stats['conversations'] === 3
+                && count($n->stats['agents']) === 2
+                && $byName['Active bot']['conversations'] === 1
+                && $byName['Old bot']['conversations'] === 2;
+        });
+    }
+
     public function test_quiet_week_sends_nothing(): void
     {
         Notification::fake();

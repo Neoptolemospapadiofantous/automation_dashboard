@@ -4,6 +4,7 @@ namespace App\Runtime\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * A visitor question the knowledge base could not answer confidently —
@@ -48,16 +49,31 @@ class KbGap extends Model
 
         $question = mb_substr($question, 0, 500);
         $hash = sha1(mb_strtolower(preg_replace('/\s+/', ' ', $question) ?? $question));
+        $now = now();
 
-        $gap = static::query()->firstOrNew([
-            'agent_id' => $agentId,
-            'question_hash' => $hash,
-        ]);
-
-        $gap->question = $question;
-        $gap->top_score = max((float) ($gap->top_score ?? 0), $topScore);
-        $gap->asked_count = $gap->exists ? $gap->asked_count + 1 : 1;
-        $gap->last_asked_at = now();
-        $gap->save();
+        // Atomic upsert on the (agent_id, question_hash) unique index: two
+        // visitors asking the identical question at the same instant both land
+        // safely — no check-then-insert race, no lost increments, no unique
+        // violation to rescue. On conflict we bump the count, keep the best
+        // score seen, and refresh the timestamp.
+        static::query()->upsert(
+            [[
+                'agent_id' => $agentId,
+                'question' => $question,
+                'question_hash' => $hash,
+                'top_score' => $topScore,
+                'asked_count' => 1,
+                'last_asked_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]],
+            ['agent_id', 'question_hash'],
+            [
+                'asked_count' => DB::raw('asked_count + 1'),
+                'top_score' => DB::raw('greatest(top_score, values(top_score))'),
+                'last_asked_at' => $now,
+                'updated_at' => $now,
+            ],
+        );
     }
 }

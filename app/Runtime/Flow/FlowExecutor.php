@@ -56,12 +56,23 @@ class FlowExecutor
         // Grounding retrieval for this turn. The confidence gate reads the
         // best score; citations ride out on the assistant message.
         $retrieval = $this->retrieve($context->agent->id, $context->userMessage);
-        $lowConfidence = $this->isLowConfidence($context->agent, $retrieval);
+
+        // "The KB was asked and couldn't answer confidently" — the raw signal
+        // for both gap capture and the KB-hit tile. Deliberately independent of
+        // the escalation toggle: turning auto-escalation off must not silently
+        // blind the Knowledge-gaps panel or inflate the hit rate.
+        $retrievalWeak = $this->retrievalWeak($context->agent, $retrieval);
+
+        // Escalation gate keys the same weakness through the operator's toggle.
+        $lowConfidence = $context->agent->auto_escalate_low_confidence && $retrievalWeak;
 
         // KB-gap capture: persist the question the KB couldn't answer so the
-        // Knowledge page can show operators exactly what to add. Best-effort —
-        // never fail the visitor's turn over bookkeeping.
-        if ($lowConfidence) {
+        // Knowledge page can show operators exactly what to add. Only genuine
+        // questions in an answering state — not greetings, closers, or the
+        // contact details / "yes, thanks" replies of the capture flow, which
+        // would fill the panel with noise and visitor PII. Best-effort — never
+        // fail the visitor's turn over bookkeeping.
+        if ($retrievalWeak && in_array($stateName, ['discovery', 'wrapup'], true) && $this->isGapWorthy($context->userMessage)) {
             rescue(
                 fn () => KbGap::record($context->agent->id, $context->userMessage, $retrieval['top_score']),
                 report: true,
@@ -207,9 +218,13 @@ class FlowExecutor
         // survives resets/pruning. Best-effort: never fail the visitor's turn.
         // kbHit = this turn's answer was grounded in confident retrieval;
         // together with low_confidence_turns it powers the KB-hit-rate tile.
-        $kbHit = $retrieval['attempted'] && ! $lowConfidence && $retrieval['citations'] !== [];
+        // Keyed on retrievalWeak, not the escalation toggle: a confidently
+        // grounded answer is a hit and a weak one is not, regardless of whether
+        // the agent escalates on it — so the tile can't be inflated by turning
+        // auto-escalation off.
+        $kbHit = $retrieval['attempted'] && ! $retrievalWeak && $retrieval['citations'] !== [];
         rescue(
-            fn () => RuntimeUsage::record($context->agent, $tokensIn, $tokensOut, $tier, kbHit: $kbHit, lowConfidence: $lowConfidence),
+            fn () => RuntimeUsage::record($context->agent, $tokensIn, $tokensOut, $tier, kbHit: $kbHit, lowConfidence: $retrievalWeak),
             report: true,
         );
 
@@ -361,9 +376,9 @@ class FlowExecutor
      *
      * @param  array{text: string, citations: array<int, mixed>, top_score: float, attempted: bool}  $retrieval
      */
-    protected function isLowConfidence(Agent $agent, array $retrieval): bool
+    protected function retrievalWeak(Agent $agent, array $retrieval): bool
     {
-        if (! $agent->auto_escalate_low_confidence || ! $retrieval['attempted']) {
+        if (! $retrieval['attempted']) {
             return false;
         }
 
@@ -375,6 +390,33 @@ class FlowExecutor
         // weakly. Citations empty → confirm the agent has a KB at all before
         // treating a no-match as a failure to answer.
         return $retrieval['citations'] !== [] || $this->knowledge->hasDocuments($agent->id);
+    }
+
+    /**
+     * Is this visitor message worth recording as a knowledge gap? Filters out
+     * the noise that would otherwise fill the panel: one-word acknowledgements
+     * ("yes", "ok thanks") and messages whose substance is contact details the
+     * capture flow asked for (email / phone), which are visitor PII, not
+     * questions the KB should answer.
+     */
+    protected function isGapWorthy(string $message): bool
+    {
+        $message = trim($message);
+
+        // Needs at least a few words of actual query.
+        if (str_word_count($message) < 3) {
+            return false;
+        }
+
+        // Contact-detail turns (the capture flow's answers), not questions.
+        if (preg_match('/[\w.+-]+@[\w-]+\.[\w.-]+/', $message)) {
+            return false;
+        }
+        if (preg_match('/(?:\d[\s-]?){7,}/', $message)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

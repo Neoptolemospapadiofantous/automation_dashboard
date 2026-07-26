@@ -3,7 +3,9 @@
 namespace App\Notifications;
 
 use App\Models\Lead;
+use App\Support\MailText;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -19,7 +21,7 @@ use Illuminate\Notifications\Notification;
  *  - database: feeds the bell icon UI for in-app awareness
  *  - mail:     owners live in Gmail; a hot lead can't wait for a refresh
  */
-class LeadCapturedNotification extends Notification
+class LeadCapturedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -43,17 +45,20 @@ class LeadCapturedNotification extends Notification
             ->greeting("Hi {$notifiable->name},")
             ->line('Your chat agent just captured a new lead.');
 
+        // company / email / phone are visitor-authored — neutralize markdown so
+        // a captured "name" like "[click](https://phish)" can't render as a
+        // live link in the owner's email.
         if ($score !== null) {
             $mail->line("**Score: {$score}/100**");
         }
         if ($this->lead->company) {
-            $mail->line("**Company:** {$this->lead->company}");
+            $mail->line('**Company:** '.MailText::plain((string) $this->lead->company));
         }
         if ($this->lead->email) {
-            $mail->line("**Email:** {$this->lead->email}");
+            $mail->line('**Email:** '.MailText::plain((string) $this->lead->email));
         }
         if ($this->lead->phone) {
-            $mail->line("**Phone:** {$this->lead->phone}");
+            $mail->line('**Phone:** '.MailText::plain((string) $this->lead->phone));
         }
 
         return $mail

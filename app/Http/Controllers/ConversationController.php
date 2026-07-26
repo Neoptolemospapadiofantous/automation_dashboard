@@ -254,11 +254,16 @@ class ConversationController extends Controller
 
         $meta = (array) ($conversation->meta ?? []);
         $meta['human_takeover'] = false;
+        // Clear the escalation flag too: the human handled it and is handing
+        // back. Left set, it keeps the conversation in the "Needs human" queue
+        // forever, keeps the widget polling /poll indefinitely, and keeps the
+        // zero-cost canned/FAQ path disabled for the rest of the session.
+        $meta['handoff_requested'] = false;
         $meta['released_at'] = now()->toIso8601String();
         $conversation->meta = $meta;
         $conversation->save();
 
-        return response()->json(['takeover' => false]);
+        return response()->json(['takeover' => false, 'handoff' => false]);
     }
 
     /**

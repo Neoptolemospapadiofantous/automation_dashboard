@@ -47,6 +47,32 @@ class LeadFollowUpTest extends TestCase
         Notification::assertSentToTimes($owner, LeadCapturedNotification::class, 1);
     }
 
+    public function test_email_less_repeat_capture_updates_one_lead_and_alerts_once(): void
+    {
+        Notification::fake();
+
+        $owner = User::factory()->withPersonalTeam()->create();
+        $agent = Agent::factory()->for($owner->currentTeam)->create(['runtime_mode' => 'native']);
+        $session = RuntimeSession::create([
+            'agent_id' => $agent->id,
+            'visitor_id' => 'v-noemail',
+            'flow_state' => 'discovery',
+            'variables' => [],
+            'history' => [],
+        ]);
+        $context = new ConversationContext($agent, $session, 'my name is Sam');
+
+        // First capture: name only, no email.
+        app(CaptureLeadTool::class)->execute(['name' => 'Sam'], $context);
+        // Later in the same session the model adds a phone — still no email.
+        app(CaptureLeadTool::class)->execute(['name' => 'Sam', 'phone' => '99123456'], $context);
+
+        // One lead for the session, not two; owner alerted exactly once.
+        $this->assertSame(1, Lead::query()->where('agent_id', $agent->id)->count());
+        Notification::assertSentToTimes($owner, LeadCapturedNotification::class, 1);
+        $this->assertSame('99123456', Lead::query()->where('agent_id', $agent->id)->first()->phone);
+    }
+
     public function test_mark_contacted_stamps_the_lead(): void
     {
         $user = User::factory()->withPersonalTeam()->create();

@@ -41,7 +41,7 @@ class HumanTakeoverTest extends TestCase
         $conversation = Conversation::create([
             'team_id' => $team->id,
             'agent_id' => $agent->id,
-            'visitor_id' => 'web-visitor-1',
+            'visitor_id' => 'embed-testvisitor0000001',
             'channel' => 'agent',
             'status' => 'active',
             'started_at' => now(),
@@ -50,7 +50,7 @@ class HumanTakeoverTest extends TestCase
 
         $session = RuntimeSession::create([
             'agent_id' => $agent->id,
-            'visitor_id' => 'web-visitor-1',
+            'visitor_id' => 'embed-testvisitor0000001',
             'flow_state' => 'discovery',
             'variables' => [],
             'history' => [
@@ -88,7 +88,7 @@ class HumanTakeoverTest extends TestCase
         Lead::create([
             'team_id' => $agent->team_id,
             'agent_id' => $agent->id,
-            'visitor_id' => 'web-visitor-1',
+            'visitor_id' => 'embed-testvisitor0000001',
             'name' => 'Maria',
             'email' => 'maria@example.com',
             'status' => 'new',
@@ -170,7 +170,7 @@ class HumanTakeoverTest extends TestCase
         $startBalance = $agent->team->fresh()->totalCredits();
 
         $this->postJson(route('embed.interact', $agent->slug), [
-            'visitor_id' => 'web-visitor-1',
+            'visitor_id' => 'embed-testvisitor0000001',
             'message' => 'are you a real person now?',
         ])
             ->assertOk()
@@ -198,7 +198,7 @@ class HumanTakeoverTest extends TestCase
         $recorder->record($conversation, 'human', 'Still with you.');
 
         $response = $this->postJson(route('embed.poll', $agent->slug), [
-            'visitor_id' => 'web-visitor-1',
+            'visitor_id' => 'embed-testvisitor0000001',
             'after' => $first->getAttribute('sequence'),
         ])->assertOk()->assertJsonPath('takeover', true);
 
@@ -252,7 +252,7 @@ class HumanTakeoverTest extends TestCase
         ]);
 
         $response = $this->postJson(route('embed.interact', $agent->slug), [
-            'visitor_id' => 'web-visitor-1',
+            'visitor_id' => 'embed-testvisitor0000001',
             'message' => 'call me about the Operator plan',
         ])->assertOk();
 
@@ -271,9 +271,37 @@ class HumanTakeoverTest extends TestCase
         $this->actingAs($user)
             ->postJson(route('conversations.release', $conversation))
             ->assertOk()
-            ->assertJsonPath('takeover', false);
+            ->assertJsonPath('takeover', false)
+            ->assertJsonPath('handoff', false);
 
-        $this->assertFalse((bool) $conversation->fresh()->meta['human_takeover']);
+        $fresh = $conversation->fresh();
+        $this->assertFalse((bool) $fresh->meta['human_takeover']);
+        // Escalation cleared too — otherwise the widget polls forever, the
+        // conversation is stuck in "Needs human", and canned answers stay off.
+        $this->assertFalse((bool) $fresh->meta['handoff_requested']);
+    }
+
+    public function test_release_drops_the_conversation_out_of_the_needs_human_queue(): void
+    {
+        [$user, $agent, $conversation] = $this->escalatableConversation();
+        $conversation->forceFill(['meta' => ['handoff_requested' => true, 'human_takeover' => true]])->save();
+
+        $this->actingAs($user)->postJson(route('conversations.release', $conversation))->assertOk();
+
+        $this->actingAs($user)
+            ->get(route('conversations.index', ['needs_human' => 1]))
+            ->assertInertia(fn ($page) => $page->has('conversations.data', 0));
+    }
+
+    public function test_poll_rejects_non_embed_visitor_ids(): void
+    {
+        [, $agent] = $this->escalatableConversation();
+
+        // A Slack-style id (semi-public within a workspace) must not be able to
+        // read teammate replies through the public, CSRF-exempt poll endpoint.
+        $this->postJson(route('embed.poll', $agent->slug), [
+            'visitor_id' => 'slack:U123:C456',
+        ])->assertStatus(422);
     }
 
     public function test_needs_human_filter_lists_open_escalations_only(): void

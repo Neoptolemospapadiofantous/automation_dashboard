@@ -124,11 +124,19 @@ class CaptureLeadTool implements Tool
                 $attributes,
             );
         } else {
-            $lead = Lead::create($attributes + [
-                'team_id' => $context->agent->team_id,
-                'agent_id' => $context->agent->id,
-                'email' => null,
-            ]);
+            // No email to dedupe on — fall back to the chat session, so the
+            // model calling capture_lead twice in one conversation (e.g. to
+            // add a phone) updates the same row instead of creating a second
+            // lead and firing a second owner alert.
+            $lead = Lead::updateOrCreate(
+                [
+                    'team_id' => $context->agent->team_id,
+                    'agent_id' => $context->agent->id,
+                    'email' => null,
+                    'visitor_id' => $context->session->visitor_id,
+                ],
+                $attributes,
+            );
         }
 
         // Link the visitor's conversation to the lead so the transcript view

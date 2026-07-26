@@ -23,21 +23,29 @@ class PublicWebPage
      */
     public function fetchText(string $url): string
     {
-        $this->assertPublicHttpUrl($url);
+        $ips = $this->assertPublicHttpUrl($url);
 
         $response = Http::timeout(20)
             ->withHeaders(['User-Agent' => 'FlowstackBot/1.0'])
-            ->withOptions(['allow_redirects' => [
-                'max' => 5,
-                'strict' => true,
-                'referer' => false,
-                'protocols' => ['http', 'https'],
-                // Re-validate every hop so a public page can't 30x into
-                // the private network (redirect-based SSRF bypass).
-                'on_redirect' => function (RequestInterface $request, ResponseInterface $response, UriInterface $uri): void {
-                    $this->assertPublicHttpUrl((string) $uri);
-                },
-            ]])
+            ->withOptions([
+                // Pin the connection to the IPs we validated so DNS can't be
+                // re-resolved to a private address between the check and the
+                // fetch (DNS-rebinding / TOCTOU SSRF). curl honours the host
+                // from the URL for TLS + Host header, but connects to the
+                // resolved literals only.
+                'curl' => [CURLOPT_RESOLVE => $this->curlResolveEntries($url, $ips)],
+                'allow_redirects' => [
+                    'max' => 5,
+                    'strict' => true,
+                    'referer' => false,
+                    'protocols' => ['http', 'https'],
+                    // Re-validate every hop so a public page can't 30x into
+                    // the private network (redirect-based SSRF bypass).
+                    'on_redirect' => function (RequestInterface $request, ResponseInterface $response, UriInterface $uri): void {
+                        $this->assertPublicHttpUrl((string) $uri);
+                    },
+                ],
+            ])
             ->get($url);
 
         if ($response->failed()) {
@@ -53,17 +61,26 @@ class PublicWebPage
     }
 
     /**
-     * SSRF guard for user-supplied fetch targets. Enforces an http(s) scheme
-     * and rejects any host that resolves to a private, loopback, link-local,
-     * or otherwise reserved address. Throws \RuntimeException with a message
-     * safe to surface back to the user.
+     * SSRF guard for user-supplied fetch targets. Enforces an http(s) scheme,
+     * a standard web port, and rejects any host that resolves to a private,
+     * loopback, link-local, or otherwise reserved address. Throws
+     * \RuntimeException with a message safe to surface back to the user.
+     *
+     * @return list<string> the validated public IP literals the host resolved to
      */
-    public function assertPublicHttpUrl(string $url): void
+    public function assertPublicHttpUrl(string $url): array
     {
         $parts = parse_url($url);
         $scheme = strtolower((string) ($parts['scheme'] ?? ''));
         if (! in_array($scheme, ['http', 'https'], true)) {
             throw new \RuntimeException('Only http and https URLs can be fetched.');
+        }
+
+        // No fetching internal services on odd ports (SSH, Redis, admin panels).
+        $port = $parts['port'] ?? null;
+        $allowedPort = $scheme === 'https' ? 443 : 80;
+        if ($port !== null && (int) $port !== $allowedPort) {
+            throw new \RuntimeException('Only the standard web port can be fetched.');
         }
 
         $host = trim((string) ($parts['host'] ?? ''), '[]');
@@ -81,6 +98,29 @@ class PublicWebPage
                 throw new \RuntimeException('That URL points to a non-public address and cannot be fetched.');
             }
         }
+
+        return $ips;
+    }
+
+    /**
+     * Build curl CURLOPT_RESOLVE entries so the connection is pinned to the
+     * already-validated IPs for this host:port (defeats DNS rebinding).
+     *
+     * @param  list<string>  $ips
+     * @return list<string>
+     */
+    protected function curlResolveEntries(string $url, array $ips): array
+    {
+        $parts = parse_url($url);
+        $host = trim((string) ($parts['host'] ?? ''), '[]');
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $port = (int) ($parts['port'] ?? ($scheme === 'https' ? 443 : 80));
+
+        if ($host === '' || $ips === []) {
+            return [];
+        }
+
+        return [$host.':'.$port.':'.implode(',', $ips)];
     }
 
     /**

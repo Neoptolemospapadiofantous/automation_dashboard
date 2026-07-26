@@ -2,9 +2,12 @@
 
 namespace App\Notifications;
 
+use App\Support\MailText;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Str;
 
 /**
  * Monday-morning summary of what the team's agent(s) did last week —
@@ -17,7 +20,7 @@ use Illuminate\Notifications\Notification;
  * entirely for quiet weeks. Stats arrive as a plain array so nothing
  * heavy is serialized onto the queue.
  */
-class WeeklyDigestEmail extends Notification
+class WeeklyDigestEmail extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -39,18 +42,34 @@ class WeeklyDigestEmail extends Notification
         $s = $this->stats;
 
         $mail = (new MailMessage)
-            ->subject("Your week in review: {$s['conversations']} conversations, {$s['leads']} leads")
+            ->subject(sprintf(
+                '%s — your week in review: %d %s, %d %s',
+                $s['team'],
+                $s['conversations'],
+                Str::plural('conversation', $s['conversations']),
+                $s['leads'],
+                Str::plural('lead', $s['leads']),
+            ))
             ->greeting("Hi {$notifiable->name},")
             ->line(sprintf(
-                'Last week your agent handled **%d conversations** (%d messages) and captured **%d leads** — %d qualified, %d won.',
+                'Last week, %s\'s agent handled **%d %s** (%d %s) and captured **%d %s** — %d qualified, %d won.',
+                MailText::plain($s['team']),
                 $s['conversations'],
+                Str::plural('conversation', $s['conversations']),
                 $s['messages'],
+                Str::plural('message', $s['messages']),
                 $s['leads'],
+                Str::plural('lead', $s['leads']),
                 $s['qualified'],
                 $s['won'],
             ));
 
-        $quality = sprintf('%d conversations asked for a human (%s%%)', $s['escalated'], $s['escalation_rate']);
+        $quality = sprintf(
+            '%d %s asked for a human (%s%%)',
+            $s['escalated'],
+            Str::plural('conversation', $s['escalated']),
+            $s['escalation_rate'],
+        );
         if ($s['csat'] !== null) {
             $quality .= sprintf(' · %s%% visitor satisfaction', $s['csat']);
         }
@@ -62,7 +81,12 @@ class WeeklyDigestEmail extends Notification
         if ($s['gaps'] !== []) {
             $mail->line('**Your knowledge base could not answer these** — add the missing content and the agent stops escalating them:');
             foreach ($s['gaps'] as $gap) {
-                $mail->line(sprintf('- "%s" — asked %d time%s', $gap['question'], $gap['asked_count'], $gap['asked_count'] === 1 ? '' : 's'));
+                $mail->line(sprintf(
+                    '- "%s" — asked %d time%s',
+                    MailText::plain($gap['question']),
+                    $gap['asked_count'],
+                    $gap['asked_count'] === 1 ? '' : 's',
+                ));
             }
         }
 
@@ -77,7 +101,14 @@ class WeeklyDigestEmail extends Notification
         if (count($s['agents']) > 1) {
             $mail->line('Per agent:');
             foreach ($s['agents'] as $agent) {
-                $mail->line(sprintf('- %s: %d conversations, %d leads', $agent['name'], $agent['conversations'], $agent['leads']));
+                $mail->line(sprintf(
+                    '- %s: %d %s, %d %s',
+                    MailText::plain($agent['name']),
+                    $agent['conversations'],
+                    Str::plural('conversation', $agent['conversations']),
+                    $agent['leads'],
+                    Str::plural('lead', $agent['leads']),
+                ));
             }
         }
 

@@ -490,8 +490,12 @@ class EmbedController extends Controller
             return $denied;
         }
 
+        // Enforce the embed visitor-id shape (same as history/conversation) so
+        // this public, CSRF-exempt endpoint can only address widget sessions —
+        // never another channel's conversation (e.g. Slack's semi-public
+        // "slack:{user}:{channel}" ids sharing the (team_id, visitor_id) space).
         $data = $request->validate([
-            'visitor_id' => ['required', 'string', 'max:255'],
+            'visitor_id' => ['required', 'string', 'regex:/^embed-[A-Za-z0-9]{16,48}$/'],
             'after' => ['nullable', 'integer', 'min:0'],
         ]);
 
