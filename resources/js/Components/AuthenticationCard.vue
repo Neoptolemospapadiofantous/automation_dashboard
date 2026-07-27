@@ -65,7 +65,7 @@ import ApplicationMark from '@/Components/ApplicationMark.vue';
                 <div class="flex items-center justify-between">
                     <span class="bp-annot">FLOWSTACK STUDIO</span>
                     <span class="bp-annot">SHEET · ACCESS/01</span>
-                    <span class="bp-annot">NICOSIA · CY</span>
+                    <span class="bp-annot">LIMASSOL · CY</span>
                 </div>
             </div>
         </aside>
