@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\LeadCapturedNotification;
 use App\Runtime\Contracts\Tool;
 use App\Runtime\Session\ConversationContext;
+use App\Support\BiEmitter;
 
 /**
  * Persist contact details the agent collected into the leads pipeline.
@@ -163,6 +164,16 @@ class CaptureLeadTool implements Tool
                     $owner->notify(new LeadCapturedNotification($lead));
                 }
             }, report: true);
+
+            // BI: a genuinely new lead landed (best-effort, gated — see BiEmitter).
+            BiEmitter::emit('dashboard', 'lead_captured', [
+                'project' => 'automation_dashboard',
+                'channel' => 'widget',
+                'customer' => 'team-'.$context->agent->team_id,
+                'metric' => 'leads',
+                'value' => 1,
+                'payload' => ['lead_id' => $lead->id, 'agent_id' => $context->agent->id, 'score' => $lead->score],
+            ]);
         }
 
         return [

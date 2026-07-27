@@ -35,4 +35,14 @@ return [
         'agent_turn_team_id' => env('SLACK_AGENT_TURN_TEAM_ID'),
     ],
 
+    // Ecosystem BI warehouse ingestion API (SHARED.md — ~/.config/ecosystem/bi).
+    // Best-effort live telemetry, OFF by default. The API is localhost-only, so
+    // prod stays dormant until a reachable endpoint (Azure) exists — enabling is
+    // then just the env flag, no deploy of code. Consumed by App\Support\BiEmitter.
+    'bi' => [
+        'enabled' => (bool) env('BI_EMITTER_ENABLED', false),
+        'url' => env('BI_INGEST_URL'),
+        'token' => env('BI_INGEST_TOKEN'),
+    ],
+
 ];

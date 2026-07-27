@@ -7,6 +7,7 @@ use App\Billing\Plan;
 use App\Models\CreditTransaction;
 use App\Models\Team;
 use App\Services\Billing\StripeClient;
+use App\Support\BiEmitter;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -129,6 +130,16 @@ class StripeWebhookController extends Controller
 
         // Grant the plan's monthly credits (resets balance to plan grant).
         $this->meter->grantMonthlyRenewal($team->fresh());
+
+        // BI: subscription became active (best-effort, gated — see BiEmitter).
+        // After the idempotency guard above, so retries don't double-fire.
+        BiEmitter::emit('stripe', 'subscription_created', [
+            'project' => 'automation_dashboard',
+            'customer' => 'team-'.$team->id,
+            'metric' => 'mrr',
+            'value' => $plan->priceEur(),
+            'payload' => ['plan' => $plan->label(), 'plan_value' => $plan->value, 'subscription_id' => $subscriptionId],
+        ]);
     }
 
     /**

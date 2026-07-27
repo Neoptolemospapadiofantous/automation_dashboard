@@ -15,6 +15,7 @@ use App\Runtime\Contracts\Runtime;
 use App\Runtime\Exceptions\RuntimeException;
 use App\Runtime\Models\RuntimeSession;
 use App\Services\ConversationRecorder;
+use App\Support\BiEmitter;
 use App\Support\Embed\DomainAllowlist;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -416,6 +417,16 @@ class EmbedController extends Controller
             $conversation->refresh();
             $handoff = (bool) ($conversation->meta['handoff_requested'] ?? false);
         }
+
+        // BI: a real agent turn completed (best-effort, gated — see BiEmitter).
+        BiEmitter::emit('dashboard', 'message_handled', [
+            'project' => 'automation_dashboard',
+            'channel' => 'widget',
+            'customer' => 'team-'.$team->id,
+            'metric' => 'messages',
+            'value' => 1,
+            'payload' => ['agent_id' => $agent->id, 'conversation_id' => $conversation?->id],
+        ]);
 
         return response()->json([
             'traces' => $traces,
