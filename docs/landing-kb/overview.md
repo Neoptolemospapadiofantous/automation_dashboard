@@ -1,11 +1,12 @@
 # What Flowstack is
 
-Flowstack fixes three things: busywork done by hand, data stuck in silos, and
-leads left waiting. We build automations that run the repetitive work, aggregate
-your data from scattered tools into one live view, and put a chat agent on your
-site that answers every inbound. One product, end to end. The chat is
-self-serve from €99/mo; the automations and data pipelines are scoped custom
-builds — pricing per project, starting with the free 30-minute audit.
+Flowstack is the operation you delegate. Busywork done by hand, data stuck in
+silos, leads left waiting — we take that work off your team's plate: automations
+run the repetitive work, pipelines aggregate your numbers from scattered tools
+into one live view you can run the business from, and a chat agent on your site
+answers every inbound. One product, end to end. The chat is the front door —
+self-serve from €99/mo; the automations and data pipelines behind it are scoped
+custom builds — pricing per project, starting with the free 30-minute audit.
 
 The chat agent is the part you can switch on today, self-serve: a chat
 experience you embed on your website (as a floating widget or a hosted chat
@@ -21,9 +22,10 @@ rather than generic filler. Pricing starts at €99/month and you can cancel
 anytime — there is no lock-in. There is no free trial: the €99 Starter plan is
 the way to try the product, and cancelling is one click.
 
-The automations and data pipelines — the operations layer behind the chat — are
+The automations and data pipelines — the delegation layer behind the chat — are
 built to order in the custom build engagement; the way in is the free
-30-minute audit. End to end the pipeline is: chat answers the front door
-(intake) → automations run the busywork → data is aggregated from your tools
-into one source of truth → everything lands on one live, audited dashboard.
-It's the same automation stack Flowstack runs its own growth on.
+30-minute audit. Delegate once and the pipeline runs end to end: chat answers
+the front door (intake) → automations run the busywork → your numbers are
+aggregated from your tools into one source of truth → everything lands on one
+live, audited dashboard — the Monday report, already built. It's the same
+automation stack Flowstack runs its own growth on.

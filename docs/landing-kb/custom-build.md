@@ -1,11 +1,13 @@
 # Custom build
 
 The off-the-shelf agent covers the standardisable ~80% of use cases. The custom
-build engagement is for the rest — the chat is the front door, and we build
-what runs behind it: automations wired to your stack (CRM, Sheets, internal
-tools), lead sourcing, enrichment and outreach pipelines, data moved between
-your tools into one live dashboard, with every run fully audited. It's the
-same automation stack Flowstack runs its own growth on.
+build engagement is the delegation layer — the chat is the front door, and we
+build what runs behind it: the work your team runs by hand, delegated to
+automations wired to your stack (CRM, Sheets, internal tools); lead sourcing,
+enrichment and outreach pipelines; and reporting pipelines that pull your
+scattered numbers into one live dashboard — reports that build themselves, with
+every run fully audited. It's the same automation stack Flowstack runs its own
+growth on.
 
 ## When you need it
 
@@ -14,6 +16,8 @@ same automation stack Flowstack runs its own growth on.
   APIs or tools, a custom auth gateway
 - Automation pipelines behind the chat: lead sourcing, enrichment, outreach,
   CRM sync
+- Reporting pipelines: your numbers aggregated from scattered tools into one
+  live view, instead of a report rebuilt by hand every Monday
 - Your own LLM instead of the default
 - Your own UI on top of the chat experience
 

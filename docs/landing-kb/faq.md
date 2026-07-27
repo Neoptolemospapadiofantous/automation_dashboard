@@ -1,5 +1,15 @@
 # Frequently asked questions
 
+## Is this just a chat widget?
+
+No — the chat is the front door. On its own it greets every visitor, takes the
+action your chosen role needs — qualify a lead, answer a sales question, resolve
+a support ticket, walk a new user through onboarding — captures the
+conversation, and pushes the lead into a real-time dashboard. Behind it, the
+custom build takes over the rest of the operation: automations that run your
+repetitive work and reporting pipelines that aggregate your numbers into one
+live view, scoped to your stack via the free 30-minute audit.
+
 ## What does the agent actually do?
 
 It greets every visitor, takes the action your chosen role needs — qualify a
