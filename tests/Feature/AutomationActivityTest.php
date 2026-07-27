@@ -36,6 +36,22 @@ class AutomationActivityTest extends TestCase
         ]);
     }
 
+    public function test_automations_flag_is_shared_to_pages_for_the_nav_gate(): void
+    {
+        // The sidebar's Activity link renders on `v-if="automationsEnabled"`,
+        // driven by this shared prop. If the prop stops being shared the link
+        // silently never appears even once the flag flips — guard it here.
+        [$user] = $this->userWithAgent();
+
+        config()->set('runtime.automation.enabled', false);
+        $this->actingAs($user)->get(route('agents.activity.index'))
+            ->assertInertia(fn ($page) => $page->where('automationsEnabled', false));
+
+        config()->set('runtime.automation.enabled', true);
+        $this->actingAs($user)->get(route('agents.activity.index'))
+            ->assertInertia(fn ($page) => $page->where('automationsEnabled', true));
+    }
+
     public function test_index_lists_current_agent_runs_with_summary(): void
     {
         [$user, $agent] = $this->userWithAgent();

@@ -181,8 +181,16 @@ const handleMobileNavClick = (event) => {
                                 </template>
                                 Agents
                             </SidebarLink>
-                            <!-- Actions + Activity nav removed 2026-07-10 (founder call:
-                                 not in use until automations ship). Routes stay live. -->
+                            <!-- Activity self-reveals once automations ship: gated on
+                                 the automationsEnabled prop (RUNTIME_AUTOMATION_ENABLED),
+                                 so it stays hidden in prod until the flag flips. Actions
+                                 nav still withheld pending the founder call. -->
+                            <SidebarLink v-if="automationsEnabled" :href="route('agents.activity.index')" active-pattern="agents.activity.*">
+                                <template #icon>
+                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75l3-3 2.25 2.25 4.5-6 3.75 4.5 2.25-1.5 3.75 3.75M2.25 18h19.5" /></svg>
+                                </template>
+                                Activity
+                            </SidebarLink>
                             <SidebarLink v-if="isAdmin" :href="route('agents.faq.index')" active-pattern="agents.faq.*">
                                 <template #icon>
                                     <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>
@@ -491,6 +499,7 @@ const handleMobileNavClick = (event) => {
                             <div class="px-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Workspace</div>
                             <div class="space-y-0.5">
                                 <SidebarLink :href="route('agents.index')" :active-pattern="['agents.index', 'agents.show']">Agents</SidebarLink>
+                                <SidebarLink v-if="automationsEnabled" :href="route('agents.activity.index')" active-pattern="agents.activity.*">Activity</SidebarLink>
                                 <SidebarLink v-if="isAdmin" :href="route('agents.faq.index')" active-pattern="agents.faq.*">FAQ</SidebarLink>
                                 <SidebarLink :href="route('agents.versions.index')" active-pattern="agents.versions.*">Versions</SidebarLink>
                                 <SidebarLink :href="route('install.index')" active-pattern="install.*">Install</SidebarLink>
