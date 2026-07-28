@@ -83,7 +83,17 @@ class AgentsIngestProject extends Command
         $ok = 0;
         foreach ($files as $relative => $content) {
             try {
-                $kb->ingestDocument($agent->id, $relative, $content, ['project' => $name, 'path' => $relative]);
+                // source_url is the replace key: without it, a CHANGED doc
+                // re-ingests as a duplicate while the stale version keeps
+                // serving (KnowledgeBase dedupes on content_hash OR source_url,
+                // and edited content has a fresh hash). Keyed on the docs dir
+                // basename, not the agent name, so it survives agent renames.
+                $kb->ingestDocument($agent->id, $relative, $content, [
+                    'project' => $name,
+                    'path' => $relative,
+                    'source' => 'project',
+                    'source_url' => 'project://'.basename($path).'/'.$relative,
+                ]);
                 $rows[] = [$relative, number_format(strlen($content)).' B', 'ok'];
                 $ok++;
             } catch (\Throwable $e) {

@@ -5,6 +5,7 @@ namespace Tests\Feature\Commands;
 use App\Models\Agent;
 use App\Models\User;
 use App\Runtime\Contracts\KnowledgeStore;
+use App\Runtime\Models\KbDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -134,6 +135,47 @@ class AgentsCommandsTest extends TestCase
 
         $kb = app(KnowledgeStore::class);
         $this->assertNotEmpty($kb->listDocuments($agent->id));
+    }
+
+    public function test_ingest_project_replaces_changed_docs_instead_of_duplicating(): void
+    {
+        config(['runtime.embeddings.dimensions' => 4]);
+        Http::fake([
+            'api.openai.com/*' => function ($request) {
+                $data = [];
+                foreach (array_values((array) $request->data()['input']) as $i => $text) {
+                    $data[] = ['index' => $i, 'embedding' => [1.0, 0.0, 0.0, 0.0]];
+                }
+
+                return Http::response(['data' => $data]);
+            },
+        ]);
+
+        $agent = $this->currentAgent(100);
+
+        $dir = sys_get_temp_dir().'/kb-'.uniqid();
+        mkdir($dir);
+        file_put_contents($dir.'/overview.md', "# Overview\n\nOld chat-led positioning.");
+
+        try {
+            $this->artisan('agents:ingest-project', ['path' => $dir, '--agent' => $agent->slug])
+                ->assertExitCode(0);
+
+            // Edit the doc and re-ingest — the changed content must REPLACE
+            // the old document (replace-by-source), not sit beside it while
+            // the stale version keeps winning retrieval.
+            file_put_contents($dir.'/overview.md', "# Overview\n\nNew delegation-led positioning.");
+            $this->artisan('agents:ingest-project', ['path' => $dir, '--agent' => $agent->slug])
+                ->assertExitCode(0);
+        } finally {
+            @unlink($dir.'/overview.md');
+            @rmdir($dir);
+        }
+
+        $kb = app(KnowledgeStore::class);
+        $docs = $kb->listDocuments($agent->id);
+        $this->assertCount(1, $docs);
+        $this->assertStringContainsString('delegation-led', KbDocument::findOrFail($docs[0]['id'])->raw_content);
     }
 
     public function test_ingest_project_errors_on_unknown_agent(): void
