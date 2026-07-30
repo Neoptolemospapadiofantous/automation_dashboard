@@ -20,6 +20,7 @@ const props = defineProps({
     webhook_url: { type: String, default: null },
     is_current: { type: Boolean, default: false },
     activity: { type: Object, default: () => ({ leads: 0, leads_qualified: 0, conversations: 0, messages: 0, last_message_at: null }) },
+    health: { type: Object, default: () => ({ ok: true, reason: null }) },
 });
 
 const lastActivityLabel = computed(() => {
@@ -163,10 +164,11 @@ async function destroy() {
                             Save
                         </PrimaryButton>
                         <span v-if="agent.last_health_check_at" class="text-xs text-ink-dim">
-                            Provisioned {{ new Date(agent.last_health_check_at).toLocaleString() }} —
-                            <span :class="agent.last_health_ok ? 'text-green-700' : 'text-rose-700'">
-                                {{ agent.last_health_ok ? '✓ healthy' : '✗ failed' }}
+                            Checked {{ new Date(agent.last_health_check_at).toLocaleString() }} —
+                            <span :class="health.ok ? 'text-green-700' : 'text-rose-700'">
+                                {{ health.ok ? '✓ healthy' : '✗ not answering' }}
                             </span>
+                            <span v-if="!health.ok && health.reason" class="block text-rose-700">{{ health.reason }}</span>
                         </span>
                     </div>
                 </form>

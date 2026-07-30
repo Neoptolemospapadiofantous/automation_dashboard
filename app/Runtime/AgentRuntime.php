@@ -8,6 +8,7 @@ use App\Runtime\Contracts\Runtime;
 use App\Runtime\Flow\FlowExecutor;
 use App\Runtime\Flow\LeadCaptureFlow;
 use App\Runtime\Flow\TurnResult;
+use App\Runtime\LLM\LlmRouter;
 use App\Runtime\Session\ConversationContext;
 use App\Runtime\Session\SessionManager;
 use Generator;
@@ -155,23 +156,53 @@ class AgentRuntime implements Runtime
         $this->sessions->end($agent, $visitorId);
     }
 
+    /**
+     * Env var behind each provider's key — so a health failure names the
+     * exact thing to set rather than a provider-agnostic "LLM key".
+     */
+    private const PROVIDER_KEY_ENV = [
+        'anthropic' => 'ANTHROPIC_API_KEY',
+        'openai' => 'OPENAI_API_KEY',
+        'google' => 'GEMINI_API_KEY',
+    ];
+
     public function health(Agent $agent): array
     {
-        $hasLlmKey = (string) config('runtime.llm.anthropic.api_key') !== '';
-        $hasEmbeddingKey = (string) config('runtime.embeddings.openai_api_key') !== '';
+        // Check the provider THIS agent's published tier actually uses — not a
+        // hard-coded Anthropic. A Gemini-tier agent is dead without a Gemini
+        // key even when the Anthropic key is present (and vice versa).
+        $tier = AgentConfigVersion::publishedTier($agent->id);
+        $provider = (string) config("runtime.tiers.{$tier}.provider", 'anthropic');
 
-        if (! $hasLlmKey) {
-            return ['ok' => false, 'configured' => false, 'reason' => 'ANTHROPIC_API_KEY not set.'];
+        if (! LlmRouter::providerAvailable($provider)) {
+            $env = self::PROVIDER_KEY_ENV[$provider] ?? strtoupper($provider).'_API_KEY';
+
+            return [
+                'ok' => false,
+                'configured' => false,
+                'tier' => $tier,
+                'provider' => $provider,
+                'reason' => "{$env} not set — this agent's {$tier} tier runs on {$provider}.",
+            ];
         }
-        if (! $hasEmbeddingKey) {
-            return ['ok' => false, 'configured' => false, 'reason' => 'OPENAI_API_KEY (for embeddings) not set.'];
+
+        if ((string) config('runtime.embeddings.openai_api_key') === '') {
+            return [
+                'ok' => false,
+                'configured' => false,
+                'tier' => $tier,
+                'provider' => $provider,
+                'reason' => 'OPENAI_API_KEY (for embeddings/RAG) not set.',
+            ];
         }
 
         return [
             'ok' => true,
             'configured' => true,
             'engine' => 'native',
-            'llm_model' => (string) config('runtime.llm.anthropic.model_default'),
+            'tier' => $tier,
+            'provider' => $provider,
+            'llm_model' => AgentConfigVersion::modelForTier($tier),
             'embedding_model' => (string) config('runtime.embeddings.model'),
         ];
     }

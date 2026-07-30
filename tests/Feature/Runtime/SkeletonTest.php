@@ -3,6 +3,7 @@
 namespace Tests\Feature\Runtime;
 
 use App\Models\Agent;
+use App\Models\AgentConfigVersion;
 use App\Models\User;
 use App\Runtime\AgentRuntime;
 use App\Runtime\Contracts\KnowledgeStore;
@@ -142,5 +143,38 @@ class SkeletonTest extends TestCase
         $h = $runtime->health($agent->fresh());
         $this->assertTrue($h['ok']);
         $this->assertSame('native', $h['engine']);
+    }
+
+    public function test_health_checks_the_agents_own_tier_provider_not_always_anthropic(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $agent = Agent::factory()->for($user->currentTeam)->create();
+        AgentConfigVersion::create([
+            'agent_id' => $agent->id,
+            'version' => 1,
+            'status' => AgentConfigVersion::STATUS_PUBLISHED,
+            'config' => ['model_tier' => 'gemini'],
+        ]);
+
+        $runtime = app(AgentRuntime::class);
+
+        // Anthropic funded, embeddings funded, but the agent runs on GEMINI
+        // and there is no Gemini key: it must report DEAD, not falsely healthy.
+        config([
+            'runtime.llm.anthropic.api_key' => 'sk-anthropic-test',
+            'runtime.embeddings.openai_api_key' => 'sk-openai-test',
+            'runtime.llm.google.api_key' => '',
+        ]);
+        $h = $runtime->health($agent->fresh());
+        $this->assertFalse($h['ok'], 'A Gemini agent with no Gemini key must be unhealthy');
+        $this->assertSame('gemini', $h['tier']);
+        $this->assertSame('google', $h['provider']);
+        $this->assertStringContainsString('GEMINI_API_KEY', $h['reason']);
+
+        // Set the Gemini key → healthy, and it reports the gemini model.
+        config(['runtime.llm.google.api_key' => 'gm-test']);
+        $h = $runtime->health($agent->fresh());
+        $this->assertTrue($h['ok']);
+        $this->assertSame('gemini', $h['tier']);
     }
 }

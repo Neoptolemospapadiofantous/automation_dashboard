@@ -44,6 +44,17 @@ class AgentController extends Controller
     {
         $this->authorize($request, $agent);
 
+        // Live, tier-aware health — recompute on view and persist it so the
+        // badge reflects the agent's ACTUAL provider config, not a value
+        // frozen at creation. Cheap: health() only reads config, no HTTP.
+        $health = app(Runtime::class)->health($agent);
+        if ((bool) $agent->last_health_ok !== (bool) $health['ok'] || $agent->last_health_check_at === null) {
+            $agent->forceFill([
+                'last_health_ok' => (bool) $health['ok'],
+                'last_health_check_at' => now(),
+            ])->save();
+        }
+
         // Per-agent activity counters — proves the agent is doing work AND
         // gives the operator a quick pulse. Cheap: each is one indexed
         // count on agent_id. Last-activity timestamp short-circuits "is
@@ -58,7 +69,8 @@ class AgentController extends Controller
         ];
 
         return Inertia::render('Agents/Show', [
-            'agent' => $this->presentForSettings($agent),
+            'agent' => $this->presentForSettings($agent->fresh()),
+            'health' => $health,
             'activity' => $activity,
             // Historical prop shape kept so Vue's `webhook_url` binding
             // doesn't need a follow-up change; always null on the native
