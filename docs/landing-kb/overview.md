@@ -1,12 +1,11 @@
 # What Flowstack is
 
-Flowstack is the operation you delegate. Busywork done by hand, data stuck in
-silos, leads left waiting — we take that work off your team's plate: automations
-run the repetitive work, pipelines aggregate your numbers from scattered tools
-into one live view you can run the business from, and a chat agent on your site
-answers every inbound. One product, end to end. The chat is the front door —
-self-serve from €99/mo; the automations and data pipelines behind it are scoped
-custom builds — pricing per project, starting with the free 30-minute audit.
+Flowstack is business intelligence delegation. Hand off the busywork and the
+reporting: automations run the repetitive work, pipelines aggregate your numbers
+from scattered tools into one live view, and a chat agent on your site answers
+every inbound. The chat is the front door — self-serve from €99/mo; the
+automations and data pipelines behind it are scoped custom builds — pricing per
+project, starting with the free 30-minute audit.
 
 The chat agent is the part you can switch on today, self-serve: a chat
 experience you embed on your website (as a floating widget or a hosted chat
