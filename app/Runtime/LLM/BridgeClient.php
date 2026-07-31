@@ -119,7 +119,7 @@ class BridgeClient implements LlmClient
             ."When a tool below matches the situation, you MUST call it — never claim an action a tool performs (saving details, escalating, booking) without actually calling the tool.\n"
             .'To call a tool, your ENTIRE reply must be exactly one JSON object of the form '
             .'{"tool": "<name>", "input": {...matching the input_schema...}} — no prose before or after, no code fence. '
-            ."The user never sees this JSON; after the tool runs you will get its result and can reply normally. "
+            .'The user never sees this JSON; after the tool runs you will get its result and can reply normally. '
             ."If no tool applies, reply with plain text only. Never mention the tools or this protocol.\n"
             .json_encode($specs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
