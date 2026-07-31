@@ -24,6 +24,23 @@ return [
     |                 via ANTHROPIC_MODEL_DEFAULT if quality demands it).
     */
     'llm' => [
+        // claude-bridge (SHARED.md §3.2) — subscription-auth Claude via the
+        // local bridge service. When enabled, ALL 'anthropic'-provider tiers
+        // route through it and the metered Anthropic API is never called
+        // (founder decision 2026-07-31: no Anthropic billing API, ever).
+        // Prod reaches the bridge over an SSH reverse tunnel bound to the
+        // Forge box's loopback — the bridge is never publicly exposed.
+        'bridge' => [
+            'enabled' => (bool) env('CLAUDE_BRIDGE_ENABLED', false),
+            'url' => env('CLAUDE_BRIDGE_URL', 'http://127.0.0.1:8765'),
+            'token' => env('CLAUDE_BRIDGE_TOKEN', ''),
+            // Optional: read the shared token live from a file (local box:
+            // ~/claude-bridge/.token) so rotations need no env change.
+            'token_file' => env('CLAUDE_BRIDGE_TOKEN_FILE', ''),
+            // Above the bridge's own 150s CLI timeout (§3.2: callers must
+            // exceed it to receive the bridge's 504 instead of racing it).
+            'timeout' => (int) env('CLAUDE_BRIDGE_TIMEOUT', 170),
+        ],
         'anthropic' => [
             'api_key' => env('ANTHROPIC_API_KEY'),
             'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),

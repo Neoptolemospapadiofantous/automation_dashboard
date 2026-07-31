@@ -14,12 +14,15 @@ class LlmRouter
         protected AnthropicClient $anthropic,
         protected OpenAiClient $openai,
         protected GeminiClient $gemini,
+        protected BridgeClient $bridge,
     ) {}
 
     public function clientFor(string $provider): LlmClient
     {
         return match ($provider) {
-            'anthropic' => $this->anthropic,
+            // Bridge-first: with claude-bridge enabled, every Anthropic tier
+            // runs on subscription auth and the metered API is never called.
+            'anthropic' => self::bridgeEnabled() ? $this->bridge : $this->anthropic,
             'openai' => $this->openai,
             'google' => $this->gemini,
             default => throw new Misconfigured("Unknown LLM provider '{$provider}' — check runtime.tiers config."),
@@ -28,15 +31,23 @@ class LlmRouter
 
     /**
      * Whether a provider's API key is configured — drives tier
-     * availability in the UI and tier validation.
+     * availability in the UI and tier validation. A configured bridge
+     * makes the anthropic provider available without any API key.
      */
     public static function providerAvailable(string $provider): bool
     {
         return match ($provider) {
-            'anthropic' => (string) config('runtime.llm.anthropic.api_key') !== '',
+            'anthropic' => self::bridgeEnabled()
+                || (string) config('runtime.llm.anthropic.api_key') !== '',
             'openai' => (string) config('runtime.llm.openai.api_key') !== '',
             'google' => (string) config('runtime.llm.google.api_key') !== '',
             default => false,
         };
+    }
+
+    public static function bridgeEnabled(): bool
+    {
+        return (bool) config('runtime.llm.bridge.enabled')
+            && (string) config('runtime.llm.bridge.url') !== '';
     }
 }

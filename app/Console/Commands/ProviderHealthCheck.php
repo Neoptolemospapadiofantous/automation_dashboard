@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Runtime\LLM\LlmRouter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
@@ -67,6 +68,22 @@ class ProviderHealthCheck extends Command
      */
     protected function checkAnthropic(): array
     {
+        // Bridge-first (2026-07-31): anthropic tiers run on claude-bridge
+        // subscription auth — probe the bridge, never the metered API.
+        if (LlmRouter::bridgeEnabled()) {
+            $url = rtrim((string) config('runtime.llm.bridge.url'), '/');
+            try {
+                $res = Http::timeout(10)->get($url.'/health');
+            } catch (\Throwable $e) {
+                return $this->finding('provider-anthropic', 'FAIL', 'claude-bridge unreachable ('.$e->getMessage().') — anthropic tiers DEAD; check the bridge service/tunnel');
+            }
+            if ($res->successful() && $res->json('ok') === true) {
+                return $this->finding('provider-anthropic', 'PASS', 'claude-bridge healthy (subscription auth, model '.(string) $res->json('model').') — no metered API in use');
+            }
+
+            return $this->finding('provider-anthropic', 'FAIL', 'claude-bridge /health returned HTTP '.$res->status().' — anthropic tiers DEAD');
+        }
+
         $key = (string) config('runtime.llm.anthropic.api_key');
         $base = rtrim((string) config('runtime.llm.anthropic.base_url'), '/');
         $model = (string) config('runtime.llm.anthropic.model_default');
