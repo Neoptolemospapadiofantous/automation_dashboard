@@ -446,6 +446,22 @@
     var backBtn = document.getElementById('fs-back');
     var rated = false; // guards the post-chat rating prompt to once per conversation
     var visitorId = null; // current chat session id
+
+    // Auto-start for first-time visitors: someone who OPENS the widget should
+    // meet the greeting, not a lone "Start new chat" button. Guards, in order:
+    // the loader mounts this iframe eagerly on EVERY pageview, so we only fire
+    // once the panel is actually visible (fs:visible / standalone page); only
+    // when the history request CONFIRMED zero past conversations (returning
+    // visitors keep their home screen; unknown/failed = no auto-start); and at
+    // most once per page load.
+    var widgetVisible = window.self === window.top; // hosted chat page = visible at load
+    var hasHistory = null; // null = not known yet
+    var autoStarted = false;
+    function maybeAutoStart() {
+        if (autoStarted || home.hidden || visitorId || !widgetVisible || hasHistory !== false) return;
+        autoStarted = true;
+        startNewChat();
+    }
     var token = null;     // stable visitor token
     var pendingSend = null; // a host-API message to send once a new chat is live
     var csrf = document.querySelector('meta[name="csrf-token"]').content;
@@ -884,7 +900,14 @@
         if (!token) return;
         callJson('/embed/' + encodeURIComponent(slug) + '/history', { visitor_token: token })
             .then(function (r) {
-                if (r.status !== 200 || !r.body || !Array.isArray(r.body.conversations) || !r.body.conversations.length) return;
+                if (r.status !== 200 || !r.body || !Array.isArray(r.body.conversations) || !r.body.conversations.length) {
+                    // A confirmed-empty history unlocks first-visit auto-start;
+                    // a non-200 stays "unknown" (no auto-start, old behavior).
+                    if (r.status === 200) { hasHistory = false; maybeAutoStart(); }
+
+                    return;
+                }
+                hasHistory = true;
                 head.hidden = false;
                 r.body.conversations.forEach(function (c) { list.appendChild(historyItem(c)); });
             })
@@ -1126,7 +1149,8 @@
             // A host-driven message starts a chat if we're on the home screen.
             if (!visitorId) { startNewChat(d.text); } else { send(d.text); }
         } else if (d.type === 'fs:visible') {
-            if (!home.hidden) { /* on home, nothing to focus */ } else { input.focus(); }
+            widgetVisible = true;
+            if (!home.hidden) { maybeAutoStart(); } else { input.focus(); }
         }
     });
 
