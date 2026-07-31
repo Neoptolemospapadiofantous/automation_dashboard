@@ -158,9 +158,11 @@ class SkeletonTest extends TestCase
 
         $runtime = app(AgentRuntime::class);
 
-        // Anthropic funded, embeddings funded, but the agent runs on GEMINI
-        // and there is no Gemini key: it must report DEAD, not falsely healthy.
+        // default_tier = gemini too, so the provider-availability fallback
+        // can't rescue this to another provider — this isolates the
+        // tier-awareness assertion (health checks GEMINI, not Anthropic).
         config([
+            'runtime.default_tier' => 'gemini',
             'runtime.llm.anthropic.api_key' => 'sk-anthropic-test',
             'runtime.embeddings.openai_api_key' => 'sk-openai-test',
             'runtime.llm.google.api_key' => '',
@@ -176,5 +178,35 @@ class SkeletonTest extends TestCase
         $h = $runtime->health($agent->fresh());
         $this->assertTrue($h['ok']);
         $this->assertSame('gemini', $h['tier']);
+    }
+
+    public function test_agent_pinned_to_a_dead_provider_degrades_to_the_funded_default(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $agent = Agent::factory()->for($user->currentTeam)->create();
+        AgentConfigVersion::create([
+            'agent_id' => $agent->id,
+            'version' => 1,
+            'status' => AgentConfigVersion::STATUS_PUBLISHED,
+            'config' => ['model_tier' => 'sonnet'], // anthropic
+        ]);
+
+        // Anthropic retired, Gemini funded, default points at gemini.
+        config([
+            'runtime.default_tier' => 'gemini',
+            'runtime.llm.anthropic.api_key' => '',
+            'runtime.llm.google.api_key' => 'gm-test',
+            'runtime.embeddings.openai_api_key' => 'sk-openai-test',
+        ]);
+
+        // A sonnet agent must NOT go dark — it degrades to the funded default.
+        $this->assertSame('gemini', AgentConfigVersion::publishedTier($agent->id));
+        $this->assertTrue(app(AgentRuntime::class)->health($agent->fresh())['ok']);
+
+        // But if the default is ALSO dead, don't pretend: stay on the pinned
+        // tier so health reports the real outage instead of hiding it.
+        config(['runtime.llm.google.api_key' => '']);
+        $this->assertSame('sonnet', AgentConfigVersion::publishedTier($agent->id));
+        $this->assertFalse(app(AgentRuntime::class)->health($agent->fresh())['ok']);
     }
 }

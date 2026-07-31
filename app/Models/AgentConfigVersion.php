@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Runtime\LLM\LlmRouter;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -131,6 +132,12 @@ class AgentConfigVersion extends Model
      * The agent's live quality tier key. Legacy keys alias to their
      * lineup equivalent; unknown/absent values degrade to the configured
      * default tier — bad data lands on the funded default, never a dead one.
+     *
+     * Provider-availability safeguard: an agent pinned to a tier whose
+     * provider has no key (e.g. it was retired) would otherwise go dark on
+     * every turn. When that happens, degrade to the funded default tier so
+     * the agent keeps answering — but only when the default is actually
+     * reachable, so we never trade one dead provider for another.
      */
     public static function publishedTier(int $agentId): string
     {
@@ -138,7 +145,28 @@ class AgentConfigVersion extends Model
         $tier = (string) ($config['model_tier'] ?? self::defaultTier());
         $tier = self::LEGACY_TIER_ALIASES[$tier] ?? $tier;
 
-        return array_key_exists($tier, (array) config('runtime.tiers')) ? $tier : self::defaultTier();
+        if (! array_key_exists($tier, (array) config('runtime.tiers'))) {
+            return self::defaultTier();
+        }
+
+        if (! self::tierProviderAvailable($tier)) {
+            $default = self::defaultTier();
+            if ($default !== $tier && self::tierProviderAvailable($default)) {
+                return $default;
+            }
+        }
+
+        return $tier;
+    }
+
+    /**
+     * Whether the LLM provider behind a tier has a configured API key.
+     */
+    protected static function tierProviderAvailable(string $tier): bool
+    {
+        $provider = (string) config("runtime.tiers.{$tier}.provider", 'anthropic');
+
+        return LlmRouter::providerAvailable($provider);
     }
 
     /**
