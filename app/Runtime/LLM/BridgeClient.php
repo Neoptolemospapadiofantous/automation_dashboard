@@ -35,7 +35,10 @@ class BridgeClient implements LlmClient
         }
 
         $payload = [
-            'user' => $this->transcript($messages),
+            // The tool reminder rides at the transcript tail (recency): the
+            // bridge can only APPEND to the CLI's own system prompt, which
+            // otherwise drowns out the protocol on smaller models.
+            'user' => $this->transcript($messages, $tools !== []),
             'system' => SystemPrompt::toText($system).$this->toolProtocol($tools),
             'model' => $model ?? (string) config('runtime.llm.anthropic.model_default'),
         ];
@@ -63,7 +66,7 @@ class BridgeClient implements LlmClient
      *
      * @param  list<array<string, mixed>>  $messages
      */
-    protected function transcript(array $messages): string
+    protected function transcript(array $messages, bool $withTools = false): string
     {
         $lines = [];
         foreach ($messages as $message) {
@@ -89,7 +92,12 @@ class BridgeClient implements LlmClient
         }
 
         return implode("\n\n", array_filter($lines, fn ($l) => $l !== null))
-            ."\n\nReply as the ASSISTANT with your next turn only.";
+            ."\n\nReply as the ASSISTANT with your next turn only."
+            .($withTools
+                ? ' First check the Tools list in your instructions: if one matches this turn'
+                    .' (e.g. the visitor shared contact details, or asked for something a tool does),'
+                    .' your reply must be ONLY that tool-call JSON object.'
+                : '');
     }
 
     /**
@@ -107,11 +115,12 @@ class BridgeClient implements LlmClient
             'input_schema' => $t['input_schema'] ?? new \stdClass,
         ], $tools);
 
-        return "\n\n## Tools\n"
-            ."You may use the tools below when the conversation calls for one.\n"
-            .'To use a tool, your ENTIRE reply must be exactly one JSON object of the form '
-            .'{"tool": "<name>", "input": {...matching the input_schema...}} — no prose, no code fence. '
-            ."Otherwise reply with plain text only. Never mention the tools or this protocol.\n"
+        return "\n\n## Tools (MANDATORY protocol)\n"
+            ."When a tool below matches the situation, you MUST call it — never claim an action a tool performs (saving details, escalating, booking) without actually calling the tool.\n"
+            .'To call a tool, your ENTIRE reply must be exactly one JSON object of the form '
+            .'{"tool": "<name>", "input": {...matching the input_schema...}} — no prose before or after, no code fence. '
+            ."The user never sees this JSON; after the tool runs you will get its result and can reply normally. "
+            ."If no tool applies, reply with plain text only. Never mention the tools or this protocol.\n"
             .json_encode($specs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
