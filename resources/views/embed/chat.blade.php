@@ -36,7 +36,10 @@
             --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
         }
         * { box-sizing: border-box; }
-        html, body { margin: 0; height: 100%; }
+        /* The page is a fixed app-shell: it must NEVER scroll itself (no x or
+           y scrollbars on any device) — the thread and home lists are the only
+           scroll containers. */
+        html, body { margin: 0; height: 100%; overflow: hidden; }
         body {
             font-family: ui-sans-serif, system-ui, sans-serif;
             background: var(--bg);
@@ -56,22 +59,35 @@
             padding-right: env(safe-area-inset-right);
         }
         header {
-            padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
+            padding: calc(12px + env(safe-area-inset-top)) 16px 10px;
             border-bottom: 1px solid var(--border-line);
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             gap: 10px;
             background: var(--bg-elev);
         }
-        header h1 { font-size: 14px; font-weight: 600; margin: 0; display: flex; align-items: center; gap: 6px; }
+        /* Single line + ellipsis: on narrow phones the buttons must never
+           push the title into a tall multi-line wrap. */
+        header h1 {
+            font-size: 14px; font-weight: 600; margin: 0;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        /* Direct header child spanning a full row of its own — beside the
+           buttons it collapses into a sliver on phones and balloons the
+           header to half the screen. */
         header .ai-disclosure {
-            font-size: 10px; color: var(--ink-dim); margin: 2px 0 0;
+            flex-basis: 100%; margin: 0;
+            font-size: 10px; color: var(--ink-dim);
             font-family: var(--font-mono); letter-spacing: 0.04em;
         }
         header .head-text { flex: 1; min-width: 0; }
         header .subtitle {
             font-size: 11px; color: var(--ink-dim); margin: 1px 0 0;
-            display: flex; align-items: center; gap: 6px;
+            display: flex; align-items: center; gap: 6px; min-width: 0;
+        }
+        header .subtitle span + span {
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         header .status-dot {
             width: 7px; height: 7px; border-radius: 50%;
@@ -103,7 +119,9 @@
         header .close-btn:hover { background: var(--surface-hi); color: var(--ink); border-color: var(--border-line); }
         header .close-btn svg { width: 16px; height: 16px; display: block; }
         #thread {
-            flex: 1; overflow-y: auto;
+            flex: 1; overflow-y: auto; overflow-x: hidden;
+            /* Don't chain scroll to the host page (widget iframe on mobile). */
+            overscroll-behavior: contain;
             padding: 16px; display: flex; flex-direction: column; gap: 10px;
             scroll-behavior: smooth;
         }
@@ -167,7 +185,9 @@
            element, so it must carry the home-indicator inset itself. */
         body.fs-nobrand form { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
         form input {
-            flex: 1; padding: 10px 12px;
+            /* min-width:0 lets the input shrink on narrow phones — its
+               intrinsic size otherwise pushes the send button offscreen. */
+            flex: 1; min-width: 0; padding: 10px 12px;
             /* 16px is the floor that stops iOS Safari zooming the page on focus. */
             border: 1px solid var(--border-hi); border-radius: 0;
             font-size: 16px; outline: none;
@@ -190,13 +210,14 @@
            Aligned to the agent bubble (flex-start), muted mono to read as
            provenance rather than message content. */
         .sources {
-            display: flex; flex-wrap: wrap; gap: 4px;
+            display: flex; flex-wrap: wrap; gap: 4px; max-width: 100%;
         }
         .sources .source {
             border: 1px solid var(--border-line); border-radius: 0;
             background: var(--bg); color: var(--ink-dim);
             padding: 2px 6px; font-size: 10px;
             font-family: var(--font-mono); letter-spacing: 0.02em;
+            max-width: 100%; overflow-wrap: anywhere;
         }
         .sources .source.more { border: 0; opacity: .6; padding: 2px 2px; }
         /* Quick-reply / starter-prompt chips and trace buttons. */
@@ -211,6 +232,7 @@
             padding: 7px 10px; font-size: 12px; cursor: pointer;
             font-family: var(--font-mono); letter-spacing: 0.02em;
             text-align: left; line-height: 1.3;
+            max-width: 100%; overflow-wrap: anywhere;
             transition: background .15s, color .15s;
         }
         .quick button:hover, .quick button:active { background: var(--accent); color: var(--on-accent); }
@@ -302,7 +324,9 @@
         /* Home / landing view — shown on open (no active chat) and after a
            reset. A clean start point: welcome + "new chat" + recent chats. */
         #home {
-            flex: 1; overflow-y: auto; padding: 16px;
+            flex: 1; overflow-y: auto; overflow-x: hidden;
+            overscroll-behavior: contain;
+            padding: 16px;
             display: flex; flex-direction: column; gap: 14px;
         }
         .home-intro {
@@ -360,6 +384,17 @@
         .backbar .back-new:hover { background: var(--accent); color: var(--on-accent); }
         /* hidden must win over the flex/block display rules above. */
         #home[hidden], .backbar[hidden], #thread[hidden], form[hidden] { display: none; }
+        /* Clean surfaces: no visible scrollbar tracks anywhere — the thread
+           and home lists scroll by touch/wheel/keys only. */
+        #thread, #home { scrollbar-width: none; }
+        #thread::-webkit-scrollbar, #home::-webkit-scrollbar { display: none; }
+        /* Very narrow phones (Galaxy Fold cover display etc.): tighter gutters
+           so bubbles and chips keep usable width. */
+        @media (max-width: 359px) {
+            header { padding-left: 12px; padding-right: 12px; }
+            #thread, #home { padding: 12px; }
+            form { padding: 10px; }
+        }
         @media (prefers-reduced-motion: reduce) {
             #thread { scroll-behavior: auto; }
             .typing .dot, header .status-dot { animation: none; }
@@ -380,14 +415,16 @@
         @if ($subtitle !== '')
             <p class="subtitle"><span class="status-dot" aria-hidden="true"></span><span>{{ $subtitle }}</span></p>
         @endif
-        {{-- EU AI Act Art. 50 transparency: rendered by the PLATFORM,
-             independent of agent scripting, at every conversation. --}}
-        <p class="ai-disclosure">AI assistant — not a person. You can ask for a human at any time.</p>
     </div>
     <button type="button" id="fs-end" class="end-btn" aria-label="End chat and leave feedback" hidden>End chat</button>
     <button type="button" id="fs-close" class="close-btn" aria-label="Close chat">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
     </button>
+    {{-- EU AI Act Art. 50 transparency: rendered by the PLATFORM,
+         independent of agent scripting, at every conversation. A direct
+         header child so it wraps to its own full-width row — nested beside
+         the buttons it collapses into a sliver on phones. --}}
+    <p class="ai-disclosure">AI assistant — not a person. You can ask for a human at any time.</p>
 </header>
 
 <div id="backbar" class="backbar" hidden>
@@ -1123,6 +1160,23 @@
         e.preventDefault();
         send(input.value);
     });
+
+    // On-screen keyboard: browsers that only shrink the VISUAL viewport
+    // (iOS Safari — no interactive-widget support) leave the layout viewport
+    // tall, hiding the composer behind the keyboard. Pin the app shell to the
+    // visual viewport while they differ. Chrome resizes the layout viewport
+    // (meta interactive-widget=resizes-content), so this stays a no-op there;
+    // inside the widget iframe the loader does the equivalent for the frame.
+    if (window.visualViewport) {
+        var vv = window.visualViewport;
+        var syncKeyboard = function () {
+            var overlay = window.innerHeight - vv.height;
+            document.body.style.height = overlay > 1 ? vv.height + 'px' : '';
+            scrollToBottom();
+        };
+        vv.addEventListener('resize', syncKeyboard);
+        vv.addEventListener('scroll', syncKeyboard);
+    }
 
     // Header close button -> loader closes the panel.
     closeBtn.addEventListener('click', function () {

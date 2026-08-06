@@ -49,23 +49,48 @@
     var IFRAME_ORIGIN;
     try { IFRAME_ORIGIN = new URL(IFRAME_URL).origin; } catch (e) { IFRAME_ORIGIN = '*'; }
 
+    // On phones the panel goes fullscreen. One media query drives the CSS and
+    // the JS keyboard sync below — portrait phones by width, landscape phones
+    // by height (a 96px-bottom floating panel is unusable at 390px tall).
+    var FULL_MQ = '(max-width: 480px), (max-height: 480px)';
+
     // Styles — brand: hard edges, offset shadow, ink-on-ground.
+    // safe-area env() values resolve to 0 unless the host page opts into
+    // viewport-fit=cover, so the calc() lines are no-ops on plain pages and
+    // lift the launcher clear of the home indicator on notched phones.
+    // --fs-consent-h is a host-page hook: set it on :root to the height of a
+    // bottom-fixed banner (cookie consent etc.) and the launcher, teaser and
+    // panel all lift above it — the panel also SHRINKS by it so it can't
+    // poke past the top of short viewports. The landing publishes it from
+    // its CookieConsent component; defaults to 0 everywhere else.
     var css = [
-        '#fs-embed-btn{position:fixed;bottom:24px;' + SIDE + ':24px;min-width:56px;height:56px;border-radius:0;background:' + ACCENT + ';color:' + ONACCENT + ';border:1px solid ' + ACCENT + ';cursor:pointer;z-index:2147483646;box-shadow:6px 6px 0 rgba(0,0,0,.14);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;font-family:ui-monospace,"JetBrains Mono",monospace;font-size:14px;transition:background .15s,color .15s;}',
+        '#fs-embed-btn{position:fixed;bottom:24px;bottom:calc(24px + env(safe-area-inset-bottom,0px) + var(--fs-consent-h,0px));' + SIDE + ':24px;min-width:56px;max-width:calc(100vw - 48px);height:56px;border-radius:0;background:' + ACCENT + ';color:' + ONACCENT + ';border:1px solid ' + ACCENT + ';cursor:pointer;z-index:2147483646;box-shadow:6px 6px 0 rgba(0,0,0,.14);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;font-family:ui-monospace,"JetBrains Mono",monospace;font-size:14px;transition:background .15s,color .15s;}',
+        '#fs-embed-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
         '@media (hover:hover){#fs-embed-btn:hover{background:' + ONACCENT + ';color:' + ACCENT + ';}}',
         '#fs-embed-btn:active{background:' + ONACCENT + ';color:' + ACCENT + ';}',
-        '#fs-embed-icon{display:flex;}#fs-embed-icon svg{width:24px;height:24px;display:block;}',
+        '#fs-embed-icon{display:flex;flex:none;}#fs-embed-icon svg{width:24px;height:24px;display:block;}',
         '#fs-embed-badge{position:absolute;top:-7px;' + SIDE + ':-7px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#e11d48;color:#fff;font:700 11px/18px ui-monospace,monospace;text-align:center;display:none;box-sizing:border-box;}',
         '#fs-embed-badge.show{display:block;}',
-        '#fs-embed-teaser{position:fixed;bottom:92px;' + SIDE + ':24px;max-width:260px;background:#fff;color:#111;border:1px solid ' + ACCENT + ';box-shadow:6px 6px 0 rgba(0,0,0,.12);padding:12px 30px 12px 12px;font:14px/1.45 ui-sans-serif,system-ui,sans-serif;z-index:2147483646;cursor:pointer;display:none;}',
+        '#fs-embed-teaser{position:fixed;bottom:92px;bottom:calc(92px + env(safe-area-inset-bottom,0px) + var(--fs-consent-h,0px));' + SIDE + ':24px;max-width:min(260px,calc(100vw - 48px));background:#fff;color:#111;border:1px solid ' + ACCENT + ';box-shadow:6px 6px 0 rgba(0,0,0,.12);padding:12px 30px 12px 12px;font:14px/1.45 ui-sans-serif,system-ui,sans-serif;z-index:2147483646;cursor:pointer;display:none;}',
         '#fs-embed-teaser.show{display:block;}',
         '#fs-embed-teaser-x{position:absolute;top:3px;right:6px;border:0;background:none;cursor:pointer;font-size:17px;line-height:1;color:#999;}',
-        '#fs-embed-frame-wrap{position:fixed;bottom:96px;' + SIDE + ':24px;width:min(408px,calc(100vw - 48px));height:min(680px,calc(100vh - 132px));border-radius:0;overflow:hidden;border:1px solid ' + ACCENT + ';box-shadow:8px 8px 0 rgba(0,0,0,.12);background:#fff;z-index:2147483645;display:none;opacity:0;transform:translateY(12px);transition:opacity .2s ease,transform .2s ease;}',
+        '#fs-embed-frame-wrap{position:fixed;bottom:96px;bottom:calc(96px + env(safe-area-inset-bottom,0px) + var(--fs-consent-h,0px));' + SIDE + ':24px;width:min(408px,calc(100vw - 48px));height:min(680px,calc(100vh - 132px));height:min(680px,calc(100vh - 132px - env(safe-area-inset-bottom,0px) - var(--fs-consent-h,0px)));border-radius:0;overflow:hidden;border:1px solid ' + ACCENT + ';box-shadow:8px 8px 0 rgba(0,0,0,.12);background:#fff;z-index:2147483645;display:none;opacity:0;transform:translateY(12px);transition:opacity .2s ease,transform .2s ease;}',
         '#fs-embed-frame-wrap.open{display:block;}',
         '#fs-embed-frame-wrap.open.in{opacity:1;transform:translateY(0);}',
         '@media (prefers-reduced-motion:reduce){#fs-embed-frame-wrap{transition:none;}}',
-        '#fs-embed-frame{width:100%;height:100%;border:0;}',
-        '@media (max-width:480px){#fs-embed-frame-wrap{bottom:0;left:0;right:0;top:0;width:100%;height:100%;}#fs-embed-teaser{display:none !important;}html.fs-open #fs-embed-btn{display:none;}}'
+        '#fs-embed-frame{width:100%;height:100%;border:0;display:block;}',
+        // Fullscreen phone mode. top+height over-constrain `bottom` on
+        // purpose: host pages (e.g. the landing's cookie-consent lift)
+        // override `bottom` with higher-specificity rules, and height must
+        // keep winning here. 100dvh tracks the collapsing URL bar; the
+        // html.fs-open rules freeze the host page behind the open panel so
+        // the chat is the only thing that scrolls.
+        '@media ' + FULL_MQ + '{'
+            + '#fs-embed-frame-wrap{bottom:0;left:0;right:0;top:0;width:100%;height:100%;height:100dvh;border:0;box-shadow:none;}'
+            + '#fs-embed-teaser{display:none !important;}'
+            + 'html.fs-open #fs-embed-btn{display:none;}'
+            + 'html.fs-open,html.fs-open body{overflow:hidden;}'
+        + '}'
     ].join('');
     var style = document.createElement('style');
     style.textContent = css;
@@ -109,6 +134,28 @@
     }
     function setIcon() { icon.innerHTML = opened ? CLOSE_SVG : CHAT_SVG; }
 
+    // On-screen keyboard (fullscreen phone mode): the host page controls its
+    // own viewport meta, so we can't rely on the keyboard resizing the layout
+    // viewport. While the keyboard only shrinks the VISUAL viewport (iOS
+    // Safari, Android overlay modes), pin the panel to it so the composer
+    // inside the iframe stays visible above the keyboard.
+    var fullMq = window.matchMedia && window.matchMedia(FULL_MQ);
+    function syncKeyboard() {
+        if (!window.visualViewport) return;
+        var vv = window.visualViewport;
+        if (opened && fullMq && fullMq.matches && window.innerHeight - vv.height > 1) {
+            wrap.style.height = vv.height + 'px';
+            wrap.style.top = vv.offsetTop + 'px';
+        } else {
+            wrap.style.height = '';
+            wrap.style.top = '';
+        }
+    }
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', syncKeyboard);
+        window.visualViewport.addEventListener('scroll', syncKeyboard);
+    }
+
     function open() {
         if (opened) return;
         opened = true; unread = 0;
@@ -128,6 +175,7 @@
         opened = false;
         document.documentElement.classList.remove('fs-open');
         wrap.classList.remove('open'); wrap.classList.remove('in'); setIcon();
+        wrap.style.height = ''; wrap.style.top = ''; // drop any keyboard pin
         btn.setAttribute('aria-expanded', 'false');
         emit('close');
     }
