@@ -4,7 +4,6 @@ namespace Tests\Feature\Runtime;
 
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
-use App\Models\Lead;
 use App\Models\User;
 use App\Runtime\AgentRuntime;
 use App\Runtime\Contracts\KnowledgeStore;
