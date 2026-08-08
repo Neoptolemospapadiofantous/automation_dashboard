@@ -28,3 +28,8 @@ the front door (intake) → automations run the busywork → your numbers are
 aggregated from your tools into one source of truth → everything lands on one
 live, audited dashboard — the Monday report, already built. It's the same
 automation stack Flowstack runs its own growth on.
+
+Since August 2026 the flowstack.run website runs an "ink on paper" design:
+a white sheet with black ink and one signal-yellow accent, laid out like a
+technical drawing. Only the look changed — the product, plans and prices are
+the same.
