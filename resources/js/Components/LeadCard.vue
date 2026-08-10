@@ -68,7 +68,7 @@ function onAssignChange(e) {
                 @mousedown.stop
                 @dragstart.prevent
             >
-                ✉ {{ lead.email }}
+                ✉︎ {{ lead.email }}
             </a>
             <a
                 v-if="lead.phone"
@@ -79,7 +79,7 @@ function onAssignChange(e) {
                 @mousedown.stop
                 @dragstart.prevent
             >
-                ☎
+                ☎︎
             </a>
         </div>
 
