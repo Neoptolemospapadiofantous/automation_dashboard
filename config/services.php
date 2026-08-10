@@ -37,6 +37,15 @@ return [
 
     // Ecosystem BI warehouse ingestion API (SHARED.md — ~/.config/ecosystem/bi).
     // Best-effort live telemetry, OFF by default. The API is localhost-only, so
+    // Escalation SMS (App\Notifications\Channels\TwilioSmsChannel). All three
+    // unset = channel inert; the bell + email legs are never affected. Trial
+    // Twilio accounts can only text verified numbers — fine for owner alerts.
+    'twilio' => [
+        'sid' => env('TWILIO_SID', ''),
+        'token' => env('TWILIO_TOKEN', ''),
+        'from' => env('TWILIO_FROM', ''),
+    ],
+
     // prod stays dormant until a reachable endpoint (Azure) exists — enabling is
     // then just the env flag, no deploy of code. Consumed by App\Support\BiEmitter.
     'bi' => [

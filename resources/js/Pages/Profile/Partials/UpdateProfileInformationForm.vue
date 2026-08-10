@@ -17,6 +17,7 @@ const form = useForm({
     _method: 'PUT',
     name: props.user.name,
     email: props.user.email,
+    notification_phone: props.user.notification_phone ?? '',
     photo: null,
 });
 
@@ -176,6 +177,23 @@ const clearPhotoFileInput = () => {
                         A new verification link has been sent to your email address.
                     </div>
                 </div>
+            </div>
+
+            <!-- Escalation SMS number -->
+            <div class="col-span-6 sm:col-span-4">
+                <InputLabel for="notification_phone" value="Escalation SMS number (optional)" />
+                <p class="mt-0.5 text-xs text-ink-dim">
+                    When a chat visitor asks for a human, we text this number so you can take over while they're still on the page. International format.
+                </p>
+                <TextInput
+                    id="notification_phone"
+                    v-model="form.notification_phone"
+                    type="tel"
+                    class="mt-1 block w-full"
+                    placeholder="+35799123456"
+                    autocomplete="tel"
+                />
+                <InputError :message="form.errors.notification_phone" class="mt-2" />
             </div>
         </template>
 
