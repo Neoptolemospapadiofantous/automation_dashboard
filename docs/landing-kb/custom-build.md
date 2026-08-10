@@ -9,6 +9,30 @@ scattered numbers into one live dashboard — reports that build themselves, wit
 every run fully audited. It's the same automation stack Flowstack runs its own
 growth on.
 
+## What we build
+
+Named services, each scoped to your stack:
+
+- **Agent go-live** — we load your knowledge, tune the voice, install it on your site
+- **Cold outreach** — your own sending domain, a verified list, sequences in your voice
+- **One live view** — the numbers you rebuild by hand, pulled into one dashboard
+- **Booking** — request, availability, booking, confirmation, reminder
+- **Invoices & documents** — generated, sent and chased, with the payment follow-up running itself
+- **Connect your tools** — your CRM, sheets and inbox stop needing the same thing typed twice
+- **Inbox triage** — incoming mail sorted, labelled and routed automatically
+- **Ongoing care** — we watch what we built and fix it before you notice
+
+## What it costs
+
+There is no list price for build work, and you should not quote one. Every
+engagement is scoped to the customer's own stack and quoted after the free
+30-minute audit, with a written fixed-scope proposal within 48 hours — what
+ships, in how long, for how much. It is theirs to keep whether or not they go
+ahead, the price is fixed before work starts, and they keep the code.
+
+If someone asks what a build costs, the honest and complete answer is to book
+the audit. Do not estimate, do not give a range.
+
 ## When you need it
 
 - Bespoke conversation flows on your own stack
