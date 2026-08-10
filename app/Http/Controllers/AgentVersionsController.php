@@ -63,6 +63,7 @@ class AgentVersionsController extends Controller
                 'key' => $key,
                 'label' => (string) ($tier['label'] ?? ucfirst($key)),
                 'description' => (string) ($tier['description'] ?? ''),
+                'model' => (string) ($tier['model'] ?? ''),
                 'credits_per_message' => (int) ($tier['credits_per_message'] ?? 1),
                 // Greyed out in the UI until the provider's API key is set.
                 'available' => LlmRouter::providerAvailable((string) ($tier['provider'] ?? 'anthropic')),
