@@ -89,7 +89,12 @@ class ProviderHealthCheck extends Command
         $model = (string) config('runtime.llm.anthropic.model_default');
 
         if ($key === '') {
-            return $this->finding('provider-anthropic', 'FAIL', 'ANTHROPIC_API_KEY is not set');
+            // Deliberate state, not an incident (2026-08-10 metered flip):
+            // without a key the Claude tiers show as "Coming soon" in the
+            // tier picker and agents degrade to the funded default tier.
+            // WARN keeps the hourly findings honest without burying real
+            // FAILs under expected noise.
+            return $this->finding('provider-anthropic', 'WARN', 'ANTHROPIC_API_KEY not set — Claude tiers shown as coming soon; agents degrade to the default tier');
         }
 
         try {

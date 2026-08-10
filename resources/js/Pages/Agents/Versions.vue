@@ -136,7 +136,7 @@ const dirty = computed(() => form.isDirty);
                                             {{ t.credits_per_message }} cr/msg
                                         </span>
                                     </span>
-                                    <span class="mt-1 block text-xs leading-snug text-ink-dim">{{ t.available === false ? 'Not available yet on this workspace.' : t.description }}</span>
+                                    <span class="mt-1 block text-xs leading-snug text-ink-dim">{{ t.available === false ? 'Coming soon.' : t.description }}</span>
                                     <span v-if="t.model" class="mt-1 block font-mono text-[10px] tracking-wide text-ink-mute">{{ t.model }}</span>
                                 </span>
                             </label>

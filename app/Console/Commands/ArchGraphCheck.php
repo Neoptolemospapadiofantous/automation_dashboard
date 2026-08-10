@@ -29,7 +29,6 @@ class ArchGraphCheck extends Command
     private const ALLOWED_ORPHANS = [
         'App\\Models\\Membership',
         'App\\Models\\TeamInvitation',
-        'App\\Http\\Middleware\\ComingSoon',
         'App\\Http\\Middleware\\SecurityHeaders',
     ];
 

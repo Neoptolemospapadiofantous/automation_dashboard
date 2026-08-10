@@ -20,25 +20,17 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SubscribeController;
-use App\Http\Controllers\WaitlistController;
 use App\Http\Middleware\RequireAgent;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 // The app subdomain (app.flowstack.run) has no marketing landing — that
-// lives on flowstack.run. Root just routes into the product. (Pre-launch,
-// the ComingSoon gate intercepts this and shows the waitlist instead.)
+// lives on flowstack.run. Root just routes into the product.
 Route::get('/', function () {
     return auth()->check()
         ? redirect()->route('dashboard')
         : redirect()->route('login');
 });
-
-// Pre-launch waitlist capture (the coming-soon page posts here). Public +
-// throttled; allowlisted in the ComingSoon gate and CSRF-exempt.
-Route::post('/waitlist', WaitlistController::class)
-    ->middleware('throttle:10,1')
-    ->name('waitlist.store');
 
 Route::middleware([
     'auth:sanctum',

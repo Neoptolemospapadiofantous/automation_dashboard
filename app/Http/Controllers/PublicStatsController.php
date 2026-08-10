@@ -64,17 +64,6 @@ class PublicStatsController extends Controller
             'founder_slots_remaining' => PlatformSetting::int('founder_slots_remaining', 100),
             'founder_slots_total' => PlatformSetting::int('founder_slots_total', 100),
 
-            // Next-cohort hook ("Onboarding starts March 15"). Free-form
-            // string so it can carry a date, week label, or "Rolling".
-            'next_cohort_label' => PlatformSetting::value('next_cohort_label', 'Rolling intake'),
-
-            // Founder-cohort open date (YYYY-MM-DD or full ISO). Drives the
-            // landing announcement-bar countdown. Null when unset — the
-            // landing then shows a static "now open" state instead of a
-            // countdown, so there is no hard-coded date to expire. Operator
-            // sets via `php artisan platform:set next_cohort_open_at 2026-07-15`.
-            'next_cohort_open_at' => PlatformSetting::value('next_cohort_open_at'),
-
             // Featured proof point — operator picks one outcome to surface
             // ("3.4× pipeline lift at Pendola"). Free-form so it can be
             // anything we want to A/B.

@@ -56,20 +56,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Coming-soon gate
-    |--------------------------------------------------------------------------
-    |
-    | Pre-launch switch. When true, the ComingSoon middleware serves the
-    | "coming soon" page for every user-facing web route (login/register
-    | included), while machine endpoints (api/*, webhooks/*, up) stay open.
-    | Set COMING_SOON=false to open the app at launch.
-    |
-    */
-
-    'coming_soon' => (bool) env('COMING_SOON', false),
-
-    /*
-    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
