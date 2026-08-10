@@ -73,31 +73,20 @@ else
 fi
 
 # ── 4. Queue depth ─────────────────────────────────────────────────────────────
-if php artisan queue:size 2>"$OUT/queue.err" > "$OUT/queue.log"; then
-  queue_size=$(tail -1 "$OUT/queue.log" | grep -oE '[0-9]+' | head -1)
-  if [[ -n "$queue_size" ]]; then
-    if [[ "$queue_size" -ge 1000 ]]; then
-      record FAIL queue "${queue_size} jobs pending — backlog"
-    elif [[ "$queue_size" -ge 100 ]]; then
-      record WARN queue "${queue_size} jobs pending"
-    else
-      record PASS queue "${queue_size} jobs pending"
-    fi
+# QUEUE_CONNECTION is the database driver in every environment, and no
+# queue:size artisan command exists — calling it stack-traced into
+# laravel.log nightly before the fallback ran. Count the jobs table directly.
+queue_size=$(php artisan tinker --execute="echo DB::table('jobs')->count();" 2>/dev/null | tail -1 | grep -oE '[0-9]+' | head -1)
+if [[ -n "$queue_size" ]]; then
+  if [[ "$queue_size" -ge 1000 ]]; then
+    record FAIL queue "${queue_size} jobs pending — backlog"
+  elif [[ "$queue_size" -ge 100 ]]; then
+    record WARN queue "${queue_size} jobs pending"
+  else
+    record PASS queue "${queue_size} jobs pending"
   fi
 else
-  # database driver has no queue:size — count the jobs table directly
-  queue_size=$(php artisan tinker --execute="echo DB::table('jobs')->count();" 2>/dev/null | tail -1 | grep -oE '[0-9]+' | head -1)
-  if [[ -n "$queue_size" ]]; then
-    if [[ "$queue_size" -ge 1000 ]]; then
-      record FAIL queue "${queue_size} jobs pending — backlog"
-    elif [[ "$queue_size" -ge 100 ]]; then
-      record WARN queue "${queue_size} jobs pending"
-    else
-      record PASS queue "${queue_size} jobs pending (via jobs table)"
-    fi
-  else
-    record WARN queue "queue depth unavailable"
-  fi
+  record WARN queue "queue depth unavailable"
 fi
 
 # ── 5. Failed jobs ─────────────────────────────────────────────────────────────
