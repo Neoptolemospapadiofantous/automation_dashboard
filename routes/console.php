@@ -26,6 +26,11 @@ Schedule::command('runtime:spend-check')->dailyAt('5:45');
 // contacted within the grace window (assignee if set, else owner).
 Schedule::command('leads:follow-up-nudges')->dailyAt('8:00');
 
+// Partial-lead harvester: ended chats where the visitor left a name or
+// company but no contact details become low-scored kanban leads instead
+// of dying in the transcript (see the command docblock).
+Schedule::command('leads:capture-partials')->hourly();
+
 // Monday-morning proof-of-value: last week's numbers + the open work
 // lists (KB gaps, uncontacted leads) to each team owner. Quiet weeks
 // send nothing — see the command.

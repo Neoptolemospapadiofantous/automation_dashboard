@@ -112,6 +112,11 @@ class LandingFaqSeeder extends Seeder
                 'answer' => 'In short: automations take over your repetitive work, your numbers land in one live view, and a chat agent on your site answers every visitor — sales, support, lead qualification — from the knowledge you upload. Every transcript lands in a real-time dashboard, and the chat goes live in about 60 seconds. What kind of work are you looking to hand off?',
             ],
             [
+                'category' => 'Book the audit',
+                'keywords' => ['audit', 'free audit', 'book a call', 'book an audit', 'schedule a call', 'consultation'],
+                'answer' => 'The free 30-minute audit is the fastest way in: a call with a human who maps your stack, then a written, fixed-scope proposal within 48 hours — yours to keep either way. Book a slot at flowstack.run/audit, or leave your name and email here and the team will send you times. Which works better for you?',
+            ],
+            [
                 'category' => 'Getting started',
                 'keywords' => ['get started', 'getting started', 'sign up', 'signup', 'trial', 'free trial', 'free', 'how do i start', 'try'],
                 'answer' => "You pick a role, upload your knowledge (docs, FAQs, your site), and paste one script tag — the agent is live in about 60 seconds, from €99/mo, cancel anytime. There's no free trial; Starter is the way to try it. Want me to point you to signup, or is there something you'd like to check first?",
@@ -123,12 +128,12 @@ class LandingFaqSeeder extends Seeder
             ],
             [
                 'category' => 'Custom build',
-                'keywords' => ['custom build', 'custom-build', 'bespoke', 'own llm', 'audit'],
+                'keywords' => ['custom build', 'custom-build', 'bespoke', 'own llm'],
                 'answer' => 'The self-serve agent covers the standard 80% of use cases. For the rest — bespoke flows, integrations with your stack, your own LLM or your own UI — we do a fixed-scope custom build, usually 4–6 weeks, and you keep the code. It starts with a free 30-minute audit at flowstack.run/audit: you get a written, fixed-scope proposal within 48 hours, yours to keep either way. What would you want built?',
             ],
             [
                 'category' => 'Talk to a human',
-                'keywords' => ['human', 'talk to someone', 'speak to', 'representative', 'book a call', 'demo', 'real person'],
+                'keywords' => ['human', 'talk to someone', 'speak to', 'representative', 'demo', 'real person'],
                 'answer' => 'Of course. Fastest ways: book the free 30-minute audit at flowstack.run/audit, email hello@flowstack.run, or leave your name and email here and the team will get back to you. Which works best for you?',
             ],
         ];

@@ -13,6 +13,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
+ * @property int $team_id
+ * @property int $agent_id
+ * @property string $visitor_id
+ * @property int|null $lead_id
  * @property array<string, mixed>|null $meta
  */
 class Conversation extends Model

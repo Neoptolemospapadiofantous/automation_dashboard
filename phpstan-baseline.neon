@@ -240,11 +240,6 @@ parameters:
 			count: 1
 			path: app/Http/Controllers/BillingController.php
 
-		-
-			message: '#^Access to an undefined property App\\Models\\Conversation\:\:\$agent_id\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Http/Controllers/ConversationController.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$current_agent_id\.$#'
@@ -612,11 +607,6 @@ parameters:
 			count: 1
 			path: app/Policies/TeamPolicy.php
 
-		-
-			message: '#^Access to an undefined property App\\Models\\Conversation\:\:\$agent_id\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Services/ConversationRecorder.php
 
 		-
 			message: '#^Method App\\Services\\ConversationRecorder\:\:record\(\) should return App\\Models\\Message but returns Illuminate\\Database\\Eloquent\\Model\.$#'
@@ -666,11 +656,6 @@ parameters:
 			count: 1
 			path: database/factories/LeadFactory.php
 
-		-
-			message: '#^Access to an undefined property App\\Models\\Conversation\|Illuminate\\Database\\Eloquent\\Collection\<int, App\\Models\\Conversation\>\:\:\$agent_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: database/factories/MessageFactory.php
 
 		-
 			message: '#^Parameter \#1 \$state of method Illuminate\\Database\\Eloquent\\Factories\\Factory\<App\\Models\\Team\>\:\:state\(\) expects array\<string, mixed\>\|\(callable\(array\<string, mixed\>, Illuminate\\Database\\Eloquent\\Model\|null\)\: array\<string, mixed\>\), Closure\(array, App\\Models\\User\)\: array\{name\: non\-falsy\-string, user_id\: int, personal_team\: true\} given\.$#'

@@ -37,6 +37,9 @@ class LandingFaqSeederTest extends TestCase
         $this->assertContains('Pricing', $canned->chips());
         $this->assertContains('Custom build', $canned->chips());
         $this->assertContains('Integrations', $canned->chips());
+        $this->assertContains('Book the audit', $canned->chips());
+        // "audit" now routes to the audit chip, not Custom build.
+        $this->assertSame('Book the audit', $canned->match('how do I book the free audit?')?->category);
         // Keyword + chip-tap both resolve.
         $this->assertSame('Pricing', $canned->match('how much does it cost?')?->category);
         $this->assertSame('Custom build', $canned->match('Custom build')?->category);
