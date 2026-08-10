@@ -52,7 +52,10 @@ return [
         'openai' => [
             'api_key' => env('RUNTIME_OPENAI_API_KEY', env('OPENAI_API_KEY')),
             'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com'),
-            'model_default' => env('RUNTIME_TIER_GPT_MODEL', 'gpt-5.1'),
+            'model_default' => env('RUNTIME_TIER_GPT_MODEL', 'gpt-5-nano'),
+            // GPT-5 family only (see OpenAiClient): keeps reasoning tokens
+            // from eating the completion budget on chat turns.
+            'reasoning_effort' => env('RUNTIME_OPENAI_REASONING_EFFORT', 'minimal'),
         ],
         'google' => [
             'api_key' => env('GEMINI_API_KEY'),
@@ -148,10 +151,10 @@ return [
         'gpt' => [
             'provider' => 'openai',
             'label' => 'ChatGPT',
-            'description' => 'OpenAI\'s flagship model. Strong general reasoning and a familiar conversational style.',
-            'model' => env('RUNTIME_TIER_GPT_MODEL', 'gpt-5.1'),
+            'description' => 'OpenAI\'s fastest model. Snappy, familiar conversational style at the lowest cost.',
+            'model' => env('RUNTIME_TIER_GPT_MODEL', 'gpt-5-nano'),
             'credits_per_message' => (int) env('RUNTIME_TIER_GPT_CREDITS', 3),
-            'pricing_per_mtok' => ['in' => 1.25, 'out' => 10.00],
+            'pricing_per_mtok' => ['in' => 0.05, 'out' => 0.40],
         ],
         'gemini' => [
             'provider' => 'google',

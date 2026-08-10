@@ -34,6 +34,14 @@ class OpenAiClient implements LlmClient
             'max_completion_tokens' => $maxTokens ?? (int) config('runtime.llm.openai.max_tokens', config('runtime.llm.anthropic.max_tokens')),
             'messages' => $this->toOpenAiMessages($system, $messages),
         ];
+        // GPT-5-family models are reasoning models: without this, internal
+        // reasoning can consume the ENTIRE max_completion_tokens budget and
+        // return an empty reply (live-verified with gpt-5-nano at 1024).
+        // Minimal effort suits chat turns; guarded by model name so the
+        // local Ollama tier and non-reasoning models never see the param.
+        if (str_starts_with((string) $payload['model'], 'gpt-5')) {
+            $payload['reasoning_effort'] = (string) config('runtime.llm.openai.reasoning_effort', 'minimal');
+        }
         if ($tools !== []) {
             $payload['tools'] = array_map(fn (array $t) => [
                 'type' => 'function',
