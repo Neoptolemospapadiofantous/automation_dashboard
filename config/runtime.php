@@ -153,7 +153,7 @@ return [
             'label' => 'ChatGPT',
             'description' => 'OpenAI\'s fastest model. Snappy, familiar conversational style at the lowest cost.',
             'model' => env('RUNTIME_TIER_GPT_MODEL', 'gpt-5-nano'),
-            'credits_per_message' => (int) env('RUNTIME_TIER_GPT_CREDITS', 3),
+            'credits_per_message' => (int) env('RUNTIME_TIER_GPT_CREDITS', 1),
             'pricing_per_mtok' => ['in' => 0.05, 'out' => 0.40],
         ],
         'gemini' => [

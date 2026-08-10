@@ -208,7 +208,7 @@ class MultiProviderTest extends TestCase
             );
     }
 
-    public function test_gpt_tier_bills_six_credits_per_embed_turn(): void
+    public function test_gpt_tier_bills_two_credits_per_embed_turn(): void
     {
         Http::fake([
             'api.openai.com/*' => Http::response([
@@ -225,8 +225,8 @@ class MultiProviderTest extends TestCase
             'message' => 'hello',
         ])->assertOk();
 
-        // (1 + 1 reply) × gpt multiplier 3 = 6 credits.
-        $this->assertSame(94, $user->currentTeam->fresh()->credit_balance);
+        // (1 + 1 reply) × gpt multiplier 1 = 2 credits (nano-backed budget tier).
+        $this->assertSame(98, $user->currentTeam->fresh()->credit_balance);
     }
 
     /**
