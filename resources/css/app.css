@@ -28,6 +28,40 @@
     --elevation: 6px 6px 0 rgba(255, 255, 255, 0.05);
 }
 
+/* ── Ink-on-paper accents (parity with the landing's Aug-2026 redesign) ──
+   --signal is the FILL yellow on BOTH sheets — the landing's globals.css
+   companion to tokens.css's per-sheet accent slot. Used for CTA blocks and
+   the marker-highlight swipe; type on it is always near-ink for contrast. */
+:root {
+    --signal: #f5c518;
+}
+
+/* Primary CTA as the landing draws it: signal-yellow block, ink border,
+   hard ink offset shadow that presses in on hover. Declared after the
+   Tailwind utilities so it wins over PrimaryButton's ink-block classes. */
+.btn-signal {
+    background: var(--signal);
+    color: #111;
+    border-color: #111;
+    box-shadow: 3px 3px 0 #111;
+}
+.btn-signal:hover,
+.btn-signal:active {
+    background: var(--signal);
+    color: #111;
+    transform: translate(1px, 1px);
+    box-shadow: 2px 2px 0 #111;
+}
+
+/* Marker-highlight swipe — the landing hero's third-beat treatment. */
+.marker {
+    background: var(--signal);
+    color: #111;
+    padding: 0 0.12em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+}
+
 /* Focus-ring offset follows the active sheet, so the 2px offset gap reads as
    the page ground on both the white and the black sheet (Tailwind defaults it
    to #fff, which would show a white halo in dark mode). */

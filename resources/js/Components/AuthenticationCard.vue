@@ -32,7 +32,7 @@ import ApplicationMark from '@/Components/ApplicationMark.vue';
                 <h1 class="bp-rise max-w-md text-3xl font-semibold leading-tight text-ink" style="--rise-delay: 40ms">
                     Automate the busywork.
                     <span class="text-ink-dim">Aggregate the data.</span>
-                    Answer every inbound.
+                    <span class="marker">Answer every inbound.</span>
                 </h1>
                 <p class="bp-rise mt-4 max-w-md text-sm leading-relaxed text-ink-dim" style="--rise-delay: 110ms">
                     Automations run the repetitive work, your data lands in one

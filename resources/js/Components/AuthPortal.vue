@@ -159,7 +159,7 @@ const submitForgot = () => {
                 </div>
 
                 <div class="bp-rise mt-6 flex items-center justify-end" style="--rise-delay: 190ms">
-                    <PrimaryButton :class="{ 'opacity-25': loginForm.processing }" :disabled="loginForm.processing">
+                    <PrimaryButton class="btn-signal" :class="{ 'opacity-25': loginForm.processing }" :disabled="loginForm.processing">
                         Log in
                     </PrimaryButton>
                 </div>
@@ -204,7 +204,7 @@ const submitForgot = () => {
                 </div>
 
                 <div class="bp-rise mt-6 flex items-center justify-end" style="--rise-delay: 290ms">
-                    <PrimaryButton :class="{ 'opacity-25': registerForm.processing }" :disabled="registerForm.processing">
+                    <PrimaryButton class="btn-signal" :class="{ 'opacity-25': registerForm.processing }" :disabled="registerForm.processing">
                         Create account
                     </PrimaryButton>
                 </div>
@@ -230,7 +230,7 @@ const submitForgot = () => {
                     >
                         ← Back to sign in
                     </button>
-                    <PrimaryButton :class="{ 'opacity-25': forgotForm.processing }" :disabled="forgotForm.processing">
+                    <PrimaryButton class="btn-signal" :class="{ 'opacity-25': forgotForm.processing }" :disabled="forgotForm.processing">
                         Email reset link
                     </PrimaryButton>
                 </div>
