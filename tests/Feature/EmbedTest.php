@@ -147,6 +147,37 @@ class EmbedTest extends TestCase
         $this->assertSame(100, $agent->team->fresh()->credit_balance);
     }
 
+    public function test_canned_answer_never_repeats_within_a_conversation(): void
+    {
+        $agent = $this->makeAgent('active');
+        $agent->team->forceFill(['credit_balance' => 100])->save();
+        $this->publishCanned($agent, [
+            ['category' => 'Pricing', 'keywords' => ['cost', 'how much'], 'answer' => 'Plans start at $99/mo.'],
+        ]);
+
+        $this->postJson("/embed/{$agent->slug}/interact", [
+            'visitor_id' => 'embed-canned-repeat',
+            'message' => 'how much does it cost?',
+        ])->assertOk()->assertJsonPath('traces.0.payload.canned', true);
+
+        // The visitor's follow-up repeats the trigger keyword; serving the
+        // identical paragraph again reads as ignoring them — this turn must
+        // fall through to the LLM instead.
+        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
+        Http::fake([
+            'api.anthropic.com/*' => Http::response([
+                'content' => [['type' => 'text', 'text' => 'It depends on the tier you pick.']],
+                'stop_reason' => 'end_turn',
+                'usage' => ['input_tokens' => 5, 'output_tokens' => 5],
+            ], 200),
+        ]);
+        $this->postJson("/embed/{$agent->slug}/interact", [
+            'visitor_id' => 'embed-canned-repeat',
+            'message' => 'ok but how much does it cost for my use case?',
+        ])->assertOk()->assertJsonPath('traces.0.payload.canned', null);
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'anthropic'));
+    }
+
     public function test_canned_answer_served_even_when_out_of_credits(): void
     {
         $agent = $this->makeAgent('active');

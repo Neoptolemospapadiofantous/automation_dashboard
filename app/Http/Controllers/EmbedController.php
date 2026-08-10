@@ -333,8 +333,19 @@ class EmbedController extends Controller
         // to the LLM (it's mid contact-capture) — live-tested 2026-07-10, a
         // visitor's "call me about the Operator plan" contact reply keyword-
         // matched the Pricing chip and the lead was silently lost.
+        // ALSO skipped when this exact answer was already served in this
+        // conversation: a visitor answering the canned answer's own forward
+        // question ("Which tools would you want it talking to?" → "HubSpot
+        // and Google Calendar") repeats the trigger keywords, and getting
+        // the identical paragraph twice reads as the agent ignoring them —
+        // the second ask deserves the LLM (live-caught 2026-08-10).
         $handoffPending = (bool) (($conversation->meta ?? [])['handoff_requested'] ?? false);
-        if (! $handoffPending && ($canned = CannedAnswers::forAgent($agent->id)->match($data['message']))) {
+        $canned = $handoffPending ? null : CannedAnswers::forAgent($agent->id)->match($data['message']);
+        if ($canned !== null && $conversation !== null && $conversation->messages()
+            ->where('role', 'agent')->where('text', $canned->answer)->exists()) {
+            $canned = null;
+        }
+        if ($canned !== null) {
             $this->recordMessage($conversation, 'user', $data['message']);
             $this->broadcastEmbed($team->id, 'user', $data['message'], $conversation?->id);
             $this->recordMessage($conversation, 'agent', $canned->answer);
