@@ -357,7 +357,7 @@ function submit() {
                     <div class="mt-4 flex justify-center gap-2">
                         <Link
                             :href="route('chat.index')"
-                            class="rounded-none border border-ink bg-ink px-3 py-1.5 text-xs font-medium text-bg hover:bg-bg hover:text-ink"
+                            class="btn-signal rounded-none border px-3 py-1.5 text-xs font-medium"
                         >
                             Try the chat panel
                         </Link>

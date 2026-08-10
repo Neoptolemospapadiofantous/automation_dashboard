@@ -59,7 +59,7 @@ const meta = computed(() => {
             <div class="mt-8 flex items-center justify-center gap-3">
                 <Link
                     href="/dashboard"
-                    class="rounded-none border border-ink bg-ink px-4 py-2 text-sm font-medium text-bg hover:bg-bg hover:text-ink active:bg-bg active:text-ink"
+                    class="btn-signal rounded-none border px-4 py-2 text-sm font-medium"
                 >
                     Back to dashboard
                 </Link>

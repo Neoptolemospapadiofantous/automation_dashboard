@@ -116,7 +116,7 @@ function relativeTime(iso) {
                             Upgrade to {{ billing.plan_label === 'Starter' ? 'Operator (5 agents)' : 'Custom (unlimited)' }} to add more.
                         </p>
                     </div>
-                    <Link :href="route('billing.index')" class="rounded-none bg-ink px-3 py-1.5 font-mono text-xs font-medium text-bg hover:bg-bg hover:text-ink border border-ink">
+                    <Link :href="route('billing.index')" class="btn-signal rounded-none border px-3 py-1.5 font-mono text-xs font-medium">
                         Upgrade plan →
                     </Link>
                 </div>
