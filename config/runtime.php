@@ -126,7 +126,7 @@ return [
     'tiers' => array_merge([
         'haiku' => [
             'provider' => 'anthropic',
-            'label' => 'Claude Haiku',
+            'label' => 'Claude Haiku 4.5',
             'description' => 'Fastest replies at the lowest cost. Excellent for FAQ answering, lead capture, and high-traffic sites.',
             'model' => env('RUNTIME_TIER_HAIKU_MODEL', 'claude-haiku-4-5-20251001'),
             'credits_per_message' => (int) env('RUNTIME_TIER_HAIKU_CREDITS', 1),
@@ -134,7 +134,7 @@ return [
         ],
         'sonnet' => [
             'provider' => 'anthropic',
-            'label' => 'Claude Sonnet',
+            'label' => 'Claude Sonnet 4.6',
             'description' => 'Smarter conversations with deeper reasoning. Best for complex products, nuanced qualification, and longer sales cycles.',
             'model' => env('RUNTIME_TIER_SONNET_MODEL', 'claude-sonnet-4-6'),
             'credits_per_message' => (int) env('RUNTIME_TIER_SONNET_CREDITS', 3),
@@ -142,7 +142,7 @@ return [
         ],
         'opus' => [
             'provider' => 'anthropic',
-            'label' => 'Claude Opus',
+            'label' => 'Claude Opus 4.8',
             'description' => 'The most capable model. Expert-grade reasoning for technical sales, high-stakes conversations, and premium experiences.',
             'model' => env('RUNTIME_TIER_OPUS_MODEL', 'claude-opus-4-8'),
             'credits_per_message' => (int) env('RUNTIME_TIER_OPUS_CREDITS', 10),
@@ -158,7 +158,7 @@ return [
         ],
         'gemini' => [
             'provider' => 'google',
-            'label' => 'Gemini',
+            'label' => 'Gemini 2.5 Flash',
             'description' => 'Google\'s fast multimodal model. Snappy answers at low cost with solid factual recall.',
             'model' => env('RUNTIME_TIER_GEMINI_MODEL', 'gemini-2.5-flash'),
             'credits_per_message' => (int) env('RUNTIME_TIER_GEMINI_CREDITS', 1),
