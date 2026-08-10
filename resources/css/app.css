@@ -36,21 +36,38 @@
     --signal: #f5c518;
 }
 
-/* Primary CTA as the landing draws it: signal-yellow block, ink border,
-   hard ink offset shadow that presses in on hover. Declared after the
-   Tailwind utilities so it wins over PrimaryButton's ink-block classes. */
+/* Primary CTA: signal-yellow block, ink border, hard offset shadow that
+   presses in on hover. Declared after the Tailwind utilities so it wins
+   over PrimaryButton's ink-block classes.
+
+   The fill is constant on both sheets and its text/border are always
+   near-black (dark type on yellow is the only readable pairing), so those
+   stay literal. The SHADOW is not: it falls on the page ground, so it must
+   be var(--ink) — white on the black sheet. It was #111 until 2026-08-10,
+   which made the shadow that defines this button invisible in dark mode.
+
+   The press-in hover is a deliberate divergence from the landing, which
+   lifts the button out instead: this is an app, where a control should
+   feel pressed, not a marketing page where the CTA should feel raised.
+   Documented in the design system so it does not read as drift. */
 .btn-signal {
     background: var(--signal);
     color: #111;
     border-color: #111;
-    box-shadow: 3px 3px 0 #111;
+    box-shadow: 3px 3px 0 var(--ink);
 }
 .btn-signal:hover,
 .btn-signal:active {
     background: var(--signal);
     color: #111;
     transform: translate(1px, 1px);
-    box-shadow: 2px 2px 0 #111;
+    box-shadow: 2px 2px 0 var(--ink);
+}
+@media (prefers-reduced-motion: reduce) {
+    .btn-signal:hover,
+    .btn-signal:active {
+        transform: none;
+    }
 }
 
 /* Marker-highlight swipe — the landing hero's third-beat treatment. */

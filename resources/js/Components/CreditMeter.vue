@@ -24,9 +24,12 @@ const tone = computed(() => {
     return 'normal';
 });
 
+// The warning bar uses the BRAND's signal yellow, not Tailwind's amber-500.
+// Those are two different yellows (#F5C518 vs #f59e0b) and nobody chose to
+// have both — the near-miss was Tailwind's default palette leaking in.
 const barClass = computed(() => ({
     rose: 'bg-rose-500',
-    amber: 'bg-amber-500',
+    amber: 'bg-signal',
     normal: 'bg-ink-dim',
 }[tone.value]));
 

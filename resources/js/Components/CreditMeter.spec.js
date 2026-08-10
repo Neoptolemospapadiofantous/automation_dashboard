@@ -33,12 +33,13 @@ describe('CreditMeter', () => {
         expect(bar.attributes('style')).toContain('width: 100%');
     });
 
-    it('uses the amber tone once usage crosses 80%', async () => {
+    it('uses the warning tone once usage crosses 80%', async () => {
         const wrapper = await freshMount({
             plan_label: 'Pro', credits_total: 1000, credits_used: 850,
             credits_remaining: 150, topup_balance: 0, max_agents: 1000, agents_count: 1,
         });
-        expect(wrapper.html()).toContain('bg-amber-500');
+        // The brand's signal yellow, not Tailwind's amber-500 — see app.css.
+        expect(wrapper.html()).toContain('bg-signal');
     });
 
     it('stays in the normal tone below 80%', async () => {
@@ -47,6 +48,6 @@ describe('CreditMeter', () => {
             credits_remaining: 900, topup_balance: 0, max_agents: 1000, agents_count: 1,
         });
         expect(wrapper.html()).toContain('bg-ink-dim');
-        expect(wrapper.html()).not.toContain('bg-amber-500');
+        expect(wrapper.html()).not.toContain('bg-signal');
     });
 });

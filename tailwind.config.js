@@ -37,6 +37,11 @@ export default {
                 // is the brand token, `bg-violet-600` is still Tailwind's.
                 violet: { DEFAULT: 'var(--violet)' },
                 'violet-soft': 'var(--violet-soft)',
+                // The FILL yellow (app.css :root). The accent slot above is
+                // per-sheet and readable as TEXT; this one is constant and only
+                // ever a fill, always under near-black type. Without this entry
+                // `bg-signal` compiles to nothing at all.
+                signal: 'var(--signal)',
                 success: 'var(--success)',
                 warn: 'var(--warn)',
                 danger: 'var(--danger)',
