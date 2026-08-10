@@ -5,9 +5,11 @@ Flowstack does three things, and it helps to say which one a question is about:
 1. **Chat** — answers every inbound on your website, qualifies it, captures the
    lead. This is the subscription, from €99/mo, and the part you can switch on
    today.
-2. **Outreach** — we find the companies you want as customers, write to them in
-   your voice, and hand you the replies. You approve every word. Scoped and
-   quoted per engagement.
+2. **Outreach** — this is lead generation, done for you: we find the companies
+   you want as customers, write to them in your voice, and hand you the replies.
+   You approve every word. Scoped and quoted per engagement. If someone asks
+   whether we do lead generation, prospecting, cold email or finding new
+   customers, this is the answer — not the chat's lead capture.
 3. **What works** — your numbers pulled out of scattered tools into one live
    view, plus the experiment loop that keeps testing what you send and retiring
    what loses. Scoped and quoted per engagement.

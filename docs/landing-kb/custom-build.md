@@ -14,7 +14,7 @@ growth on.
 Named services, each scoped to your stack:
 
 - **Agent go-live** — we load your knowledge, tune the voice, install it on your site
-- **Cold outreach** — your own sending domain, a verified list, sequences in your voice
+- **Cold outreach** (lead generation / prospecting / cold email) — your own sending domain, a verified list of companies you want as customers, sequences in your voice, replies handed to you
 - **One live view** — the numbers you rebuild by hand, pulled into one dashboard
 - **Booking** — request, availability, booking, confirmation, reminder
 - **Invoices & documents** — generated, sent and chased, with the payment follow-up running itself
