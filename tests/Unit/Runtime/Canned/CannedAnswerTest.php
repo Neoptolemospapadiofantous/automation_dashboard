@@ -36,7 +36,7 @@ class CannedAnswerTest extends TestCase
         $this->assertFalse($a->matches('tell me about your team'));
     }
 
-    public function test_matches_on_keyword_substring(): void
+    public function test_matches_on_whole_keyword_words_and_phrases(): void
     {
         $a = CannedAnswer::fromConfig([
             'category' => 'Pricing',
@@ -46,6 +46,25 @@ class CannedAnswerTest extends TestCase
 
         $this->assertTrue($a->matches('so how much is this?'));
         $this->assertTrue($a->matches('what does it cost'));
+        $this->assertTrue($a->matches('cost?'));
         $this->assertFalse($a->matches('what features do you have'));
+    }
+
+    public function test_keywords_do_not_fire_inside_longer_words(): void
+    {
+        // A canned answer served for the wrong question reads as the agent
+        // ignoring the visitor — "try" must not fire on "industry", "custom"
+        // on "customer", "api" on "rapid".
+        $try = CannedAnswer::fromConfig(['category' => 'Getting started', 'keywords' => ['try'], 'answer' => 'x']);
+        $this->assertFalse($try->matches('do you support my industry?'));
+        $this->assertTrue($try->matches('can i try it first?'));
+
+        $custom = CannedAnswer::fromConfig(['category' => 'Custom build', 'keywords' => ['custom build'], 'answer' => 'x']);
+        $this->assertFalse($custom->matches('do you do customer support?'));
+        $this->assertTrue($custom->matches('tell me about the custom build'));
+
+        $api = CannedAnswer::fromConfig(['category' => 'Integrations', 'keywords' => ['api'], 'answer' => 'x']);
+        $this->assertFalse($api->matches('is setup rapid?'));
+        $this->assertTrue($api->matches('do you have an api?'));
     }
 }

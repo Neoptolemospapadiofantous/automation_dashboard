@@ -36,9 +36,32 @@ class LandingFaqSeederTest extends TestCase
         $canned = CannedAnswers::forAgent($agent->id);
         $this->assertContains('Pricing', $canned->chips());
         $this->assertContains('Custom build', $canned->chips());
+        $this->assertContains('Integrations', $canned->chips());
         // Keyword + chip-tap both resolve.
         $this->assertSame('Pricing', $canned->match('how much does it cost?')?->category);
         $this->assertSame('Custom build', $canned->match('Custom build')?->category);
+    }
+
+    public function test_integration_questions_route_to_the_integrations_answer(): void
+    {
+        // The real visitor questions that used to draw the generic custom-build
+        // blurb (prod convs 53 + 69) must land on the Integrations answer.
+        $this->landingAgent();
+        $this->seed(LandingFaqSeeder::class);
+
+        $canned = CannedAnswers::forAgent(Agent::first()->id);
+        $this->assertSame(
+            'Integrations',
+            $canned->match('Can you connect to my HubSpot CRM and book meetings on my Google Calendar?')?->category
+        );
+        $this->assertSame(
+            'Integrations',
+            $canned->match('Do you integrate with a Shopify store running on a custom subdomain?')?->category
+        );
+        // Role questions must not hit Custom build via the "custom" stem, and
+        // credit-rollover questions must fall through to the grounded LLM.
+        $this->assertNull($canned->match('do you do customer support?'));
+        $this->assertNull($canned->match('if I dont use my monthly allowance, does it roll over to next month?'));
     }
 
     public function test_is_idempotent_and_does_not_churn_versions(): void

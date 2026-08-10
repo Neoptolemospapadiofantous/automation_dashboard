@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
 final class CannedAnswer
 {
     /**
-     * @param  list<string>  $keywords  Lowercased substrings that route a typed message here.
+     * @param  list<string>  $keywords  Lowercased whole words/phrases that route a typed message here.
      */
     public function __construct(
         public readonly string $category,
@@ -53,7 +53,10 @@ final class CannedAnswer
     /**
      * Does this shortcut answer the given (already lowercased) message? A chip
      * click sends the category label verbatim, so an exact category match wins
-     * first; otherwise any keyword appearing in the message routes here.
+     * first; otherwise any keyword appearing as a whole word/phrase routes
+     * here. Whole-word, not substring: "try" must not fire on "industry",
+     * "custom" on "customer", or "api" on "rapid" — a canned answer served
+     * for the wrong question reads as the agent ignoring the visitor.
      */
     public function matches(string $lowerMessage): bool
     {
@@ -62,7 +65,8 @@ final class CannedAnswer
         }
 
         foreach ($this->keywords as $kw) {
-            if (str_contains($lowerMessage, $kw)) {
+            $pattern = '/(?<![\p{L}\p{N}])'.preg_quote($kw, '/').'(?![\p{L}\p{N}])/u';
+            if (preg_match($pattern, $lowerMessage) === 1) {
                 return true;
             }
         }

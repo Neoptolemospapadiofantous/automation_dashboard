@@ -103,12 +103,12 @@ class LandingFaqSeeder extends Seeder
         return [
             [
                 'category' => 'Pricing',
-                'keywords' => ['price', 'pricing', 'cost', 'how much', 'plan', 'plans', 'credits'],
+                'keywords' => ['price', 'prices', 'pricing', 'cost', 'costs', 'how much', 'plan', 'plans'],
                 'answer' => 'Starter is €99/mo (1 agent, 2,500 conversation credits) and Operator is €399/mo (up to 5 agents, 25,000 credits). Both include every feature and cancel anytime — no lock-in. Prices exclude VAT. Full details at flowstack.run/pricing.',
             ],
             [
                 'category' => 'What it does',
-                'keywords' => ['what do you do', 'what is this', 'what does the agent', 'how does it work', 'what can'],
+                'keywords' => ['what do you do', 'what is this', 'what does the agent', 'how does it work', 'what can you do', 'what is flowstack'],
                 'answer' => 'Flowstack fixes three things: automations run your repetitive work, your data lands in one live view, and a chat agent on your site answers every inbound — qualifying leads or answering sales, support and onboarding questions from the knowledge you upload, with every transcript in a real-time dashboard. The chat agent goes live in about 60 seconds.',
             ],
             [
@@ -117,13 +117,18 @@ class LandingFaqSeeder extends Seeder
                 'answer' => "Pick a role, upload your knowledge, and embed the widget — one agent is live in about 60 seconds, from €99/mo, cancel anytime. There's no free trial; Starter is the way to try it, and the free 30-minute audit is the way in for custom build work.",
             ],
             [
+                'category' => 'Integrations',
+                'keywords' => ['integration', 'integrations', 'integrate', 'integrates', 'crm', 'hubspot', 'salesforce', 'pipedrive', 'zapier', 'shopify', 'wordpress', 'wix', 'webflow', 'calendar', 'connect to', 'connects to'],
+                'answer' => 'The widget drops into any site — Shopify, WordPress, Wix, React, any domain or subdomain — one script tag, or use the hosted chat page. Leads and transcripts land in your Flowstack dashboard with email alerts. Wiring the agent into your own tools — CRM (HubSpot, Pipedrive…), calendars, telephony, internal systems — is custom build work: fixed scope, we wire it, you keep the code. Book the free 30-minute audit at flowstack.run/audit, or leave your email here and we\'ll map it with you.',
+            ],
+            [
                 'category' => 'Custom build',
-                'keywords' => ['custom', 'integration', 'integrate', 'crm', 'bespoke', 'api', 'own llm', 'audit'],
+                'keywords' => ['custom build', 'custom-build', 'bespoke', 'own llm', 'audit'],
                 'answer' => 'The off-the-shelf agent covers about 80% of use cases. For bespoke flows, integrations (CRM, telephony, internal tools), automation pipelines, your own LLM or your own UI, we do a fixed-scope 4–6 week custom build and you keep the code. Start with the free 30-minute audit at flowstack.run/audit — you get a written, fixed-scope proposal within 48 hours, yours to keep either way.',
             ],
             [
                 'category' => 'Talk to a human',
-                'keywords' => ['human', 'talk to someone', 'contact', 'sales', 'book a call', 'demo', 'speak to', 'email'],
+                'keywords' => ['human', 'talk to someone', 'speak to', 'representative', 'book a call', 'demo', 'real person'],
                 'answer' => "Happy to connect you with a human — book the free 30-minute audit at flowstack.run/audit, email hello@flowstack.run, or tell me what you're after and I'll pass it to the team.",
             ],
         ];
