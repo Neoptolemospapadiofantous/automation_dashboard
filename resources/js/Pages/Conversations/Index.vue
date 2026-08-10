@@ -58,9 +58,9 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
 
 // Rating presentation: emoji + colour token, literal classes for Tailwind.
 const ratings = {
-    good: { emoji: '☺', label: 'Good', cls: 'bg-green-100 text-green-700' },
-    ok: { emoji: '😐', label: 'OK', cls: 'bg-amber-100 text-amber-700' },
-    bad: { emoji: '☹', label: 'Bad', cls: 'bg-rose-100 text-rose-700' },
+    good: { emoji: '☺', label: 'Good', cls: 'bg-state-ok-surface text-state-ok-ink' },
+    ok: { emoji: '😐', label: 'OK', cls: 'bg-state-warn-surface text-state-warn-ink' },
+    bad: { emoji: '☹', label: 'Bad', cls: 'bg-state-bad-surface text-state-bad-ink' },
 };
 const rating = (key) => ratings[key] ?? null;
 </script>
@@ -191,7 +191,7 @@ const rating = (key) => ratings[key] ?? null;
                                 <td class="px-4 py-3">
                                     <span
                                         class="rounded-none px-2 py-0.5 font-mono text-xs"
-                                        :class="c.status === 'ended' ? 'bg-surface-hi text-ink-dim' : 'bg-green-100 text-green-700'"
+                                        :class="c.status === 'ended' ? 'bg-surface-hi text-ink-dim' : 'bg-state-ok-surface text-state-ok-ink'"
                                     >{{ c.status }}</span>
                                     <span
                                         v-if="c.meta?.handoff_requested && c.status !== 'ended'"

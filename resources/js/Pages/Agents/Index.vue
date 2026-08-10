@@ -91,7 +91,7 @@ function relativeTime(iso) {
                 <!-- Server-side plan-limit flash. Lands after the controller
                      blocks an over-cap agents.store. Self-dismisses on the
                      next non-redirect navigation. -->
-                <div v-if="planLimitFlash" class="flex items-start gap-3 rounded-none border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <div v-if="planLimitFlash" class="flex items-start gap-3 rounded-none border border-state-warn-line bg-state-warn-surface px-4 py-3 text-sm text-state-warn-ink">
                     <svg class="mt-0.5 size-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.732 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                     </svg>
@@ -154,12 +154,12 @@ function relativeTime(iso) {
                                 <td class="px-4 py-3">
                                     <span
                                         class="ins-stamp"
-                                        :class="agent.status === 'active' ? 'text-green-600' : 'text-ink-dim'"
+                                        :class="agent.status === 'active' ? 'text-state-ok-ink' : 'text-ink-dim'"
                                     >
                                         {{ agent.status === 'active' ? 'Live' : agent.status }}
                                     </span>
-                                    <span v-if="!agent.is_configured" class="ml-2 text-xs text-amber-600">Needs credentials</span>
-                                    <span v-else-if="!agent.last_health_ok" class="ml-2 text-xs text-rose-600">Health check failing</span>
+                                    <span v-if="!agent.is_configured" class="ml-2 text-xs text-state-warn-ink">Needs credentials</span>
+                                    <span v-else-if="!agent.last_health_ok" class="ml-2 text-xs text-state-bad-ink">Health check failing</span>
                                 </td>
                                 <td class="px-4 py-3 text-ink-dim" :title="agent.last_health_check_at ? new Date(agent.last_health_check_at).toLocaleString() : ''">
                                     {{ relativeTime(agent.last_health_check_at) }}

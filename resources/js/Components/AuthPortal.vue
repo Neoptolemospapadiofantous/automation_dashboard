@@ -124,7 +124,7 @@ const submitForgot = () => {
         </div>
         <div class="bp-dim mb-6 mt-4" aria-hidden="true" />
 
-        <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
+        <div v-if="status" class="mb-4 text-sm font-medium text-state-ok-ink">
             {{ status }}
         </div>
 

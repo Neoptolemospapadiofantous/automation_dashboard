@@ -28,14 +28,14 @@ const tone = computed(() => {
 // Those are two different yellows (#F5C518 vs #f59e0b) and nobody chose to
 // have both — the near-miss was Tailwind's default palette leaking in.
 const barClass = computed(() => ({
-    rose: 'bg-rose-500',
+    rose: 'bg-state-bad-solid',
     amber: 'bg-signal',
     normal: 'bg-ink-dim',
 }[tone.value]));
 
 const textClass = computed(() => ({
-    rose: 'text-rose-700',
-    amber: 'text-amber-700',
+    rose: 'text-state-bad-ink',
+    amber: 'text-state-warn-ink',
     normal: 'text-ink-dim',
 }[tone.value]));
 </script>

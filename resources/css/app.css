@@ -22,10 +22,81 @@
        a JS theme toggle. */
     color-scheme: light;
     --elevation: 6px 6px 0 rgba(0, 0, 0, 0.06);
+
+    /* ── Status colours ── (see the block comment below the sheets) */
+    --state-ok-surface: #f0fdf4;
+    --state-ok-ink: #15803d;
+    --state-ok-line: #bbf7d0;
+    --state-warn-surface: #fefce8;
+    --state-warn-ink: #8a6a00;
+    --state-warn-line: #fde68a;
+    --state-bad-surface: #fef2f2;
+    --state-bad-ink: #b91c1c;
+    --state-bad-line: #fecaca;
+    --state-info-surface: #eff6ff;
+    --state-info-ink: #1d4ed8;
+    --state-info-line: #bfdbfe;
 }
 .sheet-black {
     color-scheme: dark;
     --elevation: 6px 6px 0 rgba(255, 255, 255, 0.05);
+
+    --state-ok-surface: #04240f;
+    --state-ok-ink: #4ade80;
+    --state-ok-line: #14532d;
+    --state-warn-surface: #2a2000;
+    --state-warn-ink: #f5c518;
+    --state-warn-line: #5c4a00;
+    --state-bad-surface: #300a0a;
+    --state-bad-ink: #f87171;
+    --state-bad-line: #7f1d1d;
+    --state-info-surface: #0c1b33;
+    --state-info-ink: #93c5fd;
+    --state-info-line: #1e3a8a;
+}
+
+/* ── Status colours — the one semantic palette ──────────────────────────
+   The brand is monochrome plus one signal, and tokens.css says so: its
+   --success/--danger are plain ink and --warn is grey. That is right for
+   the marketing site, where nothing needs scanning. It is wrong for an ops
+   UI, where you glance down a list of runs to find the broken one, and a
+   label alone does not carry that.
+
+   So: a small semantic set, and ONLY this set. Four families (ok / warn /
+   bad / info), five roles each. Anything reaching for Tailwind's default
+   palette instead is the bug these replace — 171 such classes across 36
+   files rendered fixed light-mode colours that never flipped with the
+   sheet, so on the black sheet chips were near-white blocks and standalone
+   coloured text sat at ~3.3:1.
+
+   Roles:
+     surface  the chip fill. Deliberately a whisper away from the page
+              (1.03–1.31:1) so a badge never glares in dark mode.
+     ink      text and icons. Verified >=4.5:1 against BOTH the page and
+              its own chip, so the same token works standalone or on a chip.
+     line     hairline borders on callouts.
+     solid    saturated fill for a filled control (destructive buttons,
+              the danger banner). Sheet-INVARIANT: it carries its own
+              foreground, so it does not depend on the ground under it.
+     on       the foreground for `solid`. Note warn's is near-black — dark
+              type on yellow is the only readable pairing, same rule the
+              signal block above follows.
+
+   warn's ink is the BRAND accent, not a new yellow (#F5C518 dark /
+   #8A6A00 light). The accent slot already means attention; introducing a
+   second yellow beside it is the exact bug fixed in the credit meter.
+
+   Every pairing above was contrast-checked, not eyeballed. If you add a
+   family, check it the same way. */
+:root {
+    --state-ok-solid: #15803d;
+    --state-ok-on: #ffffff;
+    --state-warn-solid: #f5c518;
+    --state-warn-on: #141412;
+    --state-bad-solid: #dc2626;
+    --state-bad-on: #ffffff;
+    --state-info-solid: #1d4ed8;
+    --state-info-on: #ffffff;
 }
 
 /* ── Ink-on-paper accents (parity with the landing's Aug-2026 redesign) ──

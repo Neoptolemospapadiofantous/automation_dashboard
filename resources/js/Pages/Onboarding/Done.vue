@@ -69,9 +69,9 @@ async function copy() {
             </div>
 
             <div class="bp-node shadow-sheet relative rounded-none p-8 text-center">
-                <span class="ins-stamp absolute right-5 top-5 text-green-600" aria-hidden="true">Live</span>
-                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-none bg-green-100">
-                    <svg class="h-7 w-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <span class="ins-stamp absolute right-5 top-5 text-state-ok-ink" aria-hidden="true">Live</span>
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-none bg-state-ok-surface">
+                    <svg class="h-7 w-7 text-state-ok-ink" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                 </div>

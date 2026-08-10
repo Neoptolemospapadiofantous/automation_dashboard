@@ -172,7 +172,7 @@ function continueOn() {
                                 </span>
                             </label>
                         </div>
-                        <div v-if="form.errors.model_tier" class="mt-1 text-xs text-rose-600">{{ form.errors.model_tier }}</div>
+                        <div v-if="form.errors.model_tier" class="mt-1 text-xs text-state-bad-ink">{{ form.errors.model_tier }}</div>
                     </div>
 
                     <!-- Website — where they'll embed -->
@@ -189,7 +189,7 @@ function continueOn() {
                         </p>
                     </div>
 
-                    <div v-if="form.errors.website" class="text-xs text-rose-600">{{ form.errors.website }}</div>
+                    <div v-if="form.errors.website" class="text-xs text-state-bad-ink">{{ form.errors.website }}</div>
 
                     <div class="bp-rise flex flex-col gap-3 border-t border-border-line pt-5 sm:flex-row sm:items-center sm:justify-between" style="--rise-delay: 420ms">
                         <p class="text-xs text-ink-mute">

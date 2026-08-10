@@ -26,7 +26,7 @@ const deleteTeam = () => {
 
 <template>
     <ActionSection>
-        <template #ref><span class="text-red-600">TEAM/DANGER</span></template>
+        <template #ref><span class="text-state-bad-ink">TEAM/DANGER</span></template>
 
         <template #title>
             Delete Team

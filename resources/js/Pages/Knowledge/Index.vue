@@ -146,10 +146,10 @@ function timeAgo(iso) {
 
 // --- Helpers ----------------------------------------------------------------
 const statusTone = (s) => ({
-    SUCCESS: 'bg-green-100 text-green-700',
-    PENDING: 'bg-amber-100 text-amber-700',
+    SUCCESS: 'bg-state-ok-surface text-state-ok-ink',
+    PENDING: 'bg-state-warn-surface text-state-warn-ink',
     INITIALIZED: 'bg-surface-hi text-ink-dim',
-    ERROR: 'bg-rose-100 text-rose-700',
+    ERROR: 'bg-state-bad-surface text-state-bad-ink',
 }[s] || 'bg-surface-hi text-ink-dim');
 
 const typeBadge = (t) => ({
@@ -186,7 +186,7 @@ const description = computed(() => {
 
         <div class="py-8">
             <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-                <div v-if="!configured" class="rounded-none border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                <div v-if="!configured" class="rounded-none border border-state-warn-line bg-state-warn-surface px-4 py-3 text-sm text-state-warn-ink">
                     Your agent isn't set up yet — finish onboarding to add documents to its knowledge base.
                 </div>
 
@@ -291,7 +291,7 @@ const description = computed(() => {
                             </form>
                         </div>
 
-                        <p v-if="error" class="mt-4 text-sm text-rose-600">{{ error }}</p>
+                        <p v-if="error" class="mt-4 text-sm text-state-bad-ink">{{ error }}</p>
 
                         <!-- Document list -->
                         <ul class="mt-5 divide-y divide-border-line">
@@ -326,7 +326,7 @@ const description = computed(() => {
                                 </button>
                                 <button
                                     type="button"
-                                    class="text-xs text-ink-mute transition hover:text-rose-600 sm:opacity-0 sm:group-hover:opacity-100"
+                                    class="text-xs text-ink-mute transition hover:text-state-bad-ink sm:opacity-0 sm:group-hover:opacity-100"
                                     @click="destroy(d.documentID, d.data?.name)"
                                 >
                                     Delete
@@ -400,7 +400,7 @@ const description = computed(() => {
                                 <button type="button" class="text-xs text-ink-mute hover:text-ink" @click="inspecting = null">Close ×</button>
                             </div>
                             <div v-if="inspectLoading" class="text-sm text-ink-mute">Loading…</div>
-                            <div v-else-if="inspectError" class="text-sm text-rose-600">{{ inspectError }}</div>
+                            <div v-else-if="inspectError" class="text-sm text-state-bad-ink">{{ inspectError }}</div>
                             <div v-else>
                                 <div class="truncate text-xs font-medium text-ink">
                                     {{ inspecting.data?.data?.name || inspecting.documentID }}

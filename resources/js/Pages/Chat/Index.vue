@@ -201,7 +201,7 @@ const capturedEntries = () => Object.entries(captured.value);
                 <span class="inline-flex items-center gap-2 font-mono text-xs text-ink-dim">
                     <span
                         class="inline-block h-1.5 w-1.5 rounded-full"
-                        :class="configured ? 'bg-green-500 pulse-glow text-green-500' : 'bg-ink-mute'"
+                        :class="configured ? 'bg-state-ok-solid pulse-glow text-state-ok-solid' : 'bg-ink-mute'"
                     />
                     {{ configured ? 'Runtime ready' : 'Not configured' }}
                 </span>
@@ -214,7 +214,7 @@ const capturedEntries = () => Object.entries(captured.value);
                 <!-- Conversation -->
                 <div class="lg:col-span-2">
                     <div class="flex h-[70vh] min-h-[24rem] flex-col overflow-hidden rounded-none border border-border-line bg-bg shadow-sheet lg:h-[32rem]">
-                        <div v-if="!configured" class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-700">
+                        <div v-if="!configured" class="border-b border-state-warn-line bg-state-warn-surface px-4 py-2 text-sm text-state-warn-ink">
                             Your agent isn't set up yet.
                             <Link :href="route('agents.index')" class="font-medium underline">Finish onboarding</Link>
                             to start chatting.

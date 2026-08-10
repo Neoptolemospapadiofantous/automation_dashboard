@@ -13,7 +13,7 @@ const props = defineProps({
 });
 
 function verdictClass(v) {
-    return v === 'PASS' ? 'text-emerald-600' : v === 'WARN' ? 'text-amber-600' : 'text-rose-600';
+    return v === 'PASS' ? 'text-state-ok-ink' : v === 'WARN' ? 'text-state-warn-ink' : 'text-state-bad-ink';
 }
 
 const W = 280;
@@ -94,7 +94,7 @@ const hasRegressions = computed(() => (props.metrics?.regressions?.length ?? 0) 
                     </div>
                     <div class="bp-node rounded-none p-3 shadow-sheet">
                         <p class="font-mono text-[10px] uppercase tracking-wider text-ink-mute">Pass streak</p>
-                        <p class="mt-0.5 font-mono text-2xl font-semibold leading-none" :class="ops.streak > 0 ? 'text-emerald-600' : 'text-ink'">{{ ops.streak }}</p>
+                        <p class="mt-0.5 font-mono text-2xl font-semibold leading-none" :class="ops.streak > 0 ? 'text-state-ok-ink' : 'text-ink'">{{ ops.streak }}</p>
                     </div>
                     <div class="bp-node rounded-none p-3 shadow-sheet">
                         <p class="font-mono text-[10px] uppercase tracking-wider text-ink-mute">Pass rate</p>
@@ -134,15 +134,15 @@ const hasRegressions = computed(() => (props.metrics?.regressions?.length ?? 0) 
                 <!-- Regression banner -->
                 <div
                     class="rounded-none border p-4"
-                    :class="hasRegressions ? 'border-rose-300 bg-rose-50' : 'border-border-line bg-surface'"
+                    :class="hasRegressions ? 'border-state-bad-line bg-state-bad-surface' : 'border-border-line bg-surface'"
                 >
-                    <div v-if="!hasRegressions" class="flex items-center gap-2 text-sm font-medium text-emerald-700">
-                        <span class="inline-block h-2 w-2 rounded-full bg-emerald-500" /> No regressions — no KPI moved against its good direction in the latest snapshot.
+                    <div v-if="!hasRegressions" class="flex items-center gap-2 text-sm font-medium text-state-ok-ink">
+                        <span class="inline-block h-2 w-2 rounded-full bg-state-ok-solid" /> No regressions — no KPI moved against its good direction in the latest snapshot.
                     </div>
                     <div v-else>
-                        <p class="text-sm font-semibold text-rose-700">⚠ Regressions detected</p>
+                        <p class="text-sm font-semibold text-state-bad-ink">⚠ Regressions detected</p>
                         <ul class="mt-1.5 space-y-1">
-                            <li v-for="(r, i) in metrics.regressions" :key="i" class="font-mono text-xs text-rose-700">— {{ r }}</li>
+                            <li v-for="(r, i) in metrics.regressions" :key="i" class="font-mono text-xs text-state-bad-ink">— {{ r }}</li>
                         </ul>
                     </div>
                 </div>
@@ -159,14 +159,14 @@ const hasRegressions = computed(() => (props.metrics?.regressions?.length ?? 0) 
                             <span class="font-mono text-2xl font-semibold leading-none text-ink">{{ c.now }}{{ c.unit }}</span>
                             <span
                                 class="font-mono text-xs font-semibold"
-                                :class="c.good ? 'text-emerald-600' : 'text-rose-600'"
+                                :class="c.good ? 'text-state-ok-ink' : 'text-state-bad-ink'"
                             >{{ c.good ? '▲ good' : '▼ watch' }} · {{ c.delta }}</span>
                         </div>
                         <p class="mt-0.5 font-mono text-[10px] text-ink-mute">
                             {{ c.dir === 'down' ? 'lower is better' : 'higher is better' }} · was {{ c.start }}{{ c.unit }}<span v-if="c.forward_only"> · forward-only</span>
                         </p>
                         <!-- node names for the untested KPI -->
-                        <p v-if="c.names && c.names.length" class="mt-1 font-mono text-[10px] text-amber-600">
+                        <p v-if="c.names && c.names.length" class="mt-1 font-mono text-[10px] text-state-warn-ink">
                             {{ c.names.join(', ') }}
                         </p>
                         <!-- trend chart, or a current-snapshot note when there's no trend yet -->
@@ -192,7 +192,7 @@ const hasRegressions = computed(() => (props.metrics?.regressions?.length ?? 0) 
                             <span class="ml-1.5 text-xs text-ink-dim">escapes (reactive prod bugfixes)</span>
                         </div>
                         <div>
-                            <span class="font-mono text-xl font-semibold text-emerald-600">{{ metrics.catches }}</span>
+                            <span class="font-mono text-xl font-semibold text-state-ok-ink">{{ metrics.catches }}</span>
                             <span class="ml-1.5 text-xs text-ink-dim">catches (bugs the audit found pre-merge)</span>
                         </div>
                     </div>

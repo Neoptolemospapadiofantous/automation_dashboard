@@ -71,15 +71,15 @@ const cards = computed(() => [
 const toneClass = (tone) => ({
     gray: 'text-ink',
     violet: 'text-ink',
-    blue: 'text-blue-600',
-    green: 'text-green-600',
-    emerald: 'text-emerald-600',
-    amber: 'text-amber-600',
+    blue: 'text-state-info-ink',
+    green: 'text-state-ok-ink',
+    emerald: 'text-state-ok-ink',
+    amber: 'text-state-warn-ink',
 }[tone] || 'text-ink');
 
 const colorBar = (color) => ({
-    sky: 'bg-sky-400', amber: 'bg-amber-400', violet: 'bg-violet',
-    blue: 'bg-blue-400', green: 'bg-green-400', rose: 'bg-rose-400',
+    sky: 'bg-state-info-solid', amber: 'bg-state-warn-solid', violet: 'bg-violet',
+    blue: 'bg-state-info-solid', green: 'bg-state-ok-solid', rose: 'bg-state-bad-solid',
 }[color] || 'bg-ink-mute');
 
 const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)));
@@ -101,7 +101,7 @@ const shortcuts = [
                     class="inline-flex items-center gap-1.5 rounded-none bg-surface-hi px-2.5 py-1 font-mono text-xs font-medium text-ink-dim"
                     :title="connected ? 'Live' : 'Offline — start the Reverb server for live updates'"
                 >
-                    <span class="inline-block h-1.5 w-1.5 rounded-full" :class="connected ? 'bg-green-500 pulse-glow text-green-500' : 'bg-ink-mute'" />
+                    <span class="inline-block h-1.5 w-1.5 rounded-full" :class="connected ? 'bg-state-ok-solid pulse-glow text-state-ok-ink' : 'bg-ink-mute'" />
                     {{ connected ? 'Live' : 'Offline' }}
                 </span>
             </template>
@@ -128,7 +128,7 @@ const shortcuts = [
                         >
                             <span
                                 class="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
-                                :class="s.done ? 'bg-emerald-500 text-white' : 'border-2 border-border-hi text-transparent'"
+                                :class="s.done ? 'bg-state-ok-solid text-state-ok-on' : 'border-2 border-border-hi text-transparent'"
                             >✓</span>
                             <div class="min-w-0">
                                 <component

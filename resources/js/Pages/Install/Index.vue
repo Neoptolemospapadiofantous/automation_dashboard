@@ -147,7 +147,7 @@ const previewLauncher = computed(() => form.launcher_text || 'Chat with us');
                 </div>
 
                 <!-- Inactive agent state -->
-                <div v-else-if="agent.status !== 'active'" class="rounded-none border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                <div v-else-if="agent.status !== 'active'" class="rounded-none border border-state-warn-line bg-state-warn-surface p-4 text-sm text-state-warn-ink">
                     Your agent <span class="font-medium">{{ agent.name }}</span> is currently <span class="font-medium">{{ agent.status }}</span>.
                     The widget will not load on customer websites until it's active.
                 </div>
@@ -387,7 +387,7 @@ const previewLauncher = computed(() => form.launcher_text || 'Chat with us');
                             <PrimaryButton type="submit" :disabled="form.processing" :class="{ 'opacity-50': form.processing }">
                                 Save
                             </PrimaryButton>
-                            <span v-if="savedFlash" class="text-xs font-medium text-green-700">✓ Saved</span>
+                            <span v-if="savedFlash" class="text-xs font-medium text-state-ok-ink">✓ Saved</span>
                         </div>
                     </form>
 
@@ -428,7 +428,7 @@ const previewLauncher = computed(() => form.launcher_text || 'Chat with us');
                                 {{ domain }}
                                 <button
                                     type="button"
-                                    class="text-ink-mute hover:text-rose-700"
+                                    class="text-ink-mute hover:text-state-bad-ink"
                                     :aria-label="`Remove ${domain}`"
                                     @click="removeDomain(i)"
                                 >
@@ -442,7 +442,7 @@ const previewLauncher = computed(() => form.launcher_text || 'Chat with us');
                             <PrimaryButton type="button" :disabled="form.processing" :class="{ 'opacity-50': form.processing }" @click="save">
                                 Save domains
                             </PrimaryButton>
-                            <span v-if="savedFlash" class="text-xs font-medium text-green-700">✓ Saved</span>
+                            <span v-if="savedFlash" class="text-xs font-medium text-state-ok-ink">✓ Saved</span>
                         </div>
                     </div>
 

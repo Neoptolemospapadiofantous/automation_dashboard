@@ -80,8 +80,8 @@ async function destroy() {
             <template #actions>
                 <div class="flex flex-wrap items-center gap-1.5">
                     <span class="inline-flex rounded-none px-2.5 py-1 font-mono text-xs font-medium" :class="{
-                        'bg-green-50 text-green-700': agent.status === 'active',
-                        'bg-amber-50 text-amber-700': agent.status === 'draft',
+                        'bg-state-ok-surface text-state-ok-ink': agent.status === 'active',
+                        'bg-state-warn-surface text-state-warn-ink': agent.status === 'draft',
                         'bg-surface-hi text-ink-dim': agent.status === 'disabled',
                     }">
                         {{ agent.status }}
@@ -110,7 +110,7 @@ async function destroy() {
                         <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Leads</div>
                         <div class="mt-1 flex items-baseline gap-1.5">
                             <span class="font-mono text-2xl font-semibold text-ink">{{ activity.leads.toLocaleString() }}</span>
-                            <span v-if="activity.leads_qualified" class="text-xs text-green-700">· {{ activity.leads_qualified }} qualified</span>
+                            <span v-if="activity.leads_qualified" class="text-xs text-state-ok-ink">· {{ activity.leads_qualified }} qualified</span>
                         </div>
                     </Link>
                     <Link
@@ -165,10 +165,10 @@ async function destroy() {
                         </PrimaryButton>
                         <span v-if="agent.last_health_check_at" class="text-xs text-ink-dim">
                             Checked {{ new Date(agent.last_health_check_at).toLocaleString() }} —
-                            <span :class="health.ok ? 'text-green-700' : 'text-rose-700'">
+                            <span :class="health.ok ? 'text-state-ok-ink' : 'text-state-bad-ink'">
                                 {{ health.ok ? '✓ healthy' : '✗ not answering' }}
                             </span>
-                            <span v-if="!health.ok && health.reason" class="block text-rose-700">{{ health.reason }}</span>
+                            <span v-if="!health.ok && health.reason" class="block text-state-bad-ink">{{ health.reason }}</span>
                         </span>
                     </div>
                 </form>
@@ -247,9 +247,9 @@ async function destroy() {
                 </div>
 
                 <!-- Danger zone -->
-                <div class="rounded-none border border-rose-200 bg-rose-50 p-6">
-                    <h3 class="text-base font-semibold text-rose-800">Danger zone</h3>
-                    <p class="mt-1 text-sm text-rose-700">
+                <div class="rounded-none border border-state-bad-line bg-state-bad-surface p-6">
+                    <h3 class="text-base font-semibold text-state-bad-ink">Danger zone</h3>
+                    <p class="mt-1 text-sm text-state-bad-ink">
                         Deleting the agent unlinks (but does not delete) its leads and conversations.
                         Its underlying engine resources are retired and never reassigned to another customer.
                     </p>

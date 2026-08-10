@@ -238,7 +238,7 @@ function submit() {
                     class="inline-flex items-center gap-1.5 rounded-none bg-surface-hi px-2.5 py-1 text-xs font-medium text-ink-dim"
                     :title="connected ? 'Live' : 'Offline — start the Reverb server for live updates'"
                 >
-                    <span class="inline-block h-1.5 w-1.5 rounded-full" :class="connected ? 'bg-green-500 animate-pulse' : 'bg-ink-mute'" />
+                    <span class="inline-block h-1.5 w-1.5 rounded-full" :class="connected ? 'bg-state-ok-solid animate-pulse' : 'bg-ink-mute'" />
                     {{ connected ? 'Live' : 'Offline' }}
                 </span>
                 <button

@@ -116,14 +116,14 @@ function openPortal() {
         <div v-else class="py-8">
             <div class="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
                 <!-- Top-up success flash (one-shot after Inertia redirect-back) -->
-                <div v-if="topupFlash" class="rounded-none border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                <div v-if="topupFlash" class="rounded-none border border-state-ok-line bg-state-ok-surface px-4 py-3 text-sm text-state-ok-ink">
                     {{ topupFlash.message }}
                 </div>
 
                 <!-- Past-due / canceled subscription banner -->
                 <div
                     v-if="billing?.subscription_status === 'past_due'"
-                    class="rounded-none border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+                    class="rounded-none border border-state-warn-line bg-state-warn-surface px-4 py-3 text-sm text-state-warn-ink"
                 >
                     <strong>Payment failed.</strong> Your last invoice didn't clear. Update your card in the customer portal to keep your subscription active.
                 </div>
@@ -192,7 +192,7 @@ function openPortal() {
                                     @click="cycle = 'annual'"
                                 >
                                     Annual
-                                    <span class="rounded-none bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                    <span class="rounded-none bg-state-ok-surface px-1.5 py-0.5 text-[10px] font-semibold text-state-ok-ink">
                                         Save {{ Object.values(plan_catalog)[0]?.annual_savings_pct ?? 17 }}%
                                     </span>
                                 </button>
@@ -227,13 +227,13 @@ function openPortal() {
                                 </div>
                                 <div
                                     v-if="cycle === 'annual' && p.annual_available"
-                                    class="mt-1 text-[10px] text-emerald-700"
+                                    class="mt-1 text-[10px] text-state-ok-ink"
                                 >
                                     Billed yearly · €{{ (p.annual_equivalent_monthly_eur * 12).toLocaleString() }} / yr
                                 </div>
                                 <div
                                     v-else-if="cycle === 'annual' && !p.annual_available"
-                                    class="mt-1 text-[10px] text-amber-700"
+                                    class="mt-1 text-[10px] text-state-warn-ink"
                                 >
                                     Annual not yet available — billed monthly.
                                 </div>
@@ -285,7 +285,7 @@ function openPortal() {
                         <div class="mt-2 h-2 w-full overflow-hidden rounded-none bg-surface-hi">
                             <div
                                 class="h-full transition-all"
-                                :class="usedPercent >= 90 ? 'bg-rose-500' : usedPercent >= 75 ? 'bg-amber-500' : 'bg-ink'"
+                                :class="usedPercent >= 90 ? 'bg-state-bad-solid' : usedPercent >= 75 ? 'bg-state-warn-solid' : 'bg-ink'"
                                 :style="{ width: usedPercent + '%' }"
                             />
                         </div>
@@ -327,7 +327,7 @@ function openPortal() {
                             <tr v-for="t in transactions" :key="t.id" class="hover:bg-surface-hi">
                                 <td class="px-4 py-3 text-ink-dim">{{ fmt(t.created_at) }}</td>
                                 <td class="px-4 py-3 text-ink-dim">{{ reasonLabel(t.reason) }}</td>
-                                <td class="px-4 py-3 text-right font-mono tabular-nums font-medium" :class="t.amount > 0 ? 'text-green-700' : 'text-ink'">
+                                <td class="px-4 py-3 text-right font-mono tabular-nums font-medium" :class="t.amount > 0 ? 'text-state-ok-ink' : 'text-ink'">
                                     {{ t.amount > 0 ? '+' : '' }}{{ t.amount.toLocaleString() }}
                                 </td>
                             </tr>

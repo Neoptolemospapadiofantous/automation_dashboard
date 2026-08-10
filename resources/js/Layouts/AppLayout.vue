@@ -108,7 +108,7 @@ const handleMobileNavClick = (event) => {
                                         <form @submit.prevent="switchToAgent(agent)">
                                             <DropdownLink as="button">
                                                 <div class="flex items-center gap-2">
-                                                    <svg v-if="agent.id === currentAgent?.id" class="size-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                    <svg v-if="agent.id === currentAgent?.id" class="size-4 text-state-ok-ink" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                                     </svg>
                                                     <span v-else class="size-4" />
@@ -285,7 +285,7 @@ const handleMobileNavClick = (event) => {
                                         <form @submit.prevent="switchToTeam(team)">
                                             <DropdownLink as="button">
                                                 <div class="flex items-center gap-2">
-                                                    <svg v-if="team.id == $page.props.auth.user.current_team_id" class="size-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                    <svg v-if="team.id == $page.props.auth.user.current_team_id" class="size-4 text-state-ok-ink" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                                     </svg>
                                                     <span v-else class="size-4" />
@@ -365,7 +365,7 @@ const handleMobileNavClick = (event) => {
                                     <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                                     </svg>
-                                    <span v-if="notifications.length" class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 font-mono text-[10px] font-semibold text-white">
+                                    <span v-if="notifications.length" class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-state-bad-solid px-1 font-mono text-[10px] font-semibold text-state-bad-on">
                                         {{ notifications.length }}
                                     </span>
                                 </button>
@@ -460,7 +460,7 @@ const handleMobileNavClick = (event) => {
                                 :class="agent.id === currentAgent?.id ? 'text-ink' : 'text-ink-dim'"
                                 @click="switchToAgent(agent); showMobileNav = false"
                             >
-                                <svg v-if="agent.id === currentAgent?.id" class="size-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <svg v-if="agent.id === currentAgent?.id" class="size-4 text-state-ok-ink" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
                                 <span v-else class="size-4" />

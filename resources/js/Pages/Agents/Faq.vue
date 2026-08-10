@@ -92,7 +92,7 @@ const dirty = computed(() => form.isDirty);
                     <button
                         type="button"
                         aria-label="Remove answer"
-                        class="font-mono text-xs text-rose-600 hover:underline"
+                        class="font-mono text-xs text-state-bad-ink hover:underline"
                         @click="removeAnswer(i)"
                     >
                         Remove

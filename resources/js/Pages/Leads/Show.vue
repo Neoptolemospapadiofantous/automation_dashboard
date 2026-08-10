@@ -89,8 +89,8 @@ const currentStatusLabel = computed(() => {
 // Semantic score tier — kept as a status hue (not the accent).
 const scoreColor = computed(() => {
     const s = props.lead.score ?? 0;
-    if (s >= 70) return 'text-green-600';
-    if (s >= 40) return 'text-amber-600';
+    if (s >= 70) return 'text-state-ok-ink';
+    if (s >= 40) return 'text-state-warn-ink';
     return 'text-ink';
 });
 

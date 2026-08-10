@@ -27,7 +27,7 @@ setTimeout(refresh, 2500);
         <div class="flex min-h-[60vh] items-center justify-center px-4">
             <div class="max-w-md text-center">
                 <div class="mb-5 flex items-center justify-center">
-                    <span class="ins-stamp text-emerald-600">Paid</span>
+                    <span class="ins-stamp text-state-ok-ink">Paid</span>
                 </div>
                 <p class="bp-ref">BILLING/SUBSCRIBED</p>
                 <h1 class="mt-3 text-3xl font-semibold tracking-tight text-ink">You're subscribed</h1>

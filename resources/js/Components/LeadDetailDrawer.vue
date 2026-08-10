@@ -106,7 +106,7 @@ const capturedRows = computed(() => {
             <div class="flex items-center gap-3 border-b border-border-line px-5 py-3 text-xs">
                 <span
                     class="inline-flex items-center rounded-none px-2 py-0.5 font-mono font-semibold"
-                    :class="lead.score >= 70 ? 'bg-green-100 text-green-700' : lead.score >= 40 ? 'bg-amber-100 text-amber-700' : 'bg-surface-hi text-ink-dim'"
+                    :class="lead.score >= 70 ? 'bg-state-ok-surface text-state-ok-ink' : lead.score >= 40 ? 'bg-state-warn-surface text-state-warn-ink' : 'bg-surface-hi text-ink-dim'"
                 >
                     Score {{ lead.score }}
                 </span>

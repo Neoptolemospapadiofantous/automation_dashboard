@@ -55,8 +55,8 @@ const fmt = (iso) => (iso ? new Date(iso).toLocaleString() : '—');
 
 const statusTone = (s) =>
     ({
-        published: 'bg-emerald-50 text-emerald-700',
-        draft: 'bg-amber-50 text-amber-700',
+        published: 'bg-state-ok-surface text-state-ok-ink',
+        draft: 'bg-state-warn-surface text-state-warn-ink',
         archived: 'bg-surface-hi text-ink-dim',
     })[s] ?? 'bg-surface-hi text-ink-dim';
 
@@ -177,7 +177,7 @@ const dirty = computed(() => form.isDirty);
                                 <span class="font-mono text-sm font-semibold text-ink">v{{ v.version }}</span>
                                 <span
                                     v-if="v.status === 'published'"
-                                    class="ins-stamp text-emerald-600"
+                                    class="ins-stamp text-state-ok-ink"
                                 >
                                     Published
                                 </span>

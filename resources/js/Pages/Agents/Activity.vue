@@ -36,12 +36,12 @@ const toggle = (id) => (expanded.value = expanded.value === id ? null : id);
 
 const statusTone = (s) =>
     ({
-        success: 'bg-emerald-50 text-emerald-700',
-        pending: 'bg-amber-50 text-amber-700',
-        failed: 'bg-rose-50 text-rose-700',
-        blocked: 'bg-rose-50 text-rose-700',
-        timeout: 'bg-amber-50 text-amber-700',
-        out_of_credits: 'bg-rose-50 text-rose-700',
+        success: 'bg-state-ok-surface text-state-ok-ink',
+        pending: 'bg-state-warn-surface text-state-warn-ink',
+        failed: 'bg-state-bad-surface text-state-bad-ink',
+        blocked: 'bg-state-bad-surface text-state-bad-ink',
+        timeout: 'bg-state-warn-surface text-state-warn-ink',
+        out_of_credits: 'bg-state-bad-surface text-state-bad-ink',
     })[s] ?? 'bg-surface-hi text-ink-dim';
 
 const fmt = (iso) => (iso ? new Date(iso).toLocaleString() : '—');
@@ -140,8 +140,8 @@ const pretty = (v) => (v == null ? '' : JSON.stringify(v, null, 2));
                                 <td colspan="7" class="px-4 py-3">
                                     <div class="grid gap-3 sm:grid-cols-2">
                                         <div v-if="r.error" class="sm:col-span-2">
-                                            <p class="mb-1 font-mono text-xs uppercase tracking-wider text-rose-700">Error</p>
-                                            <p class="text-xs text-rose-700">{{ r.error }}</p>
+                                            <p class="mb-1 font-mono text-xs uppercase tracking-wider text-state-bad-ink">Error</p>
+                                            <p class="text-xs text-state-bad-ink">{{ r.error }}</p>
                                         </div>
                                         <div>
                                             <p class="mb-1 font-mono text-xs uppercase tracking-wider text-ink-dim">Request</p>

@@ -195,8 +195,8 @@ async function render2d() {
             const { svg } = await mermaid.render(`arch-2d-${i}`, d.code);
             const section = document.createElement('section');
             section.className =
-                'overflow-x-auto rounded-xl border border-gray-200 bg-white p-6 shadow-sm';
-            section.innerHTML = `<h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">${d.caption}</h2><div class="flex justify-center">${svg}</div>`;
+                'overflow-x-auto rounded-xl border border-border-line bg-white p-6 shadow-sm';
+            section.innerHTML = `<h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-ink-mute">${d.caption}</h2><div class="flex justify-center">${svg}</div>`;
             host.appendChild(section);
         }
     } catch (e) {
@@ -233,24 +233,24 @@ onBeforeUnmount(() => {
         <div class="py-6">
             <div class="mx-auto max-w-7xl space-y-4 px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between">
-                    <div class="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 shadow-sm">
+                    <div class="inline-flex rounded-lg border border-border-line bg-white p-0.5 shadow-sm">
                         <button
                             class="rounded-md px-3 py-1.5 text-sm font-medium"
-                            :class="mode === '3d' ? 'bg-indigo-600 text-white' : 'text-gray-600'"
+                            :class="mode === '3d' ? 'bg-state-info-solid text-state-info-on' : 'text-ink-dim'"
                             @click="setMode('3d')"
                         >
                             3D graph
                         </button>
                         <button
                             class="rounded-md px-3 py-1.5 text-sm font-medium"
-                            :class="mode === '2d' ? 'bg-indigo-600 text-white' : 'text-gray-600'"
+                            :class="mode === '2d' ? 'bg-state-info-solid text-state-info-on' : 'text-ink-dim'"
                             @click="setMode('2d')"
                         >
                             2D diagrams
                         </button>
                     </div>
 
-                    <div v-if="mode === '3d'" class="flex flex-wrap gap-3 text-xs text-gray-500">
+                    <div v-if="mode === '3d'" class="flex flex-wrap gap-3 text-xs text-ink-mute">
                         <span v-for="g in LAYERS" :key="g" class="inline-flex items-center gap-1.5">
                             <span
                                 class="inline-block h-2.5 w-2.5 rounded-full"
@@ -263,7 +263,7 @@ onBeforeUnmount(() => {
 
                 <div
                     v-if="error"
-                    class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"
+                    class="rounded-lg border border-state-bad-line bg-state-bad-surface p-4 text-sm text-state-bad-ink"
                 >
                     Failed to render: {{ error }}
                 </div>
@@ -272,7 +272,7 @@ onBeforeUnmount(() => {
                 <div v-show="mode === '3d'" class="relative">
                     <div
                         ref="graphEl"
-                        class="h-[420px] w-full overflow-hidden rounded-xl border border-gray-800 bg-[#0b1120] sm:h-[680px]"
+                        class="h-[420px] w-full overflow-hidden rounded-xl border border-border-hi bg-[#0b1120] sm:h-[680px]"
                     />
                     <!-- Layer name floating over each cluster, tracking the 3D scene. -->
                     <div class="pointer-events-none absolute inset-0 overflow-hidden">
@@ -296,7 +296,7 @@ onBeforeUnmount(() => {
                             />
                             {{ selected.label }}
                         </div>
-                        <div class="mt-1 text-xs text-gray-300">layer: {{ selected.group }}</div>
+                        <div class="mt-1 text-xs text-ink-dim">layer: {{ selected.group }}</div>
                     </div>
                 </div>
 

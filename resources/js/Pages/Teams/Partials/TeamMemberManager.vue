@@ -201,7 +201,7 @@ const displayableRole = (role) => {
                                 <!-- Cancel Team Invitation -->
                                 <button
                                     v-if="userPermissions.canRemoveTeamMembers"
-                                    class="cursor-pointer ms-6 text-sm text-red-500 focus:outline-none"
+                                    class="cursor-pointer ms-6 text-sm text-state-bad-ink focus:outline-none"
                                     @click="cancelTeamInvitation(invitation)"
                                 >
                                     Cancel
@@ -256,7 +256,7 @@ const displayableRole = (role) => {
                                 <!-- Leave Team -->
                                 <button
                                     v-if="$page.props.auth.user.id === user.id"
-                                    class="cursor-pointer ms-6 text-sm text-red-500"
+                                    class="cursor-pointer ms-6 text-sm text-state-bad-ink"
                                     @click="confirmLeavingTeam"
                                 >
                                     Leave
@@ -265,7 +265,7 @@ const displayableRole = (role) => {
                                 <!-- Remove Team Member -->
                                 <button
                                     v-else-if="userPermissions.canRemoveTeamMembers"
-                                    class="cursor-pointer ms-6 text-sm text-red-500"
+                                    class="cursor-pointer ms-6 text-sm text-state-bad-ink"
                                     @click="confirmTeamMemberRemoval(user)"
                                 >
                                     Remove

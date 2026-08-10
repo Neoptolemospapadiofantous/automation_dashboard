@@ -235,7 +235,7 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
                                 <div class="w-24 flex-shrink-0 truncate text-ink-dim">{{ src.source }}</div>
                                 <div class="flex-1 rounded-none bg-surface-hi">
                                     <div
-                                        class="h-2 rounded-none bg-emerald-500"
+                                        class="h-2 rounded-none bg-state-ok-solid"
                                         :style="{ width: `${(src.count / sourcesMax) * 100}%` }"
                                     />
                                 </div>

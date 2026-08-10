@@ -42,6 +42,32 @@ export default {
                 // ever a fill, always under near-black type. Without this entry
                 // `bg-signal` compiles to nothing at all.
                 signal: 'var(--signal)',
+                // Status palette (app.css). Four families, five roles —
+                // bg-state-ok-surface, text-state-bad-ink, border-state-warn-line,
+                // bg-state-bad-solid, text-state-bad-on. Reach for these instead
+                // of Tailwind's default palette, which does not flip with the sheet.
+                state: {
+                    'ok-surface': 'var(--state-ok-surface)',
+                    'ok-ink': 'var(--state-ok-ink)',
+                    'ok-line': 'var(--state-ok-line)',
+                    'ok-solid': 'var(--state-ok-solid)',
+                    'ok-on': 'var(--state-ok-on)',
+                    'warn-surface': 'var(--state-warn-surface)',
+                    'warn-ink': 'var(--state-warn-ink)',
+                    'warn-line': 'var(--state-warn-line)',
+                    'warn-solid': 'var(--state-warn-solid)',
+                    'warn-on': 'var(--state-warn-on)',
+                    'bad-surface': 'var(--state-bad-surface)',
+                    'bad-ink': 'var(--state-bad-ink)',
+                    'bad-line': 'var(--state-bad-line)',
+                    'bad-solid': 'var(--state-bad-solid)',
+                    'bad-on': 'var(--state-bad-on)',
+                    'info-surface': 'var(--state-info-surface)',
+                    'info-ink': 'var(--state-info-ink)',
+                    'info-line': 'var(--state-info-line)',
+                    'info-solid': 'var(--state-info-solid)',
+                    'info-on': 'var(--state-info-on)',
+                },
                 success: 'var(--success)',
                 warn: 'var(--warn)',
                 danger: 'var(--danger)',

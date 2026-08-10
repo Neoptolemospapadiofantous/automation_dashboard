@@ -11,8 +11,8 @@ const emit = defineEmits(['delete', 'assign', 'open']);
 
 // Map the status color token to concrete classes (Tailwind needs them literal).
 const scoreColor = (score) => {
-    if (score >= 70) return 'bg-green-100 text-green-700';
-    if (score >= 40) return 'bg-amber-100 text-amber-700';
+    if (score >= 70) return 'bg-state-ok-surface text-state-ok-ink';
+    if (score >= 40) return 'bg-state-warn-surface text-state-warn-ink';
     return 'bg-surface-hi text-ink-dim';
 };
 
@@ -109,7 +109,7 @@ function onAssignChange(e) {
             </div>
             <button
                 type="button"
-                class="shrink-0 text-xs text-ink-mute opacity-0 transition hover:text-rose-500 group-hover:opacity-100 max-sm:opacity-100"
+                class="shrink-0 text-xs text-ink-mute opacity-0 transition hover:text-state-bad-ink group-hover:opacity-100 max-sm:opacity-100"
                 title="Delete lead"
                 aria-label="Delete lead"
                 @click="$emit('delete', lead)"

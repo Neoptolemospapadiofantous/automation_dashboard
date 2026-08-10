@@ -136,7 +136,7 @@ const urlHint = computed(() =>
                     <h3 class="font-mono text-sm font-semibold text-ink">Action {{ i + 1 }}</h3>
                     <button
                         type="button"
-                        class="font-mono text-xs text-rose-600 hover:underline"
+                        class="font-mono text-xs text-state-bad-ink hover:underline"
                         @click="removeAction(i)"
                     >
                         Remove
@@ -277,7 +277,7 @@ const urlHint = computed(() =>
                                 <button
                                     type="button"
                                     aria-label="Remove parameter"
-                                    class="font-mono text-xs text-rose-600 hover:underline"
+                                    class="font-mono text-xs text-state-bad-ink hover:underline"
                                     @click="removeParam(i, j)"
                                 >
                                     ✕
