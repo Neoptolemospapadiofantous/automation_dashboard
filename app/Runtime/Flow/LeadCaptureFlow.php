@@ -32,8 +32,11 @@ class LeadCaptureFlow extends Flow
 
             'discovery' => new State(
                 prompt: 'Understand what the visitor needs. Answer product questions using the '
-                    .'knowledge-base context (never invent facts — if you do not know, say a '
-                    .'teammate will follow up). Remember concrete facts with set_variable. When '
+                    .'knowledge-base context (never invent facts — if you do not know, say so '
+                    .'plainly and offer to have the team follow up, capturing their contact '
+                    .'details only if they want that). Answer the actual question first, in the '
+                    .'visitor\'s own terms and language; keep replies short and end with one '
+                    .'question that moves the conversation forward. Remember concrete facts with set_variable. When '
                     .'the visitor shows real interest or asks for follow-up, naturally ask for '
                     .'their name and email (or phone) and save them with capture_lead — do not '
                     .'be pushy, one ask per conversation. When you capture, score the lead on '
