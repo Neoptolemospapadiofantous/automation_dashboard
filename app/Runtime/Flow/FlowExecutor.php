@@ -315,8 +315,10 @@ class FlowExecutor
 
         if ($lowConfidence) {
             $dynamic[] = 'IMPORTANT: The knowledge base has no confident answer to the visitor\'s current '
-                .'question. Do NOT guess or invent an answer. Briefly tell the visitor you\'ll connect them '
-                .'with a teammate who can help, and call the request_handoff tool.';
+                .'question. Do NOT answer it — no guesses, no partial answers, and NO claims about what '
+                .'the product does or does not include (saying a feature "doesn\'t exist" is also a guess). '
+                .'Reply with one or two sentences only: acknowledge the question and say you\'re connecting '
+                .'a teammate who can answer it properly, then call the request_handoff tool.';
         }
 
         return SystemPrompt::blocks($stable, $dynamic);
