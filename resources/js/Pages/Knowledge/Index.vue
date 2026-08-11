@@ -136,6 +136,27 @@ function resolveGap(id) {
     router.delete(route('knowledge.gaps.resolve', id), { preserveScroll: true });
 }
 
+// Inline "resolve with answer": the typed answer becomes a KB document on
+// the same ingest path as pasted text, and the gap clears in one motion.
+const answeringGap = ref(null); // gap id with the editor open
+const answerForm = useForm({ answer: '' });
+
+function openAnswer(gap) {
+    answeringGap.value = gap.id;
+    answerForm.reset();
+    answerForm.clearErrors();
+}
+
+function submitAnswer(gap) {
+    answerForm.post(route('knowledge.gaps.answer', gap.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            answeringGap.value = null;
+            answerForm.reset();
+        },
+    });
+}
+
 function timeAgo(iso) {
     const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
     if (mins < 60) return `${mins}m ago`;
@@ -367,26 +388,49 @@ const description = computed(() => {
                             </div>
                             <p class="mb-3 text-xs text-ink-dim">
                                 Visitors asked these and the agent had no confident answer — each one escalated to a teammate.
-                                Add the missing content above, then mark it resolved.
+                                Hit <span class="font-medium text-ink">Answer</span> to type the answer once: it becomes a knowledge
+                                document instantly and the gap clears. Dismiss only removes the row.
                             </p>
                             <ul class="divide-y divide-border-line">
-                                <li v-for="g in gaps" :key="g.id" class="group flex items-start gap-3 py-2.5">
-                                    <span class="mt-0.5 shrink-0 rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink" :title="`asked ${g.asked_count} time${g.asked_count === 1 ? '' : 's'}`">
-                                        ×{{ g.asked_count }}
-                                    </span>
-                                    <div class="min-w-0 flex-1">
-                                        <div class="break-words text-sm text-ink">{{ g.question }}</div>
-                                        <div class="mt-0.5 font-mono text-[11px] text-ink-dim">
-                                            best match {{ Math.round(g.top_score * 100) }}% · last asked {{ timeAgo(g.last_asked_at) }}
+                                <li v-for="g in gaps" :key="g.id" class="group py-2.5">
+                                    <div class="flex items-start gap-3">
+                                        <span class="mt-0.5 shrink-0 rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink" :title="`asked ${g.asked_count} time${g.asked_count === 1 ? '' : 's'}`">
+                                            ×{{ g.asked_count }}
+                                        </span>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="break-words text-sm text-ink">{{ g.question }}</div>
+                                            <div class="mt-0.5 font-mono text-[11px] text-ink-dim">
+                                                best match {{ Math.round(g.top_score * 100) }}% · last asked {{ timeAgo(g.last_asked_at) }}
+                                            </div>
+                                        </div>
+                                        <div class="flex shrink-0 items-center gap-3 sm:opacity-0 sm:group-hover:opacity-100" :class="{ 'sm:opacity-100': answeringGap === g.id }">
+                                            <button type="button" class="text-xs font-medium text-ink transition hover:underline" @click="answeringGap === g.id ? (answeringGap = null) : openAnswer(g)">
+                                                {{ answeringGap === g.id ? 'Cancel' : 'Answer' }}
+                                            </button>
+                                            <button type="button" class="text-xs text-ink-mute transition hover:text-ink" title="Clear without adding content" @click="resolveGap(g.id)">
+                                                Dismiss
+                                            </button>
                                         </div>
                                     </div>
-                                    <button
-                                        type="button"
-                                        class="shrink-0 text-xs text-ink-mute transition hover:text-ink sm:opacity-0 sm:group-hover:opacity-100"
-                                        @click="resolveGap(g.id)"
-                                    >
-                                        Resolve
-                                    </button>
+                                    <!-- Inline answer editor: the answer becomes a knowledge
+                                         document and the gap clears in one motion. -->
+                                    <form v-if="answeringGap === g.id" class="mt-2 pl-8" @submit.prevent="submitAnswer(g)">
+                                        <textarea
+                                            v-model="answerForm.answer"
+                                            rows="3"
+                                            maxlength="20000"
+                                            required
+                                            class="block w-full rounded-none border-border-hi bg-bg text-sm text-ink focus:border-ink focus:ring-2 focus:ring-ink focus:ring-offset-1"
+                                            :placeholder="`Write the answer visitors should get for: ${g.question.slice(0, 80)}`"
+                                        />
+                                        <div v-if="answerForm.errors.answer" class="mt-1 text-xs text-state-bad-ink">{{ answerForm.errors.answer }}</div>
+                                        <div class="mt-2 flex items-center justify-between">
+                                            <span class="text-[11px] text-ink-dim">Saves as a knowledge document — the very next visitor gets this answer.</span>
+                                            <PrimaryButton type="submit" class="!px-3 !py-1.5" :disabled="answerForm.processing" :class="{ 'opacity-50': answerForm.processing }">
+                                                Save answer
+                                            </PrimaryButton>
+                                        </div>
+                                    </form>
                                 </li>
                             </ul>
                         </div>

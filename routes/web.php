@@ -246,6 +246,9 @@ Route::middleware([
     Route::delete('/knowledge/gaps/{gap}', [KnowledgeBaseController::class, 'resolveGap'])
         ->middleware('throttle:30,1')
         ->name('knowledge.gaps.resolve');
+    Route::post('/knowledge/gaps/{gap}/answer', [KnowledgeBaseController::class, 'resolveGapWithAnswer'])
+        ->middleware('throttle:30,1')
+        ->name('knowledge.gaps.answer');
     Route::get('/knowledge/{documentID}', [KnowledgeBaseController::class, 'show'])
         ->where('documentID', '[A-Za-z0-9_\-]+')
         ->name('knowledge.show');

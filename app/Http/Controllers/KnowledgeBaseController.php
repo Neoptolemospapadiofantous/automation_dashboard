@@ -261,6 +261,39 @@ class KnowledgeBaseController extends Controller
     }
 
     /**
+     * Resolve a gap BY answering it: the typed answer becomes a knowledge
+     * document immediately (same ingest path as pasted text, so the very
+     * next visitor turn can retrieve it), then the gap row clears. The
+     * document body carries the original question too — visitors phrase
+     * the question, not the answer, so keeping it lifts retrieval match.
+     */
+    public function resolveGapWithAnswer(Request $request, KbGap $gap): RedirectResponse
+    {
+        $this->requireCapability($request, fn (Role $r) => $r->canAddKnowledge(), 'manage knowledge gaps');
+        $agent = $this->currentAgentOrAbort($request);
+        abort_unless($gap->agent_id === $agent->id, 403);
+
+        $data = $request->validate([
+            'answer' => ['required', 'string', 'max:20000'],
+        ]);
+
+        $title = mb_substr($gap->question, 0, 255);
+        $content = "Question: {$gap->question}\n\nAnswer: {$data['answer']}";
+
+        try {
+            $this->knowledge->ingestDocument($agent->id, $title, $content, ['source' => 'gap-answer']);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withErrors(['answer' => 'Could not index that answer. Check OPENAI_API_KEY and try again.']);
+        }
+
+        $gap->delete();
+
+        return back();
+    }
+
+    /**
      * Ask the KB a question: RAG search + LLM synthesis grounded ONLY in
      * the retrieved chunks.
      */

@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Agent;
 use App\Models\User;
+use App\Runtime\Models\KbDocument;
 use App\Runtime\Models\KbGap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -53,6 +55,45 @@ class KnowledgeGapsTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame(0, KbGap::query()->count());
+    }
+
+    public function test_resolve_with_answer_creates_a_document_and_clears_the_gap(): void
+    {
+        // 4-dim vectors keep the fixture readable; the ingest dim-check
+        // validates against this config so it still exercises.
+        config(['runtime.embeddings.dimensions' => 4]);
+        Http::fake([
+            'api.openai.com/*' => Http::response(['data' => [['index' => 0, 'embedding' => [0.5, 0.5, 0.5, 0.5]]]]),
+        ]);
+
+        $user = $this->ownerWithCurrentAgent($agent);
+        KbGap::record($agent->id, 'Do you support SAML SSO?', 0.20);
+        $gap = KbGap::query()->firstOrFail();
+
+        $this->actingAs($user)
+            ->post(route('knowledge.gaps.answer', $gap->id), ['answer' => 'Yes — SAML SSO is included on the Operator plan.'])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(0, KbGap::query()->count());
+        $doc = KbDocument::where('agent_id', $agent->id)->firstOrFail();
+        $this->assertSame('Do you support SAML SSO?', $doc->title);
+        $this->assertStringContainsString('SAML SSO is included', (string) $doc->raw_content);
+        $this->assertStringContainsString('Question: Do you support SAML SSO?', (string) $doc->raw_content);
+    }
+
+    public function test_resolve_with_answer_requires_an_answer(): void
+    {
+        $user = $this->ownerWithCurrentAgent($agent);
+        KbGap::record($agent->id, 'Do you support SAML SSO?', 0.20);
+        $gap = KbGap::query()->firstOrFail();
+
+        $this->actingAs($user)
+            ->from(route('knowledge.index'))
+            ->post(route('knowledge.gaps.answer', $gap->id), ['answer' => ''])
+            ->assertSessionHasErrors(['answer']);
+
+        $this->assertSame(1, KbGap::query()->count());
     }
 
     public function test_cannot_resolve_another_teams_gap(): void
