@@ -89,7 +89,11 @@ Per-session token usage accumulates in `runtime_sessions.variables`
 
 Handoffs: when a visitor asks for a human, the `request_handoff` tool flags
 the session AND notifies the team owner (bell + email,
-`HandoffRequestedNotification`).
+`HandoffRequestedNotification`). A third leg — SMS via
+`app/Notifications/Channels/TwilioSmsChannel` — joins when the recipient
+saved a `notification_phone` on their profile and `services.twilio` is
+configured (`TWILIO_SID/TOKEN/FROM`); it is config-gated and best-effort,
+so the bell + email always land even if Twilio is down.
 
 ## Grounded answers & the confidence gate
 
