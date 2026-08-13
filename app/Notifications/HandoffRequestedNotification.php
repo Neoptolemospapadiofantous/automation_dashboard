@@ -65,7 +65,10 @@ class HandoffRequestedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $mail = (new MailMessage)
-            ->subject("Visitor asked for a human — {$this->agent->name}")
+            ->subject("🚨 Visitor needs a HUMAN right now — {$this->agent->name}")
+            // Max mail priority so phone clients surface it prominently —
+            // the owner's requirement is that a human-request is NEVER missed.
+            ->priority(1)
             ->greeting("Hi {$notifiable->name},")
             ->line("A visitor chatting with **{$this->agent->name}** asked to talk to a person.")
             ->line("**Reason:** {$this->reason}");
