@@ -3,7 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Agent;
-use App\Notifications\Channels\TwilioSmsChannel;
+use App\Notifications\Channels\CallMeBotWhatsAppChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -18,9 +18,9 @@ use Illuminate\Notifications\Notification;
  * message, and whether contact details were captured.
  *
  * Channels: database (bell) + mail (speed-to-human matters here even
- * more than for assignments — the visitor is live in the chat), plus SMS
- * when the recipient set a notification_phone and Twilio is configured —
- * a text is the only channel that reliably interrupts a phone in-pocket
+ * more than for assignments — the visitor is live in the chat), plus a WhatsApp
+ * alert to the founder's own number when the CallMeBot gateway is
+ * configured — the channel that reliably interrupts a phone in-pocket
  * while the visitor is still on the page.
  */
 class HandoffRequestedNotification extends Notification
@@ -43,23 +43,24 @@ class HandoffRequestedNotification extends Notification
     {
         $channels = ['database', 'mail'];
 
-        if (trim((string) ($notifiable->notification_phone ?? '')) !== '' && TwilioSmsChannel::configured()) {
-            $channels[] = TwilioSmsChannel::class;
+        // WhatsApp to the founder's own number (free CallMeBot gateway) —
+        // the loud phone layer while SMS stays blocked; see the channel.
+        if (CallMeBotWhatsAppChannel::configured()) {
+            $channels[] = CallMeBotWhatsAppChannel::class;
         }
 
         return $channels;
     }
 
-    /**
-     * One SMS-sized line: who asked, whether they're reachable, and the
-     * deep link — enough to decide from a lock screen whether to jump in.
-     */
-    public function toSms(object $notifiable): string
+    public function toWhatsApp(object $notifiable): string
     {
-        $contact = $this->contact !== null ? "Contact: {$this->contact}." : 'No contact captured yet — they are live in the chat now.';
+        $contact = $this->contact !== null
+            ? "Contact: {$this->contact}."
+            : 'No contact captured yet — they are live in the chat NOW.';
+        $last = trim($this->lastMessage) !== '' ? "\n\"".mb_substr(trim($this->lastMessage), 0, 140).'"' : '';
         $link = $this->conversationId !== null ? url("/conversations/{$this->conversationId}") : url('/conversations');
 
-        return "Flowstack: a visitor on {$this->agent->name} asked for a human. {$contact} {$link}";
+        return "🚨 Visitor needs a HUMAN — {$this->agent->name}\n{$contact}{$last}\nTake over: {$link}";
     }
 
     public function toMail(object $notifiable): MailMessage

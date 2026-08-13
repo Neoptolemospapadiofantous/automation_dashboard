@@ -35,17 +35,17 @@ return [
         'agent_turn_team_id' => env('SLACK_AGENT_TURN_TEAM_ID'),
     ],
 
-    // Ecosystem BI warehouse ingestion API (SHARED.md — ~/.config/ecosystem/bi).
-    // Best-effort live telemetry, OFF by default. The API is localhost-only, so
-    // Escalation SMS (App\Notifications\Channels\TwilioSmsChannel). All three
-    // unset = channel inert; the bell + email legs are never affected. Trial
-    // Twilio accounts can only text verified numbers — fine for owner alerts.
-    'twilio' => [
-        'sid' => env('TWILIO_SID', ''),
-        'token' => env('TWILIO_TOKEN', ''),
-        'from' => env('TWILIO_FROM', ''),
+    // Escalation WhatsApp (App\Notifications\Channels\CallMeBotWhatsAppChannel):
+    // free personal-use gateway to the founder's own number. Both unset =
+    // channel inert. The apikey comes from CallMeBot's one-time WhatsApp
+    // opt-in ("I allow callmebot to send me messages" → reply carries it).
+    'callmebot' => [
+        'phone' => env('CALLMEBOT_PHONE', ''),
+        'apikey' => env('CALLMEBOT_APIKEY', ''),
     ],
 
+    // Ecosystem BI warehouse ingestion API (SHARED.md — ~/.config/ecosystem/bi).
+    // Best-effort live telemetry, OFF by default. The API is localhost-only, so
     // prod stays dormant until a reachable endpoint (Azure) exists — enabling is
     // then just the env flag, no deploy of code. Consumed by App\Support\BiEmitter.
     'bi' => [

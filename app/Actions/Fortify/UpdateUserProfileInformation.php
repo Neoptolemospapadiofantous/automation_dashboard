@@ -21,20 +21,11 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'photo' => ['nullable', 'mimes:jpg,jpeg,png', 'max:1024'],
-            // E.164 — the escalation-SMS recipient number ("+35799123456").
-            'notification_phone' => ['nullable', 'string', 'regex:/^\+[1-9]\d{6,14}$/'],
-        ], [
-            'notification_phone.regex' => 'Use international format, e.g. +35799123456.',
         ])->validateWithBag('updateProfileInformation');
 
         if (isset($input['photo'])) {
             $user->updateProfilePhoto($input['photo']);
         }
-
-        // Independent of the name/email path below — always persist.
-        $user->forceFill([
-            'notification_phone' => trim((string) ($input['notification_phone'] ?? '')) ?: null,
-        ])->save();
 
         // User now always implements MustVerifyEmail (verification is enabled
         // app-wide in config/fortify.php), so we always re-trigger the
