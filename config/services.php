@@ -37,6 +37,16 @@ return [
 
     // Ecosystem BI warehouse ingestion API (SHARED.md — ~/.config/ecosystem/bi).
     // Best-effort live telemetry, OFF by default. The API is localhost-only, so
+    // Escalation mobile push (App\Notifications\Channels\NtfyChannel): the
+    // ntfy app subscribed to this secret topic pops an urgent push on the
+    // owner's phone. Topic unset = channel inert. The topic name IS the
+    // secret; server/token only matter for self-hosted ntfy.
+    'ntfy' => [
+        'topic' => env('NTFY_TOPIC', ''),
+        'server' => env('NTFY_SERVER', 'https://ntfy.sh'),
+        'token' => env('NTFY_TOKEN', ''),
+    ],
+
     // Escalation SMS (App\Notifications\Channels\TwilioSmsChannel). All three
     // unset = channel inert; the bell + email legs are never affected. Trial
     // Twilio accounts can only text verified numbers — fine for owner alerts.

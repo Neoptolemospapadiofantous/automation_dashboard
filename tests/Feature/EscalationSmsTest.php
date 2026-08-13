@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Agent;
 use App\Models\Team;
 use App\Models\User;
+use App\Notifications\Channels\NtfyChannel;
 use App\Notifications\Channels\TwilioSmsChannel;
 use App\Notifications\HandoffRequestedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -66,6 +67,28 @@ class EscalationSmsTest extends TestCase
         (new TwilioSmsChannel)->send($user, $this->notification()); // no exception = pass
 
         $this->assertTrue(true);
+    }
+
+    public function test_ntfy_leg_joins_when_topic_configured_and_pushes_urgently(): void
+    {
+        $notification = $this->notification();
+        $user = User::factory()->create();
+
+        // Unconfigured → no push leg.
+        $this->assertNotContains(NtfyChannel::class, $notification->via($user));
+
+        config(['services.ntfy.topic' => 'flowstack-test-topic']);
+        $this->assertContains(NtfyChannel::class, $notification->via($user));
+
+        Http::fake(['ntfy.sh/*' => Http::response('ok')]);
+        (new NtfyChannel)->send($user, $notification);
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'ntfy.sh/flowstack-test-topic')
+                && $request->hasHeader('Priority', 'urgent')
+                && str_contains($request->header('Title')[0], 'Reception')
+                && str_contains($request->header('Click')[0], '/conversations/42')
+                && str_contains($request->body(), 'a@b.cy');
+        });
     }
 
     public function test_profile_saves_and_validates_the_phone(): void
