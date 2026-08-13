@@ -5,8 +5,11 @@ namespace Tests\Feature;
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
 use App\Models\User;
+use App\Notifications\HandoffRequestedNotification;
+use App\Runtime\Models\RuntimeSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class EmbedTest extends TestCase
@@ -176,6 +179,39 @@ class EmbedTest extends TestCase
             'message' => 'ok but how much does it cost for my use case?',
         ])->assertOk()->assertJsonPath('traces.0.payload.canned', null);
         Http::assertSent(fn ($request) => str_contains($request->url(), 'anthropic'));
+    }
+
+    public function test_escalating_canned_answer_notifies_owner_and_flags_handoff(): void
+    {
+        Notification::fake();
+        $agent = $this->makeAgent('active');
+        $agent->team->forceFill(['credit_balance' => 100])->save();
+        $this->publishCanned($agent, [
+            ['category' => 'Talk to a human', 'keywords' => ['human'], 'answer' => 'A teammate is on the way.', 'escalate' => true],
+        ]);
+
+        Http::fake();
+
+        // The runtime session the escalation hook flags (normally created by
+        // launch, which would need a greeting or an LLM in this fixture).
+        RuntimeSession::create([
+            'agent_id' => $agent->id,
+            'visitor_id' => 'embed-esc',
+            'flow_state' => 'discovery',
+            'variables' => [],
+            'history' => [],
+            'last_activity_at' => now(),
+        ]);
+        $this->postJson("/embed/{$agent->slug}/interact", [
+            'visitor_id' => 'embed-esc',
+            'message' => 'human please',
+        ])->assertOk()
+            ->assertJsonPath('traces.0.payload.canned', true)
+            ->assertJsonPath('handoff', true);
+
+        Notification::assertSentTo($agent->team->owner, HandoffRequestedNotification::class);
+        // Zero LLM calls, zero credits — still a free canned turn.
+        $this->assertSame(100, $agent->team->fresh()->credit_balance);
     }
 
     public function test_canned_answer_served_even_when_out_of_credits(): void

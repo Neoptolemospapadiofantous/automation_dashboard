@@ -26,9 +26,12 @@ class RequestHandoffTool implements Tool
 
     public function description(): string
     {
-        return 'Escalate to a human teammate. Call when the visitor explicitly asks for a person, '
-            .'is frustrated, or asks something outside your scope (pricing exceptions, legal, '
-            .'custom contracts). Tell the visitor a teammate will follow up. If you do not have '
+        return 'Escalate to a human teammate — this ACTUALLY notifies the team the moment you call '
+            .'it; never claim you will "flag" or "pass along" the request without calling this tool. '
+            .'Call it whenever the visitor asks for a person, human, employee, representative, or '
+            .'for someone to contact them, when they are frustrated, or when the request is outside '
+            .'your scope (pricing exceptions, legal, custom contracts). '
+            .'Tell the visitor a teammate will follow up. If you do not have '
             .'the visitor\'s contact details yet, ask for an email or phone number in the same '
             .'reply and save it with capture_lead — without contact the team cannot follow up.';
     }

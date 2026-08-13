@@ -134,7 +134,11 @@ class LandingFaqSeeder extends Seeder
             [
                 'category' => 'Talk to a human',
                 'keywords' => ['human', 'talk to someone', 'speak to', 'representative', 'demo', 'real person'],
-                'answer' => 'Of course. Fastest ways: book the free 30-minute audit at flowstack.run/audit, email hello@flowstack.run, or leave your name and email here and the team will get back to you. Which works best for you?',
+                'answer' => "Of course — I've flagged this for the team, and someone will pick this chat up. You can also book the free 30-minute audit at flowstack.run/audit or email hello@flowstack.run. To make sure we can reach you, what's your name and email?",
+                // Serving this chip ALSO notifies the owner (bell + email +
+                // mobile push) — a human request must never be swallowed by
+                // a canned reply. See CannedAnswer::$escalate.
+                'escalate' => true,
             ],
         ];
     }

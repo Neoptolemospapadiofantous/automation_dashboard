@@ -14,6 +14,8 @@ use App\Runtime\Canned\CannedAnswers;
 use App\Runtime\Contracts\Runtime;
 use App\Runtime\Exceptions\RuntimeException;
 use App\Runtime\Models\RuntimeSession;
+use App\Runtime\Session\ConversationContext;
+use App\Runtime\Support\EscalateToHuman;
 use App\Services\ConversationRecorder;
 use App\Support\BiEmitter;
 use App\Support\Embed\DomainAllowlist;
@@ -351,6 +353,25 @@ class EmbedController extends Controller
             $this->recordMessage($conversation, 'agent', $canned->answer);
             $this->broadcastEmbed($team->id, 'agent', $canned->answer, $conversation?->id);
 
+            // A "talk to a human"-type chip must not swallow the escalation
+            // signal: flag the conversation and notify the owner (bell +
+            // email + mobile push) exactly as the request_handoff tool
+            // would. Best-effort — never fails the visitor's turn.
+            if ($canned->escalate) {
+                rescue(function () use ($agent, $data): void {
+                    $session = RuntimeSession::query()
+                        ->where('agent_id', $agent->id)
+                        ->where('visitor_id', $data['visitor_id'])
+                        ->first();
+                    if ($session !== null) {
+                        app(EscalateToHuman::class)->handle(
+                            new ConversationContext($agent, $session, $data['message']),
+                            'Visitor asked to talk to a human (canned shortcut).',
+                        );
+                    }
+                }, report: true);
+            }
+
             // Deflection-rate bookkeeping for the analytics page — a canned
             // turn cost zero tokens/credits, and that saving should be visible.
             rescue(fn () => RuntimeUsage::recordCanned($agent, AgentConfigVersion::publishedTier($agent->id)), report: false);
@@ -358,7 +379,10 @@ class EmbedController extends Controller
             return response()->json([
                 'traces' => [['type' => 'text', 'payload' => ['message' => $canned->answer, 'citations' => [], 'canned' => true]]],
                 'ended' => false,
-                'handoff' => (bool) ($conversation?->meta['handoff_requested'] ?? false),
+                // In-memory $conversation predates the escalate hook's own
+                // write, so factor the flag in directly — the widget starts
+                // polling for a human takeover off this field.
+                'handoff' => $canned->escalate || (bool) ($conversation?->meta['handoff_requested'] ?? false),
                 'takeover' => false,
             ]);
         }

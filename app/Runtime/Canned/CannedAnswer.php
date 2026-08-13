@@ -17,11 +17,16 @@ final class CannedAnswer
 {
     /**
      * @param  list<string>  $keywords  Lowercased whole words/phrases that route a typed message here.
+     * @param  bool  $escalate  Serving this answer also flags the conversation
+     *                          for human handoff and notifies the owner — for
+     *                          "talk to a human"-type chips, where the canned
+     *                          reply must not swallow the escalation signal.
      */
     public function __construct(
         public readonly string $category,
         public readonly array $keywords,
         public readonly string $answer,
+        public readonly bool $escalate = false,
     ) {}
 
     /**
@@ -47,7 +52,7 @@ final class CannedAnswer
             }
         }
 
-        return new self($category, array_values(array_unique($keywords)), $answer);
+        return new self($category, array_values(array_unique($keywords)), $answer, (bool) ($row['escalate'] ?? false));
     }
 
     /**
