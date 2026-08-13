@@ -3,7 +3,6 @@
 namespace App\Notifications;
 
 use App\Models\Agent;
-use App\Notifications\Channels\NtfyChannel;
 use App\Notifications\Channels\TwilioSmsChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -48,30 +47,7 @@ class HandoffRequestedNotification extends Notification
             $channels[] = TwilioSmsChannel::class;
         }
 
-        // Mobile push (ntfy app on the owner's phone, urgent priority) —
-        // no SMS provider needed; see NtfyChannel.
-        if (NtfyChannel::configured()) {
-            $channels[] = NtfyChannel::class;
-        }
-
         return $channels;
-    }
-
-    /**
-     * @return array{title: string, body: string, click: string}
-     */
-    public function toNtfy(object $notifiable): array
-    {
-        $contact = $this->contact !== null
-            ? "Contact: {$this->contact}."
-            : 'No contact captured yet — they are live in the chat NOW.';
-        $last = trim($this->lastMessage) !== '' ? ' "'.mb_substr(trim($this->lastMessage), 0, 140).'"' : '';
-
-        return [
-            'title' => "Visitor asked for a human — {$this->agent->name}",
-            'body' => trim("{$contact}{$last}"),
-            'click' => $this->conversationId !== null ? url("/conversations/{$this->conversationId}") : url('/conversations'),
-        ];
     }
 
     /**
