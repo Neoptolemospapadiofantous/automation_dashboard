@@ -2,9 +2,8 @@
 
 namespace App\Notifications\Channels;
 
+use App\Jobs\SendEscalationWhatsApp;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 /**
  * WhatsApp alert to the founder's own number via CallMeBot's free
@@ -30,6 +29,14 @@ class CallMeBotWhatsAppChannel
             && (string) config('services.callmebot.apikey') !== '';
     }
 
+    /**
+     * The ring burst: three messages at 0/45/90s. With a full-length
+     * ringtone set on the CallMeBot contact, the phone rings, pauses,
+     * and rings twice more — acoustically an incoming call. All three
+     * ride the queue so the visitor's turn never waits on the gateway.
+     */
+    protected const BURST_DELAYS_SECONDS = [0, 45, 90];
+
     // @phpstan-ignore shipmonk.deadMethod (invoked dynamically by Laravel's ChannelManager when via() names this class)
     public function send(object $notifiable, Notification $notification): void
     {
@@ -37,18 +44,12 @@ class CallMeBotWhatsAppChannel
             return;
         }
 
-        try {
-            $response = Http::timeout(15)->get('https://api.callmebot.com/whatsapp.php', [
-                'phone' => (string) config('services.callmebot.phone'),
-                'apikey' => (string) config('services.callmebot.apikey'),
-                'text' => (string) $notification->toWhatsApp($notifiable),
-            ]);
+        $text = (string) $notification->toWhatsApp($notifiable);
+        $count = count(self::BURST_DELAYS_SECONDS);
 
-            if ($response->failed()) {
-                Log::warning('CallMeBot WhatsApp alert failed', ['status' => $response->status()]);
-            }
-        } catch (\Throwable $e) {
-            Log::warning('CallMeBot WhatsApp alert unreachable: '.$e->getMessage());
+        foreach (self::BURST_DELAYS_SECONDS as $i => $delay) {
+            SendEscalationWhatsApp::dispatch($text.($i > 0 ? sprintf(' (reminder %d/%d)', $i + 1, $count) : ''))
+                ->delay(now()->addSeconds($delay));
         }
     }
 }
