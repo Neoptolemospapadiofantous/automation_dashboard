@@ -59,7 +59,8 @@ class EscalationAlertsTest extends TestCase
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'api.callmebot.com/start.php')
                 && $request['user'] === '+35799123456'
-                && $request['rpt'] == 2
+                && $request['rpt'] == 3
+                && $request['timeout'] == 60
                 && $request['cc'] === 'yes'
                 && str_contains($request['text'], 'Reception');
         });
