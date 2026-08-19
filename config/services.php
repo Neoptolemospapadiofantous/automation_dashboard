@@ -35,13 +35,13 @@ return [
         'agent_turn_team_id' => env('SLACK_AGENT_TURN_TEAM_ID'),
     ],
 
-    // Escalation WhatsApp (App\Notifications\Channels\CallMeBotWhatsAppChannel):
-    // free personal-use gateway to the founder's own number. Both unset =
-    // channel inert. The apikey comes from CallMeBot's one-time WhatsApp
-    // opt-in ("I allow callmebot to send me messages" → reply carries it).
+    // Escalation VOICE CALL (App\Notifications\Channels\CallMeBotTelegramCallChannel):
+    // CallMeBot's free Telegram Call API rings the founder's phone and a
+    // TTS voice reads the alert. telegram_user = @username or the phone
+    // (+357…) the founder's Telegram is registered with; they must have
+    // authorized @CallMeBot_txtbot (/start) once. Unset = channel inert.
     'callmebot' => [
-        'phone' => env('CALLMEBOT_PHONE', ''),
-        'apikey' => env('CALLMEBOT_APIKEY', ''),
+        'telegram_user' => env('CALLMEBOT_TELEGRAM_USER', ''),
     ],
 
     // Ecosystem BI warehouse ingestion API (SHARED.md — ~/.config/ecosystem/bi).

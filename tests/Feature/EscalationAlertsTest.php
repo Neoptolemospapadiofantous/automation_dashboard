@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\SendEscalationWhatsApp;
+use App\Jobs\PlaceEscalationCall;
 use App\Models\Agent;
 use App\Models\Team;
 use App\Models\User;
-use App\Notifications\Channels\CallMeBotWhatsAppChannel;
+use App\Notifications\Channels\CallMeBotTelegramCallChannel;
 use App\Notifications\HandoffRequestedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -27,47 +27,50 @@ class EscalationAlertsTest extends TestCase
         return new HandoffRequestedNotification($agent, 'embed-v1', 'visitor asked', 42, 'get me a human', 'a@b.cy');
     }
 
-    public function test_whatsapp_leg_joins_when_callmebot_configured_and_bursts(): void
+    public function test_call_leg_joins_when_configured_and_queues_one_call(): void
     {
         $notification = $this->notification();
         $user = User::factory()->create();
 
-        // Unconfigured → no WhatsApp leg.
-        $this->assertNotContains(CallMeBotWhatsAppChannel::class, $notification->via($user));
+        // Unconfigured → no call leg.
+        $this->assertNotContains(CallMeBotTelegramCallChannel::class, $notification->via($user));
 
-        config(['services.callmebot.phone' => '+35799123456', 'services.callmebot.apikey' => '123456']);
-        $this->assertContains(CallMeBotWhatsAppChannel::class, $notification->via($user));
+        config(['services.callmebot.telegram_user' => '+35799123456']);
+        $this->assertContains(CallMeBotTelegramCallChannel::class, $notification->via($user));
 
-        // The ring burst: three queued sends (0/45/90s) so the visitor's
-        // turn never waits on the gateway and the phone rings like a call.
+        // Queued (the visitor's turn never waits on the gateway), one call.
         Queue::fake();
-        (new CallMeBotWhatsAppChannel)->send($user, $notification);
-        Queue::assertPushed(SendEscalationWhatsApp::class, 3);
-        Queue::assertPushed(SendEscalationWhatsApp::class, fn ($job) => str_contains($job->text, 'Reception') && ! str_contains($job->text, 'reminder'));
-        Queue::assertPushed(SendEscalationWhatsApp::class, fn ($job) => str_contains($job->text, 'reminder 3/3'));
+        (new CallMeBotTelegramCallChannel)->send($user, $notification);
+        Queue::assertPushed(PlaceEscalationCall::class, 1);
+        Queue::assertPushed(PlaceEscalationCall::class, function (PlaceEscalationCall $job) {
+            return str_contains($job->text, 'Reception')
+                && str_contains($job->text, 'Contact details are on file')
+                && mb_strlen($job->text) <= 256;
+        });
     }
 
-    public function test_whatsapp_job_posts_to_callmebot(): void
+    public function test_call_job_dials_callmebot_with_tts_and_text_copy(): void
     {
-        config(['services.callmebot.phone' => '+35799123456', 'services.callmebot.apikey' => '123456']);
-        Http::fake(['api.callmebot.com/*' => Http::response('Message queued')]);
+        config(['services.callmebot.telegram_user' => '+35799123456']);
+        Http::fake(['api.callmebot.com/*' => Http::response('Call queued')]);
 
-        (new SendEscalationWhatsApp('🚨 Visitor needs a HUMAN — Reception'))->handle();
+        (new PlaceEscalationCall('Flowstack alert. A visitor on Reception is asking for a human.'))->handle();
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'api.callmebot.com/whatsapp.php')
-                && $request['phone'] === '+35799123456'
-                && $request['apikey'] === '123456'
+            return str_contains($request->url(), 'api.callmebot.com/start.php')
+                && $request['user'] === '+35799123456'
+                && $request['rpt'] == 2
+                && $request['cc'] === 'yes'
                 && str_contains($request['text'], 'Reception');
         });
     }
 
-    public function test_whatsapp_job_failure_never_throws(): void
+    public function test_call_job_failure_never_throws(): void
     {
-        config(['services.callmebot.phone' => '+35799123456', 'services.callmebot.apikey' => '123456']);
+        config(['services.callmebot.telegram_user' => '+35799123456']);
         Http::fake(['api.callmebot.com/*' => Http::response('boom', 500)]);
 
-        (new SendEscalationWhatsApp('test'))->handle(); // no exception = pass
+        (new PlaceEscalationCall('test'))->handle(); // no exception = pass
 
         $this->assertTrue(true);
     }

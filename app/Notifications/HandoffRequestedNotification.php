@@ -3,7 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Agent;
-use App\Notifications\Channels\CallMeBotWhatsAppChannel;
+use App\Notifications\Channels\CallMeBotTelegramCallChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -18,10 +18,10 @@ use Illuminate\Notifications\Notification;
  * message, and whether contact details were captured.
  *
  * Channels: database (bell) + mail (speed-to-human matters here even
- * more than for assignments — the visitor is live in the chat), plus a WhatsApp
- * alert to the founder's own number when the CallMeBot gateway is
- * configured — the channel that reliably interrupts a phone in-pocket
- * while the visitor is still on the page.
+ * more than for assignments — the visitor is live in the chat), plus a real
+ * VOICE CALL to the founder's phone (CallMeBot Telegram Call API) when
+ * configured — a ringing call is the one alert that interrupts
+ * everything while the visitor is still on the page.
  */
 class HandoffRequestedNotification extends Notification
 {
@@ -43,24 +43,25 @@ class HandoffRequestedNotification extends Notification
     {
         $channels = ['database', 'mail'];
 
-        // WhatsApp to the founder's own number (free CallMeBot gateway) —
-        // the loud phone layer while SMS stays blocked; see the channel.
-        if (CallMeBotWhatsAppChannel::configured()) {
-            $channels[] = CallMeBotWhatsAppChannel::class;
+        // Ring the founder's phone (free CallMeBot Telegram call) — see
+        // the channel class for why a call is the chosen phone layer.
+        if (CallMeBotTelegramCallChannel::configured()) {
+            $channels[] = CallMeBotTelegramCallChannel::class;
         }
 
         return $channels;
     }
 
-    public function toWhatsApp(object $notifiable): string
+    /**
+     * What the synthesized voice says on the call — short and ≤256 chars
+     * (the Telegram text copy carries the same line; details live in the
+     * email and dashboard).
+     */
+    public function toCallText(object $notifiable): string
     {
-        $contact = $this->contact !== null
-            ? "Contact: {$this->contact}."
-            : 'No contact captured yet — they are live in the chat NOW.';
-        $last = trim($this->lastMessage) !== '' ? "\n\"".mb_substr(trim($this->lastMessage), 0, 140).'"' : '';
-        $link = $this->conversationId !== null ? url("/conversations/{$this->conversationId}") : url('/conversations');
+        $contact = $this->contact !== null ? 'Contact details are on file.' : 'No contact captured — they are live in the chat now.';
 
-        return "🚨 Visitor needs a HUMAN — {$this->agent->name}\n{$contact}{$last}\nTake over: {$link}";
+        return "Flowstack alert. A visitor on {$this->agent->name} is asking for a human. {$contact} Open the dashboard to take over.";
     }
 
     public function toMail(object $notifiable): MailMessage
