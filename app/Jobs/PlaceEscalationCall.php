@@ -43,7 +43,10 @@ class PlaceEscalationCall implements ShouldQueue
                 // TTS is capped at 256 chars — the notification builds a short line.
                 'text' => mb_substr($this->text, 0, 256),
                 'lang' => 'en-GB-Standard-B',
-                'rpt' => 2,
+                // Ring/announce as long as the free tier allows — the founder
+                // wants it audible until they act on it, not a single chirp.
+                'rpt' => 3,
+                'timeout' => 60,
                 'cc' => 'yes',
             ]);
 
