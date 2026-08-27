@@ -240,7 +240,8 @@ function openPortal() {
                             </div>
                         </div>
 
-                        <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <!-- Three columns only from xl: beside the sidebar, lg leaves each card ~133px and the credit line wraps twice. -->
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                             <button
                                 v-for="p in plan_catalog"
                                 :key="p.key"
