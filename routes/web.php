@@ -124,11 +124,29 @@ Route::middleware([
     // Checkout. See BillingController::topup for the swap-over plan.
     Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
 
-    // Stripe subscription checkout. Plan key is one of 'starter' | 'operator'.
+    // Stripe subscription checkout — the team's FIRST subscription.
+    // The plan constraint must list every self-serve rung: a missing key 404s
+    // silently, which is exactly how 'growth' was unreachable between the
+    // 2026-08-27 repricing and this route being widened.
     Route::post('/subscribe/{plan}', [SubscribeController::class, 'start'])
-        ->where('plan', 'starter|operator')
+        ->where('plan', 'starter|growth|operator')
         ->middleware('throttle:10,1')
         ->name('subscribe.start');
+
+    // Switching an EXISTING subscription between rungs or billing cycles.
+    // Separate from start() on purpose — running an already-subscribed team
+    // through Checkout again creates a second subscription and double-bills.
+    Route::post('/subscribe/change/{plan}', [SubscribeController::class, 'change'])
+        ->where('plan', 'starter|growth|operator')
+        ->middleware('throttle:10,1')
+        ->name('subscribe.change');
+    Route::post('/subscribe/schedule-cancel', [SubscribeController::class, 'scheduleCancel'])
+        ->middleware('throttle:10,1')
+        ->name('subscribe.schedule-cancel');
+    Route::post('/subscribe/resume', [SubscribeController::class, 'resume'])
+        ->middleware('throttle:10,1')
+        ->name('subscribe.resume');
+
     Route::get('/subscribe/success', [SubscribeController::class, 'success'])
         ->name('subscribe.success');
     Route::get('/subscribe/cancel', [SubscribeController::class, 'cancel'])

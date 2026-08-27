@@ -76,7 +76,7 @@ class BillingController extends Controller
 
     /**
      * @return array{
-     *   key: string, value: string, label: string, monthly_eur: int,
+     *   key: string, value: string, label: string, plan_rank: int, monthly_eur: int,
      *   annual_eur: ?int, annual_equivalent_monthly_eur: ?int, annual_savings_pct: int,
      *   annual_available: bool, max_agents: int, monthly_credits: int
      * }
@@ -87,6 +87,9 @@ class BillingController extends Controller
             'key' => $key,
             'value' => $plan->value,
             'label' => $plan->label(),
+            // Ladder position — the UI compares it against billing.plan_rank
+            // to decide Upgrade vs Downgrade vs Current plan.
+            'plan_rank' => $plan->rank(),
             'monthly_eur' => (int) $plan->priceEur(),
             // The real yearly charge, not equivalent-monthly × 12 — those
             // disagree, and the UI must quote what Stripe will bill.

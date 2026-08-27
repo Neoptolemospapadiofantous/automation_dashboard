@@ -81,14 +81,55 @@ const subscribeForm = useForm({});
 // for the annual cycle isn't set (UI is also gated by plan.annual_available).
 const cycle = ref('monthly');
 
-function subscribe(planKey) {
-    // "Already on it" only counts with a live Stripe subscription —
-    // Plan::Free shares the "Starter" label, so an unpaid team must
-    // still be able to buy Starter.
-    if (billing.value?.subscribed && billing.value?.plan_label?.toLowerCase() === planKey) return;
-    if (! billing.value?.is_owner) return; // server enforces; UI matches
+const changeForm = useForm({});
+const cancelForm = useForm({});
+
+// What action does a given rung offer this team right now?
+//   'current'   → already billed on it
+//   'subscribe' → no live subscription yet: Stripe Checkout
+//   'upgrade' / 'downgrade' → live subscription: switch price in place
+// Routing a subscribed team back through Checkout would create a SECOND
+// Stripe subscription and bill them twice, which is why these are different
+// endpoints rather than one button.
+function actionFor(plan) {
+    if (! billing.value?.subscribed) return 'subscribe';
+    if (plan.value === billing.value?.plan) return 'current';
+    return plan.plan_rank > (billing.value?.plan_rank ?? 0) ? 'upgrade' : 'downgrade';
+}
+
+function actionLabel(plan) {
+    switch (actionFor(plan)) {
+        case 'current': return 'Current plan';
+        case 'upgrade': return `Upgrade to ${plan.label}`;
+        case 'downgrade': return `Switch to ${plan.label}`;
+        default: return `Choose ${plan.label}`;
+    }
+}
+
+function choosePlan(plan) {
+    if (! billing.value?.is_owner) return;      // server enforces; UI matches
+    const action = actionFor(plan);
+    if (action === 'current') return;
+
     const query = cycle.value === 'annual' ? '?cycle=annual' : '';
-    subscribeForm.post(`/subscribe/${planKey}${query}`);
+    if (action === 'subscribe') {
+        subscribeForm.post(`/subscribe/${plan.key}${query}`);
+        return;
+    }
+    // Live subscription → change the price in place.
+    changeForm.transform(() => ({ cycle: cycle.value })).post(`/subscribe/change/${plan.key}`, {
+        preserveScroll: true,
+    });
+}
+
+function scheduleCancel() {
+    if (! billing.value?.is_owner) return;
+    cancelForm.post(route('subscribe.schedule-cancel'), { preserveScroll: true });
+}
+
+function resumeSubscription() {
+    if (! billing.value?.is_owner) return;
+    cancelForm.post(route('subscribe.resume'), { preserveScroll: true });
 }
 
 const anyAnnualAvailable = computed(
@@ -205,9 +246,9 @@ function openPortal() {
                                 :key="p.key"
                                 type="button"
                                 class="shadow-sheet flex flex-col items-start rounded-none border p-3 text-left transition hover:border-ink hover:bg-surface-hi"
-                                :class="billing?.plan_label === p.label ? 'border-violet ring-1 ring-violet bg-surface-hi' : 'border-border-line bg-bg'"
-                                :disabled="!billing?.is_owner"
-                                @click="subscribe(p.key)"
+                                :class="actionFor(p) === 'current' ? 'border-violet ring-1 ring-violet bg-surface-hi' : 'border-border-line bg-bg'"
+                                :disabled="!billing?.is_owner || actionFor(p) === 'current'"
+                                @click="choosePlan(p)"
                             >
                                 <div class="flex items-baseline gap-2">
                                     <span class="text-sm font-semibold text-ink">{{ p.label }}</span>
@@ -238,13 +279,61 @@ function openPortal() {
                                     Annual not yet available — billed monthly.
                                 </div>
 
-                                <div class="mt-2 text-[11px] font-medium text-ink underline" v-if="!(billing?.subscribed && billing?.plan_label === p.label)">
-                                    Subscribe →
-                                </div>
-                                <div class="mt-2 text-[11px] font-medium text-ink-mute" v-else>
+                                <div v-if="actionFor(p) === 'current'" class="mt-2 text-[11px] font-medium text-ink-mute">
                                     Current plan
                                 </div>
+                                <div v-else class="mt-2 text-[11px] font-medium text-ink underline">
+                                    {{ actionLabel(p) }} →
+                                </div>
+                                <div
+                                    v-if="actionFor(p) === 'downgrade'"
+                                    class="mt-1 text-[10px] text-ink-mute"
+                                >
+                                    Credit applied to your next invoice
+                                </div>
+                                <div
+                                    v-else-if="actionFor(p) === 'upgrade'"
+                                    class="mt-1 text-[10px] text-ink-mute"
+                                >
+                                    You pay only the difference, today
+                                </div>
                             </button>
+                        </div>
+
+                        <!-- Cancellation is scheduled, never immediate: the
+                             customer keeps what they paid for until the period
+                             ends, and can undo it right up to that moment. -->
+                        <div v-if="billing?.subscribed && billing?.is_owner" class="mt-3 flex flex-wrap items-center gap-3 border-t border-border-line pt-3">
+                            <template v-if="billing?.cancel_at_period_end">
+                                <span class="text-[11px] text-state-warn-ink">
+                                    Ends
+                                    <template v-if="billing?.current_period_end">on {{ billing.current_period_end }}</template>
+                                    <template v-else>at the end of this period</template>
+                                    · you keep everything until then.
+                                </span>
+                                <button
+                                    type="button"
+                                    class="text-[11px] font-medium text-ink underline disabled:opacity-50"
+                                    :disabled="cancelForm.processing"
+                                    @click="resumeSubscription"
+                                >
+                                    Resume subscription
+                                </button>
+                            </template>
+                            <template v-else>
+                                <span class="text-[11px] text-ink-mute">
+                                    <template v-if="billing?.current_period_end">Renews on {{ billing.current_period_end }}.</template>
+                                    <template v-else>Cancel anytime — no notice period.</template>
+                                </span>
+                                <button
+                                    type="button"
+                                    class="text-[11px] font-medium text-ink-dim underline disabled:opacity-50"
+                                    :disabled="cancelForm.processing"
+                                    @click="scheduleCancel"
+                                >
+                                    Cancel at period end
+                                </button>
+                            </template>
                         </div>
                     </div>
 

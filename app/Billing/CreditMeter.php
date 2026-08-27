@@ -121,6 +121,46 @@ class CreditMeter
      * Stripe invoice_paid webhook). Idempotent — won't grant twice in the
      * same billing period.
      */
+    /**
+     * Raise the monthly bucket to the current plan's allotment, never lower it.
+     *
+     * This is the mid-period plan-change path, and the asymmetry is the whole
+     * point. grantMonthlyRenewal() RESETS the bucket, which is right at a
+     * period boundary but wrong in the middle of one: a customer who
+     * downgrades on day 20 has already paid for the credits sitting in their
+     * balance, and wiping them down to the smaller plan's allotment would be
+     * a claw-back. So an upgrade tops up immediately (they paid the prorated
+     * difference), and a downgrade leaves the balance alone to expire
+     * naturally at the next renewal.
+     *
+     * No-ops when the balance already covers the allotment, so it is safe to
+     * call on any subscription_update invoice, including duplicates.
+     *
+     * @param  array<string, mixed>|null  $meta
+     */
+    public function raiseMonthlyAllowance(Team $team, ?array $meta = null): void
+    {
+        $plan = $team->planObject();
+        $target = $plan->monthlyCredits();
+        $current = (int) $team->credit_balance;
+        if ($target <= $current) {
+            return;
+        }
+
+        $delta = $target - $current;
+
+        DB::transaction(function () use ($team, $plan, $target, $delta, $meta): void {
+            $team->forceFill(['credit_balance' => $target])->save();
+
+            CreditTransaction::create([
+                'team_id' => $team->id,
+                'amount' => $delta,
+                'reason' => CreditTransaction::REASON_GRANT_RENEWAL,
+                'meta' => array_merge(['plan' => $plan->value, 'reason' => 'plan_upgrade'], $meta ?? []),
+            ]);
+        });
+    }
+
     public function grantMonthlyRenewal(Team $team, ?array $meta = null): void
     {
         $plan = $team->planObject();

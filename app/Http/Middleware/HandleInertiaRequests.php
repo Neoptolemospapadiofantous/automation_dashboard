@@ -167,6 +167,9 @@ class HandleInertiaRequests extends Middleware
                             'has_stripe_customer' => $hasStripeCustomer,
                             'subscription_status' => $subscriptionStatus,
                             'subscribed' => $subscribed,
+                            'plan_rank' => $plan->rank(),
+                            'cancel_at_period_end' => (bool) $team->getAttribute('stripe_cancel_at_period_end'),
+                            'current_period_end' => optional($team->getAttribute('stripe_current_period_end'))->toDateString(),
                             'is_owner' => $isOwner,
                         ];
                     }
@@ -193,6 +196,13 @@ class HandleInertiaRequests extends Middleware
                         'subscription_status' => $subscriptionStatus,
                         'subscribed' => $subscribed,
                         'is_owner' => $isOwner,
+                        // Self-serve plan switching needs to know where the
+                        // team sits on the ladder and whether an end-date is
+                        // already scheduled, so the UI can offer Upgrade /
+                        // Downgrade / Resume rather than one blunt Subscribe.
+                        'plan_rank' => $plan->rank(),
+                        'cancel_at_period_end' => (bool) $team->getAttribute('stripe_cancel_at_period_end'),
+                        'current_period_end' => optional($team->getAttribute('stripe_current_period_end'))->toDateString(),
                     ];
                 })()
                 : null,

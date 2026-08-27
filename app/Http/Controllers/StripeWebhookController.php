@@ -216,7 +216,23 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        $this->meter->grantMonthlyRenewal($team);
+        // Resolve the plan from the INVOICE's own price before granting.
+        // Stripe does not guarantee that customer.subscription.updated arrives
+        // first, so relying on the plan column here would grant the OLD
+        // allotment on an upgrade. Reading the price off the invoice makes
+        // this handler correct whichever order the two events land in.
+        $this->syncPlanFromInvoice($team, $invoice);
+        $team->refresh();
+
+        if ((string) ($invoice['billing_reason'] ?? '') === 'subscription_update') {
+            // Mid-period plan change: raise the allowance, never lower it.
+            // A downgrade's proration invoice is still a paid invoice, and
+            // resetting the bucket here would confiscate credits the customer
+            // has already paid for.
+            $this->meter->raiseMonthlyAllowance($team, ['source' => 'stripe:subscription_update']);
+        } else {
+            $this->meter->grantMonthlyRenewal($team);
+        }
 
         // Cache the next period end for UI display.
         /** @var array<int, array<string, mixed>> $lines */
@@ -265,9 +281,75 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        $team->forceFill([
+        $fill = [
             'stripe_subscription_status' => (string) ($subscription['status'] ?? ''),
-        ])->save();
+            'stripe_cancel_at_period_end' => (bool) ($subscription['cancel_at_period_end'] ?? false),
+        ];
+
+        $periodEnd = $subscription['current_period_end'] ?? null;
+        if (is_int($periodEnd) || (is_string($periodEnd) && ctype_digit($periodEnd))) {
+            $fill['stripe_current_period_end'] = CarbonImmutable::createFromTimestamp((int) $periodEnd);
+        }
+
+        // A price swap arrives as an update, so the ENTITLEMENT has to move
+        // with it. Without this the team keeps its old rung's agent cap and
+        // allotment while paying the new price (or the reverse) — the plan
+        // column and Stripe silently disagree.
+        $plan = $this->planFromPriceIds([
+            (string) ($subscription['items']['data'][0]['price']['id'] ?? ''),
+        ]);
+        if ($plan instanceof Plan) {
+            $fill['plan'] = $plan->value;
+        }
+
+        $team->forceFill($fill)->save();
+    }
+
+    /**
+     * Point a team's plan at whatever price its invoice actually billed.
+     *
+     * @param  array<string, mixed>  $invoice
+     */
+    protected function syncPlanFromInvoice(Team $team, array $invoice): void
+    {
+        /** @var array<int, array<string, mixed>> $lines */
+        $lines = (array) ($invoice['lines']['data'] ?? []);
+
+        $priceIds = [];
+        foreach ($lines as $line) {
+            foreach ([$line['price']['id'] ?? null, $line['plan']['id'] ?? null] as $candidate) {
+                if (is_string($candidate) && $candidate !== '') {
+                    $priceIds[] = $candidate;
+                }
+            }
+        }
+
+        $plan = $this->planFromPriceIds($priceIds);
+        if ($plan instanceof Plan && $plan !== $team->planObject()) {
+            $team->forceFill(['plan' => $plan->value])->save();
+        }
+    }
+
+    /**
+     * First price id that maps to a plan we recognise. Proration invoices
+     * carry several lines (the credit for the old price, the charge for the
+     * new one), so this deliberately scans rather than trusting line zero.
+     *
+     * @param  array<int, string>  $priceIds
+     */
+    protected function planFromPriceIds(array $priceIds): ?Plan
+    {
+        foreach ($priceIds as $priceId) {
+            if ($priceId === '') {
+                continue;
+            }
+            $plan = Plan::fromStripePriceId($priceId);
+            if ($plan instanceof Plan) {
+                return $plan;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -289,6 +371,7 @@ class StripeWebhookController extends Controller
             'stripe_subscription_id' => null,
             'stripe_subscription_status' => 'canceled',
             'stripe_current_period_end' => null,
+            'stripe_cancel_at_period_end' => false,
         ])->save();
     }
 }

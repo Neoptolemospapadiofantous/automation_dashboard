@@ -127,6 +127,7 @@ class Team extends JetstreamTeam
             // this for idempotency.
             'alert_thresholds_fired' => 'array',
             'stripe_current_period_end' => 'datetime',
+            'stripe_cancel_at_period_end' => 'boolean',
             // Onboarding profile (industry/use_case/team_size/etc.)
             // captured at signup. Free-form JSON; the wizard validates
             // the shape on the way in. See OnboardingController::startAgent.

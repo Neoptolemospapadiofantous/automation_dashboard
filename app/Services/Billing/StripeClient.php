@@ -11,6 +11,7 @@ use Stripe\Customer;
 use Stripe\Event;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\StripeClient as StripeSdk;
+use Stripe\Subscription;
 use Stripe\Webhook;
 
 /**
@@ -136,6 +137,85 @@ class StripeClient
      *
      * Returns the portal session URL. Caller redirects the browser.
      */
+    /**
+     * Move a live subscription onto a different Price — the self-serve
+     * upgrade/downgrade. Stripe requires the existing item id, so the
+     * subscription is retrieved first and its single item swapped in place;
+     * replacing `items` wholesale would cancel and re-create it, losing the
+     * billing anchor and charging a fresh full period.
+     *
+     * $invoiceImmediately drives proration:
+     *   UPGRADE  → true  → Stripe invoices the prorated difference now, so
+     *                      money lands before the larger allowance does.
+     *   DOWNGRADE→ false → prorated credit sits on the account against the
+     *                      next invoice. We never refund and never claw back
+     *                      credits already paid for.
+     *
+     * @throws \InvalidArgumentException when the team has no live subscription
+     */
+    public function changeSubscriptionPrice(Team $team, string $priceId, bool $invoiceImmediately): Subscription
+    {
+        $subscriptionId = (string) $team->stripe_subscription_id;
+        if ($subscriptionId === '') {
+            throw new \InvalidArgumentException('Team has no live subscription to change.');
+        }
+
+        $subscription = $this->sdk()->subscriptions->retrieve($subscriptionId);
+        $itemId = $subscription->items->data[0]->id ?? null;
+        if (! is_string($itemId) || $itemId === '') {
+            throw new \InvalidArgumentException("Subscription {$subscriptionId} has no line item to change.");
+        }
+
+        return $this->sdk()->subscriptions->update($subscriptionId, [
+            'items' => [['id' => $itemId, 'price' => $priceId]],
+            'proration_behavior' => $invoiceImmediately ? 'always_invoice' : 'create_prorations',
+            // Keep the renewal date. Without this an upgrade would reset the
+            // billing anchor and the customer would pay a full period twice.
+            'billing_cycle_anchor' => 'unchanged',
+            'payment_behavior' => 'error_if_incomplete',
+        ]);
+    }
+
+    /**
+     * The Price a team's live subscription is currently billed on, or null if
+     * there is no subscription. Lets the caller reject a no-op switch (same
+     * rung AND same cycle) before it reaches Stripe.
+     */
+    public function subscriptionPriceId(Team $team): ?string
+    {
+        $subscriptionId = (string) $team->stripe_subscription_id;
+        if ($subscriptionId === '') {
+            return null;
+        }
+
+        $subscription = $this->sdk()->subscriptions->retrieve($subscriptionId);
+        $priceId = $subscription->items->data[0]->price->id ?? null;
+
+        return is_string($priceId) && $priceId !== '' ? $priceId : null;
+    }
+
+    /**
+     * Schedule (or un-schedule) cancellation at the end of the paid period.
+     *
+     * Deliberately NOT subscriptions->cancel(): that ends the subscription
+     * immediately and throws away time the customer already paid for. This
+     * keeps them on their plan until the period ends and stays reversible
+     * right up to that moment.
+     *
+     * @throws \InvalidArgumentException when the team has no live subscription
+     */
+    public function setCancelAtPeriodEnd(Team $team, bool $cancel): Subscription
+    {
+        $subscriptionId = (string) $team->stripe_subscription_id;
+        if ($subscriptionId === '') {
+            throw new \InvalidArgumentException('Team has no live subscription to cancel.');
+        }
+
+        return $this->sdk()->subscriptions->update($subscriptionId, [
+            'cancel_at_period_end' => $cancel,
+        ]);
+    }
+
     public function createBillingPortalSession(Team $team, string $returnUrl): BillingPortalSession
     {
         $customerId = (string) $team->stripe_customer_id;

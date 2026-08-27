@@ -110,6 +110,33 @@ enum Plan: string
     }
 
     /**
+     * Position on the self-serve ladder, low to high. Drives upgrade vs
+     * downgrade decisions — which in turn decide whether Stripe invoices the
+     * difference immediately and whether the credit allowance may move.
+     *
+     * Custom sits outside the ladder (it is negotiated, never self-served),
+     * so it ranks above everything and is refused by the switch flow.
+     */
+    public function rank(): int
+    {
+        return match ($this) {
+            self::Free => 0,
+            self::Starter => 1,
+            self::Growth => 2,
+            self::Pro => 3,
+            self::Business => 4,
+        };
+    }
+
+    /**
+     * Is moving to $target a move UP the ladder from this plan?
+     */
+    public function isUpgradeTo(self $target): bool
+    {
+        return $target->rank() > $this->rank();
+    }
+
+    /**
      * Whether this plan is a paid, Stripe-billed subscription. Free is
      * self-serve with no Stripe object at all; Custom is invoiced
      * out-of-band. Used by the pricing invariants (a €0 plan can't be a

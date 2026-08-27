@@ -19,7 +19,9 @@ use Throwable;
  *    protocol: a tool call is a reply that is EXACTLY one JSON object
  *    {"tool": name, "input": {...}} and nothing else;
  *  - a reply parsing as that JSON becomes a canonical tool_use block, so
- *    the FlowExecutor's tool loop works unchanged.
+ *    the FlowExecutor's tool loop works unchanged. A model that wraps the
+ *    call in prose is still honoured, and protocol JSON we cannot dispatch
+ *    is stripped rather than shown to the visitor.
  *
  * Token usage is estimated (~4 chars/token) — the bridge reports none and
  * subscription turns have no metered cost; the estimates only feed the
@@ -57,7 +59,11 @@ class BridgeClient implements LlmClient
             throw new UpstreamUnavailable('claude-bridge returned HTTP '.$response->status().': '.mb_substr($detail, 0, 300));
         }
 
-        return $this->parse((string) $response->json('text', ''), strlen($payload['system']) + strlen($payload['user']));
+        return $this->parse(
+            (string) $response->json('text', ''),
+            strlen($payload['system']) + strlen($payload['user']),
+            array_values(array_filter(array_map(fn (array $t) => (string) ($t['name'] ?? ''), $tools))),
+        );
     }
 
     /**
@@ -124,21 +130,25 @@ class BridgeClient implements LlmClient
             .json_encode($specs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
-    protected function parse(string $text, int $promptChars): CompletionResult
+    /**
+     * @param  list<string>  $toolNames  Tools actually offered this turn — a
+     *                                   call naming anything else is not ours to dispatch.
+     */
+    protected function parse(string $text, int $promptChars, array $toolNames = []): CompletionResult
     {
         $trimmed = trim($text);
         $inputTokens = intdiv($promptChars, 4);
         $outputTokens = max(1, intdiv(strlen($trimmed), 4));
 
-        if (str_starts_with($trimmed, '{')) {
-            $decoded = json_decode($trimmed, true);
-            if (is_array($decoded) && is_string($decoded['tool'] ?? null) && is_array($decoded['input'] ?? null)) {
-                $id = 'bridge_'.$decoded['tool'].'_'.substr(md5($trimmed), 0, 8);
-                $block = ['type' => 'tool_use', 'id' => $id, 'name' => $decoded['tool'], 'input' => $decoded['input']];
+        if ($toolNames !== []) {
+            [$call, $trimmed] = $this->extractToolCall($trimmed, $toolNames);
+
+            if ($call !== null) {
+                $block = ['type' => 'tool_use', 'id' => $call->id, 'name' => $call->name, 'input' => $call->input];
 
                 return new CompletionResult(
                     text: '',
-                    toolCalls: [new ToolCall(id: $id, name: $decoded['tool'], input: $decoded['input'])],
+                    toolCalls: [$call],
                     contentBlocks: [$block],
                     stopReason: 'tool_use',
                     inputTokens: $inputTokens,
@@ -155,6 +165,93 @@ class BridgeClient implements LlmClient
             inputTokens: $inputTokens,
             outputTokens: $outputTokens,
         );
+    }
+
+    /**
+     * Pull the turn's tool call out of a reply, and make sure protocol JSON
+     * never reaches the visitor.
+     *
+     * The protocol says a call is the ENTIRE reply, but a model that wraps
+     * it in prose ("Sure, saving that now. {...}") would otherwise render
+     * raw JSON in the chat AND silently skip the tool. So: scan the reply
+     * for a call naming a tool we actually offered; if one is unusable
+     * (bad shape, unknown name) strip it from the visible text rather than
+     * showing it.
+     *
+     * @param  list<string>  $toolNames
+     * @return array{0: ToolCall|null, 1: string} [call, visible text]
+     */
+    protected function extractToolCall(string $text, array $toolNames): array
+    {
+        $visible = $text;
+
+        foreach ($this->jsonObjects($text) as $json) {
+            $decoded = json_decode($json, true);
+            if (! is_array($decoded) || ! is_string($decoded['tool'] ?? null)) {
+                continue;
+            }
+
+            if (is_array($decoded['input'] ?? null) && in_array($decoded['tool'], $toolNames, true)) {
+                return [new ToolCall(
+                    id: 'bridge_'.$decoded['tool'].'_'.substr(md5($json), 0, 8),
+                    name: $decoded['tool'],
+                    input: $decoded['input'],
+                ), ''];
+            }
+
+            // Recognisably a tool call we cannot dispatch — never render it.
+            $visible = trim(str_replace($json, '', $visible));
+        }
+
+        return [null, $visible];
+    }
+
+    /**
+     * Every outermost balanced {...} substring in $text. Brace counting is
+     * string- and escape-aware so a brace inside a JSON string value can't
+     * unbalance the scan.
+     *
+     * @return list<string>
+     */
+    protected function jsonObjects(string $text): array
+    {
+        $found = [];
+        $depth = 0;
+        $start = 0;
+        $inString = false;
+        $escaped = false;
+
+        for ($i = 0, $len = strlen($text); $i < $len; $i++) {
+            $char = $text[$i];
+
+            if ($inString) {
+                if ($escaped) {
+                    $escaped = false;
+                } elseif ($char === '\\') {
+                    $escaped = true;
+                } elseif ($char === '"') {
+                    $inString = false;
+                }
+
+                continue;
+            }
+
+            if ($char === '"') {
+                $inString = true;
+            } elseif ($char === '{') {
+                if ($depth === 0) {
+                    $start = $i;
+                }
+                $depth++;
+            } elseif ($char === '}' && $depth > 0) {
+                $depth--;
+                if ($depth === 0) {
+                    $found[] = substr($text, $start, $i - $start + 1);
+                }
+            }
+        }
+
+        return $found;
     }
 
     /**

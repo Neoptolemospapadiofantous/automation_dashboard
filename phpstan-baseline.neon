@@ -127,12 +127,6 @@ parameters:
 			path: app/Billing/Exceptions/PlanLimitExceeded.php
 
 		-
-			message: '#^Unused App\\Billing\\Plan\:\:fromStripePriceId$#'
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: app/Billing/Plan.php
-
-		-
 			message: '#^Cannot call method diffForHumans\(\) on string\.$#'
 			identifier: method.nonObject
 			count: 1
