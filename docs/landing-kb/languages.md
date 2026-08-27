@@ -1,7 +1,12 @@
-# Languages the chat speaks
+# Languages the chat speaks — multilingual and language support
 
 Yes — the agent answers in Greek as well as English, and in most other
 languages a visitor is likely to write in.
+
+If you are asking whether the widget supports multiple languages, whether the
+chat is multilingual or bilingual, whether it does language support or
+translation, or whether it can talk to customers who don't write in English —
+this page is the answer, and the answer is yes.
 
 ## How it decides
 
@@ -38,3 +43,8 @@ Two honest caveats:
   where the exact phrasing matters to you.
 - **Which language do the transcripts and the leads dashboard show?** The
   conversation exactly as it happened, in the language it happened in.
+- **Does the website widget support multiple languages?** Yes — the same
+  widget, the same one script tag. Multilingual is not a separate product, a
+  paid add-on, or a different agent.
+- **Is it bilingual, or more than two languages?** More. It is not limited to
+  a pair you pick in advance.
