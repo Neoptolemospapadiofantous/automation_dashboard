@@ -44,7 +44,14 @@
         <!-- Dedicated test database — NEVER the dev DB. Combined with the
              config:clear before the test step in scripts/hermes.sh (a stale
              config:cache pointing at the dev DB is what once let a test run
-             wipe dev data). -->
+             wipe dev data).
+
+             NOTE: these <env> values apply to PHPUnit runs ONLY. They do
+             nothing for artisan, so a `migrate:fresh` carrying an env flag of
+             "testing" used to resolve to .env and drop the DEV database, which
+             it did on 2026-08-27. `.env.testing` now exists so that flag points
+             where everyone assumes. Reset the test DB with `php artisan test`
+             (RefreshDatabase handles it), never with migrate:fresh. -->
         <env name="DB_CONNECTION" value="mariadb"/>
         <env name="DB_HOST" value="127.0.0.1"/>
         <env name="DB_PORT" value="3306"/>
