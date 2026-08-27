@@ -6,40 +6,35 @@ real-time dashboard) are the same across all of them.
 
 ## Lead qualification
 
-Greets every inbound visit, qualifies on ICP (ideal customer profile) fit, and
-hands only the warm conversations to your team — with the full transcript on
-every touch.
+Works out who is worth your team's time, and hands over only those — with the
+full conversation attached.
 
-- Greets every inbound visit: no forms, no queue — every visitor gets an instant
-  first touch, on your site, at any hour.
-- Qualifies on ICP fit: asks the questions that matter for your ICP and scores
-  each conversation before anyone on your team gets pinged.
-- Hands over only the warm conversations: warm leads land in your real-time
-  dashboard with the full transcript; the rest never cost your team a minute.
+- Greets every visitor: no forms, no queue, at any hour.
+- Scores the ones worth your time: asks a few questions before anyone is pinged.
+- Hands over only the good ones: they land in your dashboard with the whole
+  conversation. The rest never cost your team a minute.
 
 ## Sales
 
-Walks visitors through your offer, answers pricing and scope questions, and books
-qualified demos straight onto your calendar.
+Walks visitors through your offer, answers price and scope questions, and books
+the demo.
 
-- Walks visitors through your offer, sourced from the knowledge you upload.
-- Handles pricing and scope questions on the spot, inside the conversation.
-- Books qualified demos onto your calendar; every exchange lands as a transcript.
+- Walks visitors through your offer, from the knowledge you upload.
+- Answers price and scope questions on the spot.
+- Books good conversations onto your calendar; every one is saved.
 
 ## Customer support
 
-First-line answers from your knowledge base. Escalates only when a human is
-actually needed. Trained on your tone, not generic.
+Answers the questions your team keeps answering, from your own docs.
 
 - Answers from your knowledge base — what you actually ship, in your tone.
-- Escalates only when needed; visitors can ask for a human at any time.
-- Captures every conversation as a full transcript in the dashboard.
+- Handles repeat questions instantly; a human is one ask away.
+- Saves every conversation to the dashboard. Nobody watches a queue.
 
 ## Onboarding
 
-Walks new customers through setup step by step, answers the recurring questions
-from your docs, and routes anything that needs a human to your team.
+Walks new customers through setup and routes the rest to you.
 
-- Guides setup step by step, interactively.
-- Answers the recurring questions every new account asks, from your docs.
-- Routes the exceptions to your team, with the full conversation attached.
+- Step-by-step setup instead of a wall of docs.
+- Answers the questions every new account asks, from your docs.
+- Routes anything needing a human to your team, conversation attached.

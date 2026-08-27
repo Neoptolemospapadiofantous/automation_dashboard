@@ -1,23 +1,21 @@
 # Custom build
 
-The off-the-shelf agent covers the standardisable ~80% of use cases. The custom
-build engagement is the delegation layer — the chat is the front door, and we
-build what runs behind it: the work your team runs by hand, delegated to
-automations wired to your stack (CRM, Sheets, internal tools); lead sourcing,
-enrichment and outreach pipelines; and reporting pipelines that pull your
-scattered numbers into one live dashboard — reports that build themselves, with
-every run fully audited. It's the same automation stack Flowstack runs its own
-growth on.
+The standard agent covers about 80% of what people need. The custom build is
+everything behind it: the work your team does by hand, handed to automations
+wired into your own tools (CRM, sheets, internal systems); lead sourcing,
+enrichment and outreach; and reporting that pulls your scattered numbers into
+one live dashboard. Reports that build themselves, every run audited. It is the
+same setup we run our own company on.
 
 ## What we build
 
 Named services, each scoped to your stack:
 
 - **Agent go-live** — we load your knowledge, tune the voice, install it on your site
-- **Cold outreach** (lead generation / prospecting / cold email) — your own sending domain, a verified list of companies you want as customers, sequences in your voice, replies handed to you
+- **Cold outreach** (lead generation / prospecting / cold email) — your own address, a checked list of companies that fit you, emails in your voice, replies handed to you
 - **One live view** — the numbers you rebuild by hand, pulled into one dashboard
-- **Booking** — request, availability, booking, confirmation, reminder
-- **Invoices & documents** — generated, sent and chased, with the payment follow-up running itself
+- **Booking** — booking, confirmation and reminders, no phone tag
+- **Invoices & documents** — made, sent and chased; the follow-up runs itself
 - **Connect your tools** — your CRM, sheets and inbox stop needing the same thing typed twice
 - **Inbox triage** — incoming mail sorted, labelled and routed automatically
 - **Ongoing care** — we watch what we built and fix it before you notice
@@ -25,13 +23,12 @@ Named services, each scoped to your stack:
 ## What it costs
 
 There is no list price for build work, and you should not quote one. Every
-engagement is scoped to the customer's own stack and quoted after the free
-30-minute audit, with a written fixed-scope proposal within 48 hours — what
-ships, in how long, for how much. It is theirs to keep whether or not they go
-ahead, the price is fixed before work starts, and they keep the code.
+build is quoted after the free 30-minute call, with a written price within 48
+hours — what ships, how long it takes, what it costs. It is theirs to keep
+either way, the price is fixed before work starts, and they keep the code.
 
 If someone asks what a build costs, the honest and complete answer is to book
-the audit. Do not estimate, do not give a range.
+the call. Do not estimate, do not give a range.
 
 ## When you need it
 
@@ -57,9 +54,8 @@ If you outgrow the product later, you walk away with everything that was shipped
 
 ## The audit (how to start)
 
-The audit is a free 30-minute call — no pitch, no slides on our side. You walk
-us through the work you want off your plate; within 48 hours you get a written,
-fixed-scope build proposal: what we'll ship, on which integrations, in how
-long, for how much. The document is yours to keep whether or not you hire us —
-no retainer, no NDA gating, no follow-up sales emails. Book it via the form at
+A free 30-minute call — no pitch, no slides on our side. You show us the work
+you want off your plate; within 48 hours you get a written price and scope: what
+we ship, on which integrations, how long, how much. Yours to keep whether or not
+you hire us — no retainer, no NDA, no follow-up sales emails. Book it at
 flowstack.run/audit.

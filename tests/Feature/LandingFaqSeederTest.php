@@ -148,4 +148,30 @@ class LandingFaqSeederTest extends TestCase
         $human = $chips[$position['Talk to a human']];
         $this->assertTrue(($human['escalate'] ?? false), 'The "Talk to a human" chip must escalate.');
     }
+
+    public function test_answers_stay_short_and_end_on_a_question(): void
+    {
+        // These render in a chat bubble, not on a page, and they are the
+        // most-read turns on the site. Two rules from the copy pass:
+        // a hard length ceiling, and a forward-moving close so a canned
+        // answer never dead-ends the conversation.
+        $method = new \ReflectionMethod(LandingFaqSeeder::class, 'chips');
+        $method->setAccessible(true);
+        /** @var list<array{category: string, keywords: list<string>, answer: string, escalate?: bool}> $chips */
+        $chips = $method->invoke(new LandingFaqSeeder);
+
+        foreach ($chips as $chip) {
+            $words = str_word_count($chip['answer']);
+            $this->assertLessThanOrEqual(
+                75,
+                $words,
+                "The '{$chip['category']}' answer is {$words} words — too long for a chat bubble.",
+            );
+            $this->assertStringEndsWith(
+                '?',
+                rtrim($chip['answer']),
+                "The '{$chip['category']}' answer must end on a question that moves the conversation on.",
+            );
+        }
+    }
 }

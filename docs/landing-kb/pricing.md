@@ -25,7 +25,7 @@ out, you upgrade.
 - Top-up credits anytime
 - Cancel anytime, no lock-in
 
-One agent live in 60 seconds, full feature set. This is the entry paid plan.
+One agent, live in about a minute. Every feature on. This is the entry paid plan.
 
 ## Growth — €19/month
 
@@ -35,8 +35,7 @@ One agent live in 60 seconds, full feature set. This is the entry paid plan.
 - Top-up credits anytime
 - Cancel anytime, no lock-in
 
-For a site with real inbound volume, or a team that wants a different agent per
-role.
+For a site with real traffic, or a team that wants a different agent per role.
 
 ## Operator — €39/month
 
@@ -46,8 +45,8 @@ role.
 - Best rate per credit
 - Cancel anytime, no lock-in
 
-For teams running agents in production. This is the most expensive plan we
-sell — everything above it is custom build work, quoted per project.
+For teams running several agents every day. This is the most expensive plan we
+sell — everything above it is build work, quoted per project.
 
 ## Custom — let's talk (scoped, 4–6 week build)
 
@@ -57,16 +56,21 @@ sell — everything above it is custom build work, quoted per project.
 - Trained on your knowledge and voice
 - Runbooks and handover, optional retainer
 
-For when the off-the-shelf agent isn't enough. Book the free 30-minute audit to
-scope it — you get a written, fixed-scope proposal within 48 hours, yours to
-keep either way. There is no list price for build work; the audit is the answer.
+For when the standard chat isn't enough. Book the free 30-minute call to scope
+it — you get a written price within 48 hours, yours to keep either way. There is
+no list price for build work; the call is the answer.
 
 ## Credits and top-ups
 
 Conversations are metered in credits (250/month on Free, 2,500 on Starter,
 10,000 on Growth, 25,000 on Operator). A message on the fast default model costs
-1 credit; smarter models cost more per message because they cost us more to run,
-so the same allowance goes much further on a quick model than on a premium one.
+1 credit; smarter models cost more per message, because they cost us more to
+run.
+
+In practice a short chat uses about 5-8 credits. So Starter covers roughly
+300-500 chats a month and Operator about ten times that. You are not charged for
+the opening hello, a visitor coming back to an old chat, the instant answers set
+up for common questions, or any chat one of your team takes over.
 
 If you need more headroom on a paid plan, buy a top-up pack — €5 for 1,000
 credits, €15 for 5,000, €40 for 20,000 — or choose your own amount from €10 to

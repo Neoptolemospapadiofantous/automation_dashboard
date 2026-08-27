@@ -109,6 +109,13 @@ class LandingFaqSeeder extends Seeder
      * was wiped back to 7 chips by a v14 seeder run two days later. This set is
      * v13 merged with v14's escalate flag and the 2026-08-27 prices.
      *
+     * ANSWER LENGTH IS PART OF THE COPY. These are the cheapest and most-read
+     * turns on the site, and they render in a chat bubble, not on a page —
+     * they were cut from 60-90 words to 38-68 on 2026-08-27 to match the
+     * landing's TL;DR rewrite. Keep them short, plain, and ending on a
+     * forward-moving question; the detail lives in docs/landing-kb, which the
+     * LLM path retrieves when a visitor wants more.
+     *
      * @return list<array{category: string, keywords: list<string>, answer: string, escalate?: bool}>
      */
     private function chips(): array
@@ -121,7 +128,7 @@ class LandingFaqSeeder extends Seeder
                     'prospecting', 'find customers', 'find me customers', 'get me customers', 'get customers',
                     'more customers', 'win customers', 'new customers', 'customer acquisition', 'email campaign',
                 ],
-                'answer' => 'Yes — that\'s its own service, separate from the chat. We find the companies you want as customers, write to them in your voice, and hand you the replies. You approve every word before anything sends. Scoped to your market and quoted after the free audit — flowstack.run/outreach. What kind of companies would you want to reach?',
+                'answer' => 'Yes — that\'s a separate service from the chat. We find companies that fit you, email them in your voice, and hand you the replies. You approve every word. Quoted after a free 30-minute call — flowstack.run/outreach. What kind of companies do you want to reach?',
             ],
             [
                 'category' => 'What works',
@@ -129,7 +136,7 @@ class LandingFaqSeeder extends Seeder
                     'what works', 'analytics', 'reporting', 'reports', 'business intelligence', 'live view',
                     'one live view', 'kpi', 'kpis', 'metrics', 'experiments', 'a/b test',
                 ],
-                'answer' => 'Two halves: your numbers pulled out of the tools they\'re scattered across into one live view, and the loop that keeps testing what you send and retiring what doesn\'t work. Built around your stack and quoted after the free audit — flowstack.run/what-works. What are you rebuilding by hand at the moment?',
+                'answer' => 'Two things: all your numbers in one dashboard, and a monthly loop that tests what you send and keeps what works. Built around the tools you already use, quoted after a free 30-minute call — flowstack.run/what-works. What are you rebuilding by hand right now?',
             ],
             [
                 'category' => 'Custom build',
@@ -137,7 +144,7 @@ class LandingFaqSeeder extends Seeder
                     'custom build', 'custom-build', 'bespoke', 'own llm', 'what do you build', 'build me',
                     'build us', 'build for me', 'build for us', 'scope', 'proposal',
                 ],
-                'answer' => 'Eight things we build: agent go-live, cold outreach, one live view, booking, invoices and documents, connecting your tools, inbox triage, and ongoing care. Each is scoped to your stack and quoted after a free 30-minute audit — a written fixed-scope proposal within 48 hours, yours to keep either way, and you keep the code. There\'s no list price, because no two builds are the same. What would you want built?',
+                'answer' => 'Eight things: agent go-live, cold outreach, one live view, booking, invoices, connecting your tools, inbox triage, and ongoing care. Each is quoted after a free 30-minute call — a written price within 48 hours, yours to keep, and you keep the code. No list price, because no two builds are the same. What would you want built?',
             ],
             [
                 'category' => 'Pricing',
@@ -145,7 +152,7 @@ class LandingFaqSeeder extends Seeder
                     'price', 'prices', 'pricing', 'cost', 'costs', 'how much', 'plan', 'plans', 'quote',
                     'expensive',
                 ],
-                'answer' => 'The chat starts free — 1 agent, 250 conversation credits a month, no card required. Paid plans are €9/mo (Starter, 1 agent, 2,500 credits), €19/mo (Growth, up to 5 agents, 10,000 credits) and €39/mo (Operator, 5 agents, 25,000 credits — our most expensive plan). Cancel anytime, VAT not included. Anything we build for you — outreach, reporting, integrations — has no list price: it\'s scoped to your stack and quoted after a free 30-minute audit. Which are you asking about, the chat or a build?',
+                'answer' => 'The chat starts free: 1 agent, 250 credits a month, no card. Then €9 a month (1 agent, 2,500 credits), €19 (5 agents, 10,000) or €39 (5 agents, 25,000) — €39 is our most expensive plan. Cancel anytime, VAT not included. Anything we build for you has no list price; we quote it after a free call. Which are you asking about — the chat, or a build?',
             ],
             [
                 'category' => 'What it does',
@@ -153,14 +160,14 @@ class LandingFaqSeeder extends Seeder
                     'what do you do', 'what is this', 'what does the agent', 'how does it work', 'what can you do',
                     'what is flowstack',
                 ],
-                'answer' => 'Three things: chat that answers every inbound on your site, outreach that finds you customers, and one live view of your numbers with a loop that keeps improving them. The chat is free to start and live in about 60 seconds; the rest we build around your stack. Which of the three is closest to what you need?',
+                'answer' => 'Three things: chat that answers your website, outreach that finds you customers, and one dashboard of your numbers. The chat is free to start and live in about a minute; the rest we build around your tools. Which of the three is closest to what you need?',
             ],
             [
                 'category' => 'Book the audit',
                 'keywords' => [
                     'audit', 'free audit', 'book a call', 'book an audit', 'schedule a call', 'consultation',
                 ],
-                'answer' => 'The free 30-minute audit is the fastest way in: a call with a human who maps your stack, then a written, fixed-scope proposal within 48 hours — yours to keep either way. Book a slot at flowstack.run/audit, or leave your name and email here and the team will send you times. Which works better for you?',
+                'answer' => 'A free 30-minute call with a human, then a written price and scope within 48 hours — yours to keep either way. Book at flowstack.run/audit, or leave your name and email here and we\'ll send you times. Which do you prefer?',
             ],
             [
                 'category' => 'Integrations',
@@ -169,7 +176,7 @@ class LandingFaqSeeder extends Seeder
                     'pipedrive', 'zapier', 'shopify', 'wordpress', 'wix', 'webflow', 'calendar', 'connect to',
                     'connects to',
                 ],
-                'answer' => 'The widget works on any site — Shopify, WordPress, Wix, React, any domain or subdomain — it\'s one script tag. Out of the box your leads and transcripts land in the Flowstack dashboard, with email alerts. Connecting it into your own tools — a CRM like HubSpot or Pipedrive, calendars, phone systems — is one of the things we build for you, scoped and quoted after the free audit, and you keep the code. Which tools would you want it talking to?',
+                'answer' => 'The widget goes on any site — Shopify, WordPress, Wix, React — it\'s one script tag. Leads and transcripts land in your Flowstack dashboard. Wiring it into your own CRM, calendar or phone system is something we build for you: quoted after a free call, and you keep the code. Which tools would you want it talking to?',
             ],
             [
                 'category' => 'Getting started',
@@ -177,14 +184,14 @@ class LandingFaqSeeder extends Seeder
                     'get started', 'getting started', 'sign up', 'signup', 'trial', 'free trial', 'free',
                     'how do i start', 'try',
                 ],
-                'answer' => 'You pick a role, upload your knowledge (docs, FAQs, your site), and paste one script tag — the agent is live in about 60 seconds. It\'s free to start: 1 agent and 250 conversation credits a month, no card required, and it doesn\'t expire. Paid plans begin at €9/mo when you outgrow that, cancel anytime. Want me to point you to signup, or is there something you\'d like to check first?',
+                'answer' => 'Pick a role, upload your docs and FAQs, paste one script tag — live in about a minute. Free to start: 1 agent, 250 credits a month, no card, no expiry. Paid plans start at €9 a month, cancel anytime. Want the signup link, or something to check first?',
             ],
             [
                 'category' => 'Talk to a human',
                 'keywords' => [
                     'human', 'talk to someone', 'speak to', 'representative', 'demo', 'real person',
                 ],
-                'answer' => 'Of course — I\'ve flagged this for the team, and someone will pick this chat up. You can also book the free 30-minute audit at flowstack.run/audit or email hello@flowstack.run. To make sure we can reach you, what\'s your name and email?',
+                'answer' => 'Of course — I\'ve flagged this for the team and someone will pick up this chat. You can also book a free call at flowstack.run/audit or email hello@flowstack.run. What\'s your name and email, so we can reach you?',
                 'escalate' => true,
             ],
         ];

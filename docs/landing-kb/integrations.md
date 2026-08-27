@@ -2,11 +2,11 @@
 
 ## Where the widget runs
 
-The chat widget is one script tag. It drops into any website: Shopify,
-WordPress, Wix, Webflow, Squarespace, React/Next.js, plain HTML — any domain or
-subdomain. If you can edit your site's HTML or theme, you can install it, and
-the team helps if you get stuck. There is also a hosted chat page: a
-Flowstack-hosted URL you can link to with zero installation.
+The chat widget is one script tag. It goes on any website: Shopify, WordPress,
+Wix, Webflow, Squarespace, React/Next.js, plain HTML — any domain or subdomain.
+If you can edit your site's HTML or theme, you can install it, and we help if
+you get stuck. There is also a hosted chat page: a Flowstack URL you can link
+to, with nothing to install.
 
 ## What ships out of the box
 
@@ -19,11 +19,11 @@ email alerts.
 
 ## Connecting your own tools — CRM, calendars, telephony
 
-Wiring the agent into your own stack is custom build work: CRM sync (HubSpot,
+Wiring the agent into your own tools is build work: CRM sync (HubSpot,
 Pipedrive, Salesforce, or anything with an API), calendar booking, telephony,
-helpdesks, internal databases. Fixed scope, typically 4–6 weeks, and you keep
-the code. The way in is the free 30-minute audit at flowstack.run/audit — a
-written, fixed-scope proposal within 48 hours, yours to keep either way.
+helpdesks, internal databases. Fixed scope, usually 4–6 weeks, and you keep the
+code. The way in is the free 30-minute call at flowstack.run/audit — a written
+price within 48 hours, yours to keep either way.
 
 When a visitor asks about connecting a specific tool: confirm that exact wiring
 is what a custom build delivers, then ask for their email so the team can map
