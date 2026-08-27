@@ -17,12 +17,16 @@ class LandingFaqSeederTest extends TestCase
 
     private function landingAgent(): Agent
     {
-        // Team 1's agent is the landing agent in every environment.
+        // The seeder resolves its target by LANDING_AGENT_SLUG first, falling
+        // back to team 1. Point it at the slug rather than renumbering the team
+        // to id 1: a free team is granted its allotment on creation, so it
+        // already owns credit_transactions rows and the FK refuses the id
+        // rewrite.
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
-        $team->forceFill(['id' => 1])->save();
         $agent = Agent::factory()->for($team)->create();
         $team->forceFill(['current_agent_id' => $agent->id])->save();
+        config(['runtime.landing_agent_slug' => $agent->slug]);
 
         return $agent;
     }

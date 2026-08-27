@@ -20,16 +20,34 @@ class Team extends JetstreamTeam
 
     protected static function booted(): void
     {
-        // DEV/TEST convenience (config/billing.php → grant_on_signup, default
-        // OFF). Production grants credits via the Stripe lifecycle
-        // (invoice.paid webhook + credits:grant-renewals); without Stripe wired
-        // up that never fires, so a fresh signup would dead-end at 0 credits.
-        // When enabled, hand the team its plan allotment on creation. Stays off
-        // in prod + the test suite, where it would mint unpaid-for credits.
+        // Hand a new team its opening credit allotment.
+        //
+        // FREE tiers are granted immediately, in every environment: since the
+        // 2026-08-27 repricing the free rung is an entitlement, not an unpaid
+        // invoice, and there is nothing to wait for. Before this, a fresh
+        // signup sat at 0 credits — its agent unable to answer a single
+        // message — until the nightly credits:grant-renewals ran, i.e. for up
+        // to 24 hours. That silently defeated the whole point of the free tier.
+        //
+        // PAID allotments still wait for Stripe (invoice.paid), so nobody can
+        // subscribe-then-not-pay and keep the credits. config/billing.php →
+        // grant_on_signup stands in for a wired-up Stripe in local dev; it
+        // stays OFF in prod and in the test suite, where it would mint
+        // credits nobody paid for.
         static::created(function (Team $team): void {
-            if (config('billing.grant_on_signup') && $team->planObject()->monthlyCredits() > 0) {
-                app(CreditMeter::class)->grantMonthlyRenewal($team, ['source' => 'signup:dev-auto-grant']);
+            $plan = $team->planObject();
+            if ($plan->monthlyCredits() <= 0) {
+                return;
             }
+
+            $isFreeEntitlement = ! $plan->isPaid();
+            if (! $isFreeEntitlement && ! config('billing.grant_on_signup')) {
+                return;
+            }
+
+            app(CreditMeter::class)->grantMonthlyRenewal($team, [
+                'source' => $isFreeEntitlement ? 'signup:free-tier' : 'signup:dev-auto-grant',
+            ]);
         });
     }
 

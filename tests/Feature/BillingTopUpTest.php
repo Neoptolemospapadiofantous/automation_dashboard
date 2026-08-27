@@ -42,7 +42,7 @@ class BillingTopUpTest extends TestCase
 
         // Balance is NOT touched synchronously — the webhook grants on payment.
         $this->assertSame(500, $team->fresh()->credit_balance);
-        $this->assertSame(0, CreditTransaction::query()->count());
+        $this->assertSame(0, CreditTransaction::query()->where('reason', 'grant_topup')->count());
     }
 
     public function test_operator_redirects_to_stripe_checkout(): void
@@ -118,7 +118,7 @@ class BillingTopUpTest extends TestCase
             ->assertStatus(403);
 
         $this->assertSame(100, $team->fresh()->credit_balance);
-        $this->assertSame(0, CreditTransaction::query()->count());
+        $this->assertSame(0, CreditTransaction::query()->where('reason', 'grant_topup')->count());
     }
 
     public function test_free_plan_rejects_topup(): void
@@ -136,7 +136,7 @@ class BillingTopUpTest extends TestCase
             ->assertStatus(403);
 
         $this->assertSame(100, $team->fresh()->credit_balance);
-        $this->assertSame(0, CreditTransaction::query()->count());
+        $this->assertSame(0, CreditTransaction::query()->where('reason', 'grant_topup')->count());
     }
 
     public function test_unknown_pack_id_is_rejected(): void
