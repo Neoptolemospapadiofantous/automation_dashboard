@@ -8,18 +8,23 @@ namespace App\Billing;
  *
  * Pricing is EUR throughout — we sell in Europe.
  *
- * INVARIANT (asserted by BillingInvariantsTest): every pack's €/credit is
+ * INVARIANT (asserted by PricingInvariantsTest): every pack's €/credit is
  * STRICTLY worse than Operator's monthly rate. That is the upgrade-pressure
  * mechanism — users who consistently top up save money by upgrading — and
  * the margin floor: tier credit prices are calibrated against Operator's
- * €0.01596/credit, so any pack below it can turn tiers margin-negative
+ * €/credit, so any pack below it can turn tiers margin-negative
  * (the 2026-06-11 pricing audit caught exactly that).
  *
- *   Starter      €99/mo  →  2,500 credits = €0.0396/credit
- *   Operator     €399/mo → 25,000 credits = €0.01596/credit  ← floor
- *   Small pack   €29     →  1,000 credits = €0.0290/credit
- *   Medium pack  €119    →  5,000 credits = €0.0238/credit
- *   Large pack   €399    → 20,000 credits = €0.0200/credit
+ * Ladder as of the 2026-08-27 repricing (Free is excluded from the floor
+ * maths — a €0 rung has no €/credit, and its 100-credit cap is what bounds
+ * the exposure):
+ *
+ *   Starter      €9/mo   →  2,500 credits = €0.00360/credit
+ *   Growth       €19/mo  → 10,000 credits = €0.00190/credit
+ *   Operator     €39/mo  → 25,000 credits = €0.00156/credit  ← floor
+ *   Small pack   €5      →  1,000 credits = €0.00500/credit
+ *   Medium pack  €15     →  5,000 credits = €0.00300/credit
+ *   Large pack   €40     → 20,000 credits = €0.00200/credit
  *
  * When Phase H (Stripe Checkout) ships, the stripePriceId() values map
  * to one-off SKU price ids. Until then, the BillingController instant-
@@ -43,9 +48,9 @@ enum TopUpPack: string
     public function priceEur(): int
     {
         return match ($this) {
-            self::Small => 29,
-            self::Medium => 119,
-            self::Large => 399,
+            self::Small => 5,
+            self::Medium => 15,
+            self::Large => 40,
         };
     }
 

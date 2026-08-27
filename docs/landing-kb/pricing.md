@@ -1,28 +1,53 @@
 # Pricing
 
-Flowstack has three plans. All plans include the full feature set — knowledge-base
-upload, transcript review, and lead routing into the real-time dashboard — and
-every paid plan can be cancelled anytime with no lock-in.
+Flowstack has a free tier, three paid plans, and custom build work. Every plan
+includes the full feature set — knowledge-base upload, transcript review, and
+lead routing into the real-time dashboard — and every paid plan can be
+cancelled anytime with no lock-in.
 
-## Starter — €99/month
+## Free — €0/month
+
+- 1 agent, any role
+- 250 conversation credits per month
+- Real-time leads dashboard
+- Knowledge-base upload + transcripts
+- No card required
+
+The way to try the product on your own site with your own content. The credit
+allowance is small on purpose — enough to see the agent answer from your
+knowledge base, not enough to run a busy site. No top-ups on Free: when you run
+out, you upgrade.
+
+## Starter — €9/month
 
 - 1 agent, any role
 - 2,500 conversation credits per month
-- Real-time leads dashboard
-- Knowledge-base upload + transcripts
-- Cancel anytime, no lock-in
-
-One agent live in 60 seconds, full feature set. This is the entry plan.
-
-## Operator — €399/month
-
-- Everything in Starter
-- Up to 5 agents
-- 25,000 conversation credits per month
 - Top-up credits anytime
 - Cancel anytime, no lock-in
 
-For teams running agents in production.
+One agent live in 60 seconds, full feature set. This is the entry paid plan.
+
+## Growth — €19/month
+
+- Everything in Starter
+- Up to 5 agents
+- 10,000 conversation credits per month
+- Top-up credits anytime
+- Cancel anytime, no lock-in
+
+For a site with real inbound volume, or a team that wants a different agent per
+role.
+
+## Operator — €39/month
+
+- Everything in Growth
+- Up to 5 agents
+- 25,000 conversation credits per month
+- Best rate per credit
+- Cancel anytime, no lock-in
+
+For teams running agents in production. This is the most expensive plan we
+sell — everything above it is custom build work, quoted per project.
 
 ## Custom — let's talk (scoped, 4–6 week build)
 
@@ -34,17 +59,28 @@ For teams running agents in production.
 
 For when the off-the-shelf agent isn't enough. Book the free 30-minute audit to
 scope it — you get a written, fixed-scope proposal within 48 hours, yours to
-keep either way.
+keep either way. There is no list price for build work; the audit is the answer.
 
 ## Credits and top-ups
 
-Conversations are metered in credits (2,500/month on Starter, 25,000/month on
-Operator). If you need more headroom, buy a top-up pack or upgrade to Operator —
-either way nothing about your setup changes.
+Conversations are metered in credits (250/month on Free, 2,500 on Starter,
+10,000 on Growth, 25,000 on Operator). A message on the fast default model costs
+1 credit; smarter models cost more per message because they cost us more to run,
+so the same allowance goes much further on a quick model than on a premium one.
+
+If you need more headroom on a paid plan, buy a top-up pack — €5 for 1,000
+credits, €15 for 5,000, €40 for 20,000 — or choose your own amount from €10 to
+€2,000 at 500 credits per euro. Moving up a plan is always the better rate.
+Top-up credits you have paid for roll over; the monthly allowance does not.
+
+## Annual billing
+
+Every paid plan can be billed yearly instead of monthly for about two months
+free (17% off): €90/year for Starter, €190 for Growth, €390 for Operator. You
+can switch between monthly and annual at any time.
 
 ## Trials, discounts and VAT
 
-There is no free trial and no discounted tier — Starter at €99/month is the
-entry point and the way to try the product (cancel anytime, no lock-in). The
-free 30-minute audit is the only free offer, and it's for scoping custom build
-work. Prices are shown excluding VAT.
+There is no time-limited trial, because there is a permanent free tier instead —
+start on Free, upgrade when the volume justifies it. The free 30-minute audit is
+separate, and it's for scoping custom build work. Prices are shown excluding VAT.

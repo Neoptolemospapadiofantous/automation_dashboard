@@ -80,7 +80,7 @@ class SlackAgentTurnTest extends TestCase
             ->assertJsonPath('reply', 'Got it!');
 
         // (1 user message + 1 reply) × haiku multiplier 1 = 2 credits.
-        $this->assertSame(98, $agent->team->fresh()->credit_balance);
+        $this->assertSame(80, $agent->team->fresh()->credit_balance);
 
         $conversation = Conversation::where('team_id', $agent->team_id)
             ->where('visitor_id', 'slack:U0123ABC:C0456DEF')

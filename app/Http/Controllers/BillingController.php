@@ -67,7 +67,8 @@ class BillingController extends Controller
             // grant, AND whether annual is available so the UI can show
             // the monthly/annual toggle and the savings %.
             'plan_catalog' => [
-                'starter' => $this->planSummary(Plan::Free, 'starter'),
+                'starter' => $this->planSummary(Plan::Starter, 'starter'),
+                'growth' => $this->planSummary(Plan::Growth, 'growth'),
                 'operator' => $this->planSummary(Plan::Pro, 'operator'),
             ],
         ]);
@@ -76,7 +77,7 @@ class BillingController extends Controller
     /**
      * @return array{
      *   key: string, value: string, label: string, monthly_eur: int,
-     *   annual_equivalent_monthly_eur: ?int, annual_savings_pct: int,
+     *   annual_eur: ?int, annual_equivalent_monthly_eur: ?int, annual_savings_pct: int,
      *   annual_available: bool, max_agents: int, monthly_credits: int
      * }
      */
@@ -87,6 +88,9 @@ class BillingController extends Controller
             'value' => $plan->value,
             'label' => $plan->label(),
             'monthly_eur' => (int) $plan->priceEur(),
+            // The real yearly charge, not equivalent-monthly × 12 — those
+            // disagree, and the UI must quote what Stripe will bill.
+            'annual_eur' => $plan->annualPriceEur(),
             'annual_equivalent_monthly_eur' => $plan->annualEquivalentMonthlyEur(),
             'annual_savings_pct' => $plan->annualSavingsPct(),
             'annual_available' => $plan->stripePriceId(BillingCycle::Annual) !== null,

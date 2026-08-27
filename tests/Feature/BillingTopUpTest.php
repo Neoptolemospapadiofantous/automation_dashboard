@@ -26,7 +26,7 @@ class BillingTopUpTest extends TestCase
     {
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
-        $team->forceFill(['plan' => Plan::Free->value, 'credit_balance' => 500])->save();
+        $team->forceFill(['plan' => Plan::Starter->value, 'credit_balance' => 500])->save();
 
         // Mock StripeClient::createOneOffCheckout so no Stripe API call fires.
         $sessionStub = Session::constructFrom(['id' => 'cs_test_123', 'url' => 'https://checkout.stripe.com/c/pay/cs_test_123']);
@@ -68,7 +68,7 @@ class BillingTopUpTest extends TestCase
     {
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
-        $team->forceFill(['plan' => Plan::Free->value, 'credit_balance' => 500])->save();
+        $team->forceFill(['plan' => Plan::Starter->value, 'credit_balance' => 500])->save();
 
         config(['billing.topup_custom.price_id' => 'price_test_custom']);
 
@@ -94,7 +94,7 @@ class BillingTopUpTest extends TestCase
     public function test_custom_amount_without_price_configured_returns_friendly_error(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
-        $user->currentTeam->forceFill(['plan' => Plan::Free->value])->save();
+        $user->currentTeam->forceFill(['plan' => Plan::Starter->value])->save();
 
         config(['billing.topup_custom.price_id' => null]);
 
@@ -121,10 +121,28 @@ class BillingTopUpTest extends TestCase
         $this->assertSame(0, CreditTransaction::query()->count());
     }
 
+    public function test_free_plan_rejects_topup(): void
+    {
+        // Free is capped on purpose: the wall IS the upgrade prompt, so the
+        // endpoint 403s rather than letting a free team buy its way past it.
+        // (Before the 2026-08-27 repricing Plan::Free WAS the paid entry
+        // tier and could top up — this is the deliberate reversal.)
+        $user = User::factory()->withPersonalTeam()->create();
+        $team = $user->currentTeam;
+        $team->forceFill(['plan' => Plan::Free->value, 'credit_balance' => 100])->save();
+
+        $this->actingAs($user->fresh())
+            ->post(route('billing.topup'), ['pack' => TopUpPack::Small->value])
+            ->assertStatus(403);
+
+        $this->assertSame(100, $team->fresh()->credit_balance);
+        $this->assertSame(0, CreditTransaction::query()->count());
+    }
+
     public function test_unknown_pack_id_is_rejected(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
-        $user->currentTeam->forceFill(['plan' => Plan::Free->value])->save();
+        $user->currentTeam->forceFill(['plan' => Plan::Starter->value])->save();
 
         $this->actingAs($user->fresh())
             ->postJson(route('billing.topup'), ['pack' => 'mega-jumbo'])
@@ -134,7 +152,7 @@ class BillingTopUpTest extends TestCase
     public function test_pack_without_stripe_price_id_returns_friendly_error(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
-        $user->currentTeam->forceFill(['plan' => Plan::Free->value])->save();
+        $user->currentTeam->forceFill(['plan' => Plan::Starter->value])->save();
 
         // Force the pack's stripe price id to null.
         config(['billing.stripe_price.topup_small' => null]);

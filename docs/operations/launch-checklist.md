@@ -58,16 +58,19 @@ Pricing is **EUR**. Test mode is already wired; this is the LIVE setup.
 - [ ] Activate live mode (business details) → https://dashboard.stripe.com/apikeys
       → copy `pk_live_*` + `sk_live_*`
 - [ ] https://dashboard.stripe.com/products (live) → create, copy each `price_*`:
-  - [ ] Starter — recurring **€99/mo**
-  - [ ] Starter annual — **€990/yr** on the same product (optional; toggle hides without it)
-  - [ ] Operator — recurring **€399/mo**
-  - [ ] Operator annual — **€3,990/yr** (optional)
-  - [ ] Top-up Small — one-time **€29** (1,000 credits)
-  - [ ] Top-up Medium — one-time **€119** (5,000 credits)
-  - [ ] Top-up Large — one-time **€399** (20,000 credits)
+  - [ ] Starter — recurring **€9/mo**
+  - [ ] Starter annual — **€90/yr** on the same product (optional; toggle hides without it)
+  - [ ] Growth — recurring **€19/mo**
+  - [ ] Growth annual — **€190/yr** (optional)
+  - [ ] Operator — recurring **€39/mo**
+  - [ ] Operator annual — **€390/yr** (optional)
+  - Free has NO Stripe product — it is the default state, not a purchase.
+  - [ ] Top-up Small — one-time **€5** (1,000 credits)
+  - [ ] Top-up Medium — one-time **€15** (5,000 credits)
+  - [ ] Top-up Large — one-time **€40** (20,000 credits)
   - [ ] Custom top-up — one price with **`custom_unit_amount`** enabled,
-        min €10 / max €2,000 (credits = amount × 50, i.e. €0.02/credit)
-  - Packs/custom MUST price above Operator's **€0.01596/credit** — enforced by
+        min €10 / max €2,000 (credits = amount × 500, i.e. €0.002/credit)
+  - Packs/custom MUST price above Operator's **€0.00156/credit** — enforced by
     `BillingInvariantsTest`; see `docs/operations/pricing-audit.md`.
 - [ ] https://dashboard.stripe.com/settings/billing/portal → activate the portal
       (else "Manage subscription" shows the fallback error)
@@ -218,7 +221,7 @@ Test cards (only meaningful before live): `4242 4242 4242 4242` (ok),
 ---
 
 ## Out of scope for this launch (by decision or phase)
-- Free trial (product decision: none — €99 Starter is the entry point)
+- Free trial (product decision: none — the permanent Free tier is the entry point)
 - Marketing / bulk email (not in this launch — transactional only via AWS SES;
   marketing would use a separate SES identity e.g. `news.flowstack.run`, a `bulk`
   queue, and unsubscribe/consent handling)

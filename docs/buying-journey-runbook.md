@@ -57,10 +57,10 @@ in a browser:
 | 5 | Watch `stripe listen` output | `checkout.session.completed` → 200 from local app |
 | 6 | Billing page | plan = Starter, 2,500 monthly credits granted, usage 0% |
 | 7 | Chat → send a message | reply arrives; credit balance decreases; Billing history shows the debit |
-| 8 | Billing → top-up Small (€29) | checkout → success → +credits, history row, rollover noted |
+| 8 | Billing → top-up Small (€5) | checkout → success → +credits, history row, rollover noted |
 | 9 | Billing → manage/portal | Stripe portal opens; cancel is offered |
 | 10 | Cancel in portal | `customer.subscription.deleted` forwarded; app reflects cancellation per grace-period rules |
-| 11 | Annual toggle (optional) | Starter Annual €990 checkout works the same |
+| 11 | Annual toggle (optional) | Starter Annual €90 checkout works the same |
 
 Failure at 5 = webhook secret/forwarding; at 6 = webhook handler or
 price→plan mapping; at 7 = credit meter/runtime; at 9–10 = portal config.
@@ -76,9 +76,17 @@ price→plan mapping; at 7 = credit meter/runtime; at 9–10 = portal config.
 
 All checks passed 2026-07-09:
 
-- 8/8 `STRIPE_PRICE_*` exist + active, amounts match §3.4 (€99/€399
-  monthly; €990/€3,990 annual; top-ups €29/€119/€399/custom €10–2,000);
-  prod Forge env price IDs identical to repo `.env`.
+- `STRIPE_PRICE_*` exist + active, amounts match §3.4 (€9/€19/€39
+  monthly; €90/€190/€390 annual; top-ups €5/€15/€40/custom €10–2,000).
+  **Live Prices created 2026-08-27** on acct_1LkQudCNnpWOF42r and verified
+  amount-by-amount against `Plan`/`TopUpPack`; repo `.env` points at them.
+  The pre-repricing Prices (€99/€399/€29/€119/€399) were deliberately LEFT
+  ACTIVE — existing subscriptions bill against them, and archiving buys
+  nothing since checkout only ever uses the env-configured ids.
+  ⚠️ Forge prod env still points at the OLD ids ON PURPOSE: prod runs the
+  pre-repricing code, and swapping ids before the deploy would display the
+  old price while charging the new one. Run
+  `scratchpad/forge-stripe-repricing.sh` immediately AFTER deploying.
 - Webhook endpoint `https://app.flowstack.run/webhooks/stripe` enabled,
   events: checkout.session.completed, invoice.paid,
   invoice.payment_failed, customer.subscription.updated/.deleted.

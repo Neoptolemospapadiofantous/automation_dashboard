@@ -2,6 +2,7 @@
 .DS_Store
 .env
 .env.backup
+.env.bak*
 .env.production
 .phpactor.json
 .phpunit.result.cache
@@ -53,3 +54,4 @@ Thumbs.db
 /docs/Flowstack-Partnership-Proposal.docx
 /docs/assets/
 data/kpi.json
+.playwright-mcp/

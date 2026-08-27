@@ -267,7 +267,7 @@ class AgentRuntimeTest extends TestCase
             'message' => 'price?',
         ])->assertOk()->assertJsonPath('traces.0.payload.message', 'Starter is $99/mo.');
 
-        $this->assertSame(98, $agent->team->fresh()->credit_balance); // (1+1 reply) × 1
+        $this->assertSame(80, $agent->team->fresh()->credit_balance); // (1+1 reply) × 10
         Http::assertNotSent(fn (Request $r) => str_contains($r->url(), 'voiceflow.com'));
     }
 

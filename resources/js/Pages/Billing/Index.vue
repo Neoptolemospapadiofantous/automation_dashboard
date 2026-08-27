@@ -199,7 +199,7 @@ function openPortal() {
                             </div>
                         </div>
 
-                        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             <button
                                 v-for="p in plan_catalog"
                                 :key="p.key"
@@ -229,7 +229,7 @@ function openPortal() {
                                     v-if="cycle === 'annual' && p.annual_available"
                                     class="mt-1 text-[10px] text-state-ok-ink"
                                 >
-                                    Billed yearly · €{{ (p.annual_equivalent_monthly_eur * 12).toLocaleString() }} / yr
+                                    Billed yearly · €{{ p.annual_eur.toLocaleString() }} / yr
                                 </div>
                                 <div
                                     v-else-if="cycle === 'annual' && !p.annual_available"

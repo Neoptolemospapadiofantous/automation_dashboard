@@ -3,8 +3,8 @@
 Flowstack does three things, and it helps to say which one a question is about:
 
 1. **Chat** — answers every inbound on your website, qualifies it, captures the
-   lead. This is the subscription, from €99/mo, and the part you can switch on
-   today.
+   lead. This is the subscription — free to start, €9/mo for the entry paid
+   plan, €39/mo at the top — and the part you can switch on today.
 2. **Outreach** — this is lead generation, done for you: we find the companies
    you want as customers, write to them in your voice, and hand you the replies.
    You approve every word. Scoped and quoted per engagement. If someone asks
@@ -28,9 +28,9 @@ without anyone watching a queue.
 
 Setup is fast: one agent goes live in about 60 seconds. You upload your own
 knowledge (docs and FAQs) and the agent answers from what you actually ship
-rather than generic filler. Pricing starts at €99/month and you can cancel
-anytime — there is no lock-in. There is no free trial: the €99 Starter plan is
-the way to try the product, and cancelling is one click.
+rather than generic filler. There is a permanent free tier (1 agent, 250
+conversation credits a month, no card required), paid plans run €9 to €39 a
+month, and you can cancel anytime — there is no lock-in.
 
 The automations and data pipelines — the delegation layer behind the chat — are
 built to order in the custom build engagement; the way in is the free

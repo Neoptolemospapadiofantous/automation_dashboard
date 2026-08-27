@@ -32,12 +32,19 @@ customer-facing labels are rebranded:
 
 | Plan (label) | Price | Max agents | Monthly credits | Top-ups |
 |---|---|---|---|---|
-| **Starter** (`free`) | $99/mo | 1 | 2,500 | yes |
-| **Operator** (`pro`) | $399/mo | 5 | 25,000 | yes |
+| **Free** (`free`) | €0/mo | 1 | 250 | no |
+| **Starter** (`starter`) | €9/mo | 1 | 2,500 | yes |
+| **Growth** (`growth`) | €19/mo | 5 | 10,000 | yes |
+| **Operator** (`pro`) | €39/mo | 5 | 25,000 | yes |
 | **Custom** (`business`) | scoped 4–6 wk build | unlimited | 0 (negotiated, granted manually) | out-of-band |
 
-There is **no free trial** (product decision 2026-06-09) — the $99 Starter
-tier is the entry point; cancel anytime via the Stripe Billing Portal. Despite
+Repriced 2026-08-27 (was Starter €99 / Operator €399, no free tier) to undercut
+a category whose modal entry price is €19–45 and where every competitor ships a
+free tier. Founder ceiling: the top plan must stay **under $49 USD** — €39 clears
+that at any EUR/USD rate up to 1.25. `free`/`pro`/`business` keep their original column values;
+`starter`/`growth` are new. There is **no time-limited trial** — the permanent
+Free tier is the way in (product decision 2026-06-09 reversed 2026-08-27);
+cancel anytime via the Stripe Billing Portal. Despite
 the `free` enum case, Starter is a *paid* $99 plan (`priceUsd()` returns 99).
 
 ## 2. The credit mechanic

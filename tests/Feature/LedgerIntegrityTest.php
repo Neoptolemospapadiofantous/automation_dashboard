@@ -25,7 +25,7 @@ class LedgerIntegrityTest extends TestCase
     {
         $team = User::factory()->withPersonalTeam()->create()->currentTeam;
         // Simulate a clean ledger start: initial grant row matching balance.
-        $team->forceFill(['credit_balance' => 0, 'topup_balance' => 0])->save();
+        $team->forceFill(['plan' => Plan::Starter->value, 'credit_balance' => 0, 'topup_balance' => 0])->save();
         (new CreditMeter)->grantMonthlyRenewal($team);   // ledger +2500, balance 2500
 
         (new CreditMeter)->consume($team->fresh(), 2_000);       // ledger -2000, balance 500
@@ -42,7 +42,7 @@ class LedgerIntegrityTest extends TestCase
         $ledger = (int) CreditTransaction::where('team_id', $team->id)->sum('amount');
         $fresh = $team->fresh();
         $this->assertSame($fresh->credit_balance + $fresh->topup_balance, $ledger);
-        $this->assertSame(Plan::Free->monthlyCredits() + 1_000, $ledger);
+        $this->assertSame(Plan::Starter->monthlyCredits() + 1_000, $ledger);
     }
 
     public function test_reconcile_command_passes_on_clean_books_and_fails_on_drift(): void

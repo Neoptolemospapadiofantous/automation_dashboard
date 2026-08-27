@@ -202,8 +202,10 @@ Verify inbox. If it lands in spam: SPF/DKIM not yet propagated, wait 15 min and 
 ## Day 3 — Plan rename + landing handoff (3 hours)
 
 Done in this commit. Already aligned with `flowstack.com/pricing`:
-- Starter: $99/mo, 1 agent, 2,500 credits/mo
-- Operator (Plan::Pro): $399/mo, 5 agents, 25,000 credits/mo
+- Free: €0, 1 agent, 250 credits/mo (no top-ups)
+- Starter: €9/mo, 1 agent, 2,500 credits/mo
+- Growth: €19/mo, 5 agents, 10,000 credits/mo
+- Operator (Plan::Pro): €39/mo, 5 agents, 25,000 credits/mo
 - Custom (Plan::Business): scoped project, contact sales
 
 ### Step 3.1 — Update landing's registerUrl

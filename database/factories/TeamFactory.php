@@ -23,9 +23,12 @@ class TeamFactory extends Factory
             'name' => $this->faker->unique()->company(),
             'user_id' => User::factory(),
             'personal_team' => true,
-            // Mirror the production backfill (every new team starts on Free
-            // with its monthly allotment). Tests that need a depleted team
-            // can override via ->state(['credit_balance' => 0]).
+            // Mirror production: every new team starts on the Free rung with
+            // its (small) monthly allotment and no Stripe subscription. Tests
+            // that need a depleted team can override via
+            // ->state(['credit_balance' => 0]). Tests exercising PAID
+            // behaviour (top-ups, sustained credit burn) must move the team
+            // onto a real rung — Free is capped and cannot top up.
             'plan' => Plan::Free->value,
             'credit_balance' => Plan::Free->monthlyCredits(),
             'credits_renewed_at' => now(),

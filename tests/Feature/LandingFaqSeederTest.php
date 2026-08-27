@@ -98,4 +98,50 @@ class LandingFaqSeederTest extends TestCase
         $this->assertSame('be nice', $config['instructions']); // untouched
         $this->assertNotEmpty($config['canned_answers']);       // added
     }
+
+    public function test_chip_order_and_pricing_rules_hold(): void
+    {
+        // These two invariants have each been lost once in production, so they
+        // are asserted rather than trusted:
+        //
+        //  1. ORDER — CannedAnswers takes the FIRST match, so a generic chip
+        //     ahead of a specific one swallows it. 'Pricing' (keyword
+        //     `how much`) once intercepted "how much does a custom build
+        //     cost?" and answered with plan prices.
+        //  2. NO BUILD PRICE — build work is quoted after the audit; a figure
+        //     in the custom-build answer contradicts the whole site.
+        $method = new \ReflectionMethod(LandingFaqSeeder::class, 'chips');
+        $method->setAccessible(true);
+        /** @var list<array{category: string, keywords: list<string>, answer: string, escalate?: bool}> $chips */
+        $chips = $method->invoke(new LandingFaqSeeder);
+
+        $position = array_flip(array_column($chips, 'category'));
+        foreach ([['Custom build', 'Pricing'], ['Book the audit', 'Getting started'], ['Outreach', 'What it does']] as [$specific, $generic]) {
+            $this->assertArrayHasKey($specific, $position, "Chip '{$specific}' is missing.");
+            $this->assertArrayHasKey($generic, $position, "Chip '{$generic}' is missing.");
+            $this->assertLessThan(
+                $position[$generic],
+                $position[$specific],
+                "'{$specific}' must be matched before '{$generic}' — first match wins, so the generic chip would swallow it.",
+            );
+        }
+
+        $customBuild = $chips[$position['Custom build']]['answer'];
+        $this->assertDoesNotMatchRegularExpression(
+            '/€\s?\d/',
+            $customBuild,
+            'The custom-build answer must not quote a price — build work is quoted after the audit.',
+        );
+
+        // A retired price surviving here is the exact drift that makes the
+        // cheapest, most-read turns on the site contradict the pricing page.
+        $everyAnswer = implode(' ', array_column($chips, 'answer'));
+        foreach (['€99', '€399', '€179', 'no free trial'] as $retired) {
+            $this->assertStringNotContainsString($retired, $everyAnswer, "Retired pricing copy '{$retired}' is still being served.");
+        }
+
+        // The human-handoff chip must keep firing the escalation.
+        $human = $chips[$position['Talk to a human']];
+        $this->assertTrue(($human['escalate'] ?? false), 'The "Talk to a human" chip must escalate.');
+    }
 }

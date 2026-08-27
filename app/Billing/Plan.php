@@ -16,29 +16,49 @@ namespace App\Billing;
  * invoice_paid (monthly renewal).
  */
 /**
- * NOTE on enum case names: cases stayed `free`/`pro`/`business` because the
- * `teams.plan` column persists the string value — renaming would need a
- * data migration. The offer was rebranded in the Starter / Operator /
- * Custom direction (see priceEur() + label() + features); future Phase H
- * Stripe wiring can introduce new case names + migration as needed.
+ * NOTE on enum case names: `free`/`pro`/`business` keep their original string
+ * values because the `teams.plan` column persists them — renaming would need a
+ * data migration. `starter`/`growth` are new rungs added in the 2026-08-27
+ * competitive repricing and carry their own values.
  *
- * Offer tiers (aligned with flowstack.run/pricing as of 2026-06-09):
- *   - Starter  (€99/mo)  — 1 agent, 2,500 credits, "try the product"
- *   - Operator (€399/mo) — up to 5 agents, 25,000 credits, top-ups enabled
+ * Offer tiers (aligned with flowstack.run/pricing as of 2026-08-27):
+ *   - Free     (€0/mo)   — 1 agent, 250 credits, the try-before-you-buy rung
+ *   - Starter  (€9/mo)   — 1 agent, 2,500 credits
+ *   - Growth   (€19/mo)  — up to 5 agents, 10,000 credits
+ *   - Operator (€39/mo)  — up to 5 agents, 25,000 credits, best €/credit
  *   - Custom   (scoped 4-6 week project) — bespoke flows, custom integrations
  *
  * Pricing is EUR throughout — we sell in Europe.
  *
+ * REPRICED 2026-08-27, twice. Started at Starter €99 / Operator €399 with no
+ * free tier — the most expensive entry point in the category with the fewest
+ * credits, against rivals whose modal entry is €19-45 and who all ship a free
+ * tier. Founder direction was then to go as cheap as the economics allow, with
+ * a hard ceiling of **under $49 USD on the top plan** (€39 clears it at any
+ * EUR/USD rate up to 1.25).
+ *
+ * Both cuts were unblocked by the SAME lever: the runtime tier multipliers in
+ * config/runtime.php. They had drifted far below the token rates they are
+ * supposed to track (`haiku` billed 1 credit/message while costing 20x what
+ * `gpt`/nano does at the same 1 credit), which pinned the margin floor at
+ * €0.01333/credit and capped any cut at Operator €339. Re-aligning them to the
+ * real rates dropped the floor to €0.00156. See
+ * tests/Unit/Billing/PricingInvariantsTest.php — it DERIVES the floor from
+ * those rates, so it will tell you the true limit rather than guessing.
+ *
  * Credits are sized so a typical team comfortably stays inside its
  * monthly allotment at normal usage; top-up packs cover the spike weeks.
  *
- * No free trial — product decision 2026-06-09. The €99 Starter tier IS
- * the entry point; cancel anytime via the Stripe Billing Portal. Do
- * not add Stripe Checkout `trial_period_days` to subscription sessions.
+ * The Free tier replaces the old "no free trial" stance (product decision
+ * 2026-06-09, reversed 2026-08-27). It is a permanent capped allotment, not a
+ * time-boxed trial — do not add Stripe Checkout `trial_period_days` to
+ * subscription sessions.
  */
 enum Plan: string
 {
     case Free = 'free';
+    case Starter = 'starter';
+    case Growth = 'growth';
     case Pro = 'pro';
     case Business = 'business';
 
@@ -53,7 +73,9 @@ enum Plan: string
     public function monthlyCredits(): int
     {
         return match ($this) {
-            self::Free => 2_500,
+            self::Free => 250,
+            self::Starter => 2_500,
+            self::Growth => 10_000,
             self::Pro => 25_000,
             self::Business => 0,
         };
@@ -65,8 +87,8 @@ enum Plan: string
     public function maxAgents(): int
     {
         return match ($this) {
-            self::Free => 1,
-            self::Pro => 5,
+            self::Free, self::Starter => 1,
+            self::Growth, self::Pro => 5,
             self::Business => PHP_INT_MAX,
         };
     }
@@ -79,16 +101,33 @@ enum Plan: string
     public function priceEur(): ?int
     {
         return match ($this) {
-            self::Free => 99,
-            self::Pro => 399,
+            self::Free => 0,
+            self::Starter => 9,
+            self::Growth => 19,
+            self::Pro => 39,
             self::Business => null,
         };
     }
 
     /**
+     * Whether this plan is a paid, Stripe-billed subscription. Free is
+     * self-serve with no Stripe object at all; Custom is invoiced
+     * out-of-band. Used by the pricing invariants (a €0 plan can't be a
+     * "cheapest credit source") and the renewal safety net.
+     */
+    public function isPaid(): bool
+    {
+        return match ($this) {
+            self::Starter, self::Growth, self::Pro => true,
+            self::Free, self::Business => false,
+        };
+    }
+
+    /**
      * Whether the plan can buy top-up credit packs when its monthly
-     * allotment runs out. Both paid tiers can; Custom is project-based
-     * and handled out-of-band.
+     * allotment runs out. Every paid recurring tier can; Free cannot (the
+     * cap is the point — topping up is the upgrade prompt), and Custom is
+     * project-based and handled out-of-band.
      *
      * Pack pricing is intentionally unfavourable at low volume (see
      * TopUpPack) so heavy users still feel pressure to upgrade rather
@@ -97,7 +136,7 @@ enum Plan: string
      */
     public function allowsTopUps(): bool
     {
-        return $this === self::Free || $this === self::Pro;
+        return $this->isPaid();
     }
 
     /**
@@ -109,46 +148,74 @@ enum Plan: string
     public function stripePriceId(BillingCycle $cycle = BillingCycle::Monthly): ?string
     {
         $value = match ([$this, $cycle]) {
-            [self::Free, BillingCycle::Monthly] => config('billing.stripe_price.starter'),
-            [self::Free, BillingCycle::Annual] => config('billing.stripe_price.starter_annual'),
+            [self::Starter, BillingCycle::Monthly] => config('billing.stripe_price.starter'),
+            [self::Starter, BillingCycle::Annual] => config('billing.stripe_price.starter_annual'),
+            [self::Growth, BillingCycle::Monthly] => config('billing.stripe_price.growth'),
+            [self::Growth, BillingCycle::Annual] => config('billing.stripe_price.growth_annual'),
             [self::Pro, BillingCycle::Monthly] => config('billing.stripe_price.operator'),
             [self::Pro, BillingCycle::Annual] => config('billing.stripe_price.operator_annual'),
-            default => null, // Custom is project-based, not Stripe-priced
+            default => null, // Free has no Stripe object; Custom is project-based
         };
 
         return is_string($value) && $value !== '' ? $value : null;
     }
 
     /**
-     * Annual price discount — the 12-month payment compared to 12×
-     * monthly. Currently a hard-coded 17% ("get 2 months free"). When
-     * Stripe products are configured with different ratios, read this
-     * from the Stripe price object instead.
+     * The actual yearly charge in EUR — what Stripe bills on the annual
+     * Price, NOT a derived figure. Roughly "two months free" against 12×
+     * monthly, rounded to a clean number.
+     *
+     * This is deliberately its own source of truth. Deriving the yearly
+     * total from a percentage produced a real misstatement: the Billing UI
+     * rendered annualEquivalentMonthlyEur() × 12, which for Starter came to
+     * €84/yr while Stripe actually charged €90. Keep this in step with the
+     * annual Stripe Prices (STRIPE_PRICE_*_ANNUAL) — PlanPricingTest asserts
+     * the discount they imply stays sane.
      */
-    public function annualSavingsPct(): int
+    public function annualPriceEur(): ?int
     {
-        return 17;
+        return match ($this) {
+            self::Free => 0,
+            self::Starter => 90,
+            self::Growth => 190,
+            self::Pro => 390,
+            self::Business => null,
+        };
     }
 
     /**
-     * The "equivalent monthly" price when paying annually. UI shows this
-     * alongside the actual monthly for the side-by-side comparison.
-     * Null when no monthly price (Custom).
+     * Annual discount as a whole percent, DERIVED from the two real prices
+     * rather than asserted — so it can never disagree with what we charge.
+     */
+    public function annualSavingsPct(): int
+    {
+        $monthly = $this->priceEur();
+        $annual = $this->annualPriceEur();
+        if ($monthly === null || $annual === null || $monthly === 0) {
+            return 0;
+        }
+
+        return (int) round((1 - $annual / ($monthly * 12)) * 100);
+    }
+
+    /**
+     * The "equivalent monthly" price when paying annually — the real yearly
+     * charge spread over 12. UI shows this alongside the actual monthly for
+     * the side-by-side comparison. Null when there is no price (Custom).
      */
     public function annualEquivalentMonthlyEur(): ?int
     {
-        $monthly = $this->priceEur();
-        if ($monthly === null) {
-            return null;
-        }
+        $annual = $this->annualPriceEur();
 
-        return (int) round($monthly * (1 - $this->annualSavingsPct() / 100));
+        return $annual === null ? null : (int) round($annual / 12);
     }
 
     public function label(): string
     {
         return match ($this) {
-            self::Free => 'Starter',
+            self::Free => 'Free',
+            self::Starter => 'Starter',
+            self::Growth => 'Growth',
             self::Pro => 'Operator',
             self::Business => 'Custom',
         };

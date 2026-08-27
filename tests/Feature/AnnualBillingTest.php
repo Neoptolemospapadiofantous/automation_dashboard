@@ -102,13 +102,18 @@ class AnnualBillingTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->has('plan_catalog.starter', fn ($p) => $p
                     ->where('annual_available', true)
-                    ->where('monthly_eur', 99)
-                    ->where('annual_equivalent_monthly_eur', 82)
+                    ->where('monthly_eur', 9)
+                    ->where('annual_eur', 90)
+                    ->where('annual_equivalent_monthly_eur', 8)
+                    ->etc()
+                )
+                ->has('plan_catalog.growth', fn ($p) => $p
+                    ->where('monthly_eur', 19)
                     ->etc()
                 )
                 ->has('plan_catalog.operator', fn ($p) => $p
                     ->where('annual_available', false)
-                    ->where('monthly_eur', 399)
+                    ->where('monthly_eur', 39)
                     ->etc()
                 )
             );

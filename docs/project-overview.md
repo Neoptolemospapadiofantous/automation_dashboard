@@ -219,11 +219,13 @@ team owner.
   `free_greetings_per_day` (default 500) per team/day; beyond that they
   debit like any turn. The single, capped exception to "every LLM-calling
   endpoint debits".
-- **Plans** ([`app/Billing/Plan.php`](../app/Billing/Plan.php)): Starter
-  ($99/mo, 1 agent, 2,500 credits), Operator ($399/mo, ≤5 agents, 25,000
-  credits, top-ups enabled), Custom (project-based, 0 auto-grant). Enum
-  cases stay `free`/`pro`/`business` for column compatibility; labels are
-  rebranded. No free trial (product decision).
+- **Plans** ([`app/Billing/Plan.php`](../app/Billing/Plan.php)): Free (€0,
+  1 agent, 250 credits, no top-ups), Starter (€9/mo, 1 agent, 2,500 credits),
+  Growth (€19/mo, ≤5 agents, 10,000 credits), Operator (€39/mo, ≤5 agents,
+  25,000 credits), all paid tiers top-up enabled; Custom (project-based, 0
+  auto-grant). Repriced 2026-08-27. Enum cases `free`/`pro`/`business` keep
+  their original values for column compatibility (`pro` is labelled
+  "Operator"); `starter`/`growth` are new. No time-limited trial (product decision).
 - **Top-up packs** ([`app/Billing/TopUpPack.php`](../app/Billing/TopUpPack.php)):
   Small $29/1,000, Medium $119/5,000, Large $399/20,000.
 

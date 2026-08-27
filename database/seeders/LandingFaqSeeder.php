@@ -92,52 +92,99 @@ class LandingFaqSeeder extends Seeder
     }
 
     /**
-     * The starter chip set, authored from docs/landing-kb. Each is a category
-     * (the chip label + an exact match) plus keywords that route typed
-     * questions, and a short factual answer served verbatim.
+     * The chip set, authored from docs/landing-kb. Each is a category (the chip
+     * label + an exact match) plus keywords that route typed questions, and a
+     * short factual answer served verbatim.
      *
-     * @return list<array{category: string, keywords: list<string>, answer: string}>
+     * ORDER IS LOAD-BEARING. CannedAnswers walks this list and the FIRST MATCH
+     * WINS, so specific services must sit ahead of generic ones: 'Pricing' with
+     * a `how much` keyword used to swallow "how much does a custom build cost?"
+     * and answer it with plan prices. Likewise 'Book the audit' must precede
+     * 'Getting started' or the bare `free` keyword steals "free audit".
+     *
+     * KEEP THIS IN SYNC WITH PROD. This seeder is the source of truth and it
+     * REPLACES the published set wholesale — running a stale copy silently
+     * deletes answers. That has already happened once: the 9-chip v13 (the
+     * 2026-08-11 rewrite that stopped the chat denying we do lead generation)
+     * was wiped back to 7 chips by a v14 seeder run two days later. This set is
+     * v13 merged with v14's escalate flag and the 2026-08-27 prices.
+     *
+     * @return list<array{category: string, keywords: list<string>, answer: string, escalate?: bool}>
      */
     private function chips(): array
     {
         return [
             [
-                'category' => 'Pricing',
-                'keywords' => ['price', 'prices', 'pricing', 'cost', 'costs', 'how much', 'plan', 'plans'],
-                'answer' => 'Two plans: Starter at €99/mo (1 agent, 2,500 conversation credits) and Operator at €399/mo (up to 5 agents, 25,000 credits). Every feature is in both, cancel anytime, no lock-in — prices exclude VAT, full details at flowstack.run/pricing. What would you be using it for — support, sales, or capturing leads?',
+                'category' => 'Outreach',
+                'keywords' => [
+                    'outreach', 'cold outreach', 'cold email', 'lead generation', 'lead gen', 'leadgen',
+                    'prospecting', 'find customers', 'find me customers', 'get me customers', 'get customers',
+                    'more customers', 'win customers', 'new customers', 'customer acquisition', 'email campaign',
+                ],
+                'answer' => 'Yes — that\'s its own service, separate from the chat. We find the companies you want as customers, write to them in your voice, and hand you the replies. You approve every word before anything sends. Scoped to your market and quoted after the free audit — flowstack.run/outreach. What kind of companies would you want to reach?',
             ],
             [
-                'category' => 'What it does',
-                'keywords' => ['what do you do', 'what is this', 'what does the agent', 'how does it work', 'what can you do', 'what is flowstack'],
-                'answer' => 'In short: automations take over your repetitive work, your numbers land in one live view, and a chat agent on your site answers every visitor — sales, support, lead qualification — from the knowledge you upload. Every transcript lands in a real-time dashboard, and the chat goes live in about 60 seconds. What kind of work are you looking to hand off?',
-            ],
-            [
-                'category' => 'Book the audit',
-                'keywords' => ['audit', 'free audit', 'book a call', 'book an audit', 'schedule a call', 'consultation'],
-                'answer' => 'The free 30-minute audit is the fastest way in: a call with a human who maps your stack, then a written, fixed-scope proposal within 48 hours — yours to keep either way. Book a slot at flowstack.run/audit, or leave your name and email here and the team will send you times. Which works better for you?',
-            ],
-            [
-                'category' => 'Getting started',
-                'keywords' => ['get started', 'getting started', 'sign up', 'signup', 'trial', 'free trial', 'free', 'how do i start', 'try'],
-                'answer' => "You pick a role, upload your knowledge (docs, FAQs, your site), and paste one script tag — the agent is live in about 60 seconds, from €99/mo, cancel anytime. There's no free trial; Starter is the way to try it. Want me to point you to signup, or is there something you'd like to check first?",
-            ],
-            [
-                'category' => 'Integrations',
-                'keywords' => ['integration', 'integrations', 'integrate', 'integrates', 'crm', 'hubspot', 'salesforce', 'pipedrive', 'zapier', 'shopify', 'wordpress', 'wix', 'webflow', 'calendar', 'connect to', 'connects to'],
-                'answer' => "The widget works on any site — Shopify, WordPress, Wix, React, any domain or subdomain — it's one script tag. Out of the box your leads and transcripts land in the Flowstack dashboard, with email alerts. Connecting it into your own tools — a CRM like HubSpot or Pipedrive, calendars, phone systems — is something we wire for you as a custom build, and you keep the code. Which tools would you want it talking to?",
+                'category' => 'What works',
+                'keywords' => [
+                    'what works', 'analytics', 'reporting', 'reports', 'business intelligence', 'live view',
+                    'one live view', 'kpi', 'kpis', 'metrics', 'experiments', 'a/b test',
+                ],
+                'answer' => 'Two halves: your numbers pulled out of the tools they\'re scattered across into one live view, and the loop that keeps testing what you send and retiring what doesn\'t work. Built around your stack and quoted after the free audit — flowstack.run/what-works. What are you rebuilding by hand at the moment?',
             ],
             [
                 'category' => 'Custom build',
-                'keywords' => ['custom build', 'custom-build', 'bespoke', 'own llm'],
-                'answer' => 'The self-serve agent covers the standard 80% of use cases. For the rest — bespoke flows, integrations with your stack, your own LLM or your own UI — we do a fixed-scope custom build, usually 4–6 weeks, and you keep the code. It starts with a free 30-minute audit at flowstack.run/audit: you get a written, fixed-scope proposal within 48 hours, yours to keep either way. What would you want built?',
+                'keywords' => [
+                    'custom build', 'custom-build', 'bespoke', 'own llm', 'what do you build', 'build me',
+                    'build us', 'build for me', 'build for us', 'scope', 'proposal',
+                ],
+                'answer' => 'Eight things we build: agent go-live, cold outreach, one live view, booking, invoices and documents, connecting your tools, inbox triage, and ongoing care. Each is scoped to your stack and quoted after a free 30-minute audit — a written fixed-scope proposal within 48 hours, yours to keep either way, and you keep the code. There\'s no list price, because no two builds are the same. What would you want built?',
+            ],
+            [
+                'category' => 'Pricing',
+                'keywords' => [
+                    'price', 'prices', 'pricing', 'cost', 'costs', 'how much', 'plan', 'plans', 'quote',
+                    'expensive',
+                ],
+                'answer' => 'The chat starts free — 1 agent, 250 conversation credits a month, no card required. Paid plans are €9/mo (Starter, 1 agent, 2,500 credits), €19/mo (Growth, up to 5 agents, 10,000 credits) and €39/mo (Operator, 5 agents, 25,000 credits — our most expensive plan). Cancel anytime, VAT not included. Anything we build for you — outreach, reporting, integrations — has no list price: it\'s scoped to your stack and quoted after a free 30-minute audit. Which are you asking about, the chat or a build?',
+            ],
+            [
+                'category' => 'What it does',
+                'keywords' => [
+                    'what do you do', 'what is this', 'what does the agent', 'how does it work', 'what can you do',
+                    'what is flowstack',
+                ],
+                'answer' => 'Three things: chat that answers every inbound on your site, outreach that finds you customers, and one live view of your numbers with a loop that keeps improving them. The chat is free to start and live in about 60 seconds; the rest we build around your stack. Which of the three is closest to what you need?',
+            ],
+            [
+                'category' => 'Book the audit',
+                'keywords' => [
+                    'audit', 'free audit', 'book a call', 'book an audit', 'schedule a call', 'consultation',
+                ],
+                'answer' => 'The free 30-minute audit is the fastest way in: a call with a human who maps your stack, then a written, fixed-scope proposal within 48 hours — yours to keep either way. Book a slot at flowstack.run/audit, or leave your name and email here and the team will send you times. Which works better for you?',
+            ],
+            [
+                'category' => 'Integrations',
+                'keywords' => [
+                    'integration', 'integrations', 'integrate', 'integrates', 'crm', 'hubspot', 'salesforce',
+                    'pipedrive', 'zapier', 'shopify', 'wordpress', 'wix', 'webflow', 'calendar', 'connect to',
+                    'connects to',
+                ],
+                'answer' => 'The widget works on any site — Shopify, WordPress, Wix, React, any domain or subdomain — it\'s one script tag. Out of the box your leads and transcripts land in the Flowstack dashboard, with email alerts. Connecting it into your own tools — a CRM like HubSpot or Pipedrive, calendars, phone systems — is one of the things we build for you, scoped and quoted after the free audit, and you keep the code. Which tools would you want it talking to?',
+            ],
+            [
+                'category' => 'Getting started',
+                'keywords' => [
+                    'get started', 'getting started', 'sign up', 'signup', 'trial', 'free trial', 'free',
+                    'how do i start', 'try',
+                ],
+                'answer' => 'You pick a role, upload your knowledge (docs, FAQs, your site), and paste one script tag — the agent is live in about 60 seconds. It\'s free to start: 1 agent and 250 conversation credits a month, no card required, and it doesn\'t expire. Paid plans begin at €9/mo when you outgrow that, cancel anytime. Want me to point you to signup, or is there something you\'d like to check first?',
             ],
             [
                 'category' => 'Talk to a human',
-                'keywords' => ['human', 'talk to someone', 'speak to', 'representative', 'demo', 'real person'],
-                'answer' => "Of course — I've flagged this for the team, and someone will pick this chat up. You can also book the free 30-minute audit at flowstack.run/audit or email hello@flowstack.run. To make sure we can reach you, what's your name and email?",
-                // Serving this chip ALSO notifies the owner (bell + email +
-                // mobile push) — a human request must never be swallowed by
-                // a canned reply. See CannedAnswer::$escalate.
+                'keywords' => [
+                    'human', 'talk to someone', 'speak to', 'representative', 'demo', 'real person',
+                ],
+                'answer' => 'Of course — I\'ve flagged this for the team, and someone will pick this chat up. You can also book the free 30-minute audit at flowstack.run/audit or email hello@flowstack.run. To make sure we can reach you, what\'s your name and email?',
                 'escalate' => true,
             ],
         ];

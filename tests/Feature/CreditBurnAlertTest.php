@@ -22,7 +22,7 @@ class CreditBurnAlertTest extends TestCase
      * Create a team at full grant for the given plan. Balance scales with
      * Plan->monthlyCredits() so future repricing doesn't break these tests.
      */
-    private function team(Plan $plan = Plan::Free): Team
+    private function team(Plan $plan = Plan::Starter): Team
     {
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
@@ -36,7 +36,7 @@ class CreditBurnAlertTest extends TestCase
     }
 
     /** Convert a percent-of-grant to a concrete consume amount. */
-    private function consumeOf(int $percent, Plan $plan = Plan::Free): int
+    private function consumeOf(int $percent, Plan $plan = Plan::Starter): int
     {
         return (int) floor(($plan->monthlyCredits() * $percent) / 100);
     }
@@ -116,7 +116,7 @@ class CreditBurnAlertTest extends TestCase
         // Renewal resets balance + clears fired
         (new CreditMeter)->grantMonthlyRenewal($team->fresh());
         $fresh = $team->fresh();
-        $this->assertSame(Plan::Free->monthlyCredits(), $fresh->credit_balance);
+        $this->assertSame(Plan::Starter->monthlyCredits(), $fresh->credit_balance);
         $this->assertSame([], $fresh->alert_thresholds_fired);
     }
 
@@ -137,7 +137,7 @@ class CreditBurnAlertTest extends TestCase
     {
         Notification::fake();
 
-        $grant = Plan::Free->monthlyCredits();
+        $grant = Plan::Starter->monthlyCredits();
         $consumed = $this->consumeOf(60);
         $remaining = $grant - $consumed;
 

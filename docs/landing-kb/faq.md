@@ -18,16 +18,20 @@ lead, answer a sales question, resolve a support ticket, walk a new user through
 onboarding — captures the conversation, and pushes the lead into a real-time
 dashboard. You see every transcript without anyone watching a queue.
 
-## What's in the Starter plan?
+## What do the plans cost?
 
-€99/month, 1 agent, 2,500 conversation credits, cancel anytime with no lock-in.
-Every feature is on — knowledge-base upload, transcript review, lead routing.
-Need more headroom? Buy a top-up pack or upgrade to Operator; either way nothing
-about your setup changes.
+Free is €0 — 1 agent, 250 conversation credits a month, no card required.
+Starter is €9/month for 1 agent and 2,500 credits. Growth is €19/month for up
+to 5 agents and 10,000 credits. Operator is €39/month for up to 5 agents and
+25,000 credits, the best rate per credit and the most expensive plan we sell. Every feature is on at every tier —
+knowledge-base upload, transcript review, lead routing — and every paid plan
+cancels anytime with no lock-in. Need more headroom on a paid plan? Buy a top-up
+pack or move up a plan; either way nothing about your setup changes. Custom
+build work is quoted after the free audit and has no list price.
 
 ## Does it connect to my existing stack?
 
-What ships at Starter is the agent itself — the chat experience, knowledge base,
+What ships on every subscription plan is the agent itself — the chat experience, knowledge base,
 transcripts, and lead routing into your real-time dashboard. Wiring it into your
 CRM, helpdesk, internal APIs or anything bespoke sits inside the custom build
 engagement, which we scope to your specific stack: fixed scope, credentials
@@ -36,10 +40,13 @@ audit covers what you'd need wired up.
 
 ## Is there a free trial?
 
-No free trial — the €99/month Starter plan is the way to try the product: every
-feature is on, and you can cancel anytime with no lock-in. The only free offer
-is the 30-minute audit for custom build work: a free call that ends in a
-written, fixed-scope proposal within 48 hours, yours to keep either way.
+Better — there's a permanent free tier. Free gives you 1 agent and 250
+conversation credits a month with every feature on and no card required, so you
+can put the agent on your own site with your own content before paying
+anything. It doesn't expire; when the volume outgrows 250 credits you move to
+Starter at €9/month. Separately, the 30-minute audit for custom build work is
+free: a call that ends in a written, fixed-scope proposal within 48 hours,
+yours to keep either way.
 
 ## When do I need a custom build instead of the off-the-shelf agent?
 

@@ -140,7 +140,7 @@ const dirty = computed(() => form.isDirty);
                         rows="3"
                         maxlength="2000"
                         class="mt-2 block w-full rounded-none border-border-hi bg-bg text-sm text-ink focus:border-ink focus:ring-2 focus:ring-ink focus:ring-offset-1"
-                        placeholder="Our plans start at $99/mo for the Starter tier — full pricing is at flowstack.run/pricing."
+                        placeholder="We have a free tier, and paid plans run €9–€39/mo — full pricing is at flowstack.run/pricing."
                     />
                     <InputError :message="err(i, 'answer')" class="mt-1" />
                 </div>

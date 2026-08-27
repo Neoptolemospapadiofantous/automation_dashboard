@@ -35,9 +35,11 @@ class SubscribeController extends Controller
     {
         $this->requireOwner($request, 'subscribe to a plan');
 
+        // Free is not purchasable — it is the default state, not a checkout.
         $plan = match ($planKey) {
-            'starter' => Plan::Free,    // case Free has label "Starter" + $99 price
-            'operator' => Plan::Pro,    // case Pro has label "Operator" + $399 price
+            'starter' => Plan::Starter,   // €19 · 1 agent · 2,500 credits
+            'growth' => Plan::Growth,     // €99 · 5 agents · 13,500 credits
+            'operator' => Plan::Pro,      // case Pro has label "Operator" · €179
             default => abort(404, 'Unknown plan'),
         };
 

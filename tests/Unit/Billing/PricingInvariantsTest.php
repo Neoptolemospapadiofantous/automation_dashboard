@@ -56,7 +56,16 @@ class PricingInvariantsTest extends TestCase
         // HIGH scenario: 2 LLM calls × (8k in / 800 out) per visitor turn.
         // Worst revenue source = cheapest $/credit across plans and packs.
         // Embed bills (1 + replies) ≈ 2 × multiplier per turn.
-        $sources = [Plan::Free->priceEur() / Plan::Free->monthlyCredits(), Plan::Pro->priceEur() / Plan::Pro->monthlyCredits()];
+        // PAID plans only. A €0 rung has no €/credit to speak of — including
+        // Free here would make the "cheapest credit source" zero and fail by
+        // construction. Free's exposure is bounded by its allotment cap
+        // instead, which test_free_tier_allotment_stays_capped guards.
+        $sources = [];
+        foreach (Plan::cases() as $plan) {
+            if ($plan->isPaid()) {
+                $sources[] = $plan->priceEur() / $plan->monthlyCredits();
+            }
+        }
         foreach (TopUpPack::cases() as $pack) {
             $sources[] = $pack->priceEur() / $pack->credits();
         }
@@ -85,6 +94,44 @@ class PricingInvariantsTest extends TestCase
                 $marginMid,
                 "Tier '{$key}' margin at TYPICAL usage on the cheapest credits is ".round($marginMid * 100).'% — repricing required.',
             );
+        }
+    }
+
+    public function test_free_tier_allotment_stays_capped(): void
+    {
+        // The Free tier is the one plan with no revenue to defend a margin
+        // with, so its exposure is bounded by the allotment alone. At the
+        // served tier (gpt/nano, 1 credit/message) 100 credits costs us
+        // fractions of a cent per team per month; a careless bump here is the
+        // only way a free signup becomes expensive. Raise deliberately.
+        $this->assertSame(0, Plan::Free->priceEur(), 'The Free tier must stay free.');
+        $this->assertLessThanOrEqual(
+            500,
+            Plan::Free->monthlyCredits(),
+            'Free allotment above 500 credits — re-run the acquisition-cost maths before raising it.',
+        );
+        $this->assertFalse(
+            Plan::Free->allowsTopUps(),
+            'Free must not buy top-ups — the cap is the upgrade prompt.',
+        );
+    }
+
+    public function test_the_paid_ladder_improves_per_credit_as_it_climbs(): void
+    {
+        // A rung that costs more per credit than the one below it is a broken
+        // ladder — nobody should pay more to get a worse rate.
+        $rungs = [Plan::Starter, Plan::Growth, Plan::Pro];
+        $previous = null;
+        foreach ($rungs as $plan) {
+            $perCredit = $plan->priceEur() / $plan->monthlyCredits();
+            if ($previous !== null) {
+                $this->assertLessThanOrEqual(
+                    $previous['rate'],
+                    $perCredit,
+                    "{$plan->label()} (€{$perCredit}/credit) is worse value than {$previous['label']} (€{$previous['rate']}/credit).",
+                );
+            }
+            $previous = ['rate' => $perCredit, 'label' => $plan->label()];
         }
     }
 }

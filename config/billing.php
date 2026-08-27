@@ -57,12 +57,14 @@ return [
     'stripe_price' => [
         // Monthly recurring prices.
         'starter' => env('STRIPE_PRICE_STARTER'),
+        'growth' => env('STRIPE_PRICE_GROWTH'),
         'operator' => env('STRIPE_PRICE_OPERATOR'),
 
         // Annual recurring prices — same Stripe Product, different Price ID
         // with interval=year. Leaving null disables the annual toggle for
         // that plan; the UI hides it gracefully. Set both to enable.
         'starter_annual' => env('STRIPE_PRICE_STARTER_ANNUAL'),
+        'growth_annual' => env('STRIPE_PRICE_GROWTH_ANNUAL'),
         'operator_annual' => env('STRIPE_PRICE_OPERATOR_ANNUAL'),
 
         'topup_small' => env('STRIPE_PRICE_TOPUP_SMALL'),
@@ -82,9 +84,9 @@ return [
     | UI copy). The chosen € amount comes back on the webhook as
     | `amount_total`, and we grant credits = amount_eur × credits_per_eur.
     |
-    | credits_per_eur = 50 → €0.0200/credit, identical to the Large pack and
-    | the BEST self-serve rate. It MUST stay above Operator's €0.01596/credit
-    | floor or it goes margin-negative (BillingInvariantsTest guards this).
+    | credits_per_eur = 500 → €0.0020/credit, identical to the Large pack and
+    | the BEST self-serve rate. It MUST stay above Operator's €0.00156/credit
+    | floor or it goes margin-negative (PricingInvariantsTest guards this).
     |
     | Currency is EUR throughout — we sell in Europe.
     */
@@ -92,7 +94,7 @@ return [
         'price_id' => env('STRIPE_PRICE_TOPUP_CUSTOM'),
         'min_eur' => 10,
         'max_eur' => 2_000,
-        'credits_per_eur' => 50,
+        'credits_per_eur' => 500,
     ],
 
 ];

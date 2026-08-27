@@ -140,12 +140,16 @@ class HandleInertiaRequests extends Middleware
                     $isOwner = (int) $team->getAttribute('user_id') === (int) $request->user()->id;
 
                     // A team is "subscribed" when Stripe says the subscription
-                    // exists in a live state. Load-bearing for the Billing UI:
-                    // Plan::Free shares the "Starter" label with the paid
-                    // entry tier, so the label alone cannot distinguish "on
-                    // the free tier" from "bought Starter" — comparing labels
-                    // made the Starter card show "Current plan" to unpaid
-                    // teams and blocked the €99 purchase entirely.
+                    // exists in a live state. Still the only trustworthy
+                    // signal for the Billing UI: the plan value alone says
+                    // which rung a team is ON, not whether Stripe is actually
+                    // billing it (a past_due or newly-cancelled team keeps its
+                    // paid plan value until the webhook downgrades it).
+                    // Historically this was worse — before the 2026-08-27
+                    // repricing Plan::Free shared the "Starter" label with the
+                    // paid entry tier, so comparing labels showed "Current
+                    // plan" to unpaid teams and blocked the purchase entirely.
+                    // The rungs are distinct now; keep the status check anyway.
                     $subscribed = in_array($subscriptionStatus, ['active', 'trialing', 'past_due'], true);
 
                     if ($isCustom) {

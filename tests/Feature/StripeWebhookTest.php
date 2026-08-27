@@ -38,21 +38,21 @@ class StripeWebhookTest extends TestCase
         $this->fakeWebhook($this->subscriptionCompletedEvent(
             teamId: (string) $team->id,
             subscriptionId: 'sub_test_123',
-            planValue: Plan::Free->value, // Free = Starter tier
+            planValue: Plan::Starter->value,
         ));
 
         $fresh = $team->fresh();
-        $this->assertSame(Plan::Free, $fresh->plan);
+        $this->assertSame(Plan::Starter, $fresh->plan);
         $this->assertSame('sub_test_123', $fresh->stripe_subscription_id);
         $this->assertSame('active', $fresh->stripe_subscription_status);
-        $this->assertSame(Plan::Free->monthlyCredits(), $fresh->credit_balance);
+        $this->assertSame(Plan::Starter->monthlyCredits(), $fresh->credit_balance);
     }
 
     public function test_topup_completes_and_grants_credits(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
-        $team->forceFill(['plan' => Plan::Free->value, 'credit_balance' => 100])->save();
+        $team->forceFill(['plan' => Plan::Starter->value, 'credit_balance' => 100])->save();
 
         $this->fakeWebhook($this->topupCompletedEvent(
             teamId: (string) $team->id,
@@ -72,7 +72,7 @@ class StripeWebhookTest extends TestCase
     {
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
-        $team->forceFill(['plan' => Plan::Free->value, 'credit_balance' => 0])->save();
+        $team->forceFill(['plan' => Plan::Starter->value, 'credit_balance' => 0])->save();
 
         $event = $this->topupCompletedEvent(
             teamId: (string) $team->id,
@@ -91,9 +91,9 @@ class StripeWebhookTest extends TestCase
     {
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
-        $team->forceFill(['plan' => Plan::Free->value, 'credit_balance' => 100])->save();
+        $team->forceFill(['plan' => Plan::Starter->value, 'credit_balance' => 100])->save();
 
-        // €50 paid (5000 cents) × 50 credits/€ = 2,500 credits. No `credits`
+        // €50 paid (5000 cents) × 500 credits/€ = 25,000 credits. No `credits`
         // in metadata — the handler must read amount_total.
         $this->fakeWebhook($this->customTopupCompletedEvent(
             teamId: (string) $team->id,
@@ -103,7 +103,7 @@ class StripeWebhookTest extends TestCase
 
         $fresh = $team->fresh();
         $this->assertSame(100, $fresh->credit_balance);
-        $this->assertSame(2_500, $fresh->topup_balance);
+        $this->assertSame(25_000, $fresh->topup_balance);
         $this->assertSame(1, CreditTransaction::query()->where('reason', 'grant_topup')->count());
     }
 
@@ -112,7 +112,7 @@ class StripeWebhookTest extends TestCase
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
         $team->forceFill([
-            'plan' => Plan::Free->value,
+            'plan' => Plan::Starter->value,
             'stripe_subscription_id' => 'sub_test_failing',
             'stripe_subscription_status' => 'active',
         ])->save();
@@ -135,6 +135,8 @@ class StripeWebhookTest extends TestCase
         $this->fakeWebhook($this->subscriptionDeletedEvent('sub_test_to_cancel'));
 
         $fresh = $team->fresh();
+        // Cancellation drops the team to the Free rung, not to the paid
+        // entry tier — it keeps a working (capped) agent, billed nothing.
         $this->assertSame(Plan::Free, $fresh->plan);
         $this->assertNull($fresh->stripe_subscription_id);
         $this->assertSame('canceled', $fresh->stripe_subscription_status);

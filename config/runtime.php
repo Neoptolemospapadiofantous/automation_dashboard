@@ -115,6 +115,22 @@ return [
     | VERIFIED 2026-06-11 against official provider pages (see
     | docs/operations/pricing-audit.md): all five model IDs valid, all
     | five rate pairs exact. Re-verify when bumping any model env.
+    |
+    | MULTIPLIERS REPRICED 2026-08-27 (gemini 1→4, haiku 1→10, sonnet 3→28,
+    | opus 10→45).
+    | They had drifted out of step with the rates above: haiku billed the
+    | SAME 1 credit as gpt/nano while costing 20x per token, which pinned the
+    | plan margin floor at €0.01333/credit and made any real price cut
+    | impossible. Re-aligning them dropped the floor to €0.00667 and unblocked
+    | the 2026-08-27 plan repricing (see App\Billing\Plan). If you change a
+    | rate pair OR a multiplier, re-run PricingInvariantsTest — it derives the
+    | floor from these numbers rather than hard-coding it.
+    |
+    | The multipliers now track the rate pairs above: relative to gpt/nano, a
+    | typical gemini turn costs ~6x, haiku ~17x, sonnet ~50x and opus ~84x. The
+    | credit prices sit BELOW those ratios (4/10/28/45) — the smart tiers are
+    | deliberately still the better deal per message — but far enough above the
+    | old values that a €39 top plan clears the margin bars with room.
     */
     // Tier every new/unconfigured agent falls back to. Point this at a
     // FUNDED provider's tier (e.g. 'gemini') so a fresh signup's agent
@@ -129,7 +145,7 @@ return [
             'label' => 'Claude Haiku 4.5',
             'description' => 'Fastest replies at the lowest cost. Excellent for FAQ answering, lead capture, and high-traffic sites.',
             'model' => env('RUNTIME_TIER_HAIKU_MODEL', 'claude-haiku-4-5-20251001'),
-            'credits_per_message' => (int) env('RUNTIME_TIER_HAIKU_CREDITS', 1),
+            'credits_per_message' => (int) env('RUNTIME_TIER_HAIKU_CREDITS', 10),
             'pricing_per_mtok' => ['in' => 1.00, 'out' => 5.00],
         ],
         'sonnet' => [
@@ -137,7 +153,7 @@ return [
             'label' => 'Claude Sonnet 4.6',
             'description' => 'Smarter conversations with deeper reasoning. Best for complex products, nuanced qualification, and longer sales cycles.',
             'model' => env('RUNTIME_TIER_SONNET_MODEL', 'claude-sonnet-4-6'),
-            'credits_per_message' => (int) env('RUNTIME_TIER_SONNET_CREDITS', 3),
+            'credits_per_message' => (int) env('RUNTIME_TIER_SONNET_CREDITS', 28),
             'pricing_per_mtok' => ['in' => 3.00, 'out' => 15.00],
         ],
         'opus' => [
@@ -145,7 +161,7 @@ return [
             'label' => 'Claude Opus 4.8',
             'description' => 'The most capable model. Expert-grade reasoning for technical sales, high-stakes conversations, and premium experiences.',
             'model' => env('RUNTIME_TIER_OPUS_MODEL', 'claude-opus-4-8'),
-            'credits_per_message' => (int) env('RUNTIME_TIER_OPUS_CREDITS', 10),
+            'credits_per_message' => (int) env('RUNTIME_TIER_OPUS_CREDITS', 45),
             'pricing_per_mtok' => ['in' => 5.00, 'out' => 25.00],
         ],
         'gpt' => [
@@ -161,7 +177,7 @@ return [
             'label' => 'Gemini 2.5 Flash',
             'description' => 'Google\'s fast multimodal model. Snappy answers at low cost with solid factual recall.',
             'model' => env('RUNTIME_TIER_GEMINI_MODEL', 'gemini-2.5-flash'),
-            'credits_per_message' => (int) env('RUNTIME_TIER_GEMINI_CREDITS', 1),
+            'credits_per_message' => (int) env('RUNTIME_TIER_GEMINI_CREDITS', 4),
             'pricing_per_mtok' => ['in' => 0.30, 'out' => 2.50],
         ],
     ], (string) env('APP_ENV') === 'local' ? [

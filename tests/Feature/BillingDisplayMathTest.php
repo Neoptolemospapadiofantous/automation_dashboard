@@ -28,7 +28,7 @@ class BillingDisplayMathTest extends TestCase
 
     public function test_topups_never_move_the_denominator(): void
     {
-        $grant = Plan::Free->monthlyCredits();
+        $grant = Plan::Starter->monthlyCredits();
         [$user, $team] = $this->teamWith(monthly: $grant);
 
         (new CreditMeter)->grantTopUp($team, 1_000);
@@ -45,7 +45,7 @@ class BillingDisplayMathTest extends TestCase
 
     public function test_used_tracks_the_monthly_bucket_only(): void
     {
-        $grant = Plan::Free->monthlyCredits();
+        $grant = Plan::Starter->monthlyCredits();
         [$user, $team] = $this->teamWith(monthly: $grant, topup: 500);
 
         (new CreditMeter)->consume($team, 700);
@@ -62,7 +62,7 @@ class BillingDisplayMathTest extends TestCase
     public function test_exhausted_monthly_with_topups_shows_full_bar_but_positive_remaining(): void
     {
         [$user, $team] = $this->teamWith(monthly: 0, topup: 800);
-        $grant = Plan::Free->monthlyCredits();
+        $grant = Plan::Starter->monthlyCredits();
 
         $this->actingAs($user->fresh())
             ->get(route('dashboard'))
@@ -90,7 +90,7 @@ class BillingDisplayMathTest extends TestCase
 
     public function test_renewal_resets_the_bar_but_keeps_purchased_credits_in_remaining(): void
     {
-        $grant = Plan::Free->monthlyCredits();
+        $grant = Plan::Starter->monthlyCredits();
         [$user, $team] = $this->teamWith(monthly: 40, topup: 900);
 
         (new CreditMeter)->grantMonthlyRenewal($team);
@@ -109,11 +109,12 @@ class BillingDisplayMathTest extends TestCase
      * @return array{0: User, 1: Team}
      */
     /**
-     * Plan::Free shares the "Starter" label with the paid entry tier, so
-     * the Billing UI must key "Current plan" off a real Stripe
-     * subscription, never the label — otherwise an unpaid team sees
-     * "Current plan" on the €99 card and cannot buy Starter at all
-     * (the bug found in the 2026-07-09 buying-journey verification).
+     * The Billing UI must key "Current plan" off a real Stripe subscription,
+     * never the plan label — a team can sit ON the Starter rung while Stripe
+     * has stopped billing it (cancelled, past due, or never completed
+     * checkout). Reading the label instead showed "Current plan" to unpaid
+     * teams and blocked the purchase entirely (the bug found in the
+     * 2026-07-09 buying-journey verification).
      */
     public function test_subscribed_flag_reflects_stripe_status_not_plan_label(): void
     {
@@ -145,7 +146,7 @@ class BillingDisplayMathTest extends TestCase
         $user = User::factory()->withPersonalTeam()->create();
         $team = $user->currentTeam;
         $team->forceFill([
-            'plan' => Plan::Free->value,
+            'plan' => Plan::Starter->value,
             'credit_balance' => $monthly,
             'topup_balance' => $topup,
             'credits_renewed_at' => now()->subDays(3),
