@@ -29,6 +29,15 @@ cancels anytime with no lock-in. Need more headroom on a paid plan? Buy a top-up
 pack or move up a plan; either way nothing about your setup changes. Custom
 build work is quoted after the free audit and has no list price.
 
+## Does the chat answer in Greek?
+
+Yes — and in English, and in most languages a visitor writes in. The agent
+mirrors the visitor's language automatically: someone who opens the chat in
+Greek gets Greek back, with no setup and no separate agent per language. Your
+knowledge base can stay in English and it will still answer Greek questions
+from it. Where exact Greek wording matters — a service name, a legal phrase —
+put that wording in the knowledge base and the agent will use it.
+
 ## Does it connect to my existing stack?
 
 What ships on every subscription plan is the agent itself — the chat experience, knowledge base,
