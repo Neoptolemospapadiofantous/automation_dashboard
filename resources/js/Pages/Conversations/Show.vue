@@ -152,10 +152,10 @@ const deleteUpstream = async () => {
         <PageHeader
             :breadcrumbs="[
                 { label: 'Conversations', href: route('conversations.index') },
-                { label: conversation.lead?.name || conversation.visitor_id }
+                { label: conversation.lead?.name || 'Anonymous visitor' }
             ]"
-            :title="conversation.lead?.name || conversation.visitor_id"
-            :description="`Started ${fmt(conversation.started_at)} · ${conversation.message_count} messages`"
+            :title="conversation.lead?.name || 'Anonymous visitor'"
+            :description="`Started ${fmt(conversation.started_at)} · ${conversation.message_count} messages · visitor ${String(conversation.visitor_id).slice(0, 12)}…`"
         >
             <template #actions>
                 <div class="flex flex-wrap items-center gap-2">

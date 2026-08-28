@@ -160,7 +160,7 @@ class SubscribeController extends Controller
         }
 
         try {
-            $this->stripe->changeSubscriptionPrice(
+            $subscription = $this->stripe->changeSubscriptionPrice(
                 team: $team,
                 priceId: $priceId,
                 invoiceImmediately: $current->isUpgradeTo($target),
@@ -173,9 +173,46 @@ class SubscribeController extends Controller
             ]);
         }
 
+        // An upgrade whose proration invoice needs card authentication is
+        // parked by Stripe as a pending update. Send the browser to the hosted
+        // invoice to authenticate; paying it applies the change and fires the
+        // same webhooks as a direct update. (Inertia::location so the client
+        // does a full navigation to Stripe rather than an XHR.)
+        $hostedInvoiceUrl = $this->hostedInvoiceUrlIfActionNeeded($subscription);
+        if ($hostedInvoiceUrl !== null) {
+            return Inertia::location($hostedInvoiceUrl);
+        }
+
         // Stripe's customer.subscription.updated / invoice.paid webhooks move
         // the plan and the credits. Nothing is written here on purpose.
         return back()->with('status', "Your plan is moving to {$target->label()}.");
+    }
+
+    /**
+     * When Stripe parked the change pending payment, the URL the customer
+     * must visit to authenticate the proration invoice; null when the change
+     * already applied.
+     */
+    private function hostedInvoiceUrlIfActionNeeded(\Stripe\Subscription $subscription): ?string
+    {
+        if (empty($subscription->pending_update)) {
+            return null;
+        }
+
+        $invoice = $subscription->latest_invoice;
+        if (! is_object($invoice)) {
+            return null;
+        }
+
+        $intent = $invoice->payment_intent ?? null;
+        $status = is_object($intent) ? (string) ($intent->status ?? '') : '';
+        if (! in_array($status, ['requires_action', 'requires_payment_method', 'requires_confirmation'], true)) {
+            return null;
+        }
+
+        $url = (string) ($invoice->hosted_invoice_url ?? '');
+
+        return $url !== '' ? $url : null;
     }
 
     /**

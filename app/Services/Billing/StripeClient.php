@@ -172,7 +172,17 @@ class StripeClient
             // Keep the renewal date. Without this an upgrade would reset the
             // billing anchor and the customer would pay a full period twice.
             'billing_cycle_anchor' => 'unchanged',
-            'payment_behavior' => 'error_if_incomplete',
+            // UPGRADE: the proration invoice may need 3-D Secure — routine for
+            // EU cards. `error_if_incomplete` REFUSED the whole change in that
+            // case (seen live: a €30 intent went requires_action → canceled and
+            // the founder's upgrade silently failed). `pending_if_incomplete`
+            // instead keeps the old price, parks the change on the subscription
+            // as `pending_update`, and hands back an invoice the customer
+            // authenticates on Stripe's hosted page; paying it applies the
+            // change and fires the normal webhooks.
+            // DOWNGRADE: nothing is charged now, so the change applies at once.
+            'payment_behavior' => $invoiceImmediately ? 'pending_if_incomplete' : 'error_if_incomplete',
+            'expand' => ['latest_invoice.payment_intent'],
         ]);
     }
 

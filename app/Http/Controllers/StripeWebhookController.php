@@ -330,6 +330,11 @@ class StripeWebhookController extends Controller
         /** @var array<int, array<string, mixed>> $lines */
         $lines = (array) ($invoice['lines']['data'] ?? []);
 
+        // A proration invoice lists the CREDIT for the old price before the
+        // CHARGE for the new one, so "first recognisable price" would resolve
+        // to the plan the customer just left. Charges (amount > 0) go first.
+        usort($lines, fn (array $a, array $b): int => ((int) ($b['amount'] ?? 0) <=> (int) ($a['amount'] ?? 0)));
+
         $priceIds = [];
         foreach ($lines as $line) {
             foreach ([$line['price']['id'] ?? null, $line['plan']['id'] ?? null] as $candidate) {

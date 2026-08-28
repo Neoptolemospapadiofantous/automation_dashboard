@@ -199,4 +199,36 @@ class SubscriptionChangeTest extends TestCase
             'reason' => CreditTransaction::REASON_GRANT_RENEWAL,
         ]);
     }
+
+    public function test_an_upgrade_needing_card_authentication_sends_the_browser_to_the_invoice(): void
+    {
+        // EU cards routinely need 3-D Secure on the proration charge. Stripe
+        // then parks the change as pending_update and hands back an invoice
+        // to authenticate; the customer must be sent there, not shown an
+        // error (the founder's live upgrade failed exactly this way).
+        config(['billing.stripe_price.operator' => 'price_operator_m']);
+        $user = $this->owner(Plan::Starter);
+
+        $pending = Subscription::constructFrom([
+            'id' => 'sub_test_1',
+            'pending_update' => ['expires_at' => 1_900_000_000],
+            'latest_invoice' => [
+                'id' => 'in_test_pending',
+                'hosted_invoice_url' => 'https://invoice.stripe.com/i/acct_test/in_test_pending',
+                'payment_intent' => ['id' => 'pi_test', 'status' => 'requires_action'],
+            ],
+        ]);
+        $this->stripeSpy()->shouldReceive('changeSubscriptionPrice')->once()->andReturn($pending);
+
+        $response = $this->actingAs($user)
+            ->from(route('billing.index'))
+            ->post(route('subscribe.change', 'operator'));
+
+        // Inertia::location → a real navigation to Stripe's hosted invoice.
+        $this->assertContains($response->getStatusCode(), [302, 409]);
+        $target = $response->headers->get('X-Inertia-Location') ?? $response->headers->get('Location');
+        $this->assertSame('https://invoice.stripe.com/i/acct_test/in_test_pending', $target);
+        // The plan is NOT touched locally — the webhook does that once paid.
+        $this->assertSame(Plan::Starter, $user->currentTeam->fresh()->planObject());
+    }
 }

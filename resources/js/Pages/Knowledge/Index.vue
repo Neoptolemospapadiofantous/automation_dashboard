@@ -269,12 +269,16 @@ const description = computed(() => {
 
                             <form class="min-w-0 space-y-2 rounded-none border border-dashed border-border-hi bg-grid p-3" @submit.prevent="uploadFile">
                                 <InputLabel for="file" value="Upload a file" />
+                                <label for="file" class="flex min-w-0 cursor-pointer items-center gap-3 text-xs">
+                                    <span class="shrink-0 rounded-none bg-ink px-3 py-1.5 font-mono text-xs font-medium text-bg transition hover:bg-ink-dim">Choose file</span>
+                                    <span class="min-w-0 truncate text-ink-dim">{{ fileForm.file?.name || 'No file chosen' }}</span>
+                                </label>
                                 <input
                                     id="file"
                                     ref="fileInput"
                                     type="file"
                                     :accept="fileAccept"
-                                    class="block w-full text-xs file:mr-3 file:rounded-none file:border-0 file:bg-ink file:px-3 file:py-1.5 file:font-mono file:text-xs file:font-medium file:text-bg hover:file:bg-ink-dim"
+                                    class="sr-only"
                                     :disabled="!configured || fileForm.processing"
                                     @change="onFilePicked"
                                 />

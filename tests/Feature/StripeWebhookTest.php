@@ -352,6 +352,36 @@ class StripeWebhookTest extends TestCase
         $this->assertSame(2_500, (int) $fresh->credit_balance);
     }
 
+    public function test_a_proration_invoice_resolves_the_plan_from_the_charge_line_not_the_credit(): void
+    {
+        // Stripe orders a proration invoice as [credit for the old price,
+        // charge for the new price]. Resolving "first recognisable price"
+        // would land the team back on the plan it just left.
+        config(['billing.stripe_price.starter' => 'price_starter_m', 'billing.stripe_price.operator' => 'price_operator_m']);
+        $team = Team::factory()->create([
+            'plan' => Plan::Starter->value,
+            'stripe_subscription_id' => 'sub_pro_1',
+            'stripe_subscription_status' => 'active',
+            'credit_balance' => 2_000,
+        ]);
+
+        $this->fakeWebhook(Event::constructFrom([
+            'id' => 'evt_'.uniqid(),
+            'type' => 'invoice.paid',
+            'data' => ['object' => [
+                'id' => 'in_pro_1', 'subscription' => 'sub_pro_1', 'billing_reason' => 'subscription_update',
+                'lines' => ['data' => [
+                    ['amount' => -600, 'price' => ['id' => 'price_starter_m'], 'period' => ['end' => now()->addMonth()->timestamp]],
+                    ['amount' => 2600, 'price' => ['id' => 'price_operator_m'], 'period' => ['end' => now()->addMonth()->timestamp]],
+                ]],
+            ]],
+        ]));
+
+        $fresh = $team->fresh();
+        $this->assertSame(Plan::Pro, $fresh->plan);
+        $this->assertSame(Plan::Pro->monthlyCredits(), (int) $fresh->credit_balance);
+    }
+
     private function subscriptionUpdatedEvent(string $subscriptionId, ?string $priceId = null, bool $cancelAtPeriodEnd = false): Event
     {
         $object = [

@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
@@ -84,6 +84,10 @@ const colorBar = (color) => ({
 
 const funnelMax = computed(() => Math.max(1, ...props.funnel.map((f) => f.count)));
 
+// Phone-only collapse of the setup checklist; desktop always shows the grid.
+const setupOpen = ref(false);
+const nextSetupStep = computed(() => setupSteps.value.find((s) => !s.done) ?? null);
+
 // Where you actually go from here — grounds the page below the numbers.
 const shortcuts = [
     { ref: 'GO/CHAT', label: 'Test your agent', hint: 'Talk to it the way a lead would.', route: 'chat.index' },
@@ -112,14 +116,21 @@ const shortcuts = [
             <div class="relative mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                 <!-- Setup checklist — self-completing, hidden once done -->
                 <div v-if="!setup.complete" class="rounded-none border border-border-line bg-bg-elev p-5 shadow-sheet">
-                    <div class="mb-3 flex items-center justify-between">
-                        <div class="flex items-center gap-2.5">
-                            <span class="bp-ref">DASH/SETUP</span>
-                            <h2 class="text-sm font-semibold text-ink">Finish setting up your agent</h2>
+                    <!-- On phones the five steps swallowed the whole first screen;
+                         they collapse to one line (count + next step) until tapped. -->
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex min-w-0 items-center gap-2.5">
+                            <span class="bp-ref hidden sm:inline">DASH/SETUP</span>
+                            <h2 class="truncate text-sm font-semibold text-ink">Finish setting up your agent</h2>
                         </div>
-                        <span class="font-mono text-xs text-ink-dim">{{ setupDone }}/{{ setupSteps.length }} done</span>
+                        <span class="hidden shrink-0 font-mono text-xs text-ink-dim sm:inline">{{ setupDone }}/{{ setupSteps.length }} done</span>
+                        <button type="button" class="inline-flex shrink-0 items-center gap-1.5 py-1 font-mono text-xs text-ink-dim sm:hidden" @click="setupOpen = !setupOpen">
+                            {{ setupDone }}/{{ setupSteps.length }} done
+                            <svg class="size-3 transition" :class="setupOpen ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
+                        </button>
                     </div>
-                    <ul class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    <p v-if="nextSetupStep" class="mt-1 truncate text-xs text-ink-dim sm:hidden">Next: {{ nextSetupStep.label }}</p>
+                    <ul class="mt-3 gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-3" :class="setupOpen ? 'grid' : 'hidden'">
                         <li
                             v-for="s in setupSteps"
                             :key="s.key"
