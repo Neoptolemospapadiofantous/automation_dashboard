@@ -84,7 +84,7 @@ async function copy() {
                     <Link :href="route('chat.index')">
                         <PrimaryButton>Start chatting</PrimaryButton>
                     </Link>
-                    <Link :href="route('dashboard')" class="text-sm font-medium text-violet hover:underline">Go to dashboard →</Link>
+                    <Link :href="route('dashboard')" class="inline-block py-1.5 text-sm font-medium text-violet hover:underline">Go to dashboard →</Link>
                 </div>
             </div>
 
@@ -141,7 +141,7 @@ async function copy() {
                         <div class="flex-1">
                             <p class="font-medium text-ink">{{ step.title }}</p>
                             <p class="mt-0.5 text-sm text-ink-dim">{{ step.body }}</p>
-                            <Link :href="route(step.href)" class="mt-2 inline-block text-sm font-medium text-ink underline hover:text-ink-dim">
+                            <Link :href="route(step.href)" class="mt-2 inline-block py-1.5 text-sm font-medium text-ink underline hover:text-ink-dim">
                                 {{ step.cta }} →
                             </Link>
                         </div>
