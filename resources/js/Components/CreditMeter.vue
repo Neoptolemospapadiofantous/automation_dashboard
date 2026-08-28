@@ -48,15 +48,19 @@ const textClass = computed(() => ({
                     {{ billing.plan_label }} plan
                 </span>
                 <span class="font-mono font-medium tabular-nums" :class="textClass">
-                    {{ billing.credits_remaining.toLocaleString() }} left
+                    {{ billing.credits_remaining.toLocaleString() }} available
                 </span>
             </div>
             <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-none bg-surface-hi">
                 <div class="h-full rounded-none transition-all" :class="barClass" :style="{ width: percent + '%' }" />
             </div>
-            <div class="mt-1 font-mono text-[10px] text-ink-dim">
-                {{ billing.credits_used.toLocaleString() }} / {{ billing.credits_total.toLocaleString() }} monthly used<span v-if="billing.topup_balance > 0"> · +{{ billing.topup_balance.toLocaleString() }} top-up</span>
-                <span v-if="billing.max_agents < 1000"> · {{ billing.agents_count }} / {{ billing.max_agents }} agents</span>
+            <!-- One fact per line. The old single dotted run-on
+                 ("0 / 250 monthly used · +25,000 top-up · 1 / 1 agents")
+                 read as one number soup in a 200px sidebar. -->
+            <div class="mt-1 space-y-0.5 font-mono text-[10px] text-ink-dim">
+                <div>{{ billing.credits_total.toLocaleString() }} monthly · {{ billing.credits_used.toLocaleString() }} used</div>
+                <div v-if="billing.topup_balance > 0">+{{ billing.topup_balance.toLocaleString() }} top-up credits</div>
+                <div v-if="billing.max_agents < 1000">{{ billing.agents_count }} / {{ billing.max_agents }} agents</div>
             </div>
         </Link>
     </div>
