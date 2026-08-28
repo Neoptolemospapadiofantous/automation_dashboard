@@ -28,6 +28,9 @@ const reasonLabel = (r) => ({
     grant_renewal: 'Monthly renewal',
     grant_topup: 'Top-up purchase',
     consume_message: 'Message',
+    // Written at every renewal for whatever was left of the monthly bucket
+    // (CreditTransaction::REASON_EXPIRE_MONTHLY) — it was rendering raw.
+    expire_monthly: 'Unused monthly credits expired',
     refund: 'Refund',
     adjustment: 'Adjustment',
 }[r] || r);
