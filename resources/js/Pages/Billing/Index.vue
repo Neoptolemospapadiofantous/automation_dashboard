@@ -243,64 +243,60 @@ function openPortal() {
                             </div>
                         </div>
 
-                        <!-- Three columns only from xl: beside the sidebar, lg leaves each card ~133px and the credit line wraps twice. -->
-                        <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        <!-- Card = a stack: plan name, the price as the dominant
+                             line, the allowance, then the action pinned to the
+                             bottom so all three cards align. (The old
+                             "Starter — €9/mo" single line wrapped its dash onto
+                             its own row inside a narrow card.) Column count
+                             follows the CONTAINER, not the viewport: at lg the
+                             sidebar leaves ~430px here, so three columns would
+                             be 133px each. -->
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
                             <button
                                 v-for="p in plan_catalog"
                                 :key="p.key"
                                 type="button"
-                                class="shadow-sheet flex flex-col items-start rounded-none border p-3 text-left transition hover:border-ink hover:bg-surface-hi"
+                                class="shadow-sheet flex flex-col rounded-none border p-4 text-left transition hover:border-ink hover:bg-surface-hi disabled:cursor-default"
                                 :class="actionFor(p) === 'current' ? 'border-violet ring-1 ring-violet bg-surface-hi' : 'border-border-line bg-bg'"
                                 :disabled="!billing?.is_owner || actionFor(p) === 'current'"
                                 @click="choosePlan(p)"
                             >
-                                <div class="flex items-baseline gap-2">
-                                    <span class="text-sm font-semibold text-ink">{{ p.label }}</span>
-                                    <span
-                                        v-if="cycle === 'annual' && p.annual_available"
-                                        class="font-mono text-sm font-semibold text-ink"
-                                    >
-                                        — €{{ p.annual_equivalent_monthly_eur }}/mo
-                                    </span>
-                                    <span v-else class="font-mono text-sm font-semibold text-ink">
-                                        — €{{ p.monthly_eur }}/mo
-                                    </span>
-                                </div>
-                                <div class="mt-1 text-[11px] text-ink-dim">
+                                <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-mute">
+                                    {{ p.label }}
+                                </span>
+                                <span class="mt-1.5 flex items-baseline gap-1 font-mono text-2xl font-semibold tabular-nums leading-none text-ink">
+                                    €{{ cycle === 'annual' && p.annual_available ? p.annual_equivalent_monthly_eur : p.monthly_eur }}
+                                    <span class="text-xs font-medium text-ink-mute">/mo</span>
+                                </span>
+                                <span class="mt-2 text-[11px] leading-snug text-ink-dim">
                                     {{ p.max_agents >= 9999 ? 'Unlimited agents' : `${p.max_agents} agent${p.max_agents === 1 ? '' : 's'}` }}
-                                    · {{ p.monthly_credits.toLocaleString() }} credits / month
-                                </div>
-                                <div
+                                    · {{ p.monthly_credits.toLocaleString() }} credits/mo
+                                </span>
+                                <span
                                     v-if="cycle === 'annual' && p.annual_available"
-                                    class="mt-1 text-[10px] text-state-ok-ink"
+                                    class="mt-1 text-[10px] leading-snug text-state-ok-ink"
                                 >
                                     Billed yearly · €{{ p.annual_eur.toLocaleString() }} / yr
-                                </div>
-                                <div
+                                </span>
+                                <span
                                     v-else-if="cycle === 'annual' && !p.annual_available"
-                                    class="mt-1 text-[10px] text-state-warn-ink"
+                                    class="mt-1 text-[10px] leading-snug text-state-warn-ink"
                                 >
                                     Annual not yet available — billed monthly.
-                                </div>
+                                </span>
 
-                                <div v-if="actionFor(p) === 'current'" class="mt-2 text-[11px] font-medium text-ink-mute">
-                                    Current plan
-                                </div>
-                                <div v-else class="mt-2 text-[11px] font-medium text-ink underline">
-                                    {{ actionLabel(p) }} →
-                                </div>
-                                <div
-                                    v-if="actionFor(p) === 'downgrade'"
-                                    class="mt-1 text-[10px] text-ink-mute"
+                                <span
+                                    class="mt-auto pt-3 text-[11px] font-medium"
+                                    :class="actionFor(p) === 'current' ? 'text-ink-mute' : 'text-ink underline'"
                                 >
+                                    {{ actionFor(p) === 'current' ? 'Current plan' : `${actionLabel(p)} →` }}
+                                </span>
+                                <span v-if="actionFor(p) === 'downgrade'" class="mt-1 text-[10px] leading-snug text-ink-mute">
                                     Credit applied to your next invoice
-                                </div>
-                                <div
-                                    v-else-if="actionFor(p) === 'upgrade'"
-                                    class="mt-1 text-[10px] text-ink-mute"
-                                >
+                                </span>
+                                <span v-else-if="actionFor(p) === 'upgrade'" class="mt-1 text-[10px] leading-snug text-ink-mute">
                                     You pay only the difference, today
-                                </div>
+                                </span>
                             </button>
                         </div>
 
