@@ -58,7 +58,7 @@ async function copy() {
 <template>
     <Head title="You're set" />
     <div class="min-h-screen bg-bg-elev">
-        <div class="mx-auto max-w-2xl px-4 py-12">
+        <div class="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
             <div class="mb-8 flex items-center justify-between text-xs">
                 <ol class="flex items-center gap-3 font-mono font-medium text-ink-dim">
                     <li class="text-ink-dim">✓ 1. Set up agent</li>

@@ -77,7 +77,7 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
                         v-for="d in [7, 30, 90]"
                         :key="d"
                         type="button"
-                        class="rounded-none px-3 py-1 font-mono text-xs font-medium transition"
+                        class="rounded-none px-3 py-2 font-mono text-xs font-medium transition sm:py-1.5"
                         :class="window.days === d ? 'bg-ink text-bg' : 'text-ink-dim hover:bg-surface-hi'"
                         @click="setWindow(d)"
                     >
@@ -270,7 +270,7 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
 
                 <!-- Back link -->
                 <div class="text-center">
-                    <Link :href="route('agents.show', agent.slug)" class="text-xs text-ink underline hover:text-ink-dim">
+                    <Link :href="route('agents.show', agent.slug)" class="inline-block py-2 text-xs text-ink underline hover:text-ink-dim">
                         ← Back to agent settings
                     </Link>
                 </div>

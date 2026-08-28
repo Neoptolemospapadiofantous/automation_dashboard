@@ -24,7 +24,7 @@ setTimeout(refresh, 2500);
 <template>
     <AppLayout title="Subscription activated">
         <Head title="Subscription activated" />
-        <div class="flex min-h-[60vh] items-center justify-center px-4">
+        <div class="flex min-h-[60vh] items-center justify-center px-4 sm:px-6 lg:px-8">
             <div class="max-w-md text-center">
                 <div class="mb-5 flex items-center justify-center">
                     <span class="ins-stamp text-state-ok-ink">Paid</span>

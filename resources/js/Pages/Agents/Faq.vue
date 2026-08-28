@@ -54,7 +54,7 @@ const dirty = computed(() => form.isDirty);
             description="Answer the common questions for free. Each entry becomes a quick-reply chip in the widget and matches typed questions by keyword — served instantly with no AI call and no credits spent. Stage changes as a draft, then publish."
         />
 
-        <div class="mx-auto max-w-5xl space-y-6 px-4 pb-12 pt-8 sm:px-6">
+        <div class="mx-auto max-w-5xl space-y-6 px-4 pb-12 pt-8 sm:px-6 lg:px-8">
             <!-- Live summary -->
             <div class="rounded-none border border-border-line bg-bg p-5 shadow-sheet">
                 <span class="bp-ref">AGENT/FAQ</span>

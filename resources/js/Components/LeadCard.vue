@@ -62,7 +62,7 @@ function onAssignChange(e) {
             <a
                 v-if="lead.email"
                 :href="`mailto:${lead.email}`"
-                class="min-w-0 flex-1 truncate hover:text-ink hover:underline"
+                class="min-w-0 flex-1 truncate py-1 hover:text-ink hover:underline"
                 :title="`Email ${lead.email}`"
                 @click.stop
                 @mousedown.stop
@@ -73,7 +73,7 @@ function onAssignChange(e) {
             <a
                 v-if="lead.phone"
                 :href="`tel:${lead.phone}`"
-                class="shrink-0 hover:text-ink hover:underline"
+                class="-my-1.5 inline-flex min-h-8 min-w-8 shrink-0 items-center justify-center hover:text-ink hover:underline"
                 :title="`Call ${lead.phone}`"
                 @click.stop
                 @mousedown.stop
@@ -109,7 +109,7 @@ function onAssignChange(e) {
             </div>
             <button
                 type="button"
-                class="shrink-0 text-xs text-ink-mute opacity-0 transition hover:text-state-bad-ink group-hover:opacity-100 max-sm:opacity-100"
+                class="-mr-2 -mt-1.5 inline-flex size-8 shrink-0 items-center justify-center text-xs text-ink-mute opacity-0 transition hover:text-state-bad-ink group-hover:opacity-100 max-sm:opacity-100"
                 title="Delete lead"
                 aria-label="Delete lead"
                 @click="$emit('delete', lead)"

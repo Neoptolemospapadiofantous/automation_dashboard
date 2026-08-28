@@ -317,7 +317,7 @@ function submit() {
                             v-for="k in ['7d', '30d', '90d']"
                             :key="k"
                             type="button"
-                            class="rounded-none border px-2.5 py-0.5 text-xs font-medium transition"
+                            class="rounded-none border px-3 py-2 text-xs font-medium transition sm:py-1.5"
                             :class="filters.since_key === k ? 'border-violet bg-violet text-bg' : 'border-border-line text-ink-dim hover:bg-surface-hi'"
                             @click="applyFilters({ since: filters.since_key === k ? null : k })"
                         >

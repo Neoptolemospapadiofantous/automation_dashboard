@@ -211,16 +211,16 @@ const description = computed(() => {
                     Your agent isn't set up yet — finish onboarding to add documents to its knowledge base.
                 </div>
 
-                <div class="grid gap-6 lg:grid-cols-3">
+                <div class="grid min-w-0 gap-6 lg:grid-cols-3">
                     <!-- Documents panel (left, wider) -->
-                    <div class="shadow-sheet lg:col-span-2 rounded-none border border-border-line bg-bg p-5">
-                        <div class="flex items-center justify-between gap-3 border-b border-border-line pb-3">
+                    <div class="shadow-sheet min-w-0 rounded-none border border-border-line bg-bg p-5 lg:col-span-2">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border-line pb-3">
                             <h3 class="text-sm font-semibold text-ink">Documents</h3>
                             <!-- Type filter -->
                             <div class="flex flex-wrap items-center gap-1.5">
                                 <button
                                     type="button"
-                                    class="rounded-none border px-2.5 py-0.5 font-mono text-xs font-medium transition"
+                                    class="rounded-none border px-3 py-2 font-mono text-xs font-medium transition sm:py-1.5"
                                     :class="!filter.type ? 'border-ink bg-ink text-bg' : 'border-border-line text-ink-dim hover:bg-surface-hi'"
                                     @click="changeFilter(null)"
                                 >
@@ -230,7 +230,7 @@ const description = computed(() => {
                                     v-for="t in accepted_types"
                                     :key="t"
                                     type="button"
-                                    class="rounded-none border px-2.5 py-0.5 font-mono text-xs font-medium uppercase tracking-wider transition"
+                                    class="rounded-none border px-3 py-2 font-mono text-xs font-medium uppercase tracking-wider transition sm:py-1.5"
                                     :class="filter.type === t ? 'border-ink bg-ink text-bg' : 'border-border-line text-ink-dim hover:bg-surface-hi'"
                                     @click="changeFilter(t)"
                                 >
@@ -242,7 +242,7 @@ const description = computed(() => {
                         <!-- Add forms (three: URL / file / text-paste) -->
                         <p class="bp-annot mt-4">// add a source — url, file, or pasted text</p>
                         <div class="mt-2 grid gap-4 sm:grid-cols-3">
-                            <form class="space-y-2 rounded-none border border-dashed border-border-hi bg-grid p-3" @submit.prevent="addUrl">
+                            <form class="min-w-0 space-y-2 rounded-none border border-dashed border-border-hi bg-grid p-3" @submit.prevent="addUrl">
                                 <InputLabel for="url" value="Add a URL" />
                                 <TextInput
                                     id="url"
@@ -267,7 +267,7 @@ const description = computed(() => {
                                 </PrimaryButton>
                             </form>
 
-                            <form class="space-y-2 rounded-none border border-dashed border-border-hi bg-grid p-3" @submit.prevent="uploadFile">
+                            <form class="min-w-0 space-y-2 rounded-none border border-dashed border-border-hi bg-grid p-3" @submit.prevent="uploadFile">
                                 <InputLabel for="file" value="Upload a file" />
                                 <input
                                     id="file"
@@ -285,7 +285,7 @@ const description = computed(() => {
                                 </PrimaryButton>
                             </form>
 
-                            <form class="space-y-2 rounded-none border border-dashed border-border-hi bg-grid p-3" @submit.prevent="addText">
+                            <form class="min-w-0 space-y-2 rounded-none border border-dashed border-border-hi bg-grid p-3" @submit.prevent="addText">
                                 <InputLabel for="text-name" value="Paste text" />
                                 <TextInput
                                     id="text-name"
@@ -340,14 +340,14 @@ const description = computed(() => {
                                      unmanageable on mobile. -->
                                 <button
                                     type="button"
-                                    class="text-xs text-ink-mute transition hover:text-ink sm:opacity-0 sm:group-hover:opacity-100"
+                                    class="py-2 text-xs text-ink-mute transition sm:py-0 hover:text-ink sm:opacity-0 sm:group-hover:opacity-100"
                                     @click="inspect(d.documentID)"
                                 >
                                     Inspect
                                 </button>
                                 <button
                                     type="button"
-                                    class="text-xs text-ink-mute transition hover:text-state-bad-ink sm:opacity-0 sm:group-hover:opacity-100"
+                                    class="py-2 text-xs text-ink-mute transition sm:py-0 hover:text-state-bad-ink sm:opacity-0 sm:group-hover:opacity-100"
                                     @click="destroy(d.documentID, d.data?.name)"
                                 >
                                     Delete
@@ -361,12 +361,15 @@ const description = computed(() => {
                     </div>
 
                     <!-- Right column: Ask + Inspect panels -->
-                    <div class="space-y-6">
+                    <!-- min-w-0 on both grid children: grid items default to
+                         min-width:auto, which on phones sized this column to the
+                         forms' intrinsic width and pushed the page 178px wide. -->
+                    <div class="min-w-0 space-y-6">
                         <!-- Ask the KB -->
                         <div class="shadow-sheet rounded-none border border-border-line bg-bg p-5">
                             <h3 class="mb-3 text-sm font-semibold text-ink">Ask the knowledge base</h3>
                             <form class="flex gap-2" @submit.prevent="ask">
-                                <TextInput v-model="question" type="text" class="flex-1" placeholder="e.g. What is your pricing?" :disabled="!configured" />
+                                <TextInput v-model="question" type="text" class="min-w-0 flex-1" placeholder="e.g. What is your pricing?" :disabled="!configured" />
                                 <PrimaryButton :disabled="querying || !configured">{{ querying ? '…' : 'Ask' }}</PrimaryButton>
                             </form>
                             <div v-if="answer" class="mt-4">
@@ -407,7 +410,7 @@ const description = computed(() => {
                                             <button type="button" class="text-xs font-medium text-ink transition hover:underline" @click="answeringGap === g.id ? (answeringGap = null) : openAnswer(g)">
                                                 {{ answeringGap === g.id ? 'Cancel' : 'Answer' }}
                                             </button>
-                                            <button type="button" class="text-xs text-ink-mute transition hover:text-ink" title="Clear without adding content" @click="resolveGap(g.id)">
+                                            <button type="button" class="py-2 text-xs text-ink-mute transition sm:py-0 hover:text-ink" title="Clear without adding content" @click="resolveGap(g.id)">
                                                 Dismiss
                                             </button>
                                         </div>

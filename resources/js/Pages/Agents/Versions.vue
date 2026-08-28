@@ -70,7 +70,7 @@ const dirty = computed(() => form.isDirty);
             description="Stage behavior changes as a draft, publish to make them live instantly, roll back anytime. The published version shapes every conversation."
         />
 
-        <div class="mx-auto max-w-5xl space-y-6 px-4 pb-12 pt-8 sm:px-6">
+        <div class="mx-auto max-w-5xl space-y-6 px-4 pb-12 pt-8 sm:px-6 lg:px-8">
             <!-- Editor -->
             <div class="rounded-none border border-border-line bg-bg p-5 shadow-sheet">
                 <span class="bp-ref">AGENT/VERSIONS</span>
@@ -169,7 +169,7 @@ const dirty = computed(() => form.isDirty);
                 />
 
                 <ul v-else class="divide-y divide-border-line">
-                    <li v-for="v in versions" :key="v.version" class="flex items-center justify-between gap-4 py-3">
+                    <li v-for="v in versions" :key="v.version" class="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex min-w-0 items-start gap-3">
                             <span class="bp-dot mt-1.5 shrink-0" :class="v.status === 'published' ? '' : 'opacity-40'" aria-hidden="true" />
                             <div class="min-w-0">
@@ -196,7 +196,7 @@ const dirty = computed(() => form.isDirty);
                             </p>
                             </div>
                         </div>
-                        <div class="flex shrink-0 gap-2">
+                        <div class="flex flex-wrap gap-2 sm:shrink-0">
                             <a
                                 :href="route('agents.versions.export', v.version)"
                                 class="inline-flex items-center rounded-none border border-border-line bg-bg px-3 py-1.5 font-mono text-xs font-medium text-ink-dim hover:bg-surface-hi"

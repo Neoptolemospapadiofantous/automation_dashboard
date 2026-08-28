@@ -193,7 +193,7 @@ const previewLauncher = computed(() => form.launcher_text || 'Chat with us');
                                 :href="previewUrl"
                                 target="_blank"
                                 rel="noopener"
-                                class="text-xs font-medium text-violet underline hover:no-underline"
+                                class="inline-block py-2 text-xs font-medium text-violet underline hover:no-underline"
                             >
                                 Live preview ↗
                             </a>
@@ -201,7 +201,7 @@ const previewLauncher = computed(() => form.launcher_text || 'Chat with us');
                                 :href="widgetUrl"
                                 target="_blank"
                                 rel="noopener"
-                                class="text-xs text-ink-dim underline hover:text-ink"
+                                class="inline-block py-2 text-xs text-ink-dim underline hover:text-ink"
                             >
                                 View raw widget.js
                             </a>

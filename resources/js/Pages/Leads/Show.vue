@@ -183,7 +183,7 @@ const scoreBreakdown = computed(() => {
                             </span>
                             <button
                                 type="button"
-                                class="rounded-none border border-border-hi px-2.5 py-1 text-xs font-medium text-ink transition hover:bg-surface-hi disabled:opacity-50"
+                                class="rounded-none border border-border-hi px-3 py-2 text-xs font-medium text-ink transition sm:py-1.5 hover:bg-surface-hi disabled:opacity-50"
                                 :disabled="contactSaving"
                                 @click="markContacted"
                             >
@@ -196,14 +196,14 @@ const scoreBreakdown = computed(() => {
                         <div>
                             <dt class="text-xs text-ink-dim">Email</dt>
                             <dd class="mt-0.5 break-all text-ink-dim">
-                                <a v-if="lead.email" :href="`mailto:${lead.email}`" class="text-violet underline hover:text-ink-dim">{{ lead.email }}</a>
+                                <a v-if="lead.email" :href="`mailto:${lead.email}`" class="inline-block py-1 text-violet underline hover:text-ink-dim">{{ lead.email }}</a>
                                 <span v-else class="text-ink-mute">—</span>
                             </dd>
                         </div>
                         <div>
                             <dt class="text-xs text-ink-dim">Phone</dt>
                             <dd class="mt-0.5 text-ink-dim">
-                                <a v-if="lead.phone" :href="`tel:${lead.phone}`" class="text-violet underline hover:text-ink-dim">{{ lead.phone }}</a>
+                                <a v-if="lead.phone" :href="`tel:${lead.phone}`" class="inline-block py-1 text-violet underline hover:text-ink-dim">{{ lead.phone }}</a>
                                 <span v-else class="text-ink-mute">—</span>
                             </dd>
                         </div>
@@ -267,7 +267,7 @@ const scoreBreakdown = computed(() => {
                     <p v-else class="mt-3 text-xs italic text-ink-dim">No conversations on file.</p>
                 </div>
 
-                <Link :href="route('leads.index')" class="block text-center text-xs text-ink underline hover:text-ink-dim">
+                <Link :href="route('leads.index')" class="block py-2 text-center text-xs text-ink underline hover:text-ink-dim">
                     ← Back to all leads
                 </Link>
             </div>

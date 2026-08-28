@@ -79,7 +79,7 @@ const urlHint = computed(() =>
             description="Give the agent hands. Each action is an n8n workflow it can call mid-conversation — look up an order, open a ticket, sync a CRM. Stage changes as a draft, then publish."
         />
 
-        <div class="mx-auto max-w-5xl space-y-6 px-4 pb-12 pt-8 sm:px-6">
+        <div class="mx-auto max-w-5xl space-y-6 px-4 pb-12 pt-8 sm:px-6 lg:px-8">
             <!-- Coming soon: the automation subsystem is turned off
                  (RUNTIME_AUTOMATION_ENABLED). The editor unlocks automatically
                  once it's enabled, so this is the whole surface until then. -->

@@ -74,7 +74,7 @@ function continueOn() {
 <template>
     <Head title="Welcome — Set up your agent" />
     <div class="min-h-screen bg-bg-elev bg-grid">
-        <div class="mx-auto max-w-2xl px-4 py-12">
+        <div class="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
             <div class="bp-rise mb-8 flex items-center justify-between text-xs">
                 <ol class="flex items-center gap-3 font-mono font-medium text-ink-dim">
                     <li class="flex items-center gap-2 text-ink"><span class="bp-dot pulse-glow text-violet" />1. Set up agent</li>

@@ -38,7 +38,7 @@ defineProps({
                             v-if="crumb.label"
                             :href="crumb.href"
                             :class="[
-                                crumb.href ? 'text-ink-dim hover:text-ink hover:underline' : 'text-ink font-medium',
+                                crumb.href ? 'py-1 text-ink-dim hover:text-ink hover:underline' : 'text-ink font-medium',
                             ]"
                         >
                             {{ crumb.label }}

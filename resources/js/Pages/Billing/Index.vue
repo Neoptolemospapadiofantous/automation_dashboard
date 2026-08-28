@@ -223,7 +223,7 @@ function openPortal() {
                             <div v-if="anyAnnualAvailable" class="flex items-center gap-1 rounded-none bg-surface-hi p-0.5">
                                 <button
                                     type="button"
-                                    class="rounded-none px-3 py-1 text-xs font-medium transition"
+                                    class="rounded-none px-3 py-2 text-xs font-medium transition sm:py-1.5"
                                     :class="cycle === 'monthly' ? 'bg-violet text-bg' : 'text-ink-dim'"
                                     @click="cycle = 'monthly'"
                                 >
@@ -231,7 +231,7 @@ function openPortal() {
                                 </button>
                                 <button
                                     type="button"
-                                    class="flex items-center gap-1 rounded-none px-3 py-1 text-xs font-medium transition"
+                                    class="flex items-center gap-1 rounded-none px-3 py-2 text-xs font-medium transition sm:py-1.5"
                                     :class="cycle === 'annual' ? 'bg-violet text-bg' : 'text-ink-dim'"
                                     @click="cycle = 'annual'"
                                 >

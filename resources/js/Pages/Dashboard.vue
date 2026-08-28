@@ -134,7 +134,7 @@ const shortcuts = [
                                 <component
                                     :is="s.route && !s.done ? 'a' : 'span'"
                                     :href="s.route && !s.done ? route(s.route) : undefined"
-                                    class="text-xs font-medium"
+                                    class="inline-block py-2 text-xs font-medium sm:py-0"
                                     :class="s.route && !s.done ? 'text-ink underline hover:no-underline' : 'text-ink-dim'"
                                 >
                                     {{ s.label }}

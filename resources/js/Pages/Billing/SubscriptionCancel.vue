@@ -6,7 +6,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 <template>
     <AppLayout title="Subscription canceled">
         <Head title="Subscription canceled" />
-        <div class="flex min-h-[60vh] items-center justify-center px-4">
+        <div class="flex min-h-[60vh] items-center justify-center px-4 sm:px-6 lg:px-8">
             <div class="max-w-md text-center">
                 <p class="bp-ref">BILLING/CANCELED</p>
                 <h1 class="mt-3 text-3xl font-semibold tracking-tight text-ink">No payment taken</h1>
