@@ -330,6 +330,28 @@ class StripeWebhookTest extends TestCase
         $this->assertSame(Plan::Starter->monthlyCredits(), (int) $team->fresh()->credit_balance);
     }
 
+    public function test_the_first_invoice_records_the_period_end_without_granting_twice(): void
+    {
+        // checkout.session.completed grants the first allotment and knows no
+        // renewal date; the subscription_create invoice that lands alongside
+        // it is the first thing that does. It must record that date and
+        // must NOT grant again (that would double the first month).
+        config(['billing.stripe_price.starter' => 'price_starter_m']);
+        $team = Team::factory()->create([
+            'plan' => Plan::Starter->value,
+            'stripe_subscription_id' => 'sub_first_1',
+            'stripe_subscription_status' => 'active',
+            'credit_balance' => 2_500,
+            'stripe_current_period_end' => null,
+        ]);
+
+        $this->fakeWebhook($this->invoicePaidEvent('sub_first_1', 'price_starter_m', 'subscription_create'));
+
+        $fresh = $team->fresh();
+        $this->assertNotNull($fresh->stripe_current_period_end);
+        $this->assertSame(2_500, (int) $fresh->credit_balance);
+    }
+
     private function subscriptionUpdatedEvent(string $subscriptionId, ?string $priceId = null, bool $cancelAtPeriodEnd = false): Event
     {
         $object = [

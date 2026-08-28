@@ -209,6 +209,13 @@ class StripeWebhookController extends Controller
             return;
         }
 
+        // Cache the period end FIRST, for every invoice including the very
+        // first one: checkout.session.completed does not know the renewal
+        // date, so without this the Billing page had no "Renews on" line
+        // until the first monthly renewal — seen on the founder's own
+        // purchase (period_end stayed null while everything else landed).
+        $this->cachePeriodEnd($team, $invoice);
+
         // Only grant on actual recurring invoices, not the initial signup
         // (that's already handled by checkout.session.completed). Stripe
         // marks the initial invoice with billing_reason = subscription_create.
@@ -234,7 +241,15 @@ class StripeWebhookController extends Controller
             $this->meter->grantMonthlyRenewal($team);
         }
 
-        // Cache the next period end for UI display.
+    }
+
+    /**
+     * Remember when the paid period ends, from the invoice's first line.
+     *
+     * @param  array<string, mixed>  $invoice
+     */
+    protected function cachePeriodEnd(Team $team, array $invoice): void
+    {
         /** @var array<int, array<string, mixed>> $lines */
         $lines = (array) (($invoice['lines']['data'] ?? []));
         $periodEnd = $lines[0]['period']['end'] ?? null;
