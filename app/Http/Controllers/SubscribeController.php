@@ -10,6 +10,7 @@ use App\Services\Billing\StripeClient;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Stripe\Subscription;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 /**
@@ -193,7 +194,7 @@ class SubscribeController extends Controller
      * must visit to authenticate the proration invoice; null when the change
      * already applied.
      */
-    private function hostedInvoiceUrlIfActionNeeded(\Stripe\Subscription $subscription): ?string
+    private function hostedInvoiceUrlIfActionNeeded(Subscription $subscription): ?string
     {
         if (empty($subscription->pending_update)) {
             return null;
