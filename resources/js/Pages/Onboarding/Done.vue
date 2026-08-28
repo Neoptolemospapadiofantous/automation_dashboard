@@ -116,7 +116,7 @@ async function copy() {
                             <PrimaryButton type="button" @click="copy">
                                 {{ copyState === 'copied' ? '✓ Copied' : 'Copy snippet' }}
                             </PrimaryButton>
-                            <Link :href="route('install.index')" class="text-sm text-ink underline hover:text-ink-dim">
+                            <Link :href="route('install.index')" class="inline-block py-1.5 text-sm text-ink underline hover:text-ink-dim">
                                 Full install guide →
                             </Link>
                         </div>

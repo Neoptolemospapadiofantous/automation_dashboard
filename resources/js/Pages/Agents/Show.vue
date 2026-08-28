@@ -224,7 +224,7 @@ async function destroy() {
                             :href="widgetUrl"
                             target="_blank"
                             rel="noopener"
-                            class="text-xs text-ink underline hover:text-ink-dim"
+                            class="inline-block py-2 text-xs text-ink underline hover:text-ink-dim"
                         >
                             View raw widget.js
                         </a>
