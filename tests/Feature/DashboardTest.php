@@ -54,6 +54,10 @@ class DashboardTest extends TestCase
                 ->where('stats.conversion_rate', 66.7)
                 ->has('funnel', 5)
                 ->has('rep_load')
+                ->has('series.total_leads.points', 7)
+                ->has('series.won.delta')
+                ->has('queue')
+                ->has('activity')
             );
     }
 

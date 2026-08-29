@@ -29,6 +29,13 @@ const automationsEnabled = computed(() => page.props.automationsEnabled === true
 const hasRoute = (name) => route().has(name);
 const showMobileNav = ref(false);
 
+// Command-strip search: the Leads board already filters on `q`, so this just
+// routes there rather than growing a second search implementation.
+const search = ref('');
+function submitSearch() {
+    router.get(route('leads.index'), search.value ? { q: search.value } : {});
+}
+
 const markNotificationsRead = () => {
     if (!notifications.value.length) return;
     router.post(route('notifications.read'), {}, { preserveScroll: true });
@@ -63,7 +70,7 @@ const handleMobileNavClick = (event) => {
 
         <div class="min-h-screen bg-bg-elev">
             <!-- ───────────────────────── Sidebar (desktop) ───────────────────────── -->
-            <aside class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-60 lg:flex-col lg:border-r lg:border-border-line lg:bg-bg">
+            <aside class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-[220px] lg:flex-col lg:border-r lg:border-border-line lg:bg-bg">
                 <!-- Logo -->
                 <div class="flex h-16 items-center justify-between border-b border-border-line px-5">
                     <Link :href="route('dashboard')" class="flex items-center gap-2">
@@ -76,54 +83,7 @@ const handleMobileNavClick = (event) => {
                 </div>
 
                 <!-- Agent picker (workspace switcher) -->
-                <div v-if="currentAgent || teamAgents.length" class="border-b border-border-line px-3 py-3">
-                    <Dropdown align="left" width="56">
-                        <template #trigger>
-                            <button type="button" class="group flex w-full items-center gap-2 rounded-none border border-border-line bg-bg px-2.5 py-2 text-left text-sm font-medium text-ink-dim transition hover:border-border-hi hover:bg-surface-hi hover:text-ink">
-                                <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-none bg-surface-hi text-ink">
-                                    <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                                    </svg>
-                                </span>
-                                <span class="flex-1 truncate">{{ currentAgent?.name ?? 'No agent' }}</span>
-                                <svg class="size-4 text-ink-mute transition group-hover:text-ink-dim" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
-                                </svg>
-                            </button>
-                        </template>
-                        <template #content>
-                            <div class="w-56">
-                                <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Agents</div>
-                                <DropdownLink :href="route('agents.index')">All agents</DropdownLink>
-                                <!-- Second+ agents skip the onboarding wizard
-                                     (it's a one-time welcome). Land on the
-                                     agents index where the create-dialog
-                                     enforces plan limits and routes BYOK vs.
-                                     managed correctly. -->
-                                <DropdownLink :href="route('agents.index')">+ New agent</DropdownLink>
-                                <template v-if="teamAgents.length > 1">
-                                    <div class="border-t border-border-line" />
-                                    <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Switch</div>
-                                    <template v-for="agent in teamAgents" :key="agent.id">
-                                        <form @submit.prevent="switchToAgent(agent)">
-                                            <DropdownLink as="button">
-                                                <div class="flex items-center gap-2">
-                                                    <svg v-if="agent.id === currentAgent?.id" class="size-4 text-state-ok-ink" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                    <span v-else class="size-4" />
-                                                    <span>{{ agent.name }}</span>
-                                                </div>
-                                            </DropdownLink>
-                                        </form>
-                                    </template>
-                                </template>
-                            </div>
-                        </template>
-                    </Dropdown>
-                </div>
-
-                <!-- Nav -->
+                                <!-- Nav -->
                 <nav class="flex-1 space-y-5 overflow-y-auto px-3 py-4">
                     <!-- Top-level -->
                     <SidebarLink :href="route('dashboard')" active-pattern="dashboard">
@@ -307,7 +267,7 @@ const handleMobileNavClick = (event) => {
             </aside>
 
             <!-- ───────────────────────── Top bar (everywhere) ───────────────────────── -->
-            <div class="lg:pl-60">
+            <div class="lg:pl-[220px]">
                 <div class="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-border-line bg-bg/95 px-4 backdrop-blur sm:px-6 lg:px-8">
                     <!-- Hamburger (mobile) -->
                     <button
@@ -321,6 +281,64 @@ const handleMobileNavClick = (event) => {
                         </svg>
                     </button>
 
+                    <!-- Command strip: the agent switcher moved up here from the
+                         sidebar so it is one control at every width; the search
+                         hands off to the Leads board's own filter. -->
+                    <div v-if="currentAgent || teamAgents.length" class="min-w-0 max-w-[150px] flex-shrink sm:max-w-[220px]">
+<div v-if="currentAgent || teamAgents.length" class="">
+                        <Dropdown align="left" width="56">
+                            <template #trigger>
+                                <button type="button" class="group flex w-full items-center gap-2 rounded-none border border-border-line bg-bg px-2.5 py-2 text-left text-sm font-medium text-ink-dim transition hover:border-border-hi hover:bg-surface-hi hover:text-ink">
+                                    <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-none bg-surface-hi text-ink">
+                                        <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                                        </svg>
+                                    </span>
+                                    <span class="flex-1 truncate">{{ currentAgent?.name ?? 'No agent' }}</span>
+                                    <svg class="size-4 text-ink-mute transition group-hover:text-ink-dim" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+                                    </svg>
+                                </button>
+                            </template>
+                            <template #content>
+                                <div class="w-56">
+                                    <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Agents</div>
+                                    <DropdownLink :href="route('agents.index')">All agents</DropdownLink>
+                                    <!-- Second+ agents skip the onboarding wizard
+                                         (it's a one-time welcome). Land on the
+                                         agents index where the create-dialog
+                                         enforces plan limits and routes BYOK vs.
+                                         managed correctly. -->
+                                    <DropdownLink :href="route('agents.index')">+ New agent</DropdownLink>
+                                    <template v-if="teamAgents.length > 1">
+                                        <div class="border-t border-border-line" />
+                                        <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Switch</div>
+                                        <template v-for="agent in teamAgents" :key="agent.id">
+                                            <form @submit.prevent="switchToAgent(agent)">
+                                                <DropdownLink as="button">
+                                                    <div class="flex items-center gap-2">
+                                                        <svg v-if="agent.id === currentAgent?.id" class="size-4 text-state-ok-ink" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        <span v-else class="size-4" />
+                                                        <span>{{ agent.name }}</span>
+                                                    </div>
+                                                </DropdownLink>
+                                            </form>
+                                        </template>
+                                    </template>
+                                </div>
+                            </template>
+                        </Dropdown>
+                    </div>
+
+                    </div>
+                    <form class="hidden min-w-0 flex-1 items-center md:flex" @submit.prevent="submitSearch">
+                        <label class="flex h-8 w-full max-w-[380px] items-center gap-2 border border-border-line bg-bg-elev px-2.5 text-xs text-ink-mute focus-within:border-ink">
+                            <svg class="size-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><circle cx="11" cy="11" r="7" /><path stroke-linecap="round" d="M20 20l-3.5-3.5" /></svg>
+                            <input v-model="search" type="search" placeholder="Search leads…" class="h-full w-full border-0 bg-transparent p-0 text-xs text-ink placeholder:text-ink-mute focus:ring-0" />
+                        </label>
+                    </form>
                     <!-- Latest news headline — sits where the page title was,
                          left-aligned with the PageHeader content below. Hidden
                          on mobile (the hamburger owns the left there). Falls
@@ -400,7 +418,7 @@ const handleMobileNavClick = (event) => {
                                     <button v-if="$page.props.jetstream.managesProfilePhotos" class="flex rounded-full border-2 border-transparent">
                                         <img class="size-8 rounded-full object-cover" :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user.name" />
                                     </button>
-                                    <button v-else type="button" class="inline-flex items-center rounded-none px-3 py-2 text-sm font-medium text-ink-dim hover:bg-surface-hi">
+                                    <button v-else type="button" class="inline-flex items-center rounded-none px-3 py-2 text-sm font-medium text-ink-dim hover:bg-surface-hi hidden whitespace-nowrap sm:inline">
                                         {{ $page.props.auth.user.name }}
                                     </button>
                                 </template>
@@ -451,34 +469,6 @@ const handleMobileNavClick = (event) => {
                     <!-- Agent picker (mobile) — full switch list, mirrors desktop.
                          Previous version only showed the current agent name as
                          text; mobile users couldn't switch agents at all. -->
-                    <div v-if="currentAgent || teamAgents.length" class="border-b border-border-line px-3 py-3">
-                        <div class="px-2 pb-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Agent</div>
-                        <template v-for="agent in teamAgents" :key="agent.id">
-                            <button
-                                type="button"
-                                class="flex w-full items-center gap-2 rounded-none px-2 py-1.5 text-left text-sm hover:bg-surface-hi"
-                                :class="agent.id === currentAgent?.id ? 'text-ink' : 'text-ink-dim'"
-                                @click="switchToAgent(agent); showMobileNav = false"
-                            >
-                                <svg v-if="agent.id === currentAgent?.id" class="size-4 text-state-ok-ink" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span v-else class="size-4" />
-                                <span class="flex-1 truncate">{{ agent.name }}</span>
-                            </button>
-                        </template>
-                        <!-- Mirror the desktop dropdown's "+ New agent" shortcut.
-                             Lands on agents.index (NOT onboarding.intro — that
-                             wizard is for the team's first agent only). -->
-                        <Link
-                            :href="route('agents.index')"
-                            class="flex w-full items-center gap-2 rounded-none px-2 py-1.5 text-left text-sm text-ink-dim hover:bg-surface-hi"
-                        >
-                            <span class="size-4" />
-                            <span class="flex-1">+ New agent</span>
-                        </Link>
-                    </div>
-
                     <nav class="flex-1 space-y-5 overflow-y-auto px-3 py-4" @click="handleMobileNavClick">
                         <SidebarLink :href="route('dashboard')" active-pattern="dashboard">Dashboard</SidebarLink>
                         <SidebarLink :href="route('chat.index')" active-pattern="chat.index">Chat</SidebarLink>
