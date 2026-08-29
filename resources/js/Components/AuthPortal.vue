@@ -151,7 +151,7 @@ const submitForgot = () => {
                     <button
                         v-if="canResetPassword"
                         type="button"
-                        class="text-sm text-ink-dim underline transition-colors hover:text-ink focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ink"
+                        class="inline-flex items-center py-1 text-sm text-ink-dim underline transition-colors hover:text-ink focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ink"
                         @click="switchMode('forgot')"
                     >
                         Forgot your password?
@@ -225,7 +225,7 @@ const submitForgot = () => {
                 <div class="bp-rise mt-6 flex items-center justify-between" style="--rise-delay: 140ms">
                     <button
                         type="button"
-                        class="text-sm text-ink-dim underline transition-colors hover:text-ink focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ink"
+                        class="inline-flex items-center py-1 text-sm text-ink-dim underline transition-colors hover:text-ink focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ink"
                         @click="switchMode('login')"
                     >
                         ← Back to sign in

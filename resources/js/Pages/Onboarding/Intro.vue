@@ -149,7 +149,10 @@ function continueOn() {
                         <p class="mt-0.5 text-[11px] text-ink-dim">
                             How smart should your agent be? You can change this per agent anytime on the Versions page.
                         </p>
-                        <div class="mt-2 grid gap-3 sm:grid-cols-3">
+                        <!-- Two columns, not three: the card is a 2xl column, so
+                             three tiles left ~170px each and every title and
+                             price chip wrapped. -->
+                        <div class="mt-2 grid gap-3 sm:grid-cols-2">
                             <label
                                 v-for="t in tiers"
                                 :key="t.key"
@@ -161,9 +164,9 @@ function continueOn() {
                             >
                                 <input v-model="form.model_tier" type="radio" :value="t.key" :disabled="t.available === false" class="mt-0.5 text-ink focus:ring-ink" />
                                 <span>
-                                    <span class="flex items-center gap-2 font-medium text-ink">
+                                    <span class="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-ink">
                                         {{ t.label }}
-                                        <span class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-dim">
+                                        <span class="flex-shrink-0 whitespace-nowrap rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-dim">
                                             {{ t.credits_per_message }} cr/msg
                                         </span>
                                     </span>

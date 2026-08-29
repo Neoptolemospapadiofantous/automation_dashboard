@@ -88,8 +88,8 @@ import ApplicationMark from '@/Components/ApplicationMark.vue';
                  reasoning as SiteFooter — single source, works cross-subdomain). -->
             <p class="relative mt-6 text-center text-xs text-ink-mute">
                 © Flowstack ·
-                <a href="https://flowstack.run/terms" target="_blank" rel="noopener" class="underline hover:text-ink-dim">Terms</a> ·
-                <a href="https://flowstack.run/privacy" target="_blank" rel="noopener" class="underline hover:text-ink-dim">Privacy</a>
+                <a href="https://flowstack.run/terms" target="_blank" rel="noopener" class="inline-block py-1 underline hover:text-ink-dim">Terms</a> ·
+                <a href="https://flowstack.run/privacy" target="_blank" rel="noopener" class="inline-block py-1 underline hover:text-ink-dim">Privacy</a>
             </p>
         </div>
     </div>
