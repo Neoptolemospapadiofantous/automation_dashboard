@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Billing\CreditMeter;
 use App\Billing\Exceptions\OutOfCredits;
+use App\Billing\OwnKey;
 use App\Events\LeadMessage;
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
@@ -53,6 +54,7 @@ class EmbedController extends Controller
         protected CreditMeter $credits,
         protected Runtime $runtime,
         protected ConversationRecorder $recorder,
+        protected OwnKey $ownKey,
     ) {}
 
     /**
@@ -141,7 +143,9 @@ class EmbedController extends Controller
         if (! $team instanceof Team) {
             return response()->json(['error' => 'Agent misconfigured.'], 503);
         }
-        if (! $team->hasCredits(1)) {
+        // A team on its own key has no credit balance to check — its ceiling
+        // is the monthly message cap, enforced inside OwnKey::coversAgent.
+        if (! $this->ownKey->coversAgent($agent) && ! $team->hasCredits(1)) {
             return response()->json([
                 'error' => "This agent isn't available right now. Please try again later.",
             ], 402);
@@ -391,8 +395,10 @@ class EmbedController extends Controller
         // billing basis matches the documented rate (1 per visitor message
         // + 1 per agent reply, × the quality-tier multiplier) and users
         // aren't charged for failures.
-        $multiplier = AgentConfigVersion::creditsPerMessage($agent->id);
-        if (! $team->hasCredits($multiplier)) {
+        // 0 on bring-your-own-key: the model bill is the customer's, so the
+        // turn is counted against their message cap instead of debited.
+        $multiplier = $this->ownKey->creditsForChat($agent);
+        if ($multiplier > 0 && ! $team->hasCredits($multiplier)) {
             return response()->json([
                 'error' => "This agent isn't available right now. Please try again later.",
             ], 402);
@@ -414,6 +420,10 @@ class EmbedController extends Controller
         }
 
         $replies = count(array_filter($traces, fn (array $t) => (string) ($t['payload']['message'] ?? '') !== ''));
+        if ($multiplier === 0) {
+            // BYOK turn: nothing to debit, but it still counts toward the cap.
+            $this->ownKey->recordMessage($team);
+        }
         try {
             $this->credits->consume(
                 team: $team,

@@ -17,8 +17,20 @@ class LlmRouter
         protected BridgeClient $bridge,
     ) {}
 
-    public function clientFor(string $provider): LlmClient
+    public function clientFor(string $provider, ?string $apiKey = null): LlmClient
     {
+        // Bring-your-own-key BYPASSES THE BRIDGE deliberately. The bridge is
+        // subscription auth on OUR account; handing a customer's traffic to it
+        // would bill us and, worse, run their chat on a personal subscription.
+        // A supplied key always means a direct, metered call on that key.
+        if ($apiKey !== null && $apiKey !== '') {
+            return match ($provider) {
+                'anthropic' => $this->anthropic->withApiKey($apiKey),
+                'openai' => $this->openai->withApiKey($apiKey),
+                default => throw new Misconfigured("Provider '{$provider}' does not support a customer-supplied key."),
+            };
+        }
+
         return match ($provider) {
             // Bridge-first: with claude-bridge enabled, every Anthropic tier
             // runs on subscription auth and the metered API is never called.

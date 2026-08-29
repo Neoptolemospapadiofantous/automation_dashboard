@@ -117,6 +117,44 @@ enum Plan: string
      * Custom sits outside the ladder (it is negotiated, never self-served),
      * so it ranks above everything and is refused by the switch flow.
      */
+    /**
+     * May this plan supply its own provider API key (bring-your-own-key)?
+     *
+     * Operator and above. Gating on the enum case rather than a label keeps
+     * this correct if the customer-facing name changes again — Pro IS the
+     * rung sold as "Operator".
+     *
+     * The gate is enforced at resolution time too, not just in the UI, so a
+     * downgrade stops BYOK immediately rather than leaving a stored key
+     * quietly powering free traffic.
+     */
+    public function allowsOwnKey(): bool
+    {
+        return match ($this) {
+            self::Pro, self::Business => true,
+            default => false,
+        };
+    }
+
+    /**
+     * Monthly chat-message ceiling for turns that run on the team's OWN key.
+     *
+     * A BYOK turn spends no credits, so the credit balance stops bounding
+     * usage — this replaces it. Deliberately the same number as the plan's
+     * credit allotment so the customer story stays one number ("25,000
+     * messages"), not a second currency to reason about.
+     *
+     * 0 = BYOK not available on this plan.
+     */
+    public function monthlyMessageCap(): int
+    {
+        return match ($this) {
+            self::Pro => 25_000,
+            self::Business => PHP_INT_MAX,
+            default => 0,
+        };
+    }
+
     public function rank(): int
     {
         return match ($this) {

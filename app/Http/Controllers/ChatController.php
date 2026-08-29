@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Billing\CreditMeter;
 use App\Billing\Exceptions\OutOfCredits;
+use App\Billing\OwnKey;
 use App\Events\LeadMessage;
 use App\Models\Agent;
-use App\Models\AgentConfigVersion;
 use App\Models\Conversation;
 use App\Models\Lead;
 use App\Models\Team;
@@ -34,6 +34,7 @@ class ChatController extends Controller
         protected ConversationRecorder $recorder,
         protected CreditMeter $credits,
         protected Runtime $runtime,
+        protected OwnKey $ownKey,
     ) {}
 
     /**
@@ -192,7 +193,10 @@ class ChatController extends Controller
                 return;
             }
 
-            $messagesBilled = (1 + count($messages)) * AgentConfigVersion::creditsPerMessage($agent->id);
+            $messagesBilled = (1 + count($messages)) * $this->ownKey->creditsForChat($agent);
+            if ($messagesBilled === 0 && $team instanceof Team) {
+                $this->ownKey->recordMessage($team);
+            }
             if ($team instanceof Team) {
                 try {
                     $this->credits->consume(
@@ -261,8 +265,12 @@ class ChatController extends Controller
         $team = $this->team($request);
         // Quality tier multiplier: Enhanced agents cost more credits per
         // message — the coupling that keeps smarter models margin-safe.
-        $multiplier = AgentConfigVersion::creditsPerMessage($agent->id);
+        $multiplier = $this->ownKey->creditsForChat($agent);
         $messagesBilled = (1 + count($messages)) * $multiplier;
+        if ($multiplier === 0) {
+            // BYOK: no debit, but the turn counts against the message cap.
+            $this->ownKey->recordMessage($team);
+        }
         try {
             $this->credits->consume(
                 team: $team,
@@ -406,6 +414,15 @@ class ChatController extends Controller
         $team = $this->team($request);
 
         if ($team->hasCredits()) {
+            return null;
+        }
+
+        // Bring-your-own-key: a team with a usable key and room under its
+        // message cap can chat on a zero credit balance. This pre-flight is
+        // deliberately team-wide rather than per-agent — the exact,
+        // per-agent decision is made again at the debit site and inside
+        // FlowExecutor, so being permissive here cannot cause a wrong charge.
+        if ($this->ownKey->teamHasUsableKey($team) && $this->ownKey->withinCap($team)) {
             return null;
         }
 

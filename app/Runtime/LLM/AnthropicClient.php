@@ -30,9 +30,26 @@ class AnthropicClient implements LlmClient
      * @param  list<array<string, mixed>>  $messages  Anthropic-format messages
      * @param  list<array<string, mixed>>  $tools  Anthropic-format tool specs
      */
+    /** Per-request key override (bring-your-own-key); null = platform key. */
+    protected ?string $apiKeyOverride = null;
+
+    /**
+     * A clone of this client bound to a caller-supplied API key
+     * (bring-your-own-key). Clients are stateless singletons, so cloning is
+     * the safe way to scope a key to one turn without leaking it into the
+     * container for every other tenant's request.
+     */
+    public function withApiKey(string $apiKey): static
+    {
+        $clone = clone $this;
+        $clone->apiKeyOverride = $apiKey;
+
+        return $clone;
+    }
+
     public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
     {
-        $apiKey = (string) config('runtime.llm.anthropic.api_key');
+        $apiKey = $this->apiKeyOverride ?? (string) config('runtime.llm.anthropic.api_key');
         if ($apiKey === '') {
             throw new Misconfigured('ANTHROPIC_API_KEY is not set — the native runtime cannot call the LLM.');
         }

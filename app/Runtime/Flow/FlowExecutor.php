@@ -2,6 +2,7 @@
 
 namespace App\Runtime\Flow;
 
+use App\Billing\OwnKey;
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
 use App\Models\RuntimeUsage;
@@ -106,7 +107,19 @@ class FlowExecutor
         // LLM call this turn. Unknown/absent tiers degrade to the default.
         $tier = AgentConfigVersion::publishedTier($context->agent->id);
         $model = AgentConfigVersion::modelForTier($tier);
-        $client = $this->llm->clientFor((string) config("runtime.tiers.{$tier}.provider", 'anthropic'));
+        $provider = (string) config("runtime.tiers.{$tier}.provider", 'anthropic');
+
+        // Bring-your-own-key: when the agent's team supplies a usable key for
+        // THIS provider and is under its message cap, the turn runs on that
+        // key (and costs 0 credits — see App\Billing\OwnKey). Resolved per
+        // turn, never cached, so a downgrade or revoked key takes effect
+        // immediately.
+        $ownKey = app(OwnKey::class);
+        $customerKey = $ownKey->coversAgent($context->agent)
+            ? $ownKey->keyFor($context->agent->team, $provider)?->api_key
+            : null;
+
+        $client = $this->llm->clientFor($provider, $customerKey);
 
         $userEntry = ['role' => 'user', 'content' => $context->userMessage];
         $messages = array_merge((array) ($session->history ?? []), [$userEntry]);

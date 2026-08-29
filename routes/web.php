@@ -18,6 +18,7 @@ use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\OwnKeyController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SubscribeController;
 use App\Http\Middleware\RequireAgent;
@@ -118,6 +119,15 @@ Route::middleware([
     Route::put('/current-agent', [AgentController::class, 'switchCurrent'])
         ->middleware('throttle:60,1')
         ->name('current-agent.update');
+
+    // Bring-your-own-key — an Operator team supplies its own provider API key,
+    // and chat runs on it at 0 credits against a monthly message cap.
+    // The plan gate is enforced in the controller too, so a downgrade cannot be
+    // replayed around.
+    Route::get('/settings/own-key', [OwnKeyController::class, 'index'])->name('own-key.index');
+    Route::post('/settings/own-key', [OwnKeyController::class, 'store'])->name('own-key.store');
+    Route::post('/settings/own-key/{ownKey}/verify', [OwnKeyController::class, 'verify'])->name('own-key.verify');
+    Route::delete('/settings/own-key/{ownKey}', [OwnKeyController::class, 'destroy'])->name('own-key.destroy');
 
     // Billing — current plan, credit history, top-up purchase.
     // Top-up flow is DEV-MODE (instant grant) until Phase H wires Stripe
