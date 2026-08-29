@@ -313,7 +313,7 @@ function openPortal() {
                                 </span>
                                 <button
                                     type="button"
-                                    class="text-[11px] font-medium text-ink underline disabled:opacity-50"
+                                    class="-my-1.5 inline-flex items-center py-1.5 text-[11px] font-medium text-ink underline disabled:opacity-50"
                                     :disabled="cancelForm.processing"
                                     @click="resumeSubscription"
                                 >
@@ -327,7 +327,7 @@ function openPortal() {
                                 </span>
                                 <button
                                     type="button"
-                                    class="text-[11px] font-medium text-ink-dim underline disabled:opacity-50"
+                                    class="-my-1.5 inline-flex items-center py-1.5 text-[11px] font-medium text-ink-dim underline disabled:opacity-50"
                                     :disabled="cancelForm.processing"
                                     @click="scheduleCancel"
                                 >
@@ -338,7 +338,7 @@ function openPortal() {
                     </div>
 
                     <!-- Custom plan: credits are negotiated, no monthly cap to display. -->
-                    <div v-if="billing?.is_custom" class="rounded-none border border-border-line bg-bg p-5 sm:col-span-2">
+                    <div v-if="billing?.is_custom" class="rounded-none border border-border-line bg-bg p-5 sm:col-span-2 lg:col-span-3">
                         <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Credits</div>
                         <div class="mt-2 flex items-baseline gap-2">
                             <span class="font-mono text-2xl font-semibold tabular-nums text-ink">{{ fmtNum(billing.credits_remaining) }}</span>
@@ -353,7 +353,7 @@ function openPortal() {
                     <!-- Not subscribed yet: no monthly allowance has been granted,
                          so a usage bar would read "2,500/2,500 used" for a team
                          that used nothing. Point at the subscribe cards instead. -->
-                    <div v-else-if="!billing?.subscribed" class="rounded-none border border-border-line bg-bg p-5 sm:col-span-2">
+                    <div v-else-if="!billing?.subscribed" class="rounded-none border border-border-line bg-bg p-5 sm:col-span-2 lg:col-span-3">
                         <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Conversation credits</div>
                         <p class="mt-2 text-sm text-ink-dim">
                             No active subscription yet — pick a plan above and your monthly
@@ -366,7 +366,7 @@ function openPortal() {
                     </div>
 
                     <!-- Starter / Operator: normal usage bar + top-up button. -->
-                    <div v-else class="rounded-none border border-border-line bg-bg p-5 sm:col-span-2">
+                    <div v-else class="rounded-none border border-border-line bg-bg p-5 sm:col-span-2 lg:col-span-3">
                         <div class="flex items-center justify-between">
                             <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Conversation-credit usage this period</div>
                             <div class="font-mono text-xs tabular-nums text-ink-dim">{{ usedPercent }}%</div>
@@ -388,7 +388,7 @@ function openPortal() {
                             </div>
                         </div>
                         <div class="mt-3 text-xs text-ink-dim">
-                            Each user message and each agent reply consumes conversation credits — 1× on Claude Haiku/Gemini, more on smarter models (see the Versions page). Your monthly allowance resets on renewal; purchased top-up credits roll over until used.
+                            Each user message and each agent reply consumes conversation credits — 1 credit on ChatGPT Nano, more on smarter models (see the Versions page). Your monthly allowance resets on renewal; purchased top-up credits roll over until used.
                         </div>
                         <div v-if="billing?.allows_topups" class="mt-4">
                             <PrimaryButton type="button" @click="openTopup">
