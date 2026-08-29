@@ -64,7 +64,7 @@ const hasRegressions = computed(() => (props.metrics?.regressions?.length ?? 0) 
 <template>
     <AppLayout title="Hermes KPIs">
         <Head title="Hermes KPIs" />
-        <PageHeader title="Hermes — effectiveness">
+        <PageHeader width="max-w-6xl" title="Hermes — effectiveness">
             <template #title>
                 <div class="flex items-center gap-3">
                     <h1 class="truncate text-xl font-semibold leading-7 text-ink">Hermes — effectiveness</h1>

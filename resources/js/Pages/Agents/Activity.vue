@@ -51,7 +51,7 @@ const pretty = (v) => (v == null ? '' : JSON.stringify(v, null, 2));
 
 <template>
     <AppLayout title="Activity">
-        <PageHeader
+        <PageHeader width="max-w-6xl"
             title="Activity"
             description="Every automation the agent has run — status, latency, and credits charged. Read-only audit log, newest first."
         />

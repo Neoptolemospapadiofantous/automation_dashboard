@@ -62,7 +62,7 @@ const sourcesMax = computed(() => Math.max(1, ...props.sources.map((s) => s.coun
 
 <template>
     <AppLayout :title="`Analytics — ${agent.name}`">
-        <PageHeader
+        <PageHeader width="max-w-6xl"
             :breadcrumbs="[
                 { label: 'Agents', href: route('agents.index') },
                 { label: agent.name, href: route('agents.show', agent.slug) },

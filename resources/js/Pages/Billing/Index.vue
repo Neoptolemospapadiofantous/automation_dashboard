@@ -152,7 +152,7 @@ function openPortal() {
 
 <template>
     <AppLayout title="Billing">
-        <PageHeader title="Billing" description="Your plan, credit usage, and transaction history." />
+        <PageHeader width="max-w-5xl" title="Billing" description="Your plan, credit usage, and transaction history." />
 
         <div v-if="!billing" class="py-12 text-center text-sm text-ink-dim">
             No billing context — make sure you're on a team.

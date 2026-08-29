@@ -23,13 +23,16 @@ defineProps({
     // Optional mono sheet-reference label shown to the left of the title
     // (e.g. "DASH/01"). Falls back to a generic decorative ref.
     refLabel: { type: String, default: 'FS' },
+    // Column the header shares with the page body — pass the body's own
+    // max-w-* so title and content keep one left edge at every width.
+    width: { type: String, default: 'max-w-7xl' },
 });
 </script>
 
 <template>
     <header class="relative overflow-hidden border-b border-border-line bg-bg">
         <div class="bg-grid bg-grid-fade pointer-events-none absolute inset-0 opacity-50" aria-hidden="true" />
-        <div class="relative mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+        <div class="relative mx-auto px-4 py-4 sm:px-6 sm:py-5 lg:px-8" :class="width">
             <nav v-if="breadcrumbs.length" class="mb-2 flex" aria-label="Breadcrumb">
                 <ol class="flex items-center gap-1.5 font-mono text-xs tracking-wider text-ink-dim">
                     <li v-for="(crumb, i) in breadcrumbs" :key="i" class="flex items-center gap-1.5">

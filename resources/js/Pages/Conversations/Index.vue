@@ -67,7 +67,7 @@ const rating = (key) => ratings[key] ?? null;
 
 <template>
     <AppLayout title="Conversations">
-        <PageHeader title="Conversations" description="Every chat that's happened with your agents.">
+        <PageHeader width="max-w-5xl" title="Conversations" description="Every chat that's happened with your agents.">
             <template #actions>
                 <span class="bp-ref">CONV/LOG</span>
             </template>

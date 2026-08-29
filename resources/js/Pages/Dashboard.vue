@@ -131,7 +131,7 @@ const shortcuts = [
 
         <div class="relative">
             <div class="bg-grid bg-grid-fade pointer-events-none absolute inset-0 opacity-50" aria-hidden="true" />
-            <div class="relative mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+            <div class="relative mx-auto max-w-7xl space-y-4 px-4 py-4 sm:space-y-5 sm:px-6 sm:py-6 lg:px-8">
 
                 <!-- Setup: one line, expandable — never a wall of cards again. -->
                 <div v-if="!setup.complete" class="rounded-none border border-border-line bg-bg-elev shadow-sheet">

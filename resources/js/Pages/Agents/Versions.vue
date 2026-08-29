@@ -65,7 +65,7 @@ const dirty = computed(() => form.isDirty);
 
 <template>
     <AppLayout title="Versions">
-        <PageHeader
+        <PageHeader width="max-w-5xl"
             title="Versions"
             description="Stage behavior changes as a draft, publish to make them live instantly, roll back anytime. The published version shapes every conversation."
         />

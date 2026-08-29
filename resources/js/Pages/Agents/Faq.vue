@@ -49,7 +49,7 @@ const dirty = computed(() => form.isDirty);
 
 <template>
     <AppLayout title="FAQ">
-        <PageHeader
+        <PageHeader width="max-w-5xl"
             title="FAQ"
             description="Answer the common questions for free. Each entry becomes a quick-reply chip in the widget and matches typed questions by keyword — served instantly with no AI call and no credits spent. Stage changes as a draft, then publish."
         />

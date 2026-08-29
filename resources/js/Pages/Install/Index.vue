@@ -128,7 +128,7 @@ const previewLauncher = computed(() => form.launcher_text || 'Chat with us');
 
 <template>
     <AppLayout title="Install">
-        <PageHeader
+        <PageHeader width="max-w-5xl"
             title="Install on your website"
             description="One snippet drops your agent onto every page of your site as a floating chat button. Pick the install style, copy, paste, done."
         />

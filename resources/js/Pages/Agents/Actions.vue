@@ -74,7 +74,7 @@ const urlHint = computed(() =>
 
 <template>
     <AppLayout title="Actions">
-        <PageHeader
+        <PageHeader width="max-w-5xl"
             title="Actions"
             description="Give the agent hands. Each action is an n8n workflow it can call mid-conversation — look up an order, open a ticket, sync a CRM. Stage changes as a draft, then publish."
         />

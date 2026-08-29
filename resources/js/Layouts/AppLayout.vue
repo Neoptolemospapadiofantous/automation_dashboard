@@ -72,7 +72,7 @@ const handleMobileNavClick = (event) => {
             <!-- ───────────────────────── Sidebar (desktop) ───────────────────────── -->
             <aside class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-[220px] lg:flex-col lg:border-r lg:border-border-line lg:bg-bg">
                 <!-- Logo -->
-                <div class="flex h-16 items-center justify-between border-b border-border-line px-5">
+                <div class="flex h-12 items-center justify-between border-b border-border-line px-5">
                     <Link :href="route('dashboard')" class="flex items-center gap-2">
                         <ApplicationMark class="block h-8 w-auto" />
                     </Link>
@@ -268,12 +268,12 @@ const handleMobileNavClick = (event) => {
 
             <!-- ───────────────────────── Top bar (everywhere) ───────────────────────── -->
             <div class="lg:pl-[220px]">
-                <div class="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-border-line bg-bg/95 px-4 backdrop-blur sm:px-6 lg:px-8">
+                <div class="sticky top-0 z-20 flex h-12 items-center gap-3 border-b border-border-line bg-bg/95 px-4 backdrop-blur sm:px-6 lg:px-8">
                     <!-- Hamburger (mobile) -->
                     <button
                         type="button"
                         aria-label="Open navigation"
-                        class="-ml-1.5 inline-flex items-center justify-center rounded-none p-2.5 text-ink-dim hover:bg-surface-hi lg:hidden"
+                        class="-ml-2 inline-flex size-9 flex-shrink-0 items-center justify-center rounded-none text-ink-dim hover:bg-surface-hi lg:hidden"
                         @click="showMobileNav = true"
                     >
                         <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -285,10 +285,9 @@ const handleMobileNavClick = (event) => {
                          sidebar so it is one control at every width; the search
                          hands off to the Leads board's own filter. -->
                     <div v-if="currentAgent || teamAgents.length" class="min-w-0 max-w-[150px] flex-shrink sm:max-w-[220px]">
-<div v-if="currentAgent || teamAgents.length" class="">
                         <Dropdown align="left" width="56">
                             <template #trigger>
-                                <button type="button" class="group flex w-full items-center gap-2 rounded-none border border-border-line bg-bg px-2.5 py-2 text-left text-sm font-medium text-ink-dim transition hover:border-border-hi hover:bg-surface-hi hover:text-ink">
+                                <button type="button" class="group flex h-8 w-full items-center gap-2 rounded-none border border-border-line bg-bg px-2.5 text-left text-sm font-medium text-ink-dim transition hover:border-border-hi hover:bg-surface-hi hover:text-ink">
                                     <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-none bg-surface-hi text-ink">
                                         <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
@@ -331,8 +330,6 @@ const handleMobileNavClick = (event) => {
                             </template>
                         </Dropdown>
                     </div>
-
-                    </div>
                     <form class="hidden min-w-0 flex-1 items-center md:flex" @submit.prevent="submitSearch">
                         <label class="flex h-8 w-full max-w-[380px] items-center gap-2 border border-border-line bg-bg-elev px-2.5 text-xs text-ink-mute focus-within:border-ink">
                             <svg class="size-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><circle cx="11" cy="11" r="7" /><path stroke-linecap="round" d="M20 20l-3.5-3.5" /></svg>
@@ -343,25 +340,26 @@ const handleMobileNavClick = (event) => {
                          left-aligned with the PageHeader content below. Hidden
                          on mobile (the hamburger owns the left there). Falls
                          back to a spacer when there's no headline. -->
-                    <component
-                        :is="latestHeadline.url ? 'a' : 'div'"
-                        v-if="latestHeadline"
-                        :href="latestHeadline.url || undefined"
-                        class="hidden min-w-0 flex-1 lg:flex lg:items-center lg:gap-2"
-                    >
-                        <span class="bp-ref flex-shrink-0">NEWS</span>
-                        <span
-                            class="truncate text-sm font-medium text-ink"
-                            :class="latestHeadline.url ? 'hover:underline' : ''"
-                        >{{ latestHeadline.text }}</span>
-                    </component>
-                    <div v-else class="hidden flex-1 lg:block"><!-- spacer --></div>
+                    <div class="min-w-0 flex-1">
+                        <component
+                            :is="latestHeadline.url ? 'a' : 'div'"
+                            v-if="latestHeadline"
+                            :href="latestHeadline.url || undefined"
+                            class="hidden min-w-0 lg:flex lg:items-center lg:gap-2"
+                        >
+                            <span class="bp-ref flex-shrink-0">NEWS</span>
+                            <span
+                                class="truncate text-sm font-medium text-ink"
+                                :class="latestHeadline.url ? 'hover:underline' : ''"
+                            >{{ latestHeadline.text }}</span>
+                        </component>
+                    </div>
 
-                    <div class="flex items-center gap-2">
+                    <div class="-mr-2 flex flex-shrink-0 items-center gap-1">
                         <!-- Theme toggle: light = white sheet, dark = black sheet -->
                         <button
                             type="button"
-                            class="inline-flex items-center rounded-none p-2 text-ink-dim hover:bg-surface-hi"
+                            class="inline-flex size-9 items-center justify-center rounded-none text-ink-dim hover:bg-surface-hi"
                             :aria-label="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
                             :title="theme === 'dark' ? 'Light' : 'Dark'"
                             @click="toggleTheme"
@@ -379,7 +377,7 @@ const handleMobileNavClick = (event) => {
                         <!-- Notifications bell -->
                         <Dropdown align="right" width="80">
                             <template #trigger>
-                                <button type="button" aria-label="Notifications" class="relative inline-flex items-center rounded-none p-2 text-ink-dim hover:bg-surface-hi">
+                                <button type="button" aria-label="Notifications" class="relative inline-flex size-9 items-center justify-center rounded-none text-ink-dim hover:bg-surface-hi">
                                     <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                                     </svg>
@@ -418,7 +416,7 @@ const handleMobileNavClick = (event) => {
                                     <button v-if="$page.props.jetstream.managesProfilePhotos" class="flex rounded-full border-2 border-transparent">
                                         <img class="size-8 rounded-full object-cover" :src="$page.props.auth.user.profile_photo_url" :alt="$page.props.auth.user.name" />
                                     </button>
-                                    <button v-else type="button" class="inline-flex items-center rounded-none px-3 py-2 text-sm font-medium text-ink-dim hover:bg-surface-hi hidden whitespace-nowrap sm:inline">
+                                    <button v-else type="button" class="hidden h-9 items-center whitespace-nowrap rounded-none px-3 text-sm font-medium text-ink-dim hover:bg-surface-hi sm:inline-flex">
                                         {{ $page.props.auth.user.name }}
                                     </button>
                                 </template>
@@ -455,7 +453,7 @@ const handleMobileNavClick = (event) => {
             <div v-if="showMobileNav" class="fixed inset-0 z-40 lg:hidden">
                 <div class="fixed inset-0 bg-ink/40" @click="showMobileNav = false" />
                 <div class="fixed inset-y-0 left-0 flex w-72 flex-col bg-bg border-r border-border-line shadow-sheet">
-                    <div class="flex h-16 items-center justify-between border-b border-border-line px-5">
+                    <div class="flex h-12 items-center justify-between border-b border-border-line px-5">
                         <Link :href="route('dashboard')" @click="showMobileNav = false">
                             <ApplicationMark class="block h-8 w-auto" />
                         </Link>

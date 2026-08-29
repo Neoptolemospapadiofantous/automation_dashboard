@@ -67,7 +67,7 @@ function relativeTime(iso) {
 
 <template>
     <AppLayout title="Agents">
-        <PageHeader
+        <PageHeader width="max-w-6xl"
             title="Agents"
             description="Each agent qualifies leads in one channel or persona. Switch between them from the top-left."
         >

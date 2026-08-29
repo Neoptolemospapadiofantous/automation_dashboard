@@ -72,7 +72,7 @@ async function destroy() {
 
 <template>
     <AppLayout :title="`Agent — ${agent.name}`">
-        <PageHeader
+        <PageHeader width="max-w-4xl"
             :breadcrumbs="[{ label: 'Agents', href: route('agents.index') }, { label: agent.name }]"
             :title="agent.name"
             description="Provisioned automatically. The conversational engine is fully managed — you only need to manage the name."

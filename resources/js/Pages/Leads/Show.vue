@@ -109,7 +109,7 @@ const scoreBreakdown = computed(() => {
 
 <template>
     <AppLayout :title="`Lead — ${lead.name ?? '(no name)'}`">
-        <PageHeader
+        <PageHeader width="max-w-5xl"
             :breadcrumbs="[{ label: 'Leads', href: route('leads.index') }, { label: lead.name ?? '(no name)' }]"
             :title="lead.name ?? '(no name)'"
             :description="lead.company ? `at ${lead.company}` : 'No company recorded'"

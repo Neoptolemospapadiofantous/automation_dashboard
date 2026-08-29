@@ -149,7 +149,7 @@ const deleteUpstream = async () => {
 
 <template>
     <AppLayout title="Conversation">
-        <PageHeader
+        <PageHeader width="max-w-3xl"
             :breadcrumbs="[
                 { label: 'Conversations', href: route('conversations.index') },
                 { label: conversation.lead?.name || 'Anonymous visitor' }
