@@ -395,6 +395,17 @@
             #thread, #home { padding: 12px; }
             form { padding: 10px; }
         }
+        /* Hosted chat page in a desktop browser: keep the conversation a
+           readable column instead of running bubbles and the composer edge to
+           edge across the window. The header/composer bars stay full-bleed,
+           their content sits in the column. Never fires inside the widget —
+           its iframe is at most 408px wide. */
+        @media (min-width: 768px) {
+            header, .backbar, #thread, #home, form, .powered {
+                padding-left: max(16px, calc((100% - 760px) / 2));
+                padding-right: max(16px, calc((100% - 760px) / 2));
+            }
+        }
         @media (prefers-reduced-motion: reduce) {
             #thread { scroll-behavior: auto; }
             .typing .dot, header .status-dot { animation: none; }
