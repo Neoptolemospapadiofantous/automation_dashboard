@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PublicStatsController;
-use App\Http\Controllers\SlackAgentTurnController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -24,10 +23,3 @@ Route::middleware('throttle:60,1')
 Route::middleware('throttle:60,1')
     ->get('/health', HealthController::class)
     ->name('health');
-
-// hermes-slack bot → LLM turn (SHARED.md §3.1). Shared-bearer auth happens
-// inside the controller (SLACK_AGENT_TURN_TOKEN); throttled per IP like the
-// other server-to-server routes.
-Route::middleware('throttle:60,1')
-    ->post('/slack/agent-turn', SlackAgentTurnController::class)
-    ->name('slack.agent-turn');

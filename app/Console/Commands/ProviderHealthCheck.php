@@ -20,8 +20,9 @@ use Illuminate\Support\Facades\Http;
  *                = free-tier/throttled (demo-only, not production-viable)
  *
  * Writes data/agents/provider-health/findings.json in the same schema the
- * system-check agent uses, so the hermes-slack project delivers FAIL/WARN
- * findings without any change there. No Slack/SES is touched in this repo.
+ * system-check agent uses. The grid tooling reads that tree (grid-control :8093,
+ * grid-sentinel, grid-live) and grid-notify delivers FAIL/WARN to Telegram; the
+ * hermes-slack consumer was retired 2026-08-27. Nothing is delivered from this repo.
  */
 class ProviderHealthCheck extends Command
 {

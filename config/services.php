@@ -28,13 +28,6 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    // hermes-slack → POST /api/slack/agent-turn (SHARED.md §3.1): one shared
-    // bearer token mapping the whole Slack workspace to a single billed team.
-    'slack' => [
-        'agent_turn_token' => env('SLACK_AGENT_TURN_TOKEN'),
-        'agent_turn_team_id' => env('SLACK_AGENT_TURN_TEAM_ID'),
-    ],
-
     // Escalation VOICE CALL (App\Notifications\Channels\CallMeBotTelegramCallChannel):
     // CallMeBot's free Telegram Call API rings the founder's phone and a
     // TTS voice reads the alert. telegram_user = @username or the phone

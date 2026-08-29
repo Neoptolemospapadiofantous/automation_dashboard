@@ -37,8 +37,8 @@ Schedule::command('leads:capture-partials')->hourly();
 Schedule::command('teams:weekly-digest')->weeklyOn(1, '8:10');
 
 // Provider liveness tripwire: ping Anthropic/OpenAI/Gemini balances so an
-// empty/throttled provider pages us (via the hermes-slack findings.json
-// reader) instead of failing silently in front of a paying customer. The
+// empty/throttled provider pages us (via the grid findings.json readers)
+// instead of failing silently in front of a paying customer. The
 // credit ledger and provider API billing are separate ledgers.
 Schedule::command('providers:health-check')->hourly();
 
@@ -46,8 +46,8 @@ Schedule::command('providers:health-check')->hourly();
 // land in data/agents/*/; `composer hermes-status` summarizes. The full
 // watchdog (hermes-fast) stays on-demand + CI; these cover drift that
 // only shows over time (CVEs, outdated deps, disk, log errors, secrets).
-// Delivery of CRITICAL/FAIL findings to Slack now lives in the separate
-// hermes-slack project, which consumes these data/agents/*/findings.json.
+// Delivery of CRITICAL/FAIL findings is grid-side: grid-monitor reads these
+// data/agents/*/findings.json and alerts via grid-notify (Telegram).
 Schedule::exec('bash scripts/agents/audit_sentinel.sh')->dailyAt('6:00');
 Schedule::exec('bash scripts/agents/update_inspector.sh')->weeklyOn(1, '6:10');
 Schedule::exec('bash scripts/agents/system_check.sh')->everySixHours();
