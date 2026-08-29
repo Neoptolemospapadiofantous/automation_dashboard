@@ -39,7 +39,7 @@ watchEffect(async () => {
                         <button
                             type="button"
                             class="-me-1 flex p-2 rounded-none focus:outline-none sm:-me-2 transition"
-                            :class="{ 'hover:bg-bg/10 focus:bg-bg/10': style == 'success', 'hover:bg-state-bad-solid focus:bg-state-bad-solid': style == 'danger' }"
+                            :class="{ 'hover:bg-veil-10 focus:bg-veil-10': style == 'success', 'hover:bg-state-bad-solid focus:bg-state-bad-solid': style == 'danger' }"
                             aria-label="Dismiss"
                             @click.prevent="show = false"
                         >

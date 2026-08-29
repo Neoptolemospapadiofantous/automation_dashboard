@@ -268,7 +268,7 @@ const handleMobileNavClick = (event) => {
 
             <!-- ───────────────────────── Top bar (everywhere) ───────────────────────── -->
             <div class="lg:pl-[220px]">
-                <div class="sticky top-0 z-20 flex h-12 items-center gap-3 border-b border-border-line bg-bg/95 px-4 backdrop-blur sm:px-6 lg:px-8">
+                <div class="sticky top-0 z-20 flex h-12 items-center gap-3 border-b border-border-line bg-veil px-4 backdrop-blur sm:px-6 lg:px-8">
                     <!-- Hamburger (mobile) -->
                     <button
                         type="button"
@@ -451,7 +451,7 @@ const handleMobileNavClick = (event) => {
 
             <!-- ───────────────────────── Mobile sidebar (overlay) ───────────────────────── -->
             <div v-if="showMobileNav" class="fixed inset-0 z-40 lg:hidden">
-                <div class="fixed inset-0 bg-ink/40" @click="showMobileNav = false" />
+                <div class="fixed inset-0 bg-scrim" @click="showMobileNav = false" />
                 <div class="fixed inset-y-0 left-0 flex w-72 flex-col bg-bg border-r border-border-line shadow-sheet">
                     <div class="flex h-12 items-center justify-between border-b border-border-line px-5">
                         <Link :href="route('dashboard')" @click="showMobileNav = false">

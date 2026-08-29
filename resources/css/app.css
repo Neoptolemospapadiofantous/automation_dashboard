@@ -8,6 +8,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Translucent sheet surfaces. The brand tokens are plain `var(--x)` with no
+   alpha channel, so Tailwind's opacity modifiers on them (`bg-ink/40`,
+   `bg-bg/95`) compile to NOTHING — the sticky top bar shipped transparent
+   and the mobile-nav scrim never rendered. These follow the sheet instead. */
+@layer utilities {
+  .bg-veil { background-color: color-mix(in srgb, var(--bg) 92%, transparent); }
+  .bg-scrim { background-color: color-mix(in srgb, var(--ink) 40%, transparent); }
+  .hover\:bg-veil-10:hover,
+  .focus\:bg-veil-10:focus { background-color: color-mix(in srgb, var(--bg) 10%, transparent); }
+}
+
 /* ── Dashboard sheet chrome ─────────────────────────────────────────────
    The signal accent now comes from the shared tokens.css itself (plotter
    yellow since 2026-07-09 — #F5C518 on the black sheet, #8A6A00 on the
