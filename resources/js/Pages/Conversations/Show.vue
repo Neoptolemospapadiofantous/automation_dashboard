@@ -266,20 +266,20 @@ const deleteUpstream = async () => {
                 <!-- Reply composer: live human takeover. -->
                 <form
                     v-if="isActive"
-                    class="mt-4 flex items-end gap-2 rounded-none border border-border-line bg-bg p-3 shadow-sheet"
+                    class="mt-4 flex flex-wrap items-end gap-2 rounded-none border border-border-line bg-bg p-3 shadow-sheet"
                     @submit.prevent="sendReply"
                 >
                     <textarea
                         v-model="replyText"
                         rows="2"
-                        :placeholder="takeover ? 'Reply to the visitor…' : 'Type to take over this conversation — the assistant pauses on your first message.'"
-                        class="block w-full resize-none rounded-none border-border-hi bg-bg text-sm text-ink focus:border-ink focus:ring-1 focus:ring-ink"
+                        :placeholder="takeover ? 'Reply to the visitor…' : 'Type to take over — the assistant pauses on your first message.'"
+                        class="block w-full basis-full resize-none rounded-none border-border-hi bg-bg text-sm text-ink focus:border-ink focus:ring-1 focus:ring-ink sm:basis-0 sm:flex-1"
                         @keydown.enter.exact.prevent="sendReply"
                     />
                     <button
                         type="submit"
                         :disabled="sending || !replyText.trim()"
-                        class="rounded-none bg-ink px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-bg disabled:opacity-40"
+                        class="ml-auto rounded-none bg-ink px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider text-bg disabled:opacity-40 sm:py-2"
                     >
                         {{ sending ? '…' : 'Send' }}
                     </button>

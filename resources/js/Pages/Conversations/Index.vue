@@ -122,7 +122,7 @@ const rating = (key) => ratings[key] ?? null;
                     <TextInput
                         v-model="q"
                         type="search"
-                        class="w-full flex-1 sm:w-auto sm:min-w-[16rem]"
+                        class="w-full basis-full sm:w-auto sm:flex-1 sm:basis-auto sm:min-w-[16rem]"
                         placeholder="Search visitor, lead or message text…"
                     />
                     <select

@@ -62,7 +62,7 @@ function onAssignChange(e) {
             <a
                 v-if="lead.email"
                 :href="`mailto:${lead.email}`"
-                class="min-w-0 flex-1 truncate py-1 hover:text-ink hover:underline"
+                class="-my-1 min-w-0 flex-1 truncate py-2 hover:text-ink hover:underline"
                 :title="`Email ${lead.email}`"
                 @click.stop
                 @mousedown.stop
