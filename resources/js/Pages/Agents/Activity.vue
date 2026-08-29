@@ -56,7 +56,7 @@ const pretty = (v) => (v == null ? '' : JSON.stringify(v, null, 2));
             description="Every automation the agent has run — status, latency, and credits charged. Read-only audit log, newest first."
         />
 
-        <div class="mx-auto max-w-6xl space-y-6 px-4 pb-12 pt-8 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
             <!-- Summary -->
             <div class="grid gap-3 sm:grid-cols-3">
                 <div class="rounded-none border border-border-line bg-bg p-4">

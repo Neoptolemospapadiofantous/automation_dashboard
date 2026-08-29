@@ -323,7 +323,7 @@ const description = computed(() => {
                             <li
                                 v-for="d in documents"
                                 :key="d.documentID"
-                                class="group flex items-start gap-3 border-l-2 border-transparent py-2.5 pl-2 text-sm transition-colors hover:border-ink hover:bg-surface-hi"
+                                class="group flex items-center gap-3 border-l-2 border-transparent py-2 pl-2 text-sm transition-colors hover:border-ink hover:bg-surface-hi"
                             >
                                 <span class="rounded-none px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider" :class="typeBadge(d.data?.type)">
                                     {{ d.data?.type || '?' }}
@@ -344,14 +344,14 @@ const description = computed(() => {
                                      unmanageable on mobile. -->
                                 <button
                                     type="button"
-                                    class="py-2 text-xs text-ink-mute transition sm:py-0 hover:text-ink sm:opacity-0 sm:group-hover:opacity-100"
+                                    class="py-2 text-xs text-ink-mute transition hover:text-ink sm:py-1.5 sm:opacity-0 sm:group-hover:opacity-100"
                                     @click="inspect(d.documentID)"
                                 >
                                     Inspect
                                 </button>
                                 <button
                                     type="button"
-                                    class="py-2 text-xs text-ink-mute transition sm:py-0 hover:text-state-bad-ink sm:opacity-0 sm:group-hover:opacity-100"
+                                    class="py-2 text-xs text-ink-mute transition hover:text-state-bad-ink sm:py-1.5 sm:opacity-0 sm:group-hover:opacity-100"
                                     @click="destroy(d.documentID, d.data?.name)"
                                 >
                                     Delete

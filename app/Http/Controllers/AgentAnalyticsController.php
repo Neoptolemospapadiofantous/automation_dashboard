@@ -149,7 +149,17 @@ class AgentAnalyticsController extends Controller
             ->whereBetween('created_at', [$start, $end])
             ->sum(DB::raw('-amount'));
 
-        $captureRate = $conversations > 0 ? round(($leads / $conversations) * 100, 1) : 0.0;
+        // "Of N conversations produced a lead" — so only leads the chat itself
+        // produced belong in the numerator. Counting manual/imported leads too
+        // read 450% on a board full of hand-entered leads. Capped: a partial
+        // and a real capture from one conversation must not push past 100.
+        $captured = Lead::query()
+            ->where('agent_id', $agentId)
+            ->whereBetween('created_at', [$start, $end])
+            ->whereIn('source', ['chat', 'chat-partial'])
+            ->count();
+
+        $captureRate = $conversations > 0 ? round(min(100, ($captured / $conversations) * 100), 1) : 0.0;
         $qualifyRate = $leads > 0 ? round(($qualified / $leads) * 100, 1) : 0.0;
         $winRate = $qualified > 0 ? round(($won / $qualified) * 100, 1) : 0.0;
 

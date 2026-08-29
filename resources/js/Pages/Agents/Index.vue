@@ -127,7 +127,7 @@ function relativeTime(iso) {
                             <tr>
                                 <th class="px-4 py-2.5 text-left font-mono text-xs font-semibold uppercase tracking-wider text-ink-dim">Name</th>
                                 <th class="px-4 py-2.5 text-left font-mono text-xs font-semibold uppercase tracking-wider text-ink-dim">Status</th>
-                                <th class="px-4 py-2.5 text-left font-mono text-xs font-semibold uppercase tracking-wider text-ink-dim">Last health check</th>
+                                <th class="whitespace-nowrap px-4 py-2.5 text-left font-mono text-xs font-semibold uppercase tracking-wider text-ink-dim">Last health check</th>
                                 <th class="px-4 py-2.5 text-right" />
                             </tr>
                         </thead>
@@ -142,7 +142,7 @@ function relativeTime(iso) {
                                     <div class="flex flex-col gap-0.5">
                                         <span class="bp-ref">AGENT/{{ String(i + 1).padStart(2, '0') }}</span>
                                         <div>
-                                            <Link :href="route('agents.show', agent.slug)" class="font-medium text-ink hover:underline">
+                                            <Link :href="route('agents.show', agent.slug)" class="-my-1.5 inline-block py-1.5 font-medium text-ink hover:underline">
                                                 {{ agent.name }}
                                             </Link>
                                             <span v-if="agent.is_current" class="ml-2 inline-flex rounded-none bg-ink px-2 py-0.5 font-mono text-xs font-medium text-bg">
@@ -173,7 +173,7 @@ function relativeTime(iso) {
                                     >
                                         Make current
                                     </button>
-                                    <Link :href="route('agents.show', agent.slug)" class="text-sm font-medium text-ink underline hover:text-ink-dim">
+                                    <Link :href="route('agents.show', agent.slug)" class="inline-block whitespace-nowrap py-1.5 text-sm font-medium text-ink underline hover:text-ink-dim">
                                         Settings →
                                     </Link>
                                 </td>

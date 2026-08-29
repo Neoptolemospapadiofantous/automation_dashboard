@@ -70,7 +70,7 @@ const dirty = computed(() => form.isDirty);
             description="Stage behavior changes as a draft, publish to make them live instantly, roll back anytime. The published version shapes every conversation."
         />
 
-        <div class="mx-auto max-w-5xl space-y-6 px-4 pb-12 pt-8 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
             <!-- Editor -->
             <div class="rounded-none border border-border-line bg-bg p-5 shadow-sheet">
                 <span class="bp-ref">AGENT/VERSIONS</span>

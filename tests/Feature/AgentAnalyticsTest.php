@@ -117,6 +117,38 @@ class AgentAnalyticsTest extends TestCase
             );
     }
 
+    public function test_capture_rate_counts_only_chat_originated_leads_and_caps_at_100(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $team = $user->currentTeam;
+        $agent = Agent::factory()->for($team)->create();
+
+        Conversation::factory()->count(4)->for($team)->create([
+            'agent_id' => $agent->id,
+            'started_at' => now()->subDays(2),
+        ]);
+        // 1 chat capture + 1 partial harvest count; 10 manual/imported leads do not.
+        Lead::factory()->for($team)->create(['agent_id' => $agent->id, 'source' => 'chat']);
+        Lead::factory()->for($team)->create(['agent_id' => $agent->id, 'source' => 'chat-partial']);
+        Lead::factory()->count(6)->for($team)->create(['agent_id' => $agent->id, 'source' => 'manual']);
+        Lead::factory()->count(4)->for($team)->create(['agent_id' => $agent->id, 'source' => 'import']);
+
+        $this->actingAs($user)
+            ->get(route('agents.analytics', $agent->slug))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('totals.leads', 12)
+                ->where('totals.capture_rate', 50) // 2 of 4, not 12 of 4
+            );
+
+        // More chat leads than conversations (partials + captures) never exceeds 100.
+        Lead::factory()->count(5)->for($team)->create(['agent_id' => $agent->id, 'source' => 'chat']);
+
+        $this->actingAs($user)
+            ->get(route('agents.analytics', $agent->slug))
+            ->assertInertia(fn ($page) => $page->where('totals.capture_rate', 100));
+    }
+
     public function test_quality_totals_escalation_csat_deflection_kb_hit(): void
     {
         $user = User::factory()->withPersonalTeam()->create();

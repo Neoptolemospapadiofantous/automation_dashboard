@@ -73,7 +73,7 @@ const hasRegressions = computed(() => (props.metrics?.regressions?.length ?? 0) 
             </template>
         </PageHeader>
 
-        <div class="mx-auto max-w-6xl space-y-6 px-4 pb-12 pt-8 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
             <!-- Empty state -->
             <div
                 v-if="!metrics && !ops"
