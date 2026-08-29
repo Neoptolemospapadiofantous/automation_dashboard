@@ -502,6 +502,72 @@ const handleMobileNavClick = (event) => {
                             </div>
                         </div>
                     </nav>
+
+                    <!-- Same footer as the desktop sidebar: without it a phone
+                         (no room for the user trigger in the strip) had no
+                         route to Profile, Team settings or Log out. -->
+                    <CreditMeter />
+                <!-- User card. placement="top" because this trigger is pinned
+                     to the bottom of a fixed-height sidebar — opening DOWN
+                     would render the panel off-screen below the viewport. -->
+                <div class="border-t border-border-line p-3">
+                    <Dropdown align="left" width="60" placement="top">
+                        <template #trigger>
+                            <button type="button" class="flex w-full items-center gap-2 rounded-none px-2 py-1.5 text-left text-sm hover:bg-surface-hi">
+                                <img
+                                    v-if="$page.props.jetstream.managesProfilePhotos"
+                                    class="size-7 rounded-full object-cover"
+                                    :src="$page.props.auth.user.profile_photo_url"
+                                    :alt="$page.props.auth.user.name"
+                                />
+                                <div v-else class="flex size-7 items-center justify-center rounded-full bg-surface-hi text-xs font-medium text-ink-dim">
+                                    {{ $page.props.auth.user.name.charAt(0) }}
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="truncate text-sm font-medium text-ink">{{ $page.props.auth.user.name }}</div>
+                                    <div class="truncate text-xs text-ink-mute">{{ $page.props.auth.user.current_team?.name }}</div>
+                                </div>
+                                <svg class="size-4 text-ink-mute" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+                                </svg>
+                            </button>
+                        </template>
+                        <template #content>
+                            <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Account</div>
+                            <DropdownLink :href="route('profile.show')">Profile</DropdownLink>
+                            <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">API tokens</DropdownLink>
+
+                            <template v-if="$page.props.jetstream.hasTeamFeatures">
+                                <div class="border-t border-border-line" />
+                                <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Team</div>
+                                <DropdownLink :href="route('teams.show', $page.props.auth.user.current_team)">Team settings</DropdownLink>
+                                <DropdownLink v-if="$page.props.jetstream.canCreateTeams" :href="route('teams.create')">+ New team</DropdownLink>
+                                <template v-if="$page.props.auth.user.all_teams.length > 1">
+                                    <div class="border-t border-border-line" />
+                                    <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Switch team</div>
+                                    <template v-for="team in $page.props.auth.user.all_teams" :key="team.id">
+                                        <form @submit.prevent="switchToTeam(team)">
+                                            <DropdownLink as="button">
+                                                <div class="flex items-center gap-2">
+                                                    <svg v-if="team.id == $page.props.auth.user.current_team_id" class="size-4 text-state-ok-ink" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    <span v-else class="size-4" />
+                                                    <span>{{ team.name }}</span>
+                                                </div>
+                                            </DropdownLink>
+                                        </form>
+                                    </template>
+                                </template>
+                            </template>
+
+                            <div class="border-t border-border-line" />
+                            <form @submit.prevent="logout">
+                                <DropdownLink as="button">Log out</DropdownLink>
+                            </form>
+                        </template>
+                    </Dropdown>
+                </div>
                 </div>
             </div>
         </div>

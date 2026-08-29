@@ -223,12 +223,10 @@ onBeforeUnmount(() => {
     <Head title="Architecture graph" />
 
     <AppLayout title="Architecture graph">
-        <template #header>
-            <PageHeader
-                title="Architecture graph"
-                subtitle="Interactive 3D map of the whole application — drag to rotate, scroll to zoom, click a node to focus (local only)"
-            />
-        </template>
+        <PageHeader
+            title="Architecture graph"
+            description="Interactive 3D map of the whole application — drag to rotate, scroll to zoom, click a node to focus (local only)"
+        />
 
         <div class="py-6">
             <div class="mx-auto max-w-7xl space-y-4 px-4 sm:px-6 lg:px-8">
