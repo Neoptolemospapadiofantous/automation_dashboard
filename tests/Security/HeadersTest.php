@@ -42,6 +42,45 @@ class HeadersTest extends TestCase
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN');
     }
 
+    public function test_hsts_is_sent_on_https_but_never_on_plain_http(): void
+    {
+        // The HTTP half is the one that matters: RFC 6797 §7.2 forbids
+        // sending HSTS over plain transport, and a developer hitting
+        // http://localhost must not have their browser pinned to HTTPS
+        // for a year by running the app locally.
+        $this->get('http://localhost/login')
+            ->assertOk()
+            ->assertHeaderMissing('Strict-Transport-Security');
+
+        $this->get('https://localhost/login')
+            ->assertOk()
+            ->assertHeader('Strict-Transport-Security', 'max-age=31536000');
+    }
+
+    public function test_hsts_carries_no_preload_or_subdomain_directive(): void
+    {
+        // Both are separate, deliberate decisions with a much worse
+        // rollback story than a bare max-age. Neither should appear by
+        // accident.
+        $header = $this->get('https://localhost/login')
+            ->assertOk()
+            ->headers->get('Strict-Transport-Security');
+
+        $this->assertStringNotContainsString('preload', $header);
+        $this->assertStringNotContainsString('includeSubDomains', $header);
+    }
+
+    public function test_hsts_can_be_cleared_by_setting_max_age_to_zero(): void
+    {
+        // This is the documented rollback. If it stops working, the
+        // policy becomes unremovable for a year — so it is asserted.
+        config(['session.hsts_max_age' => 0]);
+
+        $this->get('https://localhost/login')
+            ->assertOk()
+            ->assertHeaderMissing('Strict-Transport-Security');
+    }
+
     public function test_embed_chat_page_stays_frameable_from_any_site(): void
     {
         $agent = Agent::factory()->create(['status' => Agent::STATUS_ACTIVE]);

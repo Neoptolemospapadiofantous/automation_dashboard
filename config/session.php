@@ -214,4 +214,18 @@ return [
 
     'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | HSTS max-age
+    |--------------------------------------------------------------------------
+    |
+    | Seconds a browser should refuse plain HTTP for this host, emitted by
+    | the SecurityHeaders middleware on secure requests only. Set to 0 to
+    | clear the policy from browsers that already have it — that is the
+    | rollback, and it is why shipping a year here is safe.
+    |
+    */
+
+    'hsts_max_age' => (int) env('HSTS_MAX_AGE', 31536000),
+
 ];
