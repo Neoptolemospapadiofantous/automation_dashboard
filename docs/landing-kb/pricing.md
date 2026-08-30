@@ -42,6 +42,8 @@ For a site with real traffic, or a team that wants a different agent per role.
 - Everything in Growth
 - Up to 5 agents
 - 25,000 conversation credits per month
+- Or connect your own OpenAI or Anthropic API key: chat then runs on your
+  provider account, spends no credits, and is capped at 25,000 messages a month
 - Best rate per credit
 - Cancel anytime, no lock-in
 

@@ -9,7 +9,9 @@
 - Every conversation opens with a clear disclosure that the visitor is
   interacting with an AI assistant (EU AI Act transparency), and visitors can
   ask for a human at any time.
-- Visitor conversations are **not** used to train AI models.
+- Visitor conversations are **not** used to train AI models on the accounts we
+  run. If you connect your own provider key (Operator), that traffic is governed
+  by the terms of your own account with that provider, which we do not control.
 - Custom build engagements run in an **isolated tenant**, with any credentials
   you provide **encrypted** — you keep the code.
 - Flowstack operates under **EU / Cyprus** jurisdiction; the supervisory
