@@ -222,6 +222,11 @@ class LandingFaqSeeder extends Seeder
                     'get started', 'getting started', 'sign up', 'signup', 'trial', 'free trial', 'free',
                     'how do i start', 'try', 'buy', 'subscribe', 'checkout', 'register',
                     'create an account', 'pay', 'sign-up link', 'signup link',
+                    // The exact first turn from conv #169. ONLY the full phrase
+                    // is safe — 'the link'/'send me the link' steal legitimate
+                    // audit/privacy/terms link questions; those variants belong
+                    // to the LLM path, which faq.md now grounds correctly.
+                    'give me the link',
                 ],
                 'answer' => 'Create your account at app.flowstack.run/register — free to start: 1 agent, 250 credits a month, no card, no expiry. Then pick a role, upload your docs, paste one script tag, and you\'re live in about a minute. Paid plans start at €9 a month from the Billing page, cancel anytime. Want a hand with any of those steps?',
             ],

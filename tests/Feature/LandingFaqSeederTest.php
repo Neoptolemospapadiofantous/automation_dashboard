@@ -138,6 +138,7 @@ class LandingFaqSeederTest extends TestCase
             'give me the link to buy it', 'how do i pay', 'where do i buy', 'buy it',
             'i want to buy', 'how do i subscribe', 'checkout', 'where do i register',
             'create an account', 'send me the signup link', 'where do i sign up',
+            'give me the link',
         ] as $q) {
             $this->assertSame('Getting started', $canned->match($q)?->category, "'{$q}' must land on Getting started.");
         }
@@ -145,6 +146,8 @@ class LandingFaqSeederTest extends TestCase
 
         // The collisions the new keywords must NOT cause.
         $this->assertNull($canned->match("what's the link to your linkedin?"), "bare 'link' must not be a keyword");
+        $this->assertNull($canned->match('send me the link'), 'only the exact observed phrase is safe — the rest of the bare-link family belongs to the (now correctly grounded) LLM path');
+        $this->assertSame('Book the audit', $canned->match('can you send me the link to the audit page?')?->category);
         $this->assertSame('Your own key', $canned->match('can I use my own API key?')?->category);
         $this->assertSame('Pricing', $canned->match('how much does it cost?')?->category);
         $this->assertSame('Pricing', $canned->match('how much do I pay each month?')?->category, 'Pricing sits before Getting started and keeps price questions');
