@@ -31,6 +31,23 @@ class OwnKeyControllerTest extends TestCase
         return $team->fresh();
     }
 
+    public function test_a_rejected_key_is_never_flashed_back_into_the_session(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        $user->currentTeam->forceFill(['plan' => Plan::Pro->value])->save();
+
+        // Fails validation before any provider call (too short) — the classic
+        // redirect-back-with-input path.
+        $this->actingAs($user)
+            ->from(route('own-key.index'))
+            ->post(route('own-key.store'), ['provider' => 'openai', 'api_key' => 'short'])
+            ->assertRedirect(route('own-key.index'))
+            ->assertSessionHasErrors('api_key');
+
+        $this->assertNull(session('_old_input.api_key'), 'the raw key was flashed into the session store');
+        $this->assertSame('openai', session('_old_input.provider'));
+    }
+
     public function test_the_page_offers_the_feature_on_operator_and_upsells_below_it(): void
     {
         $this->actingOnPlan(Plan::Pro);

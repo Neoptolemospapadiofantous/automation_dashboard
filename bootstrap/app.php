@@ -53,6 +53,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // A rejected provider key must not be flashed back into the session
+        // store as old input — the sessions table is not encrypted, and the
+        // security page promises keys never land anywhere but the encrypted
+        // column. The form keeps the field client-side instead.
+        $exceptions->dontFlash(['api_key']);
+
         // Out-of-credits is a billing/payment state, not an app error.
         // 402 Payment Required with a JSON payload the chat UI renders as
         // an upgrade prompt.
