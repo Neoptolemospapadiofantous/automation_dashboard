@@ -20,6 +20,34 @@ const removing = ref(null);
 
 const label = (p) => ({ anthropic: 'Anthropic (Claude)', openai: 'OpenAI (GPT)' }[p] ?? p);
 
+// Open by default for someone with no key yet — the walkthrough is the whole
+// point for them — and collapsed once they've connected one.
+const showHelp = ref(props.keys.length === 0);
+
+// The console is a DIFFERENT product from the consumer subscription, and that is
+// the single most common confusion: a Claude Pro or ChatGPT Plus plan does not
+// include API usage. Saying so here is cheaper than answering it in support.
+const guides = {
+    anthropic: {
+        // console.anthropic.com 301s here — link the destination so the label
+        // matches where the user actually lands, and so a retired redirect
+        // can't break the walkthrough.
+        console: { href: 'https://platform.claude.com/settings/keys', label: 'platform.claude.com' },
+        notInPlan: 'Claude Pro',
+        consumerSite: 'claude.ai',
+        keyPath: 'Settings → API keys → Create Key',
+        prefix: 'sk-ant-',
+    },
+    openai: {
+        console: { href: 'https://platform.openai.com/api-keys', label: 'platform.openai.com' },
+        notInPlan: 'ChatGPT Plus',
+        consumerSite: 'chatgpt.com',
+        keyPath: 'API keys → Create new secret key',
+        prefix: 'sk-',
+    },
+};
+const guide = computed(() => guides[form.provider] ?? guides.anthropic);
+
 // Cap is PHP_INT_MAX on Custom — show it as unlimited rather than a silly number.
 const capLabel = computed(() =>
     props.messageCap > 1_000_000 ? 'Unlimited' : props.messageCap.toLocaleString(),
@@ -120,12 +148,60 @@ const remove = (id) => {
 
                     <!-- Add / replace -->
                     <form class="rounded-none border border-border-line bg-bg-elev p-6" @submit.prevent="submit">
-                        <h2 class="text-base font-semibold text-ink">Connect a key</h2>
+                        <div class="flex flex-wrap items-baseline justify-between gap-2">
+                            <h2 class="text-base font-semibold text-ink">Connect a key</h2>
+                            <button
+                                type="button"
+                                class="text-ink-dim hover:text-ink min-h-[1.75rem] text-sm underline"
+                                @click="showHelp = !showHelp"
+                            >
+                                {{ showHelp ? 'Hide' : 'Where do I get a key?' }}
+                            </button>
+                        </div>
                         <p class="mt-2 text-sm text-ink-dim">
                             We check the key against the provider before saving it, so a bad key is
                             caught here rather than by a visitor. It's stored encrypted and shown
                             only as the last four characters.
                         </p>
+
+                        <div v-if="showHelp" class="border-border-line bg-bg mt-4 border p-4 sm:p-5">
+                            <p class="text-ink text-sm font-semibold">
+                                Getting a key from {{ label(form.provider) }}
+                            </p>
+                            <ol class="text-ink-dim mt-3 space-y-2 text-sm">
+                                <li>
+                                    <span class="text-ink font-semibold">1.</span>
+                                    Open
+                                    <a
+                                        :href="guide.console.href"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="text-ink underline"
+                                    >{{ guide.console.label }}</a>
+                                    and sign in. This is the developer console — a different site from
+                                    {{ guide.consumerSite }}.
+                                </li>
+                                <li>
+                                    <span class="text-ink font-semibold">2.</span>
+                                    Add a payment method under Billing.
+                                    <span class="text-ink">A {{ guide.notInPlan }} subscription does not
+                                    include API usage</span> — it's billed separately, per message.
+                                </li>
+                                <li>
+                                    <span class="text-ink font-semibold">3.</span>
+                                    Go to {{ guide.keyPath }}.
+                                </li>
+                                <li>
+                                    <span class="text-ink font-semibold">4.</span>
+                                    Copy the key — it starts <code class="text-ink">{{ guide.prefix }}</code>
+                                    and is shown only once — then paste it below.
+                                </li>
+                            </ol>
+                            <p class="text-ink-mute mt-3 text-xs">
+                                You pay {{ label(form.provider) }} directly for what your chat uses. We
+                                charge no credits for those messages.
+                            </p>
+                        </div>
 
                         <div class="mt-4 grid gap-4 sm:grid-cols-[12rem,1fr]">
                             <label class="block">
