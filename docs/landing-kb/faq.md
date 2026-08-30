@@ -94,9 +94,17 @@ characters, and you can remove it any time. Your key covers chat replies on
 that provider's models; knowledge-base uploads and automations still use
 credits, because those run on our side.
 
+## Where do I sign up, buy, or subscribe?
+
+Create your account at app.flowstack.run/register — that is the signup link,
+and it is free to start (no card). Paid plans are bought from the Billing page
+inside the dashboard once you have an account; there is no separate checkout
+link. Existing customers log in at app.flowstack.run/login.
+
 ## How fast can I go live?
 
-About a minute: pick a role, upload your knowledge, paste one script tag.
+About a minute: create your account at app.flowstack.run/register, pick a role,
+upload your knowledge, paste one script tag.
 
 ## How do I talk to a human?
 

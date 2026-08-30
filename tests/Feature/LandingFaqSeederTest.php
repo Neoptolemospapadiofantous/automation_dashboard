@@ -124,6 +124,32 @@ class LandingFaqSeederTest extends TestCase
         $this->assertNull($canned->match('what are the key features?'));
     }
 
+    public function test_buy_intent_reaches_getting_started_with_the_real_signup_url(): void
+    {
+        // A real visitor asked "the link to buy it" and the chat answered it
+        // had no buy link — the chip offered "want the signup link?" while
+        // nothing downstream could produce one (conv #169, 2026-08-30).
+        $agent = $this->landingAgent();
+
+        $this->seed(LandingFaqSeeder::class);
+
+        $canned = CannedAnswers::forAgent($agent->id);
+        foreach ([
+            'give me the link to buy it', 'how do i pay', 'where do i buy', 'buy it',
+            'i want to buy', 'how do i subscribe', 'checkout', 'where do i register',
+            'create an account', 'send me the signup link', 'where do i sign up',
+        ] as $q) {
+            $this->assertSame('Getting started', $canned->match($q)?->category, "'{$q}' must land on Getting started.");
+        }
+        $this->assertStringContainsString('app.flowstack.run/register', $canned->match('buy it')->answer);
+
+        // The collisions the new keywords must NOT cause.
+        $this->assertNull($canned->match("what's the link to your linkedin?"), "bare 'link' must not be a keyword");
+        $this->assertSame('Your own key', $canned->match('can I use my own API key?')?->category);
+        $this->assertSame('Pricing', $canned->match('how much does it cost?')?->category);
+        $this->assertSame('Pricing', $canned->match('how much do I pay each month?')?->category, 'Pricing sits before Getting started and keeps price questions');
+    }
+
     public function test_chip_order_and_pricing_rules_hold(): void
     {
         // These two invariants have each been lost once in production, so they

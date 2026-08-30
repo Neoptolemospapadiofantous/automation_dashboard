@@ -213,11 +213,17 @@ class LandingFaqSeeder extends Seeder
             ],
             [
                 'category' => 'Getting started',
+                // Buy-intent lands here too (a real visitor asked "the link to
+                // buy it" and got "I don't have a direct buy link" — conv #169,
+                // 2026-08-30). Bare 'link'/'account'/'subscription' stay OFF the
+                // list: they steal "link to your LinkedIn", settings questions
+                // and the BYOK chip's "own subscription" phrasings.
                 'keywords' => [
                     'get started', 'getting started', 'sign up', 'signup', 'trial', 'free trial', 'free',
-                    'how do i start', 'try',
+                    'how do i start', 'try', 'buy', 'subscribe', 'checkout', 'register',
+                    'create an account', 'pay', 'sign-up link', 'signup link',
                 ],
-                'answer' => 'Pick a role, upload your docs and FAQs, paste one script tag — live in about a minute. Free to start: 1 agent, 250 credits a month, no card, no expiry. Paid plans start at €9 a month, cancel anytime. Want the signup link, or something to check first?',
+                'answer' => 'Create your account at app.flowstack.run/register — free to start: 1 agent, 250 credits a month, no card, no expiry. Then pick a role, upload your docs, paste one script tag, and you\'re live in about a minute. Paid plans start at €9 a month from the Billing page, cancel anytime. Want a hand with any of those steps?',
             ],
             [
                 'category' => 'Talk to a human',
