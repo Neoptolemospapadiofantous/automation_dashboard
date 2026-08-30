@@ -91,5 +91,9 @@ class FindingsStoreTest extends TestCase
             ->assertJsonPath('collectors.provider-health.overall', 'PASS')
             ->assertJsonPath('collectors.provider-health.payload.checks.0.check', 'provider-openai')
             ->assertJsonMissingPath('collectors.system-check');
+
+        // An empty tree is an object, not a list — the mirror indexes by collector name.
+        AgentFinding::query()->delete();
+        $this->assertStringContainsString('"collectors":{}', (string) $this->withToken('grid-secret')->getJson('/api/findings')->getContent());
     }
 }

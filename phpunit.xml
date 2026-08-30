@@ -37,6 +37,8 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- /api/findings answers 503 while unconfigured; the route smoke test treats 5xx as broken. -->
+        <env name="FINDINGS_READ_TOKEN" value="test-findings-token"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>

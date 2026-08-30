@@ -25,7 +25,8 @@ class FindingsController extends Controller
 
         return response()->json([
             'ts' => now()->toIso8601ZuluString(),
-            'collectors' => $store->latest(),
+            // (object) so an empty tree serialises as {} — the mirror indexes by name.
+            'collectors' => (object) $store->latest(),
         ]);
     }
 }
