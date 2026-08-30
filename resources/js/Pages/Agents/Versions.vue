@@ -74,8 +74,8 @@ const dirty = computed(() => form.isDirty);
             <!-- Editor -->
             <div class="rounded-none border border-border-line bg-bg p-5 shadow-sheet">
                 <span class="bp-ref">AGENT/VERSIONS</span>
-                <div class="mb-4 mt-1 flex items-center justify-between">
-                    <h2 class="text-base font-medium text-ink">Behavior draft</h2>
+                <div class="mb-4 mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                    <h2 class="whitespace-nowrap text-base font-medium text-ink">Behavior draft</h2>
                     <span v-if="published" class="font-mono text-xs text-ink-mute">
                         Live now: v{{ published.version }} · published {{ fmt(published.published_at) }}
                     </span>
@@ -146,14 +146,14 @@ const dirty = computed(() => form.isDirty);
 
                     <InputError :message="form.errors.publish" class="mt-1" />
 
-                    <div class="flex items-center gap-3">
-                        <SecondaryButton :disabled="form.processing || !dirty" @click="saveDraft">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <SecondaryButton class="whitespace-nowrap" :disabled="form.processing || !dirty" @click="saveDraft">
                             {{ form.processing ? 'Saving…' : 'Save draft' }}
                         </SecondaryButton>
                         <PrimaryButton :disabled="form.processing || publishForm.processing" @click="publish">
                             {{ publishForm.processing ? 'Publishing…' : 'Publish' }}
                         </PrimaryButton>
-                        <p class="text-xs text-ink-dim">Publishing goes live on the very next message — no deploy.</p>
+                        <p class="basis-full text-xs text-ink-dim sm:basis-auto">Publishing goes live on the very next message — no deploy.</p>
                     </div>
                 </div>
             </div>
@@ -199,7 +199,7 @@ const dirty = computed(() => form.isDirty);
                         <div class="flex flex-wrap gap-2 sm:shrink-0">
                             <a
                                 :href="route('agents.versions.export', v.version)"
-                                class="inline-flex items-center rounded-none border border-border-line bg-bg px-3 py-1.5 font-mono text-xs font-medium text-ink-dim hover:bg-surface-hi"
+                                class="inline-flex items-center rounded-none border border-border-line bg-bg px-3 py-2 font-mono text-xs font-medium text-ink-dim hover:bg-surface-hi"
                             >
                                 Export JSON
                             </a>
