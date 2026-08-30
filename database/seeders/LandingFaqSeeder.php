@@ -169,6 +169,17 @@ class LandingFaqSeeder extends Seeder
                 'answer' => 'Yes, on the €39 Operator plan. Connect your own OpenAI or Anthropic key and your chat runs on your provider account: you pay them for the model, we charge no credits, and you get 25,000 messages a month. We store the key encrypted and stop using it the moment you disconnect it. Want me to show you where to add it?',
             ],
             [
+                // Sits after "Your own key" so "can I use my own API key?" keeps
+                // landing there; bare 'api' is deliberately NOT a keyword — it
+                // would swallow "where do I get my API key for the widget?".
+                'category' => 'Public API',
+                'keywords' => [
+                    'public api', 'rest api', 'api access', 'api endpoint', 'api endpoints', 'an api',
+                    'your api', 'the api', 'api docs', 'api documentation', 'developer api', 'sdk', 'graphql',
+                ],
+                'answer' => 'Not yet — there is no public API or SDK today. Two ways in: the website widget (one script tag) and the hosted chat page; leads and transcripts land in your dashboard, with email alerts. Need our data inside your own systems? That is a custom build, quoted after a free call. What would you connect it to?',
+            ],
+            [
                 'category' => 'Pricing',
                 'keywords' => [
                     'price', 'prices', 'pricing', 'cost', 'costs', 'how much', 'plan', 'plans', 'quote',

@@ -103,6 +103,27 @@ class LandingFaqSeederTest extends TestCase
         $this->assertNotEmpty($config['canned_answers']);       // added
     }
 
+    public function test_public_api_chip_answers_api_questions_without_stealing_the_own_key_ones(): void
+    {
+        // "Do you have an API?" used to fall through to the LLM, where the
+        // low-confidence backstop can escalate — for a question whose honest
+        // answer (no public API; widget + hosted page + custom builds) is fixed.
+        $agent = $this->landingAgent();
+
+        $this->seed(LandingFaqSeeder::class);
+
+        $canned = CannedAnswers::forAgent($agent->id);
+        foreach (['do you have an API I can call?', 'is there a public API?', 'do you offer a REST API or SDK?', 'where are the API docs?'] as $q) {
+            $this->assertSame('Public API', $canned->match($q)?->category, "'{$q}' must land on the Public API chip.");
+        }
+
+        // The collisions the chip must NOT cause — first match wins.
+        $this->assertSame('Your own key', $canned->match('can I use my own API key?')?->category);
+        $this->assertSame('Pricing', $canned->match('how much does it cost?')?->category);
+        $this->assertNull($canned->match('where do I get my API key for the widget?'), 'a bare "api" must not be a keyword');
+        $this->assertNull($canned->match('what are the key features?'));
+    }
+
     public function test_chip_order_and_pricing_rules_hold(): void
     {
         // These two invariants have each been lost once in production, so they
@@ -120,7 +141,7 @@ class LandingFaqSeederTest extends TestCase
         $chips = $method->invoke(new LandingFaqSeeder);
 
         $position = array_flip(array_column($chips, 'category'));
-        foreach ([['Custom build', 'Pricing'], ['Book the audit', 'Getting started'], ['Outreach', 'What it does'], ['Your own key', 'Pricing']] as [$specific, $generic]) {
+        foreach ([['Custom build', 'Pricing'], ['Book the audit', 'Getting started'], ['Outreach', 'What it does'], ['Your own key', 'Pricing'], ['Your own key', 'Public API']] as [$specific, $generic]) {
             $this->assertArrayHasKey($specific, $position, "Chip '{$specific}' is missing.");
             $this->assertArrayHasKey($generic, $position, "Chip '{$generic}' is missing.");
             $this->assertLessThan(
