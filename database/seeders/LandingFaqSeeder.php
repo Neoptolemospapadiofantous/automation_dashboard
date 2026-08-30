@@ -147,12 +147,34 @@ class LandingFaqSeeder extends Seeder
                 'answer' => 'Eight things: agent go-live, cold outreach, one live view, booking, invoices, connecting your tools, inbox triage, and ongoing care. Each is quoted after a free 30-minute call — a written price within 48 hours, yours to keep, and you keep the code. No list price, because no two builds are the same. What would you want built?',
             ],
             [
+                // Placed ahead of 'Pricing' deliberately: first match wins, and
+                // "how much does it cost to bring my own key?" otherwise lands on
+                // Pricing and gets a correct-but-thin answer. Measured against the
+                // live matcher: 5 of 8 natural phrasings previously reached the LLM,
+                // where the low-confidence backstop escalates some of the time — and
+                // an escalation rings the founder's phone. A canned answer cannot
+                // escalate and costs no tokens.
+                //
+                // KEYWORDS ARE DELIBERATELY LONG. Bare 'key', 'api' and 'provider'
+                // were each tested and REJECTED: 'key' collides with "where do I get
+                // my API key for the widget?" and "what are the key features?",
+                // 'api' with "do you have an API I can call?", 'provider' with
+                // "which provider do you use?". Same trap as 'custom' matching
+                // "customer" and bare 'build' swallowing "build my knowledge base".
+                'category' => 'Your own key',
+                'keywords' => [
+                    'own key', 'my own key', 'own api key', 'own openai key',
+                    'own anthropic key', 'own provider key', 'bring your own', 'byok',
+                ],
+                'answer' => 'Yes, on the €39 Operator plan. Connect your own OpenAI or Anthropic key and your chat runs on your provider account: you pay them for the model, we charge no credits, and you get 25,000 messages a month. We store the key encrypted and stop using it the moment you disconnect it. Want me to show you where to add it?',
+            ],
+            [
                 'category' => 'Pricing',
                 'keywords' => [
                     'price', 'prices', 'pricing', 'cost', 'costs', 'how much', 'plan', 'plans', 'quote',
                     'expensive',
                 ],
-                'answer' => 'The chat starts free: 1 agent, 250 credits a month, no card. Then €9 a month (1 agent, 2,500 credits), €19 (5 agents, 10,000) or €39 (5 agents, 25,000) — €39 is our most expensive plan. A short chat is about 5-8 credits, so €9 buys roughly 300-500 a month. Cancel anytime, VAT not included. On €39 use your own OpenAI or Anthropic key instead of credits. Builds have no list price; we quote them after a free call. Which do you mean — the chat, or a build?',
+                'answer' => 'The chat starts free: 1 agent, 250 credits a month, no card. Then €9 a month (1 agent, 2,500 credits), €19 (5 agents, 10,000) or €39 (5 agents, 25,000) — €39 is our most expensive plan. A short chat is about 5-8 credits, so €9 buys roughly 300-500 a month. Cancel anytime, VAT not included. Builds have no list price; we quote them after a free call. Which do you mean — the chat, or a build?',
             ],
             [
                 'category' => 'What it does',

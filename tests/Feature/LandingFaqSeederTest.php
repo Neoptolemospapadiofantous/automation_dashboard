@@ -120,7 +120,7 @@ class LandingFaqSeederTest extends TestCase
         $chips = $method->invoke(new LandingFaqSeeder);
 
         $position = array_flip(array_column($chips, 'category'));
-        foreach ([['Custom build', 'Pricing'], ['Book the audit', 'Getting started'], ['Outreach', 'What it does']] as [$specific, $generic]) {
+        foreach ([['Custom build', 'Pricing'], ['Book the audit', 'Getting started'], ['Outreach', 'What it does'], ['Your own key', 'Pricing']] as [$specific, $generic]) {
             $this->assertArrayHasKey($specific, $position, "Chip '{$specific}' is missing.");
             $this->assertArrayHasKey($generic, $position, "Chip '{$generic}' is missing.");
             $this->assertLessThan(
