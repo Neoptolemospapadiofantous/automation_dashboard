@@ -231,6 +231,7 @@ const handleMobileNavClick = (event) => {
                         <template #content>
                             <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Account</div>
                             <DropdownLink :href="route('profile.show')">Profile</DropdownLink>
+                            <DropdownLink :href="route('own-key.index')">Your own API key</DropdownLink>
                             <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">API tokens</DropdownLink>
 
                             <template v-if="$page.props.jetstream.hasTeamFeatures">
@@ -422,6 +423,7 @@ const handleMobileNavClick = (event) => {
                                 </template>
                                 <template #content>
                                     <DropdownLink :href="route('profile.show')">Profile</DropdownLink>
+                            <DropdownLink :href="route('own-key.index')">Your own API key</DropdownLink>
                                     <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">API tokens</DropdownLink>
                                     <div class="border-t border-border-line" />
                                     <form @submit.prevent="logout">
@@ -535,6 +537,7 @@ const handleMobileNavClick = (event) => {
                         <template #content>
                             <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Account</div>
                             <DropdownLink :href="route('profile.show')">Profile</DropdownLink>
+                            <DropdownLink :href="route('own-key.index')">Your own API key</DropdownLink>
                             <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">API tokens</DropdownLink>
 
                             <template v-if="$page.props.jetstream.hasTeamFeatures">

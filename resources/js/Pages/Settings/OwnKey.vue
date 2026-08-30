@@ -54,10 +54,10 @@ const remove = (id) => {
             description="Run chat on your own provider account instead of spending credits."
         />
 
-        <div class="py-8">
+        <div class="py-6">
             <div class="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
                 <!-- Not on Operator: explain the trade rather than just refusing. -->
-                <div v-if="!allowed" class="rounded-lg border border-border-line bg-bg-elev p-6">
+                <div v-if="!allowed" class="rounded-none border border-border-line bg-bg-elev p-6">
                     <h2 class="text-base font-semibold text-ink">Available on Operator</h2>
                     <p class="mt-2 text-sm text-ink-dim">
                         You're on {{ planLabel }}. On Operator you can connect your own Anthropic or
@@ -71,7 +71,7 @@ const remove = (id) => {
 
                 <template v-else>
                     <!-- Usage against the cap that replaces credits -->
-                    <div class="rounded-lg border border-border-line bg-bg-elev p-6">
+                    <div class="rounded-none border border-border-line bg-bg-elev p-6">
                         <div class="flex flex-wrap items-baseline justify-between gap-2">
                             <h2 class="text-base font-semibold text-ink">This month</h2>
                             <p class="text-sm text-ink-dim">
@@ -79,8 +79,8 @@ const remove = (id) => {
                                 of {{ capLabel }} messages
                             </p>
                         </div>
-                        <div v-if="usedPct > 0 || messageCap <= 1_000_000" class="mt-3 h-2 w-full rounded-full bg-surface-hi">
-                            <div class="h-2 rounded-full bg-signal" :style="{ width: usedPct + '%' }" />
+                        <div v-if="usedPct > 0 || messageCap <= 1_000_000" class="mt-3 h-2 w-full rounded-none bg-surface-hi">
+                            <div class="h-2 rounded-none bg-signal" :style="{ width: usedPct + '%' }" />
                         </div>
                         <p class="mt-3 text-sm text-ink-dim">
                             Messages on your own key don't spend credits. Past the allowance, chat
@@ -89,7 +89,7 @@ const remove = (id) => {
                     </div>
 
                     <!-- Stored keys -->
-                    <div v-if="keys.length" class="rounded-lg border border-border-line bg-bg-elev">
+                    <div v-if="keys.length" class="rounded-none border border-border-line bg-bg-elev">
                         <ul class="divide-y divide-border-line">
                             <li v-for="k in keys" :key="k.id" class="flex flex-wrap items-center gap-3 p-4 sm:p-6">
                                 <div class="min-w-0 flex-1">
@@ -119,7 +119,7 @@ const remove = (id) => {
                     </div>
 
                     <!-- Add / replace -->
-                    <form class="rounded-lg border border-border-line bg-bg-elev p-6" @submit.prevent="submit">
+                    <form class="rounded-none border border-border-line bg-bg-elev p-6" @submit.prevent="submit">
                         <h2 class="text-base font-semibold text-ink">Connect a key</h2>
                         <p class="mt-2 text-sm text-ink-dim">
                             We check the key against the provider before saving it, so a bad key is

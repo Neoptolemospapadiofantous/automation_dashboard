@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { router, useForm, usePage } from '@inertiajs/vue3';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import EmptyState from '@/Components/EmptyState.vue';
@@ -203,6 +203,11 @@ function openPortal() {
                         <p v-else-if="!billing?.is_owner" class="mt-3 text-xs text-ink-dim">
                             Only the team owner can change billing.
                         </p>
+                        <!-- BYOK lives on its own settings page; this is its only
+                             in-app entry point besides the account menu. -->
+                        <Link :href="route('own-key.index')" class="mt-3 inline-block py-1.5 text-xs font-medium text-ink underline hover:text-ink-dim">
+                            Use your own API key →
+                        </Link>
                     </div>
 
                     <!-- Plan upgrade strip: Starter / Operator subscribe buttons.
