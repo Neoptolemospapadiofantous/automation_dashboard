@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\FindingsController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PublicStatsController;
 use Illuminate\Http\Request;
@@ -23,3 +24,10 @@ Route::middleware('throttle:60,1')
 Route::middleware('throttle:60,1')
     ->get('/health', HealthController::class)
     ->name('health');
+
+// §3.1 findings tree, read by the grid (grid-control / grid-sentinel /
+// grid-live) which mirrors it into its own data/agents/ tree. Bearer
+// FINDINGS_READ_TOKEN — 503 while unset, 401 on mismatch.
+Route::middleware('throttle:60,1')
+    ->get('/findings', FindingsController::class)
+    ->name('findings');

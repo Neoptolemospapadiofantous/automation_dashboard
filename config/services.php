@@ -47,4 +47,9 @@ return [
         'token' => env('BI_INGEST_TOKEN'),
     ],
 
+    // Bearer the grid presents to GET /api/findings (§3.1 tree). Unset = 503.
+    'findings' => [
+        'token' => env('FINDINGS_READ_TOKEN'),
+    ],
+
 ];

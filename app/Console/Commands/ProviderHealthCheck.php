@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Runtime\LLM\LlmRouter;
+use App\Support\Findings\FindingsStore;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
@@ -240,6 +241,14 @@ class ProviderHealthCheck extends Command
             $dir.'/findings.json',
             json_encode($findings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n"
         );
+
+        // The DB is the durable record — the file above is inside the release
+        // dir on Forge and does not survive a deploy. Never fail the check on it.
+        try {
+            app(FindingsStore::class)->record('provider-health', $findings);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         file_put_contents(
             $dir.'/last_run.json',

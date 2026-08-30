@@ -57,3 +57,8 @@ Schedule::command('providers:reverify-team-keys')->dailyAt('04:40')->withoutOver
 Schedule::exec('bash scripts/agents/audit_sentinel.sh')->dailyAt('6:00');
 Schedule::exec('bash scripts/agents/update_inspector.sh')->weeklyOn(1, '6:10');
 Schedule::exec('bash scripts/agents/system_check.sh')->everySixHours();
+
+// Persist whatever the collectors above wrote (data/agents/ is inside the
+// release dir on Forge and dies on every deploy) so /api/findings serves
+// the real record; prunes to a bounded history. Idempotent per run.
+Schedule::command('findings:ingest')->everyFifteenMinutes();
