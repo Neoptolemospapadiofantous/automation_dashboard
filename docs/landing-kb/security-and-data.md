@@ -12,6 +12,9 @@
 - Visitor conversations are **not** used to train AI models on the accounts we
   run. If you connect your own provider key (Operator), that traffic is governed
   by the terms of your own account with that provider, which we do not control.
+- A provider API key you connect (Operator) is **verified before it is saved**,
+  **stored encrypted**, shown only by its last four characters, re-checked
+  nightly, and can be removed at any time.
 - Custom build engagements run in an **isolated tenant**, with any credentials
   you provide **encrypted** — you keep the code.
 - Flowstack operates under **EU / Cyprus** jurisdiction; the supervisory

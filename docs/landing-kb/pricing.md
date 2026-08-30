@@ -69,6 +69,10 @@ Conversations are metered in credits (250/month on Free, 2,500 on Starter,
 1 credit; smarter models cost more per message, because they cost us more to
 run.
 
+On Operator you can skip credits for chat entirely by connecting your own
+OpenAI or Anthropic API key (see the FAQ). Knowledge-base uploads and automations
+still use credits either way.
+
 In practice a short chat uses about 5-8 credits. So Starter covers roughly
 300-500 chats a month and Operator about ten times that. You are not charged for
 the opening hello, a visitor coming back to an old chat, the instant answers set

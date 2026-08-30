@@ -77,6 +77,23 @@ because they cost us more (you pick the model per agent and can change it
 anytime). Your monthly allowance resets on renewal. Top-up credits you paid for
 roll over until used.
 
+## Can I use my own OpenAI or Anthropic key? (bring your own key / BYOK)
+
+Yes, on the Operator plan (€39/month). Connect your own OpenAI or Anthropic
+API key in Settings → Your own API key and the chat runs on your provider
+account: you pay the provider for the model, we charge no credits, and you get
+25,000 messages a month on that key. Past 25,000 the chat keeps working and
+falls back to your credits until the month resets.
+
+Some detail buyers ask about: it is an API key from the provider's developer
+console — a ChatGPT Plus or Claude Pro subscription is not an API key and won't
+work. We check the key with the provider before saving it and re-check it every
+night, so a revoked key shows up in your dashboard instead of failing in front
+of a visitor. The key is stored encrypted, shown only by its last four
+characters, and you can remove it any time. Your key covers chat replies on
+that provider's models; knowledge-base uploads and automations still use
+credits, because those run on our side.
+
 ## How fast can I go live?
 
 About a minute: pick a role, upload your knowledge, paste one script tag.
