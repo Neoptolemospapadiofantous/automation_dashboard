@@ -61,6 +61,18 @@ class OwnKeyAwarenessTest extends TestCase
             ->where('billing.own_key.cap', Plan::Pro->monthlyMessageCap())
         );
 
+        // The Billing page: plan cards advertise the entitlement, the shared prop drives the usage card.
+        $this->actingAs($user)
+            ->get(route('billing.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('billing.own_key.active', true)
+                ->where('billing.own_key.used', 0)
+            );
+        $plans = collect($this->actingAs($user)->get(route('billing.index'))->inertiaProps()['plan_catalog']);
+        $this->assertTrue($plans->firstWhere('value', Plan::Pro->value)['allows_own_key'] ?? false, 'Operator card must advertise own-key use');
+        $this->assertFalse($plans->firstWhere('value', Plan::Starter->value)['allows_own_key'] ?? true, 'Starter card must not');
+
         // Only tiers on the key's provider are free; the others still bill.
         $tiers = $response->inertiaProps()['tiers'];
         foreach ($tiers as $tier) {

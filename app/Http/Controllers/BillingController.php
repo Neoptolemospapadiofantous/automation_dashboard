@@ -99,6 +99,10 @@ class BillingController extends Controller
             'annual_available' => $plan->stripePriceId(BillingCycle::Annual) !== null,
             'max_agents' => $plan->maxAgents(),
             'monthly_credits' => $plan->monthlyCredits(),
+            // BYOK is sold on the landing's Operator card; the in-app card
+            // must show the same entitlement.
+            'allows_own_key' => $plan->allowsOwnKey(),
+            'message_cap' => $plan->monthlyMessageCap(),
         ];
     }
 

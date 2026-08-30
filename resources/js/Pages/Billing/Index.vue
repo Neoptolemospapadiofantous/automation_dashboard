@@ -23,6 +23,11 @@ const usedPercent = computed(() => {
     if (!billing.value?.credits_total) return 0;
     return Math.min(100, Math.round((billing.value.credits_used / billing.value.credits_total) * 100));
 });
+const ownKeyPercent = computed(() => {
+    const k = billing.value?.own_key;
+    if (!k?.cap || k.cap > 1_000_000) return 0;
+    return Math.min(100, Math.round((k.used / k.cap) * 100));
+});
 
 const reasonLabel = (r) => ({
     grant_renewal: 'Monthly renewal',
@@ -275,7 +280,7 @@ function openPortal() {
                                 </span>
                                 <span class="mt-2 text-[11px] leading-snug text-ink-dim">
                                     {{ p.max_agents >= 9999 ? 'Unlimited agents' : `${p.max_agents} agent${p.max_agents === 1 ? '' : 's'}` }}
-                                    · {{ p.monthly_credits.toLocaleString() }} credits/mo
+                                    · {{ p.monthly_credits.toLocaleString() }} credits/mo<template v-if="p.allows_own_key"> · your own key</template>
                                 </span>
                                 <span
                                     v-if="cycle === 'annual' && p.annual_available"
@@ -372,6 +377,29 @@ function openPortal() {
 
                     <!-- Starter / Operator: normal usage bar + top-up button. -->
                     <div v-else class="rounded-none border border-border-line bg-bg p-5 sm:col-span-2 lg:col-span-3">
+                        <!-- BYOK: while the team's own key covers the current agent, the
+                             month's message cap is what is being spent, not credits. -->
+                        <template v-if="billing?.own_key?.active">
+                            <div class="flex items-center justify-between">
+                                <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Your own key this month</div>
+                                <div class="font-mono text-xs tabular-nums text-ink-dim">{{ ownKeyPercent }}%</div>
+                            </div>
+                            <div class="mt-2 h-2 w-full overflow-hidden rounded-none bg-surface-hi">
+                                <div class="h-full bg-state-ok-solid transition-all" :style="{ width: ownKeyPercent + '%' }" />
+                            </div>
+                            <div class="mt-2 text-sm text-ink-dim">
+                                <span class="font-mono font-semibold tabular-nums">{{ fmtNum(billing.own_key.used) }}</span>
+                                <span class="text-ink-mute"> / {{ fmtNum(billing.own_key.cap) }} messages on your provider account — no credits</span>
+                            </div>
+                            <div class="mt-3 text-xs text-ink-dim">
+                                Credits are only spent past that cap, or on tiers that are not on your key (see the Versions page).
+                                <Link :href="route('own-key.index')" class="inline-block py-1.5 text-ink underline hover:text-ink-dim">Manage your key →</Link>
+                            </div>
+                            <div class="mt-5 border-t border-border-line pt-4" />
+                        </template>
+                        <div v-else-if="billing?.own_key?.has_key" class="mb-4 border-b border-border-line pb-3 text-xs text-state-warn-ink">
+                            Your own key has reached its monthly cap — turns are on credits until it resets.
+                        </div>
                         <div class="flex items-center justify-between">
                             <div class="font-mono text-xs uppercase tracking-wider text-ink-mute">Conversation-credit usage this period</div>
                             <div class="font-mono text-xs tabular-nums text-ink-dim">{{ usedPercent }}%</div>
