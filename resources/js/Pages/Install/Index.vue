@@ -9,6 +9,7 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 
 const props = defineProps({
+    own_key: { type: Object, default: null },
     agent: { type: Object, default: null },
 });
 
@@ -124,6 +125,7 @@ function removeDomain(i) {
 // --- Live preview helpers -------------------------------------------------
 const previewTitle = computed(() => form.title || props.agent?.name || 'Your agent');
 const previewLauncher = computed(() => form.launcher_text || 'Chat with us');
+const ownKeyProvider = computed(() => ({ anthropic: 'Anthropic', openai: 'OpenAI' }[props.own_key?.provider] ?? props.own_key?.provider));
 </script>
 
 <template>
@@ -501,8 +503,13 @@ const previewLauncher = computed(() => form.launcher_text || 'Chat with us');
                         </div>
                         <div class="rounded-none border border-border-line bg-bg p-4">
                             <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">Billing</p>
-                            <p class="mt-2 text-sm text-ink-dim">
+                            <p v-if="own_key?.active" class="mt-2 text-sm text-ink-dim">
+                                Embedded conversations run on your own {{ ownKeyProvider }} key — no credits.
+                                {{ own_key.used.toLocaleString() }} of {{ own_key.cap.toLocaleString() }} messages this month; past that, chat falls back to credits.
+                            </p>
+                            <p v-else class="mt-2 text-sm text-ink-dim">
                                 Embedded conversations debit credits from your team, same as dashboard chats.
+                                <Link :href="route('own-key.index')" class="inline-block py-1 text-ink underline hover:text-ink-dim">Or use your own API key →</Link>
                             </p>
                         </div>
                     </div>
@@ -529,6 +536,7 @@ const previewLauncher = computed(() => form.launcher_text || 'Chat with us');
                                 <dt class="font-medium text-ink">Customers report "temporarily unavailable".</dt>
                                 <dd class="mt-1 text-xs text-ink-dim">
                                     Your team is out of credits. Check the Billing page and top up to resume.
+                                    On your own API key, the key may have been revoked — Settings → Your own API key shows its last check.
                                 </dd>
                             </div>
                         </dl>

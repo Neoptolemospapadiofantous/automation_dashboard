@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Billing\OwnKey;
 use App\Models\Agent;
 use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +18,7 @@ use Inertia\Response;
  */
 class InstallController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, OwnKey $ownKey): Response
     {
         $team = $request->user()->currentTeam;
         $agent = $team instanceof Team ? $team->currentAgent : null;
@@ -29,6 +30,14 @@ class InstallController extends Controller
                 'status' => $agent->status,
                 'widget_config' => $agent->widgetConfig(),
                 'allowed_domains' => $agent->allowedDomains(),
+            ] : null,
+            // The page's billing note must not claim "debits credits" for a
+            // team whose embedded chat is running on its own provider key.
+            'own_key' => $agent instanceof Agent ? [
+                'active' => $ownKey->coversAgent($agent),
+                'provider' => $ownKey->providerFor($agent),
+                'used' => $ownKey->messagesUsed($team),
+                'cap' => $team->planObject()->monthlyMessageCap(),
             ] : null,
         ]);
     }
