@@ -42,6 +42,12 @@ Schedule::command('teams:weekly-digest')->weeklyOn(1, '8:10');
 // credit ledger and provider API billing are separate ledgers.
 Schedule::command('providers:health-check')->hourly();
 
+// Customer-supplied (BYOK) keys: a key revoked on the provider's side would
+// otherwise only surface when a visitor's turn fails. Nightly 1-token
+// re-probe of every stored key, written back like the Re-verify button
+// (last_error / last_verified_at only). Platform keys are not touched.
+Schedule::command('providers:reverify-team-keys')->dailyAt('04:40')->withoutOverlapping();
+
 // Hermes audit agents — daily sweeps (no-LLM bash scripts). Their reports
 // land in data/agents/*/; `composer hermes-status` summarizes. The full
 // watchdog (hermes-fast) stays on-demand + CI; these cover drift that
