@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Billing\OwnKey;
 use App\Billing\Plan;
 use App\Models\Agent;
 use App\Models\PlatformSetting;
@@ -152,11 +153,23 @@ class HandleInertiaRequests extends Middleware
                     // The rungs are distinct now; keep the status check anyway.
                     $subscribed = in_array($subscriptionStatus, ['active', 'trialing', 'past_due'], true);
 
+                    // BYOK: the sidebar meter and every "credits" line must
+                    // know when the current agent runs on the team's own key.
+                    $ownKeyService = app(OwnKey::class);
+                    $currentAgent = $team->currentAgent;
+                    $ownKey = [
+                        'active' => $currentAgent instanceof Agent && $ownKeyService->coversAgent($currentAgent),
+                        'has_key' => $ownKeyService->teamHasUsableKey($team),
+                        'used' => $ownKeyService->messagesUsed($team),
+                        'cap' => $plan->monthlyMessageCap(),
+                    ];
+
                     if ($isCustom) {
                         return [
                             'plan' => $plan->value,
                             'plan_label' => $plan->label(),
                             'is_custom' => true,
+                            'own_key' => $ownKey,
                             'credits_used' => null,
                             'credits_total' => null,
                             'credits_remaining' => $team->totalCredits(),
@@ -185,6 +198,7 @@ class HandleInertiaRequests extends Middleware
                         'plan' => $plan->value,
                         'plan_label' => $plan->label(),
                         'is_custom' => false,
+                        'own_key' => $ownKey,
                         'credits_used' => max(0, $monthlyTotal - (int) $team->credit_balance),
                         'credits_total' => $monthlyTotal,
                         'credits_remaining' => $team->totalCredits(),

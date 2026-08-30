@@ -12,10 +12,19 @@ import { Link, usePage } from '@inertiajs/vue3';
 const page = usePage();
 const billing = computed(() => page.props.billing ?? null);
 
+// BYOK: when the current agent runs on the team's own provider key, the
+// bar tracks the monthly MESSAGE cap instead of credits — credits are not
+// what those turns spend.
+const ownKey = computed(() => billing.value?.own_key?.active ? billing.value.own_key : null);
 const percent = computed(() => {
+    if (ownKey.value) {
+        if (!ownKey.value.cap || ownKey.value.cap > 1_000_000) return 0;
+        return Math.min(100, Math.round((ownKey.value.used / ownKey.value.cap) * 100));
+    }
     if (!billing.value || !billing.value.credits_total) return 0;
     return Math.min(100, Math.round((billing.value.credits_used / billing.value.credits_total) * 100));
 });
+const capLabel = computed(() => (ownKey.value && ownKey.value.cap > 1_000_000 ? 'unlimited' : ownKey.value?.cap.toLocaleString()));
 
 const tone = computed(() => {
     const p = percent.value;
@@ -47,7 +56,10 @@ const textClass = computed(() => ({
                 <span class="font-mono font-semibold uppercase tracking-wider text-ink-mute">
                     {{ billing.plan_label }} plan
                 </span>
-                <span class="font-mono font-medium tabular-nums" :class="textClass">
+                <span v-if="ownKey" class="font-mono font-medium tabular-nums" :class="textClass">
+                    {{ ownKey.cap > 1_000_000 ? 'own key' : Math.max(0, ownKey.cap - ownKey.used).toLocaleString() + ' msgs left' }}
+                </span>
+                <span v-else class="font-mono font-medium tabular-nums" :class="textClass">
                     {{ billing.credits_remaining.toLocaleString() }} available
                 </span>
             </div>
@@ -58,7 +70,14 @@ const textClass = computed(() => ({
                  ("0 / 250 monthly used · +25,000 top-up · 1 / 1 agents")
                  read as one number soup in a 200px sidebar. -->
             <div class="mt-1 space-y-0.5 font-mono text-[10px] text-ink-dim">
-                <div>{{ billing.credits_total.toLocaleString() }} monthly · {{ billing.credits_used.toLocaleString() }} used</div>
+                <template v-if="ownKey">
+                    <div>{{ ownKey.used.toLocaleString() }} of {{ capLabel }} messages on your key</div>
+                    <div>{{ billing.credits_remaining.toLocaleString() }} credits held</div>
+                </template>
+                <template v-else>
+                    <div v-if="billing.credits_total !== null">{{ billing.credits_total.toLocaleString() }} monthly · {{ billing.credits_used.toLocaleString() }} used</div>
+                    <div v-if="billing.own_key?.has_key">own key: monthly cap reached — on credits</div>
+                </template>
                 <div v-if="billing.topup_balance > 0">+{{ billing.topup_balance.toLocaleString() }} top-up credits</div>
                 <div v-if="billing.max_agents < 1000">{{ billing.agents_count }} / {{ billing.max_agents }} agents</div>
             </div>

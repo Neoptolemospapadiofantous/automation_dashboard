@@ -29,6 +29,7 @@ const form = useForm({
 
 const tierLabel = (key) => props.tiers.find((t) => t.key === key)?.label ?? key;
 const tierCost = (key) => props.tiers.find((t) => t.key === key)?.credits_per_message ?? 1;
+const anyOwnKey = computed(() => props.tiers.some((t) => t.own_key));
 
 const saveDraft = () => form.post(route('agents.versions.draft'), { preserveScroll: true });
 
@@ -115,7 +116,10 @@ const dirty = computed(() => form.isDirty);
 
                     <div>
                         <InputLabel for="model_tier" value="Response quality" />
-                        <p class="mt-0.5 text-xs text-ink-dim">
+                        <p v-if="anyOwnKey" class="mt-0.5 text-xs text-ink-dim">
+                            Tiers marked “your key” run on your own provider account and cost no credits; the others bill per message. Applies to this agent only, from the moment you publish.
+                        </p>
+                        <p v-else class="mt-0.5 text-xs text-ink-dim">
                             Smarter answers cost more credits per message. Applies to this agent only, from the moment you publish.
                         </p>
                         <div class="mt-2 grid gap-3 sm:grid-cols-3">
@@ -132,7 +136,10 @@ const dirty = computed(() => form.isDirty);
                                 <span>
                                     <span class="flex items-center gap-2 font-medium text-ink">
                                         {{ t.label }}
-                                        <span class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-dim">
+                                        <span v-if="t.own_key" class="rounded-none bg-state-ok-surface px-1.5 py-0.5 font-mono text-[10px] font-semibold text-state-ok-ink">
+                                            your key · 0 cr
+                                        </span>
+                                        <span v-else class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-dim">
                                             {{ t.credits_per_message }} cr/msg
                                         </span>
                                     </span>

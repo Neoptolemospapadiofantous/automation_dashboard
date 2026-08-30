@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Authorization\Role;
+use App\Billing\OwnKey;
 use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
@@ -57,16 +58,27 @@ class AgentVersionsController extends Controller
             }
         }
 
+        // BYOK: a tier whose provider matches a usable team key (and the
+        // team is under its monthly cap) costs no credits — the tile says so
+        // instead of quoting a price nobody on that key would pay.
+        $ownKey = app(OwnKey::class);
+        $byokTeam = $request->user()?->currentTeam;
+
         $tiers = [];
         foreach ((array) config('runtime.tiers') as $key => $tier) {
+            $provider = (string) ($tier['provider'] ?? 'anthropic');
             $tiers[] = [
                 'key' => $key,
                 'label' => (string) ($tier['label'] ?? ucfirst($key)),
                 'description' => (string) ($tier['description'] ?? ''),
                 'model' => (string) ($tier['model'] ?? ''),
+                'provider' => $provider,
                 'credits_per_message' => (int) ($tier['credits_per_message'] ?? 1),
                 // Greyed out in the UI until the provider's API key is set.
-                'available' => LlmRouter::providerAvailable((string) ($tier['provider'] ?? 'anthropic')),
+                'available' => LlmRouter::providerAvailable($provider),
+                'own_key' => $byokTeam instanceof Team
+                    && $ownKey->keyFor($byokTeam, $provider) !== null
+                    && $ownKey->withinCap($byokTeam),
             ];
         }
 
