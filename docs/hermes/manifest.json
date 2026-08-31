@@ -58,6 +58,7 @@
     "app/Http/Middleware":           { "domain": "http", "docs": ["docs/security.md"], "tests": ["tests/Security/HeadersTest.php", "tests/Security/ThrottleTest.php", "tests/Security/CrossTenantTest.php"], "checks": ["phpstan", "tests", "doc-coverage", "security"], "edges": ["app/Http/Controllers"], "criticality": "high" },
 
     "app/Support":                   { "domain": "platform", "docs": ["docs/architecture/full-application-graph.md"], "tests": ["tests/Feature/ArchitectureGraphTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Http/Controllers"], "criticality": "low" },
+    "app/Support/Findings":          { "domain": "ops", "docs": ["docs/operations/findings-tree.md"], "tests": ["tests/Feature/FindingsStoreTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Models", "app/Console/Commands", "app/Http/Controllers"], "criticality": "medium" },
     "app/Support/Embed":             { "domain": "http", "docs": ["docs/widget-embed.md"], "tests": ["tests/Unit/Embed/DomainAllowlistTest.php", "tests/Feature/Embed/WidgetEmbedTest.php"], "checks": ["phpstan", "tests", "doc-coverage"], "edges": ["app/Http/Controllers", "app/Models"], "criticality": "high" },
 
     "app/Console/Commands":   { "domain": "ops", "docs": ["docs/operations/commands.md"], "tests": ["tests/Integrity/SchedulerTest.php", "tests/Feature/RuntimeCostsTest.php", "tests/Feature/MailTestCommandTest.php"], "checks": ["phpstan", "tests", "doc-coverage", "schedule"], "edges": ["app/Billing", "app/Runtime/Models"], "criticality": "medium" },
