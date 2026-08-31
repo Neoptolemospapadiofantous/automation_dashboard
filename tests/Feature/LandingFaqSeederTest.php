@@ -138,7 +138,7 @@ class LandingFaqSeederTest extends TestCase
             'give me the link to buy it', 'how do i pay', 'where do i buy', 'buy it',
             'i want to buy', 'how do i subscribe', 'checkout', 'where do i register',
             'create an account', 'send me the signup link', 'where do i sign up',
-            'give me the link',
+            'give me the link', 'how does purchasing work?', 'how do I purchase?',
         ] as $q) {
             $this->assertSame('Getting started', $canned->match($q)?->category, "'{$q}' must land on Getting started.");
         }
@@ -151,6 +151,9 @@ class LandingFaqSeederTest extends TestCase
         $this->assertSame('Your own key', $canned->match('can I use my own API key?')?->category);
         $this->assertSame('Pricing', $canned->match('how much does it cost?')?->category);
         $this->assertSame('Pricing', $canned->match('how much do I pay each month?')?->category, 'Pricing sits before Getting started and keeps price questions');
+        // kb_gaps #18: 'what do you do' can't phrase-match through 'actually'.
+        $this->assertSame('What it does', $canned->match('what do you actually do?')?->category);
+        $this->assertSame('What it does', $canned->match('what does flowstack do for me?')?->category);
     }
 
     public function test_chip_order_and_pricing_rules_hold(): void

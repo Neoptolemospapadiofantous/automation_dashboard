@@ -143,8 +143,9 @@ class LandingFaqSeeder extends Seeder
                 'keywords' => [
                     'custom build', 'custom-build', 'bespoke', 'own llm', 'what do you build', 'build me',
                     'build us', 'build for me', 'build for us', 'scope', 'proposal',
+                    'build my website', 'build a website', 'build websites', 'website build',
                 ],
-                'answer' => 'Eight things: agent go-live, cold outreach, one live view, booking, invoices, connecting your tools, inbox triage, and ongoing care. Each is quoted after a free 30-minute call — a written price within 48 hours, yours to keep, and you keep the code. No list price, because no two builds are the same. What would you want built?',
+                'answer' => 'We build to order: your website, agent go-live, cold outreach, email automation, booking, invoices, one live dashboard, connecting your tools, inbox triage — and ongoing care after. Take one, or hand us everything end to end. Each build is quoted after a free 30-minute call — a written price within 48 hours, and you keep the code. What would you want built?',
             ],
             [
                 // Placed ahead of 'Pricing' deliberately: first match wins, and
@@ -191,7 +192,7 @@ class LandingFaqSeeder extends Seeder
                 'category' => 'What it does',
                 'keywords' => [
                     'what do you do', 'what is this', 'what does the agent', 'how does it work', 'what can you do',
-                    'what is flowstack',
+                    'what is flowstack', 'what do you actually do', 'what does flowstack do',
                 ],
                 'answer' => 'Three things: chat that answers your website, outreach that finds you customers, and one dashboard of your numbers. The chat is free to start and live in about a minute; the rest we build around your tools. Which of the three is closest to what you need?',
             ],
@@ -226,7 +227,7 @@ class LandingFaqSeeder extends Seeder
                     // is safe — 'the link'/'send me the link' steal legitimate
                     // audit/privacy/terms link questions; those variants belong
                     // to the LLM path, which faq.md now grounds correctly.
-                    'give me the link',
+                    'give me the link', 'purchase', 'purchasing',
                 ],
                 'answer' => 'Create your account at app.flowstack.run/register — free to start: 1 agent, 250 credits a month, no card, no expiry. Then pick a role, upload your docs, paste one script tag, and you\'re live in about a minute. Paid plans start at €9 a month from the Billing page, cancel anytime. Want a hand with any of those steps?',
             ],
