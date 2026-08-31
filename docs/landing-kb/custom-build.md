@@ -12,13 +12,20 @@ same setup we run our own company on.
 Named services, each scoped to your stack:
 
 - **Agent go-live** — we load your knowledge, tune the voice, install it on your site
+- **Website build** — no site, or an old one? We build it, with the chat installed from day one
 - **Cold outreach** (lead generation / prospecting / cold email) — your own address, a checked list of companies that fit you, emails in your voice, replies handed to you
 - **One live view** — the numbers you rebuild by hand, pulled into one dashboard
 - **Booking** — booking, confirmation and reminders, no phone tag
 - **Invoices & documents** — made, sent and chased; the follow-up runs itself
 - **Connect your tools** — your CRM, sheets and inbox stop needing the same thing typed twice
 - **Inbox triage** — incoming mail sorted, labelled and routed automatically
+- **Email automation** — follow-ups, reminders and replies that send themselves, in your voice
 - **Ongoing care** — we watch what we built and fix it before you notice
+
+These are examples, not the boundary: anything a team does by hand every week
+is a candidate. And the whole thing can be taken end to end — Flowstack builds
+the website, runs the chat on it, automates the back office, and lands the
+numbers in one dashboard. One team, one quote, after the same free audit.
 
 ## What it costs
 
