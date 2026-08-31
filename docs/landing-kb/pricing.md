@@ -5,6 +5,17 @@ includes the full feature set — knowledge-base upload, transcript review, and
 lead routing into the real-time dashboard — and every paid plan can be
 cancelled anytime with no lock-in.
 
+## How to buy a paid plan
+
+Create your account at app.flowstack.run/register — that is the signup link,
+and it is free to start (no card). Paid plans are bought from the Billing page
+inside the dashboard once you have an account; there is no separate checkout
+link. Existing customers log in at app.flowstack.run/login.
+
+Someone asking where to buy, purchase, subscribe, check out, or get the link
+is asking for this: there is no separate purchase page, and the answer is
+always to create the account first and upgrade from Billing.
+
 ## Free — €0/month
 
 - 1 agent, any role
