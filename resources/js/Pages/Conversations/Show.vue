@@ -122,12 +122,18 @@ const citationChips = (citations) => {
 const hasTranscript = computed(() => !!props.conversation.transcript_id);
 const isEnded = computed(() => !!props.conversation.ended_at);
 
-const endUpstream = async () => {
-    if (!hasTranscript.value || isEnded.value) return;
+// Closing a chat is a teammate's call as much as the visitor's or the idle
+// timer's. It marks the conversation ended and stops the assistant answering;
+// the transcript, the lead and any rating are kept. The old gate on
+// transcript_id was left over from the days this force-ended an upstream
+// provider session — it no longer calls anything remote, and gating on it
+// meant a conversation without one could never be closed at all.
+const closeChat = async () => {
+    if (isEnded.value) return;
     const ok = await confirm({
-        title: 'End upstream session',
-        message: 'Force-end this session at the provider? The local conversation is preserved.',
-        buttonText: 'End upstream',
+        title: 'Close this chat?',
+        message: 'The visitor can start a new chat any time. The transcript, lead and rating are kept.',
+        buttonText: 'Close chat',
     });
     if (!ok) return;
     useForm({}).post(route('conversations.end-upstream', props.conversation.id), {
@@ -178,12 +184,12 @@ const deleteUpstream = async () => {
                         </Link>
                     </template>
                     <SecondaryButton
-                        v-if="hasTranscript && !isEnded"
+                        v-if="!isEnded"
                         type="button"
-                        @click="endUpstream"
-                        :title="'End the upstream session for transcript ' + conversation.transcript_id"
+                        @click="closeChat"
+                        title="Close this chat — the assistant stops answering and the transcript is kept"
                     >
-                        End upstream
+                        Close chat
                     </SecondaryButton>
                     <DangerButton type="button" @click="deleteUpstream">
                         Delete

@@ -476,6 +476,14 @@
     var TITLE = {!! json_encode($title) !!};
     var WELCOME = {!! json_encode($welcome) !!};
     var STARTERS = {!! json_encode(array_values((array) $starters)) !!};
+    // Closing an idle chat (config/runtime.php auto_close). The ASK is here,
+    // client-side and static — no model call, no credits — because only an open
+    // panel can be asked. The CLOSE is also enforced server-side by
+    // conversations:auto-close, which is what catches the visitor who simply
+    // closed the tab; no browser timer survives that.
+    var IDLE_NUDGE_MS = {!! json_encode(((int) config('runtime.auto_close.nudge_after_minutes', 30)) * 60000) !!};
+    var IDLE_CLOSE_MS = {!! json_encode(((int) config('runtime.auto_close.close_after_minutes', 120)) * 60000) !!};
+    var IDLE_NUDGE_TEXT = 'Anything else I can help with? I\'ll close this chat shortly — just reply and I\'ll pick it back up.';
     // TOKEN_KEY = stable browser identity (survives reset → groups a visitor's
     // chats for the home screen). SESSION_KEY = the current chat session id
     // (one runtime session + transcript row per chat; cleared on reset).
@@ -493,6 +501,10 @@
     var newChatBtn2 = document.getElementById('fs-newchat-2');
     var backBtn = document.getElementById('fs-back');
     var rated = false; // guards the post-chat rating prompt to once per conversation
+    var lastActivityAt = Date.now(); // idle clock: last message either side
+    var idleNudged = false;          // the "anything else?" line fires once per lull
+    var idleTimer = null;
+    var takeoverLive = false;        // a teammate is in the chat — never nudge or close
     var visitorId = null; // current chat session id
 
     // Auto-start for first-time visitors: someone who OPENS the widget should
@@ -837,8 +849,38 @@
             teamJoinedShown = true;
             addSystem('A teammate has joined the conversation.');
         }
+        takeoverLive = !!body.takeover;
         if ((body.handoff || body.takeover) && !pollTimer) startPolling();
-        if (body.ended) stopPolling();
+        if (body.ended) { stopPolling(); stopIdleWatch(); }
+    }
+
+    // --- idle close -----------------------------------------------------------
+    // Two stages, matching the server's: ask, then close. Any message from
+    // either side resets the clock, and a live teammate suspends it entirely.
+    function markActivity() {
+        lastActivityAt = Date.now();
+        idleNudged = false;
+    }
+
+    function startIdleWatch() {
+        if (idleTimer) return;
+        idleTimer = setInterval(function () {
+            if (rated || !visitorId || takeoverLive) return;
+            var idle = Date.now() - lastActivityAt;
+            if (!idleNudged && idle >= IDLE_NUDGE_MS) {
+                idleNudged = true;
+                addMsg('agent', IDLE_NUDGE_TEXT);
+                return;
+            }
+            if (idle >= IDLE_CLOSE_MS) {
+                stopIdleWatch();
+                showRating(true);
+            }
+        }, 30000);
+    }
+
+    function stopIdleWatch() {
+        if (idleTimer) { clearInterval(idleTimer); idleTimer = null; }
     }
 
     function startPolling() {
@@ -864,6 +906,7 @@
                     addSystem('A teammate has joined the conversation.');
                 }
                 addMsg('agent', m.text);
+                markActivity();
             });
             if (r.body.ended) { stopPolling(); return; }
             if (!r.body.handoff && !r.body.takeover) stopPolling();
@@ -889,6 +932,8 @@
             }
             visitorId = r.body.visitor_id;
             lsSet(SESSION_KEY, visitorId);
+            markActivity();
+            startIdleWatch();
 
             var resumed = r.body.resumed && Array.isArray(r.body.transcript) && r.body.transcript.length;
             if (resumed) {
@@ -1017,6 +1062,7 @@
         // Tapping a chip should clear any other lingering chip groups.
         Array.prototype.slice.call(thread.querySelectorAll('.quick')).forEach(function (q) { q.remove(); });
         addMsg('user', text);
+        markActivity();
         input.value = '';
         sendBtn.disabled = true;
         var typing = addTyping();
@@ -1031,6 +1077,7 @@
                 addSystem(r.body.error || 'Could not deliver the message.');
             } else {
                 renderTraces(r.body.traces);
+                markActivity();
                 handleHandoffState(r.body);
                 // Runtime reached a terminal flow state → prompt for a rating,
                 // then close the panel once they're done (autoEnded = true).

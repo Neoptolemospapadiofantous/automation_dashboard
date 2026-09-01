@@ -62,3 +62,9 @@ Schedule::exec('bash scripts/agents/system_check.sh')->everySixHours();
 // release dir on Forge and dies on every deploy) so /api/findings serves
 // the real record; prunes to a bounded history. Idempotent per run.
 Schedule::command('findings:ingest')->everyFifteenMinutes();
+
+// A chat nobody closes stays open forever — that is what fills the takeover
+// queue with conversations no one is waiting on. Closes chats idle past
+// runtime.auto_close.close_after_minutes; never touches one under human
+// takeover, and gives an unanswered handoff a much longer fuse.
+Schedule::command('conversations:auto-close')->everyTenMinutes()->withoutOverlapping();

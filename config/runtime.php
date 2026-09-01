@@ -241,6 +241,32 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Closing an idle chat
+    |--------------------------------------------------------------------------
+    |
+    | A chat that is never closed stays "active" forever, which is what fills
+    | the takeover queue with conversations nobody is waiting on. Two stages:
+    |
+    | nudge_after_minutes: the WIDGET asks "anything else?" after this much
+    |   visitor silence. Client-side and static — no model call, no credits,
+    |   for a visitor who may already have left. Only an open panel can be
+    |   asked, which is the only case where asking means anything.
+    | close_after_minutes: the SERVER closes the conversation after this much
+    |   silence (conversations:auto-close). Server-side because the commonest
+    |   way a chat ends is the visitor closing the tab, and no browser timer
+    |   survives that.
+    | handoff_close_after_minutes: a visitor who asked for a human and has not
+    |   been taken over yet gets a much longer fuse — closing that in two hours
+    |   hides a real request. A chat already under takeover is NEVER auto-closed.
+    */
+    'auto_close' => [
+        'nudge_after_minutes' => (int) env('CHAT_NUDGE_AFTER_MINUTES', 30),
+        'close_after_minutes' => (int) env('CHAT_CLOSE_AFTER_MINUTES', 120),
+        'handoff_close_after_minutes' => (int) env('CHAT_HANDOFF_CLOSE_AFTER_MINUTES', 1440),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Automations (agent → n8n webhook tool-call)
     |--------------------------------------------------------------------------
     |
