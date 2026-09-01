@@ -12,7 +12,7 @@ same setup we run our own company on.
 Named services, each scoped to your stack:
 
 - **Agent go-live** — we load your knowledge, tune the voice, install it on your site
-- **Website build** — no site, or an old one? We build it, with the chat installed from day one
+- **Website build** — no site, or an old one? We build it, with the chat installed from day one. Full details at flowstack.run/website-build — fast brochure-style sites (up to ~6 pages) in English or Greek; a shop or portal is quoted as its own build
 - **Cold outreach** (lead generation / prospecting / cold email) — your own address, a checked list of companies that fit you, emails in your voice, replies handed to you
 - **One live view** — the numbers you rebuild by hand, pulled into one dashboard
 - **Booking** — booking, confirmation and reminders, no phone tag
