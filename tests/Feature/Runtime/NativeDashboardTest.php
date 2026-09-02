@@ -34,7 +34,7 @@ class NativeDashboardTest extends TestCase
 
     public function test_chat_launch_uses_native_engine_and_bills_credits(): void
     {
-        Http::fake(['api.anthropic.com/*' => Http::response($this->text('Hello! What brings you here?'))]);
+        Http::fake(['api.openai.com/v1/chat/completions' => Http::response($this->text('Hello! What brings you here?'))]);
 
         $user = $this->userWithNativeAgent();
         $user->currentTeam->forceFill(['credit_balance' => 100])->save();
@@ -46,15 +46,15 @@ class NativeDashboardTest extends TestCase
             ->assertJsonPath('ended', false)
             ->assertJsonPath('captured', []);
 
-        // 1 user-equivalent + 1 reply = 22 credits (2 x haiku's 11).
-        $this->assertSame(78, $user->currentTeam->fresh()->credit_balance);
+        // 1 user-equivalent + 1 reply = 2 credits (2 x Core's 1).
+        $this->assertSame(98, $user->currentTeam->fresh()->credit_balance);
         Http::assertNotSent(fn (Request $r) => str_contains($r->url(), 'voiceflow.com'));
     }
 
     public function test_chat_interact_records_conversation_and_replies(): void
     {
         Http::fake([
-            'api.anthropic.com/*' => Http::sequence()
+            'api.openai.com/v1/chat/completions' => Http::sequence()
                 ->push($this->text('Hi!'))
                 ->push($this->text('We integrate with everything.')),
         ]);
@@ -163,7 +163,7 @@ class NativeDashboardTest extends TestCase
     {
         $this->fakeEmbeddings();
         Http::fake([
-            'api.anthropic.com/*' => Http::response($this->text('The Starter plan is $99/month.')),
+            'api.openai.com/v1/chat/completions' => Http::response($this->text('The Starter plan is $99/month.')),
             // openai fake already registered by fakeEmbeddings (Http::fake merges)
         ]);
 
@@ -182,7 +182,7 @@ class NativeDashboardTest extends TestCase
     public function test_chat_interact_stream_emits_trace_and_summary_and_bills(): void
     {
         Http::fake([
-            'api.anthropic.com/*' => Http::response($this->text('Streamed reply!')),
+            'api.openai.com/v1/chat/completions' => Http::response($this->text('Streamed reply!')),
         ]);
 
         $user = $this->userWithNativeAgent();
@@ -200,12 +200,12 @@ class NativeDashboardTest extends TestCase
         $this->assertStringContainsString('event: trace', $body);
         $this->assertStringContainsString('Streamed reply!', $body);
         // …then a summary frame with the billing total: 2 messages
-        // (1 user + 1 reply) x haiku's 11 credits = 22.
+        // (1 user + 1 reply) x Core's 1 credit = 2.
         $this->assertStringContainsString('event: summary', $body);
-        $this->assertStringContainsString('"messages_billed":22', $body);
+        $this->assertStringContainsString('"messages_billed":2', $body);
 
         // Billing + transcript recording ran after the stream.
-        $this->assertSame(78, $user->currentTeam->fresh()->credit_balance);
+        $this->assertSame(98, $user->currentTeam->fresh()->credit_balance);
         $this->assertDatabaseHas('messages', ['role' => 'agent', 'text' => 'Streamed reply!']);
     }
 
@@ -257,17 +257,17 @@ class NativeDashboardTest extends TestCase
      */
     private function text(string $text): array
     {
+        // Flowstack Core — the tier a platform-billed agent runs on.
         return [
-            'content' => [['type' => 'text', 'text' => $text]],
-            'stop_reason' => 'end_turn',
-            'usage' => ['input_tokens' => 10, 'output_tokens' => 10],
+            'choices' => [['message' => ['role' => 'assistant', 'content' => $text], 'finish_reason' => 'stop']],
+            'usage' => ['prompt_tokens' => 10, 'completion_tokens' => 10],
         ];
     }
 
     private function fakeEmbeddings(): void
     {
         Http::fake([
-            'api.openai.com/*' => function (Request $request) {
+            'api.openai.com/v1/embeddings' => function (Request $request) {
                 $inputs = (array) $request->data()['input'];
                 $data = [];
                 foreach (array_values($inputs) as $i => $text) {

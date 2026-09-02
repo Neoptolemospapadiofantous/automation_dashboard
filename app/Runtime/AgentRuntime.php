@@ -2,6 +2,7 @@
 
 namespace App\Runtime;
 
+use App\Billing\OwnKey;
 use App\Models\Agent;
 use App\Models\AgentConfigVersion;
 use App\Runtime\Contracts\Runtime;
@@ -171,10 +172,16 @@ class AgentRuntime implements Runtime
         // Check the provider THIS agent's published tier actually uses — not a
         // hard-coded Anthropic. A Gemini-tier agent is dead without a Gemini
         // key even when the Anthropic key is present (and vice versa).
-        $tier = AgentConfigVersion::publishedTier($agent->id);
+        $ownKey = app(OwnKey::class);
+        $tier = $ownKey->effectiveTier($agent);
         $provider = (string) config("runtime.tiers.{$tier}.provider", 'anthropic');
 
-        if (! LlmRouter::providerAvailable($provider)) {
+        // A premium engine runs on the customer's own key, so the platform
+        // holding none says nothing about whether this agent can answer —
+        // prod deliberately carries no Anthropic key at all.
+        $covered = $ownKey->coversAgent($agent);
+
+        if (! $covered && ! LlmRouter::providerAvailable($provider)) {
             $env = self::PROVIDER_KEY_ENV[$provider] ?? strtoupper($provider).'_API_KEY';
 
             return [

@@ -8,7 +8,6 @@ use App\Billing\Plan;
 use App\Models\Agent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -22,14 +21,7 @@ class BillingCreditMeterTest extends TestCase
 
     private function fakeLlm(): void
     {
-        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
-        Http::fake([
-            'api.anthropic.com/*' => Http::response([
-                'content' => [['type' => 'text', 'text' => 'Hi!']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 5, 'output_tokens' => 5],
-            ], 200),
-        ]);
+        $this->fakeCore([['text' => 'Hi!', 'in' => 5, 'out' => 5]]);
     }
 
     public function test_consume_decrements_balance_and_writes_audit_row(): void
@@ -87,8 +79,8 @@ class BillingCreditMeterTest extends TestCase
             ->assertOk();
 
         // 1 user message + 1 agent reply (the fake returns 1 text trace)
-        // = 2 messages x haiku's 11 credits = 22 credits.
-        $this->assertSame($start - 22, $user->currentTeam->fresh()->credit_balance);
+        // = 2 messages x Flowstack Core's 1 credit = 2 credits.
+        $this->assertSame($start - 2, $user->currentTeam->fresh()->credit_balance);
     }
 
     public function test_renewal_resets_monthly_but_topups_roll_over(): void

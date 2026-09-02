@@ -12,8 +12,8 @@ use Tests\TestCase;
 
 /**
  * The two CLI surfaces on the runtime: agents:terminal (single agent) and
- * agents:collab (multi-agent round-table). Anthropic is faked at the HTTP
- * layer so no turn hits the network.
+ * agents:collab (multi-agent round-table). Flowstack Core — the engine every
+ * plan includes — is faked at the HTTP layer so no turn hits the network.
  */
 class AgentsCommandsTest extends TestCase
 {
@@ -22,17 +22,8 @@ class AgentsCommandsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config([
-            'runtime.llm.anthropic.api_key' => 'sk-anthropic-test',
-            'runtime.embeddings.openai_api_key' => 'sk-openai-test',
-        ]);
-        Http::fake([
-            'api.anthropic.com/*' => Http::response([
-                'content' => [['type' => 'text', 'text' => 'CANNED REPLY']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 10, 'output_tokens' => 5],
-            ]),
-        ]);
+        config(['runtime.embeddings.openai_api_key' => 'sk-openai-test']);
+        $this->fakeCore([['text' => 'CANNED REPLY', 'in' => 10, 'out' => 5]]);
     }
 
     protected function tearDown(): void
@@ -107,7 +98,7 @@ class AgentsCommandsTest extends TestCase
                 'content' => [['type' => 'text', 'text' => 'x']], 'stop_reason' => 'end_turn',
                 'usage' => ['input_tokens' => 1, 'output_tokens' => 1],
             ]),
-            'api.openai.com/*' => function ($request) {
+            'api.openai.com/v1/embeddings' => function ($request) {
                 $data = [];
                 foreach (array_values((array) $request->data()['input']) as $i => $text) {
                     $data[] = ['index' => $i, 'embedding' => [1.0, 0.0, 0.0, 0.0]];
@@ -141,7 +132,7 @@ class AgentsCommandsTest extends TestCase
     {
         config(['runtime.embeddings.dimensions' => 4]);
         Http::fake([
-            'api.openai.com/*' => function ($request) {
+            'api.openai.com/v1/embeddings' => function ($request) {
                 $data = [];
                 foreach (array_values((array) $request->data()['input']) as $i => $text) {
                     $data[] = ['index' => $i, 'embedding' => [1.0, 0.0, 0.0, 0.0]];

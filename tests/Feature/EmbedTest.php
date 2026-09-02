@@ -60,14 +60,7 @@ class EmbedTest extends TestCase
         $agent = $this->makeAgent('active');
 
         // Fake the LLM at the network layer.
-        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
-        Http::fake([
-            'api.anthropic.com/*' => Http::response([
-                'content' => [['type' => 'text', 'text' => 'Welcome!']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 5, 'output_tokens' => 5],
-            ], 200),
-        ]);
+        $this->fakeCore([['text' => 'Welcome!', 'in' => 5, 'out' => 5]]);
 
         $response = $this->postJson("/embed/{$agent->slug}/launch");
 
@@ -108,14 +101,7 @@ class EmbedTest extends TestCase
         $agent = $this->makeAgent('active');
         $agent->team->forceFill(['credit_balance' => 100])->save();
 
-        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
-        Http::fake([
-            'api.anthropic.com/*' => Http::response([
-                'content' => [['type' => 'text', 'text' => 'Got it!']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 5, 'output_tokens' => 5],
-            ], 200),
-        ]);
+        $this->fakeCore([['text' => 'Got it!', 'in' => 5, 'out' => 5]]);
 
         $this->postJson("/embed/{$agent->slug}/interact", [
             'visitor_id' => 'embed-test',
@@ -123,8 +109,8 @@ class EmbedTest extends TestCase
         ])->assertOk()
             ->assertJsonStructure(['traces']);
 
-        // (1 user message + 1 reply) × haiku multiplier 11 = 22 credits.
-        $this->assertSame(78, $agent->team->fresh()->credit_balance);
+        // (1 user message + 1 reply) × Flowstack Core's 1 credit = 2.
+        $this->assertSame(98, $agent->team->fresh()->credit_balance);
     }
 
     public function test_canned_answer_short_circuits_without_llm_or_credits(): void
@@ -166,19 +152,12 @@ class EmbedTest extends TestCase
         // The visitor's follow-up repeats the trigger keyword; serving the
         // identical paragraph again reads as ignoring them — this turn must
         // fall through to the LLM instead.
-        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
-        Http::fake([
-            'api.anthropic.com/*' => Http::response([
-                'content' => [['type' => 'text', 'text' => 'It depends on the tier you pick.']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 5, 'output_tokens' => 5],
-            ], 200),
-        ]);
+        $this->fakeCore([['text' => 'It depends on the tier you pick.', 'in' => 5, 'out' => 5]]);
         $this->postJson("/embed/{$agent->slug}/interact", [
             'visitor_id' => 'embed-canned-repeat',
             'message' => 'ok but how much does it cost for my use case?',
         ])->assertOk()->assertJsonPath('traces.0.payload.canned', null);
-        Http::assertSent(fn ($request) => str_contains($request->url(), 'anthropic'));
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'openai'));
     }
 
     public function test_escalating_canned_answer_notifies_owner_and_flags_handoff(): void
@@ -241,23 +220,16 @@ class EmbedTest extends TestCase
             ['category' => 'Pricing', 'keywords' => ['cost'], 'answer' => 'From $99.'],
         ]);
 
-        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
-        Http::fake([
-            'api.anthropic.com/*' => Http::response([
-                'content' => [['type' => 'text', 'text' => 'We integrate with Slack!']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 5, 'output_tokens' => 5],
-            ], 200),
-        ]);
+        $this->fakeCore([['text' => 'We integrate with Slack!', 'in' => 5, 'out' => 5]]);
 
         $this->postJson("/embed/{$agent->slug}/interact", [
             'visitor_id' => 'embed-fallthrough',
             'message' => 'do you integrate with Slack?',
         ])->assertOk();
 
-        Http::assertSent(fn ($request) => str_contains($request->url(), 'anthropic'));
-        // LLM turn billed normally: (1 + 1) × 11.
-        $this->assertSame(78, $agent->team->fresh()->credit_balance);
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'openai'));
+        // LLM turn billed normally: (1 + 1) × Core's 1 credit.
+        $this->assertSame(98, $agent->team->fresh()->credit_balance);
     }
 
     public function test_launch_exposes_canned_chips(): void
@@ -268,14 +240,7 @@ class EmbedTest extends TestCase
             ['category' => 'Features', 'keywords' => ['feature'], 'answer' => 'Lots.'],
         ]);
 
-        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
-        Http::fake([
-            'api.anthropic.com/*' => Http::response([
-                'content' => [['type' => 'text', 'text' => 'Hi!']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 1, 'output_tokens' => 1],
-            ], 200),
-        ]);
+        $this->fakeCore([['text' => 'Hi!', 'in' => 1, 'out' => 1]]);
 
         $this->postJson("/embed/{$agent->slug}/launch", ['visitor_id' => 'embed-chips'])
             ->assertOk()

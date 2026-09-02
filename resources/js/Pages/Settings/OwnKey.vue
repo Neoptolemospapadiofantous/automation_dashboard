@@ -18,7 +18,7 @@ const props = defineProps({
 const form = useForm({ provider: props.providers[0] ?? 'anthropic', api_key: '' });
 const removing = ref(null);
 
-const label = (p) => ({ anthropic: 'Anthropic (Claude)', openai: 'OpenAI (GPT)' }[p] ?? p);
+const label = (p) => ({ anthropic: 'Anthropic (Claude)', openai: 'OpenAI (GPT)', google: 'Google (Gemini)' }[p] ?? p);
 
 // Open by default for someone with no key yet — the walkthrough is the whole
 // point for them — and collapsed once they've connected one.
@@ -44,6 +44,13 @@ const guides = {
         consumerSite: 'chatgpt.com',
         keyPath: 'API keys → Create new secret key',
         prefix: 'sk-',
+    },
+    google: {
+        console: { href: 'https://aistudio.google.com/apikey', label: 'aistudio.google.com' },
+        notInPlan: 'Google AI Pro',
+        consumerSite: 'gemini.google.com',
+        keyPath: 'Get API key → Create API key',
+        prefix: 'AIza',
     },
 };
 const guide = computed(() => guides[form.provider] ?? guides.anthropic);
@@ -84,13 +91,14 @@ const remove = (id) => {
 
         <div class="py-6">
             <div class="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
-                <!-- Not on Operator: explain the trade rather than just refusing. -->
+                <!-- Below Growth: explain the trade rather than just refusing. -->
                 <div v-if="!allowed" class="rounded-none border border-border-line bg-bg-elev p-6">
-                    <h2 class="text-base font-semibold text-ink">Available on Operator</h2>
+                    <h2 class="text-base font-semibold text-ink">Available on Growth and above</h2>
                     <p class="mt-2 text-sm text-ink-dim">
-                        You're on {{ planLabel }}. On Operator you can connect your own Anthropic or
-                        OpenAI key — chat then bills to your provider account instead of your
-                        credits, with a monthly message allowance in place of the credit balance.
+                        You're on {{ planLabel }}. From Growth up you can connect your own Anthropic,
+                        OpenAI or Google key — the premium engines then run on your provider account
+                        instead of your credits, with a monthly message allowance in place of the
+                        credit balance.
                     </p>
                     <a :href="route('billing.index')" class="mt-4 inline-block">
                         <PrimaryButton class="min-h-[2.25rem]">See plans</PrimaryButton>

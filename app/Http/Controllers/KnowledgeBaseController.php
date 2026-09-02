@@ -5,12 +5,12 @@ namespace App\Http\Controllers;
 use App\Authorization\Role;
 use App\Billing\CreditMeter;
 use App\Billing\Exceptions\OutOfCredits;
+use App\Billing\OwnKey;
 use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Agent;
-use App\Models\AgentConfigVersion;
 use App\Models\Team;
 use App\Runtime\Contracts\KnowledgeStore;
-use App\Runtime\LLM\AnthropicClient;
+use App\Runtime\LLM\LlmRouter;
 use App\Runtime\Models\KbDocument;
 use App\Runtime\Models\KbGap;
 use App\Support\PublicWebPage;
@@ -313,7 +313,7 @@ class KnowledgeBaseController extends Controller
             if ($team instanceof Team) {
                 app(CreditMeter::class)->consume(
                     team: $team,
-                    amount: AgentConfigVersion::creditsPerMessage($agent->id),
+                    amount: app(OwnKey::class)->effectiveCreditsPerMessage($agent),
                     agentId: $agent->id,
                     meta: ['kb_query' => true],
                 );
@@ -328,9 +328,20 @@ class KnowledgeBaseController extends Controller
             $answer = null;
             if ($chunks !== []) {
                 $context = implode("\n\n", array_map(fn (array $c) => '('.$c['document_title'].') '.$c['chunk'], $chunks));
-                $result = app(AnthropicClient::class)->complete(
+                // Runs on whatever engine actually serves this agent — the
+                // team's own key on a premium tier, Flowstack Core otherwise.
+                // Never a hard-coded premium client: those are byok_only and
+                // the platform holds no key for them.
+                $ownKey = app(OwnKey::class);
+                $tier = $ownKey->effectiveTier($agent);
+                $provider = (string) config("runtime.tiers.{$tier}.provider", 'openai');
+                $customerKey = $ownKey->coversAgent($agent)
+                    ? $ownKey->keyFor($agent->team, $provider)?->api_key
+                    : null;
+                $result = app(LlmRouter::class)->clientFor($provider, $customerKey)->complete(
                     system: 'Answer the question using ONLY the provided context. If the context does not contain the answer, say so plainly. Be concise.',
                     messages: [['role' => 'user', 'content' => "Context:\n{$context}\n\nQuestion: {$data['question']}"]],
+                    model: (string) config("runtime.tiers.{$tier}.model"),
                 );
                 $answer = $result->text;
             }

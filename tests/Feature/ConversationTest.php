@@ -58,6 +58,10 @@ class ConversationTest extends TestCase
     public function test_interact_persists_user_and_agent_messages(): void
     {
         Http::fake([
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'Nice to meet you!'], 'finish_reason' => 'stop']],
+                'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 50],
+            ]),
             'api.anthropic.com/*' => Http::response([
                 'content' => [['type' => 'text', 'text' => 'Nice to meet you!']],
                 'stop_reason' => 'end_turn',

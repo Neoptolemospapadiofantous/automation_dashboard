@@ -165,9 +165,10 @@ class LandingFaqSeeder extends Seeder
                 'category' => 'Your own key',
                 'keywords' => [
                     'own key', 'my own key', 'own api key', 'own openai key',
-                    'own anthropic key', 'own provider key', 'bring your own', 'byok',
+                    'own anthropic key', 'own provider key', 'own google key',
+                    'own gemini key', 'bring your own', 'byok',
                 ],
-                'answer' => 'Yes, on the €39 Operator plan. Connect your own OpenAI or Anthropic key and your chat runs on your provider account: you pay them for the model, we charge no credits, and you get 25,000 messages a month. We store the key encrypted and stop using it the moment you disconnect it. Want me to show you where to add it?',
+                'answer' => 'Yes, from €19 Growth up. Every plan includes Flowstack Core on credits. The premium engines — Claude, GPT-5, Gemini — run on a key you connect, so you pay the provider and we charge no credits for those replies. Growth covers 10,000 messages a month on your key, Operator 25,000. We store it encrypted and stop using it the moment you disconnect. Want me to show you where to add it?',
             ],
             [
                 // Sits after "Your own key" so "can I use my own API key?" keeps

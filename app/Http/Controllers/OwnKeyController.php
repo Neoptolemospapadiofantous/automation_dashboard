@@ -23,7 +23,7 @@ use Inertia\Response;
 class OwnKeyController extends Controller
 {
     /** Providers a customer may supply a key for. Google is absent: no BYOK path exists for it. */
-    private const PROVIDERS = ['anthropic', 'openai'];
+    private const PROVIDERS = ['anthropic', 'openai', 'google'];
 
     public function __construct(private readonly OwnKey $ownKey) {}
 

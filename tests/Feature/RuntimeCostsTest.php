@@ -24,6 +24,10 @@ class RuntimeCostsTest extends TestCase
         parent::setUp();
         config(['runtime.llm.anthropic.api_key' => 'sk-test']);
         Http::fake([
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'Hi there!'], 'finish_reason' => 'stop']],
+                'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 50],
+            ]),
             'api.anthropic.com/*' => Http::response([
                 'content' => [['type' => 'text', 'text' => 'Hi there!']],
                 'stop_reason' => 'end_turn',
@@ -44,8 +48,8 @@ class RuntimeCostsTest extends TestCase
         $row = RuntimeUsage::where('team_id', $user->currentTeam->id)->first();
         $this->assertNotNull($row);
         $this->assertSame(2, $row->turns);
-        $this->assertSame(240, $row->tokens_in);  // 120 × 2 turns
-        $this->assertSame(90, $row->tokens_out);  // 45 × 2 turns
+        $this->assertSame(200, $row->tokens_in);  // 100 × 2 turns
+        $this->assertSame(100, $row->tokens_out); // 50 × 2 turns
         $this->assertSame(now()->toDateString(), $row->date->toDateString());
     }
 
@@ -87,9 +91,9 @@ class RuntimeCostsTest extends TestCase
         $this->postJson("/embed/{$agent->slug}/launch")->assertOk();
         $this->assertSame(50, $user->currentTeam->fresh()->credit_balance);
 
-        // Third greeting of the day: debited at haiku's 11 credits/message.
+        // Third greeting of the day: debited at Core's 1 credit/message.
         $this->postJson("/embed/{$agent->slug}/launch")->assertOk();
-        $this->assertSame(39, $user->currentTeam->fresh()->credit_balance);
+        $this->assertSame(49, $user->currentTeam->fresh()->credit_balance);
     }
 
     public function test_over_cap_greeting_with_zero_balance_is_rejected(): void
@@ -98,8 +102,8 @@ class RuntimeCostsTest extends TestCase
 
         $user = $this->owner();
         $agent = $user->currentTeam->currentAgent;
-        // Exactly one greeting's worth (haiku bills 11 credits/message).
-        $user->currentTeam->forceFill(['credit_balance' => 11])->save();
+        // Exactly one greeting's worth (Core bills 1 credit/message).
+        $user->currentTeam->forceFill(['credit_balance' => 1])->save();
 
         // Cap 0 → every greeting debits. First eats the last credits…
         $this->postJson("/embed/{$agent->slug}/launch")->assertOk();

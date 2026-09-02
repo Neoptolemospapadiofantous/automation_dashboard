@@ -244,6 +244,10 @@ class HumanTakeoverTest extends TestCase
         // canned=true and never touch HTTP).
         config(['runtime.llm.anthropic.api_key' => 'sk-anthropic-test']);
         Http::fake([
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'Got it — the team will call you.'], 'finish_reason' => 'stop']],
+                'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 50],
+            ]),
             'api.anthropic.com/*' => Http::response([
                 'content' => [['type' => 'text', 'text' => 'Got it — the team will call you.']],
                 'stop_reason' => 'end_turn',

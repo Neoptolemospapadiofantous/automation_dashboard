@@ -27,6 +27,10 @@ class AgentConversationTest extends TestCase
             'runtime.embeddings.openai_api_key' => 'sk-openai-test',
         ]);
         Http::fake([
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'CANNED REPLY'], 'finish_reason' => 'stop']],
+                'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 50],
+            ]),
             'api.anthropic.com/*' => Http::response([
                 'content' => [['type' => 'text', 'text' => 'CANNED REPLY']],
                 'stop_reason' => 'end_turn',

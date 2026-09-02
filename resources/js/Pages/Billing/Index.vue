@@ -421,7 +421,7 @@ function openPortal() {
                             </div>
                         </div>
                         <div class="mt-3 text-xs text-ink-dim">
-                            Each user message and each agent reply consumes conversation credits — 1 credit on ChatGPT Nano, more on smarter models (see the Versions page). Your monthly allowance resets on renewal; purchased top-up credits roll over until used.
+                            Each user message and each agent reply consumes 1 conversation credit on Flowstack Core, the engine included in every plan. The premium engines run on your own provider key instead of credits (Growth and above — see the Versions page). Your monthly allowance resets on renewal; purchased top-up credits roll over until used.
                         </div>
                         <div v-if="billing?.allows_topups" class="mt-4">
                             <PrimaryButton type="button" @click="openTopup">

@@ -6,6 +6,7 @@ use App\Models\Agent;
 use App\Models\AgentConfigVersion;
 use App\Models\Team;
 use App\Models\TeamProviderKey;
+use App\Runtime\LLM\LlmRouter;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -98,15 +99,80 @@ class OwnKey
     }
 
     /**
-     * Credits a chat turn should cost for this agent — 0 on BYOK, otherwise
-     * the tier's normal price. Debit sites call this instead of reading
-     * creditsPerMessage directly, so the zeroing lives in one place.
+     * The tier a turn ACTUALLY runs on, as opposed to the one the customer
+     * picked on the Versions page.
+     *
+     * Premium engines are BYOK-only (config `byok_only`): platform credits
+     * never buy Claude or Gemini. When an agent is published on one of them
+     * and the team's key cannot carry the turn — plan below Growth, no key,
+     * a revoked key, or the monthly cap reached — it degrades to Flowstack
+     * Core rather than failing. A revoked key mid-month must never take a
+     * customer's widget off the air; it just moves them back to Core.
+     *
+     * publishedTier() stays "what they chose" so the Versions page keeps
+     * showing their selection; this is "what we will run and bill".
+     */
+    public function effectiveTier(Agent $agent): string
+    {
+        $tier = AgentConfigVersion::publishedTier($agent->id);
+
+        if (! (bool) config("runtime.tiers.{$tier}.byok_only", false)) {
+            return $tier;
+        }
+
+        return $this->coversAgent($agent) ? $tier : $this->platformTier();
+    }
+
+    /**
+     * The cheapest tier platform credits can actually buy — the landing spot
+     * when a premium engine has nothing to run on. Never returns a BYOK-only
+     * tier, so the fallback cannot itself be unrunnable: the configured
+     * default when that is billable, otherwise the first billable tier.
+     */
+    public function platformTier(): string
+    {
+        $default = AgentConfigVersion::defaultTier();
+        if (! (bool) config("runtime.tiers.{$default}.byok_only", false)) {
+            return $default;
+        }
+
+        // Prefer one we can actually reach — falling back to a tier whose
+        // provider has no key would trade a BYOK dead end for a dead engine.
+        foreach ((array) config('runtime.tiers') as $key => $tier) {
+            if (($tier['byok_only'] ?? false)) {
+                continue;
+            }
+            if (LlmRouter::providerAvailable((string) ($tier['provider'] ?? 'anthropic'))) {
+                return (string) $key;
+            }
+        }
+
+        return $default;
+    }
+
+    /**
+     * Credits per message for the tier this agent will actually run on.
+     * Non-chat LLM work (KB answers, agent-to-agent) bills at this rate —
+     * it runs on the platform key, so BYOK does not zero it.
+     */
+    public function effectiveCreditsPerMessage(Agent $agent): int
+    {
+        $tier = $this->effectiveTier($agent);
+
+        return max(1, (int) config("runtime.tiers.{$tier}.credits_per_message", 1));
+    }
+
+    /**
+     * Credits a chat turn should cost for this agent — 0 when the customer's
+     * own key carries it, otherwise the effective tier's price. Debit sites
+     * call this instead of reading creditsPerMessage directly, so the
+     * zeroing lives in one place.
      */
     public function creditsForChat(Agent $agent): int
     {
         return $this->coversAgent($agent)
             ? 0
-            : AgentConfigVersion::creditsPerMessage($agent->id);
+            : $this->effectiveCreditsPerMessage($agent);
     }
 
     /**
@@ -137,6 +203,9 @@ class OwnKey
                 'openai' => Http::timeout(15)
                     ->withToken($apiKey)
                     ->get(rtrim((string) config('runtime.llm.openai.base_url', 'https://api.openai.com'), '/').'/v1/models'),
+                'google' => Http::timeout(15)
+                    ->withHeaders(['x-goog-api-key' => $apiKey])
+                    ->get(rtrim((string) config('runtime.llm.google.base_url', 'https://generativelanguage.googleapis.com'), '/').'/v1beta/models'),
                 default => null,
             };
         } catch (\Throwable $e) {

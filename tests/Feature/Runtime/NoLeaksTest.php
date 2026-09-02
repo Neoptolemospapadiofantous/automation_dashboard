@@ -151,7 +151,7 @@ class NoLeaksTest extends TestCase
             'runtime.embeddings.dimensions' => 4,
         ]);
         Http::fake([
-            'api.openai.com/*' => function (ClientRequest $request) {
+            'api.openai.com/v1/embeddings' => function (ClientRequest $request) {
                 $inputs = (array) $request->data()['input'];
                 $data = [];
                 foreach (array_values($inputs) as $i => $text) {

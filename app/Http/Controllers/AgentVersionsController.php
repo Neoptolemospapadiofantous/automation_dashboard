@@ -75,10 +75,17 @@ class AgentVersionsController extends Controller
                 'provider' => $provider,
                 'credits_per_message' => (int) ($tier['credits_per_message'] ?? 1),
                 // Greyed out in the UI until the provider's API key is set.
-                'available' => LlmRouter::providerAvailable($provider),
+                'available' => LlmRouter::providerAvailable($provider) || ($tier['byok_only'] ?? false),
                 'own_key' => $byokTeam instanceof Team
                     && $ownKey->keyFor($byokTeam, $provider) !== null
                     && $ownKey->withinCap($byokTeam),
+                // Premium engines are BYOK-only: platform credits never buy
+                // them, so a team without a usable key for this provider
+                // cannot select the tier at all.
+                'byok_only' => (bool) ($tier['byok_only'] ?? false),
+                'selectable' => ($tier['byok_only'] ?? false)
+                    ? ($byokTeam instanceof Team && $ownKey->keyFor($byokTeam, $provider) !== null)
+                    : LlmRouter::providerAvailable($provider),
             ];
         }
 
@@ -217,12 +224,25 @@ class AgentVersionsController extends Controller
      */
     protected function validateConfig(Request $request): array
     {
-        // Only tiers whose provider key is configured are selectable.
+        // Selectable = the provider is configured AND, for a premium
+        // (BYOK-only) engine, this team holds a usable key for it. Platform
+        // credits never buy Claude or Gemini, so offering them to a team
+        // without a key would sell something we will not run.
+        $ownKey = app(OwnKey::class);
+        $team = $request->user()?->currentTeam;
         $tierKeys = [];
         foreach ((array) config('runtime.tiers') as $key => $tier) {
-            if (LlmRouter::providerAvailable((string) ($tier['provider'] ?? 'anthropic'))) {
-                $tierKeys[] = $key;
+            $provider = (string) ($tier['provider'] ?? 'anthropic');
+            if (($tier['byok_only'] ?? false)) {
+                // Reached with the team's own key; the platform's own key is
+                // irrelevant (and in production, absent).
+                if (! ($team instanceof Team && $ownKey->keyFor($team, $provider) !== null)) {
+                    continue;
+                }
+            } elseif (! LlmRouter::providerAvailable($provider)) {
+                continue;
             }
+            $tierKeys[] = $key;
         }
 
         $data = $request->validate([

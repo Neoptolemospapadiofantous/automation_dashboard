@@ -7,7 +7,6 @@ use App\Models\Lead;
 use App\Models\User;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\Contracts\Runtime;
-use App\Runtime\LLM\SystemPrompt;
 use App\Runtime\Models\RuntimeSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -49,7 +48,7 @@ class DialogPathTest extends TestCase
     public function test_path1_greeting_launch_matches_fixture(): void
     {
         Http::fake([
-            'api.anthropic.com/*' => Http::response(
+            'api.openai.com/v1/chat/completions' => Http::response(
                 $this->textResponse('Hi there! What brings you to us today?'),
             ),
         ]);
@@ -67,7 +66,7 @@ class DialogPathTest extends TestCase
     public function test_path2_lead_capture_matches_fixture(): void
     {
         Http::fake([
-            'api.anthropic.com/*' => Http::sequence()
+            'api.openai.com/v1/chat/completions' => Http::sequence()
                 ->push($this->toolUseResponse('toolu_snap_lead', 'capture_lead', [
                     'name' => 'Ada Lovelace',
                     'email' => 'ada@example.com',
@@ -102,7 +101,7 @@ class DialogPathTest extends TestCase
     {
         Http::fake([
             // Embeddings (ingest + query): fixed 4-dim unit vector per input.
-            'api.openai.com/*' => function (Request $request) {
+            'api.openai.com/v1/embeddings' => function (Request $request) {
                 $data = [];
                 foreach (array_values((array) $request->data()['input']) as $i => $text) {
                     $data[] = ['index' => $i, 'embedding' => [1.0, 0.0, 0.0, 0.0]];
@@ -110,7 +109,7 @@ class DialogPathTest extends TestCase
 
                 return Http::response(['data' => $data]);
             },
-            'api.anthropic.com/*' => Http::response(
+            'api.openai.com/v1/chat/completions' => Http::response(
                 $this->textResponse('The Starter plan is $99 per month.'),
             ),
         ]);
@@ -121,9 +120,9 @@ class DialogPathTest extends TestCase
 
         $traces = app(Runtime::class)->sendText($agent, 'visitor-snap-3', 'how much does the starter plan cost?');
 
-        // The auto-RAG pipeline must ground the turn: the outbound Anthropic
+        // The auto-RAG pipeline must ground the turn: the outbound engine
         // system prompt carries the ingested chunk text verbatim.
-        $system = $this->recordedAnthropicSystemPrompt();
+        $system = $this->recordedEngineSystemPrompt();
         $this->assertStringContainsString('Starter plan costs $99 per month.', $system);
 
         $this->assertMatchesJsonFixture('path3_kb_grounded', [
@@ -136,7 +135,7 @@ class DialogPathTest extends TestCase
     public function test_path4_handoff_then_end_session_matches_fixture(): void
     {
         Http::fake([
-            'api.anthropic.com/*' => Http::sequence()
+            'api.openai.com/v1/chat/completions' => Http::sequence()
                 // Turn 1 (discovery): escalate to a human, then reassure.
                 ->push($this->toolUseResponse('toolu_snap_handoff', 'request_handoff', [
                     'reason' => 'Visitor asked to speak with a human',
@@ -271,13 +270,12 @@ class DialogPathTest extends TestCase
             ->firstOrFail();
     }
 
-    private function recordedAnthropicSystemPrompt(): string
+    private function recordedEngineSystemPrompt(): string
     {
         $system = '';
         foreach (Http::recorded() as [$request, $response]) {
-            if (str_contains($request->url(), 'api.anthropic.com')) {
-                // system is now cacheable blocks (SystemPrompt::blocks); flatten.
-                $system = SystemPrompt::toText($request->data()['system'] ?? '');
+            if (str_contains($request->url(), '/chat/completions') || str_contains($request->url(), 'api.anthropic.com')) {
+                $system = $this->systemTextOf($request);
             }
         }
 
@@ -289,10 +287,11 @@ class DialogPathTest extends TestCase
      */
     private function textResponse(string $text): array
     {
+        // Flowstack Core (OpenAI chat-completions) — the tier every agent
+        // runs on unless its team has connected a provider key.
         return [
-            'content' => [['type' => 'text', 'text' => $text]],
-            'stop_reason' => 'end_turn',
-            'usage' => ['input_tokens' => 10, 'output_tokens' => 10],
+            'choices' => [['message' => ['role' => 'assistant', 'content' => $text], 'finish_reason' => 'stop']],
+            'usage' => ['prompt_tokens' => 10, 'completion_tokens' => 10],
         ];
     }
 
@@ -304,13 +303,22 @@ class DialogPathTest extends TestCase
      */
     private function toolUseResponse(string $id, string $tool, array $input): array
     {
+        // Flowstack Core speaks OpenAI tool_calls; the id stays fixed so the
+        // recorded fixture is byte-stable across runs.
         return [
-            'content' => [
-                ['type' => 'text', 'text' => 'One moment…'],
-                ['type' => 'tool_use', 'id' => $id, 'name' => $tool, 'input' => $input],
-            ],
-            'stop_reason' => 'tool_use',
-            'usage' => ['input_tokens' => 30, 'output_tokens' => 25],
+            'choices' => [[
+                'message' => [
+                    'role' => 'assistant',
+                    'content' => 'One moment…',
+                    'tool_calls' => [[
+                        'id' => $id,
+                        'type' => 'function',
+                        'function' => ['name' => $tool, 'arguments' => json_encode((object) $input)],
+                    ]],
+                ],
+                'finish_reason' => 'tool_calls',
+            ]],
+            'usage' => ['prompt_tokens' => 30, 'completion_tokens' => 25],
         ];
     }
 }

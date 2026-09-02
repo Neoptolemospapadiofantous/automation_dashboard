@@ -103,9 +103,10 @@ class FlowExecutor
 
         $specs = $this->tools->specs($toolNames);
 
-        // Quality tier (Versions page): resolves provider + model for every
-        // LLM call this turn. Unknown/absent tiers degrade to the default.
-        $tier = AgentConfigVersion::publishedTier($context->agent->id);
+        // Quality tier: the tier we will actually run — a premium engine the
+        // team's key can no longer carry degrades to Core (App\Billing\OwnKey).
+        $ownKey = app(OwnKey::class);
+        $tier = $ownKey->effectiveTier($context->agent);
         $model = AgentConfigVersion::modelForTier($tier);
         $provider = (string) config("runtime.tiers.{$tier}.provider", 'anthropic');
 
@@ -114,7 +115,6 @@ class FlowExecutor
         // key (and costs 0 credits — see App\Billing\OwnKey). Resolved per
         // turn, never cached, so a downgrade or revoked key takes effect
         // immediately.
-        $ownKey = app(OwnKey::class);
         $customerKey = $ownKey->coversAgent($context->agent)
             ? $ownKey->keyFor($context->agent->team, $provider)?->api_key
             : null;

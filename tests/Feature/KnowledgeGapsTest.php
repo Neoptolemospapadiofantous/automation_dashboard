@@ -63,7 +63,7 @@ class KnowledgeGapsTest extends TestCase
         // validates against this config so it still exercises.
         config(['runtime.embeddings.dimensions' => 4]);
         Http::fake([
-            'api.openai.com/*' => Http::response(['data' => [['index' => 0, 'embedding' => [0.5, 0.5, 0.5, 0.5]]]]),
+            'api.openai.com/v1/embeddings' => Http::response(['data' => [['index' => 0, 'embedding' => [0.5, 0.5, 0.5, 0.5]]]]),
         ]);
 
         $user = $this->ownerWithCurrentAgent($agent);

@@ -27,6 +27,7 @@ class LlmRouter
             return match ($provider) {
                 'anthropic' => $this->anthropic->withApiKey($apiKey),
                 'openai' => $this->openai->withApiKey($apiKey),
+                'google' => $this->gemini->withApiKey($apiKey),
                 default => throw new Misconfigured("Provider '{$provider}' does not support a customer-supplied key."),
             };
         }

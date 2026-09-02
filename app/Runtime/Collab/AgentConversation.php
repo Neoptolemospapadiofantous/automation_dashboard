@@ -4,8 +4,8 @@ namespace App\Runtime\Collab;
 
 use App\Billing\CreditMeter;
 use App\Billing\Exceptions\OutOfCredits;
+use App\Billing\OwnKey;
 use App\Models\Agent;
-use App\Models\AgentConfigVersion;
 use App\Models\Team;
 use App\Runtime\Contracts\Runtime;
 
@@ -60,7 +60,7 @@ class AgentConversation
         ]);
 
         if ($bill && $agent->team instanceof Team) {
-            $amount = (1 + count($replies)) * AgentConfigVersion::creditsPerMessage($agent->id);
+            $amount = (1 + count($replies)) * app(OwnKey::class)->effectiveCreditsPerMessage($agent);
             try {
                 $this->credits->consume(
                     team: $agent->team,

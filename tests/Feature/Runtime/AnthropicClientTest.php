@@ -27,6 +27,10 @@ class AnthropicClientTest extends TestCase
     public function test_plain_text_completion(): void
     {
         Http::fake([
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'Hello!'], 'finish_reason' => 'stop']],
+                'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 50],
+            ]),
             'api.anthropic.com/*' => Http::response([
                 'content' => [['type' => 'text', 'text' => 'Hello!']],
                 'stop_reason' => 'end_turn',
@@ -52,6 +56,10 @@ class AnthropicClientTest extends TestCase
     public function test_tool_use_parsing(): void
     {
         Http::fake([
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'Let me save that.'], 'finish_reason' => 'stop']],
+                'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 50],
+            ]),
             'api.anthropic.com/*' => Http::response([
                 'content' => [
                     ['type' => 'text', 'text' => 'Let me save that.'],
@@ -79,6 +87,10 @@ class AnthropicClientTest extends TestCase
     public function test_api_error_throws_upstream_unavailable(): void
     {
         Http::fake([
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'Reply!'], 'finish_reason' => 'stop']],
+                'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 50],
+            ]),
             'api.anthropic.com/*' => Http::response([
                 'error' => ['type' => 'invalid_request_error', 'message' => 'max_tokens required'],
             ], 400),
@@ -96,6 +108,10 @@ class AnthropicClientTest extends TestCase
     public function test_system_cache_blocks_ride_through_verbatim(): void
     {
         Http::fake([
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'ok'], 'finish_reason' => 'stop']],
+                'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 50],
+            ]),
             'api.anthropic.com/*' => Http::response([
                 'content' => [['type' => 'text', 'text' => 'ok']],
                 'stop_reason' => 'end_turn',

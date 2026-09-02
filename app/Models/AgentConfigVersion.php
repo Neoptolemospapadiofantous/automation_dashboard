@@ -110,15 +110,18 @@ class AgentConfigVersion extends Model
     ];
 
     /**
-     * Hard floor: the cheapest known tier, guaranteed to exist. Used as the
-     * ultimate fallback when even the configured default_tier is invalid.
+     * Hard floor: Flowstack Core, the engine every plan includes and the only
+     * one the platform bills for. Used as the ultimate fallback when even the
+     * configured default_tier is invalid — it must never be a byok_only tier,
+     * which needs a key only the customer can supply.
      */
-    public const DEFAULT_TIER = 'haiku';
+    public const DEFAULT_TIER = 'gpt';
 
     /**
      * The out-of-box tier for new/unconfigured agents. Env-driven
-     * (RUNTIME_DEFAULT_TIER) so prod can point it at whichever provider is
-     * actually funded; falls back to the hard floor if misconfigured.
+     * (RUNTIME_DEFAULT_TIER) so an environment can point it at whichever
+     * platform-served tier is funded; falls back to the hard floor if
+     * misconfigured.
      */
     public static function defaultTier(): string
     {
@@ -147,6 +150,15 @@ class AgentConfigVersion extends Model
 
         if (! array_key_exists($tier, (array) config('runtime.tiers'))) {
             return self::defaultTier();
+        }
+
+        // A BYOK-only tier is reached with the CUSTOMER's key, so the platform
+        // having none says nothing about whether it can run — prod deliberately
+        // holds no Anthropic key at all. Degrading here would strand every
+        // customer who connected one; App\Billing\OwnKey::effectiveTier makes
+        // that call instead, because only it knows the team.
+        if ((bool) config("runtime.tiers.{$tier}.byok_only", false)) {
+            return $tier;
         }
 
         if (! self::tierProviderAvailable($tier)) {

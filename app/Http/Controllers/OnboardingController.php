@@ -40,7 +40,11 @@ class OnboardingController extends Controller
                 'description' => (string) ($tier['description'] ?? ''),
                 'model' => (string) ($tier['model'] ?? ''),
                 'credits_per_message' => (int) ($tier['credits_per_message'] ?? 1),
-                'available' => LlmRouter::providerAvailable((string) ($tier['provider'] ?? 'anthropic')),
+                'available' => LlmRouter::providerAvailable((string) ($tier['provider'] ?? 'anthropic')) || ($tier['byok_only'] ?? false),
+                // Premium engines need the team's own provider key, which a
+                // brand-new team never has — show them, locked, so the
+                // upgrade path is visible rather than hidden.
+                'byok_only' => (bool) ($tier['byok_only'] ?? false),
             ];
         }
 
@@ -201,8 +205,13 @@ class OnboardingController extends Controller
      */
     protected function availableTierKeys(): array
     {
+        // Onboarding never has a key yet, so premium (BYOK-only) engines are
+        // not selectable here at all — a new agent starts on Flowstack Core.
         $keys = [];
         foreach ((array) config('runtime.tiers') as $key => $tier) {
+            if (($tier['byok_only'] ?? false)) {
+                continue;
+            }
             if (LlmRouter::providerAvailable((string) ($tier['provider'] ?? 'anthropic'))) {
                 $keys[] = $key;
             }

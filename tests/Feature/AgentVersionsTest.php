@@ -133,6 +133,10 @@ class AgentVersionsTest extends TestCase
     {
         config(['runtime.llm.anthropic.api_key' => 'sk-test']);
         Http::fake([
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'Hello!'], 'finish_reason' => 'stop']],
+                'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 50],
+            ]),
             'api.anthropic.com/*' => Http::response([
                 'content' => [['type' => 'text', 'text' => 'Hello!']],
                 'stop_reason' => 'end_turn',
@@ -162,7 +166,7 @@ class AgentVersionsTest extends TestCase
         app(Runtime::class)->sendText($agent, 'v-cfg-1', 'What do you offer?');
 
         Http::assertSent(function ($request): bool {
-            $system = SystemPrompt::toText($request->data()['system'] ?? '');
+            $system = $this->systemTextOf($request);
 
             return str_contains($system, 'Always ask about practice size.');
         });
@@ -172,6 +176,10 @@ class AgentVersionsTest extends TestCase
     {
         config(['runtime.llm.anthropic.api_key' => 'sk-test']);
         Http::fake([
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'Hello!'], 'finish_reason' => 'stop']],
+                'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 50],
+            ]),
             'api.anthropic.com/*' => Http::response([
                 'content' => [['type' => 'text', 'text' => 'Hello!']],
                 'stop_reason' => 'end_turn',

@@ -201,7 +201,7 @@ class EmbedController extends Controller
         }
         if ($greetings > $cap) {
             try {
-                $this->credits->consume(team: $team, amount: AgentConfigVersion::creditsPerMessage($agent->id), agentId: $agent->id, meta: ['embed' => true, 'greeting_over_cap' => true]);
+                $this->credits->consume(team: $team, amount: $this->ownKey->creditsForChat($agent), agentId: $agent->id, meta: ['embed' => true, 'greeting_over_cap' => true]);
             } catch (OutOfCredits) {
                 return response()->json([
                     'error' => "This agent isn't available right now. Please try again later.",

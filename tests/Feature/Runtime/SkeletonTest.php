@@ -126,20 +126,21 @@ class SkeletonTest extends TestCase
 
         $runtime = app(AgentRuntime::class);
 
-        // No LLM key configured.
-        config(['runtime.llm.anthropic.api_key' => '', 'runtime.embeddings.openai_api_key' => '']);
+        // No LLM key configured. An unpublished agent runs on Flowstack Core,
+        // so it is the Core provider's key that is missing.
+        config(['runtime.llm.openai.api_key' => '', 'runtime.embeddings.openai_api_key' => '']);
         $h = $runtime->health($agent->fresh());
         $this->assertFalse($h['ok']);
-        $this->assertStringContainsString('ANTHROPIC_API_KEY', $h['reason']);
+        $this->assertStringContainsString('runs on openai', $h['reason']);
 
         // LLM key set, embedding key missing.
-        config(['runtime.llm.anthropic.api_key' => 'sk-anthropic-test', 'runtime.embeddings.openai_api_key' => '']);
+        config(['runtime.llm.openai.api_key' => 'sk-openai-test', 'runtime.embeddings.openai_api_key' => '']);
         $h = $runtime->health($agent->fresh());
         $this->assertFalse($h['ok']);
-        $this->assertStringContainsString('OPENAI_API_KEY', $h['reason']);
+        $this->assertStringContainsString('embeddings/RAG', $h['reason']);
 
         // Both keys set, native is ready.
-        config(['runtime.llm.anthropic.api_key' => 'sk-anthropic-test', 'runtime.embeddings.openai_api_key' => 'sk-openai-test']);
+        config(['runtime.llm.openai.api_key' => 'sk-openai-test', 'runtime.embeddings.openai_api_key' => 'sk-openai-test']);
         $h = $runtime->health($agent->fresh());
         $this->assertTrue($h['ok']);
         $this->assertSame('native', $h['engine']);
@@ -158,29 +159,22 @@ class SkeletonTest extends TestCase
 
         $runtime = app(AgentRuntime::class);
 
-        // default_tier = gemini too, so the provider-availability fallback
-        // can't rescue this to another provider — this isolates the
-        // tier-awareness assertion (health checks GEMINI, not Anthropic).
+        // Gemini is a premium engine, so it runs on the team's own Google key.
+        // The platform holds none — that is the production shape, and it must
+        // not make a covered agent look unhealthy.
         config([
-            'runtime.default_tier' => 'gemini',
-            'runtime.llm.anthropic.api_key' => 'sk-anthropic-test',
             'runtime.embeddings.openai_api_key' => 'sk-openai-test',
             'runtime.llm.google.api_key' => '',
         ]);
+        $this->grantOwnKey($user->currentTeam, 'google');
+
         $h = $runtime->health($agent->fresh());
-        $this->assertFalse($h['ok'], 'A Gemini agent with no Gemini key must be unhealthy');
+        $this->assertTrue($h['ok'], 'A Gemini agent whose team supplied a Google key is healthy');
         $this->assertSame('gemini', $h['tier']);
         $this->assertSame('google', $h['provider']);
-        $this->assertStringContainsString('GEMINI_API_KEY', $h['reason']);
-
-        // Set the Gemini key → healthy, and it reports the gemini model.
-        config(['runtime.llm.google.api_key' => 'gm-test']);
-        $h = $runtime->health($agent->fresh());
-        $this->assertTrue($h['ok']);
-        $this->assertSame('gemini', $h['tier']);
     }
 
-    public function test_agent_pinned_to_a_dead_provider_degrades_to_the_funded_default(): void
+    public function test_a_premium_agent_without_a_key_falls_back_to_core(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create();
@@ -188,25 +182,24 @@ class SkeletonTest extends TestCase
             'agent_id' => $agent->id,
             'version' => 1,
             'status' => AgentConfigVersion::STATUS_PUBLISHED,
-            'config' => ['model_tier' => 'sonnet'], // anthropic
+            'config' => ['model_tier' => 'sonnet'], // anthropic, premium
         ]);
 
-        // Anthropic retired, Gemini funded, default points at gemini.
         config([
-            'runtime.default_tier' => 'gemini',
             'runtime.llm.anthropic.api_key' => '',
-            'runtime.llm.google.api_key' => 'gm-test',
             'runtime.embeddings.openai_api_key' => 'sk-openai-test',
         ]);
 
-        // A sonnet agent must NOT go dark — it degrades to the funded default.
-        $this->assertSame('gemini', AgentConfigVersion::publishedTier($agent->id));
-        $this->assertTrue(app(AgentRuntime::class)->health($agent->fresh())['ok']);
+        // The team has no key, so the agent does not go dark — it answers on
+        // Flowstack Core, which every plan includes.
+        $h = app(AgentRuntime::class)->health($agent->fresh());
+        $this->assertTrue($h['ok']);
+        $this->assertSame('gpt', $h['tier']);
 
-        // But if the default is ALSO dead, don't pretend: stay on the pinned
-        // tier so health reports the real outage instead of hiding it.
-        config(['runtime.llm.google.api_key' => '']);
-        $this->assertSame('sonnet', AgentConfigVersion::publishedTier($agent->id));
-        $this->assertFalse(app(AgentRuntime::class)->health($agent->fresh())['ok']);
+        // Connect a key and the chosen engine takes over.
+        $this->grantOwnKey($user->currentTeam, 'anthropic');
+        $h = app(AgentRuntime::class)->health($agent->fresh());
+        $this->assertTrue($h['ok']);
+        $this->assertSame('sonnet', $h['tier']);
     }
 }

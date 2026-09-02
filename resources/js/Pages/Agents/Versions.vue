@@ -24,12 +24,13 @@ const seed = props.draft ?? published.value?.config ?? { instructions: '', greet
 const form = useForm({
     instructions: seed.instructions ?? '',
     greeting: seed.greeting ?? '',
-    model_tier: seed.model_tier ?? 'haiku',
+    model_tier: seed.model_tier ?? 'gpt',
 });
 
 const tierLabel = (key) => props.tiers.find((t) => t.key === key)?.label ?? key;
 const tierCost = (key) => props.tiers.find((t) => t.key === key)?.credits_per_message ?? 1;
 const anyOwnKey = computed(() => props.tiers.some((t) => t.own_key));
+const providerLabel = (p) => ({ anthropic: 'Anthropic', openai: 'OpenAI', google: 'Google' }[p] ?? p);
 
 const saveDraft = () => form.post(route('agents.versions.draft'), { preserveScroll: true });
 
@@ -117,10 +118,10 @@ const dirty = computed(() => form.isDirty);
                     <div>
                         <InputLabel for="model_tier" value="Response quality" />
                         <p v-if="anyOwnKey" class="mt-0.5 text-xs text-ink-dim">
-                            Tiers marked “your key” run on your own provider account and cost no credits; the others bill per message. Applies to this agent only, from the moment you publish.
+                            Tiers on your own key run on your provider account and cost no credits; Flowstack Core bills per message. Applies to this agent only, from the moment you publish.
                         </p>
                         <p v-else class="mt-0.5 text-xs text-ink-dim">
-                            Smarter answers cost more credits per message. Applies to this agent only, from the moment you publish.
+                            Flowstack Core is included in every plan. The premium engines run on your own provider key — available on Growth and above. Applies to this agent only, from the moment you publish.
                         </p>
                         <div class="mt-2 grid gap-3 sm:grid-cols-3">
                             <label
@@ -128,22 +129,29 @@ const dirty = computed(() => form.isDirty);
                                 :key="t.key"
                                 class="flex items-start gap-2.5 rounded-none border p-3 text-sm transition"
                                 :class="[
-                                    t.available === false ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+                                    t.selectable === false ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
                                     form.model_tier === t.key ? 'border-ink bg-surface-hi ring-1 ring-ink' : 'border-border-line hover:border-border-hi',
                                 ]"
                             >
-                                <input v-model="form.model_tier" type="radio" :value="t.key" :disabled="t.available === false" class="mt-0.5 text-ink focus:ring-ink" />
+                                <input v-model="form.model_tier" type="radio" :value="t.key" :disabled="t.selectable === false" class="mt-0.5 text-ink focus:ring-ink" />
                                 <span>
                                     <span class="flex items-center gap-2 font-medium text-ink">
                                         {{ t.label }}
                                         <span v-if="t.own_key" class="rounded-none bg-state-ok-surface px-1.5 py-0.5 font-mono text-[10px] font-semibold text-state-ok-ink">
                                             your key · 0 cr
                                         </span>
+                                        <span v-else-if="t.byok_only" class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-dim">
+                                            your key
+                                        </span>
                                         <span v-else class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-dim">
                                             {{ t.credits_per_message }} cr/msg
                                         </span>
                                     </span>
-                                    <span class="mt-1 block text-xs leading-snug text-ink-dim">{{ t.available === false ? 'Coming soon.' : t.description }}</span>
+                                    <span class="mt-1 block text-xs leading-snug text-ink-dim">
+                                        <template v-if="t.available === false">Coming soon.</template>
+                                        <template v-else-if="t.byok_only && !t.own_key">Runs on your own {{ providerLabel(t.provider) }} key — connect one on Growth or above to use it. {{ t.description }}</template>
+                                        <template v-else>{{ t.description }}</template>
+                                    </span>
                                     <span v-if="t.model" class="mt-1 block font-mono text-[10px] tracking-wide text-ink-mute">{{ t.model }}</span>
                                 </span>
                             </label>

@@ -34,7 +34,7 @@ class MultiProviderTest extends TestCase
     public function test_gpt_agent_routes_to_openai_with_the_configured_model(): void
     {
         Http::fake([
-            'api.openai.com/*' => Http::response([
+            'api.openai.com/v1/chat/completions' => Http::response([
                 'choices' => [['message' => ['content' => 'GPT says hi'], 'finish_reason' => 'stop']],
                 'usage' => ['prompt_tokens' => 30, 'completion_tokens' => 10],
             ]),
@@ -56,7 +56,7 @@ class MultiProviderTest extends TestCase
     public function test_openai_tool_calls_round_trip_and_capture_a_lead(): void
     {
         Http::fake([
-            'api.openai.com/*' => Http::sequence()
+            'api.openai.com/v1/chat/completions' => Http::sequence()
                 ->push([
                     'choices' => [[
                         'message' => [
@@ -184,9 +184,9 @@ class MultiProviderTest extends TestCase
         ]);
     }
 
-    public function test_tiers_with_missing_provider_keys_are_rejected_and_flagged(): void
+    public function test_a_premium_tier_is_not_selectable_without_the_teams_own_key(): void
     {
-        config(['runtime.llm.google.api_key' => '']); // Gemini unavailable
+        config(['runtime.llm.google.api_key' => '']); // our key is irrelevant to BYOK
 
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create(['status' => 'active']);
@@ -198,20 +198,21 @@ class MultiProviderTest extends TestCase
             'instructions' => '', 'greeting' => '', 'model_tier' => 'gemini',
         ])->assertSessionHasErrors('model_tier');
 
-        // UI flag: gemini shipped as unavailable, gpt still available.
+        // UI flag: gemini is shown but not selectable without a key; Core is.
         $this->actingAs($user)->get(route('agents.versions.index'))
             ->assertInertia(fn ($page) => $page
                 ->where('tiers.4.key', 'gemini')
-                ->where('tiers.4.available', false)
+                ->where('tiers.4.byok_only', true)
+                ->where('tiers.4.selectable', false)
                 ->where('tiers.3.key', 'gpt')
-                ->where('tiers.3.available', true)
+                ->where('tiers.3.selectable', true)
             );
     }
 
     public function test_gpt_tier_bills_two_credits_per_embed_turn(): void
     {
         Http::fake([
-            'api.openai.com/*' => Http::response([
+            'api.openai.com/v1/chat/completions' => Http::response([
                 'choices' => [['message' => ['content' => 'hi'], 'finish_reason' => 'stop']],
                 'usage' => ['prompt_tokens' => 10, 'completion_tokens' => 5],
             ]),
@@ -237,6 +238,13 @@ class MultiProviderTest extends TestCase
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create(['status' => 'active']);
         $user->currentTeam->forceFill(['current_agent_id' => $agent->id, 'credit_balance' => 100])->save();
+
+        // Premium engines are BYOK-only, so routing to one means the team has
+        // connected a key for its provider.
+        if ((bool) config("runtime.tiers.{$tier}.byok_only", false)) {
+            $this->grantOwnKey($user->currentTeam, (string) config("runtime.tiers.{$tier}.provider"));
+            $user->currentTeam->forceFill(['credit_balance' => 100])->save();
+        }
 
         AgentConfigVersion::create([
             'agent_id' => $agent->id,

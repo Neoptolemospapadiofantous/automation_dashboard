@@ -128,10 +128,16 @@ enum Plan: string
      * downgrade stops BYOK immediately rather than leaving a stored key
      * quietly powering free traffic.
      */
+    /**
+     * Bring-your-own-key is available ABOVE Starter (founder call 2026-09-02).
+     * Premium engines are BYOK-only, so this is also the gate on using any
+     * model other than Flowstack Core — which is what makes Growth a real
+     * step up rather than "the same model, more credits".
+     */
     public function allowsOwnKey(): bool
     {
         return match ($this) {
-            self::Pro, self::Business => true,
+            self::Growth, self::Pro, self::Business => true,
             default => false,
         };
     }
@@ -149,6 +155,9 @@ enum Plan: string
     public function monthlyMessageCap(): int
     {
         return match ($this) {
+            // Mirrors each plan's credit allotment, so the customer story
+            // stays one number whichever way their turns are paid for.
+            self::Growth => 10_000,
             self::Pro => 25_000,
             self::Business => PHP_INT_MAX,
             default => 0,

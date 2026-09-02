@@ -6,7 +6,6 @@ use App\Models\Agent;
 use App\Models\Conversation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -118,14 +117,7 @@ class WidgetFeedbackTest extends TestCase
     {
         $agent = $this->makeAgent();
 
-        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
-        Http::fake([
-            'api.anthropic.com/*' => Http::response([
-                'content' => [['type' => 'text', 'text' => 'Got it!']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 5, 'output_tokens' => 5],
-            ], 200),
-        ]);
+        $this->fakeCore([['text' => 'Got it!', 'in' => 5, 'out' => 5]]);
 
         $this->postJson("/embed/{$agent->slug}/interact", [
             'visitor_id' => 'embed-abc123',

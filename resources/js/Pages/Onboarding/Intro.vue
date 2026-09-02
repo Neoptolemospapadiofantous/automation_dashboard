@@ -16,7 +16,7 @@ const form = useForm({
     use_case: null,
     team_size: null,
     website: '',
-    model_tier: 'haiku',
+    model_tier: 'gpt',
 });
 
 const industries = [
@@ -158,19 +158,23 @@ function continueOn() {
                                 :key="t.key"
                                 class="flex items-start gap-2.5 rounded-none border p-3 text-sm transition duration-200"
                                 :class="[
-                                    t.available === false ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+                                    (t.available === false || t.byok_only) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
                                     form.model_tier === t.key ? '-translate-y-0.5 border-violet bg-surface-hi shadow-sheet ring-1 ring-violet' : 'border-border-line hover:border-border-hi',
                                 ]"
                             >
-                                <input v-model="form.model_tier" type="radio" :value="t.key" :disabled="t.available === false" class="mt-0.5 text-ink focus:ring-ink" />
+                                <input v-model="form.model_tier" type="radio" :value="t.key" :disabled="t.available === false || t.byok_only" class="mt-0.5 text-ink focus:ring-ink" />
                                 <span>
                                     <span class="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-ink">
                                         {{ t.label }}
                                         <span class="flex-shrink-0 whitespace-nowrap rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-dim">
-                                            {{ t.credits_per_message }} cr/msg
+                                            {{ t.byok_only ? 'your key' : t.credits_per_message + ' cr/msg' }}
                                         </span>
                                     </span>
-                                    <span class="mt-1 block text-[11px] leading-snug text-ink-dim">{{ t.available === false ? 'Coming soon.' : t.description }}</span>
+                                    <span class="mt-1 block text-[11px] leading-snug text-ink-dim">
+                                        <template v-if="t.available === false">Coming soon.</template>
+                                        <template v-else-if="t.byok_only">Bring your own provider key on Growth or above. You can switch any time.</template>
+                                        <template v-else>{{ t.description }}</template>
+                                    </span>
                                     <span v-if="t.model" class="mt-1 block font-mono text-[10px] tracking-wide text-ink-mute">{{ t.model }}</span>
                                 </span>
                             </label>

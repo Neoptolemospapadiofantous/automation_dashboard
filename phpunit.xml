@@ -64,6 +64,12 @@
         <!-- Pin runtime LLM/embedding config to product defaults so a
              developer's local overrides (e.g. a local Ollama server in .env)
              can't break the runtime test suite. -->
+        <!-- Flowstack Core (the platform-billed tier) runs on OpenAI, as it
+             does in production. Without a key here, every agent that degrades
+             to Core throws Misconfigured. Http is faked in the tests. -->
+        <env name="OPENAI_API_KEY" value="sk-test-openai-key"/>
+        <!-- Mirror production: Flowstack Core is the platform-served engine. -->
+        <env name="RUNTIME_DEFAULT_TIER" value="gpt"/>
         <env name="OPENAI_BASE_URL" value="https://api.openai.com"/>
         <!-- Bridge OFF in tests: with the local .env bridge-enabled (2026-07-31),
              unfaked turns would leak to the REAL local claude-bridge and answer

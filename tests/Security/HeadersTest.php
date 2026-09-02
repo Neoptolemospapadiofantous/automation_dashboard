@@ -5,7 +5,6 @@ namespace Tests\Security;
 use App\Models\Agent;
 use App\Models\User;
 use App\Runtime\Contracts\Runtime;
-use App\Runtime\LLM\SystemPrompt;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -129,6 +128,10 @@ class HeadersTest extends TestCase
     {
         config(['runtime.llm.anthropic.api_key' => 'sk-test']);
         Http::fake([
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'Hi!'], 'finish_reason' => 'stop']],
+                'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 50],
+            ]),
             'api.anthropic.com/*' => Http::response([
                 'content' => [['type' => 'text', 'text' => 'Hi!']],
                 'stop_reason' => 'end_turn',
@@ -142,7 +145,7 @@ class HeadersTest extends TestCase
         app(Runtime::class)->launch($agent, 'v-art50');
 
         Http::assertSent(function ($request): bool {
-            $system = SystemPrompt::toText($request->data()['system'] ?? '');
+            $system = $this->systemTextOf($request);
 
             return str_contains($system, 'never claim to be human')
                 || str_contains($system, 'You are an AI assistant');

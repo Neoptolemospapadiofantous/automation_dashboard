@@ -30,11 +30,11 @@ class BillingInvariantsTest extends TestCase
             'runtime.embeddings.dimensions' => 4,
         ]);
         Http::fake([
-            'api.openai.com/*' => Http::response(['data' => [['index' => 0, 'embedding' => [0.5, 0.5, 0.5, 0.5]]]]),
-            'api.anthropic.com/*' => Http::response([
-                'content' => [['type' => 'text', 'text' => 'It costs $99.']],
-                'stop_reason' => 'end_turn',
-                'usage' => ['input_tokens' => 10, 'output_tokens' => 5],
+            'api.openai.com/v1/embeddings' => Http::response(['data' => [['index' => 0, 'embedding' => [0.5, 0.5, 0.5, 0.5]]]]),
+            // KB synthesis runs on Flowstack Core, like the agent itself.
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'It costs $99.'], 'finish_reason' => 'stop']],
+                'usage' => ['prompt_tokens' => 10, 'completion_tokens' => 5],
             ]),
         ]);
 
@@ -44,7 +44,7 @@ class BillingInvariantsTest extends TestCase
 
         $this->actingAs($user)->postJson(route('knowledge.query'), ['question' => 'price?'])->assertOk();
 
-        $this->assertSame(89, $user->currentTeam->fresh()->credit_balance); // 1 message x haiku's 11 credits
+        $this->assertSame(99, $user->currentTeam->fresh()->credit_balance); // 1 message x Core's 1 credit
     }
 
     public function test_kb_query_rejects_at_zero_balance(): void

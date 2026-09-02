@@ -7,7 +7,6 @@ use App\Models\AgentConfigVersion;
 use App\Models\User;
 use App\Runtime\AgentRuntime;
 use App\Runtime\Contracts\KnowledgeStore;
-use App\Runtime\LLM\SystemPrompt;
 use App\Runtime\Models\RuntimeSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -36,7 +35,7 @@ class AgentRuntimeTest extends TestCase
     public function test_launch_greets_and_advances_to_discovery(): void
     {
         Http::fake([
-            'api.anthropic.com/*' => Http::response($this->textResponse('Hi! What brings you here today?')),
+            'api.openai.com/v1/chat/completions' => Http::response($this->textResponse('Hi! What brings you here today?')),
         ]);
 
         $agent = $this->agent();
@@ -78,7 +77,7 @@ class AgentRuntimeTest extends TestCase
     public function test_wrapup_state_can_escalate_to_a_human(): void
     {
         Http::fake([
-            'api.anthropic.com/*' => Http::sequence()
+            'api.openai.com/v1/chat/completions' => Http::sequence()
                 ->push($this->toolUseResponse('request_handoff', ['reason' => 'Visitor asked for a human.']))
                 ->push($this->textResponse('Connecting you with the team now.')),
         ]);
@@ -92,7 +91,11 @@ class AgentRuntimeTest extends TestCase
         // wrapup offers the escalation + lead-correction tools alongside
         // query_kb and end_session.
         Http::assertSent(function (Request $request): bool {
-            $names = array_column((array) ($request->data()['tools'] ?? []), 'name');
+            // OpenAI wraps each tool spec in a 'function' object.
+            $names = array_map(
+                fn (array $t): string => (string) ($t['function']['name'] ?? $t['name'] ?? ''),
+                (array) ($request->data()['tools'] ?? []),
+            );
 
             return in_array('request_handoff', $names, true)
                 && in_array('capture_lead', $names, true);
@@ -101,7 +104,7 @@ class AgentRuntimeTest extends TestCase
 
     public function test_launch_resets_a_prior_session(): void
     {
-        Http::fake(['api.anthropic.com/*' => Http::response($this->textResponse('Welcome back!'))]);
+        Http::fake(['api.openai.com/v1/chat/completions' => Http::response($this->textResponse('Welcome back!'))]);
 
         $agent = $this->agent();
         $runtime = app(AgentRuntime::class);
@@ -120,7 +123,7 @@ class AgentRuntimeTest extends TestCase
     public function test_send_text_runs_tool_loop_captures_lead_and_transitions(): void
     {
         Http::fake([
-            'api.anthropic.com/*' => Http::sequence()
+            'api.openai.com/v1/chat/completions' => Http::sequence()
                 // Turn: model decides to capture the lead…
                 ->push($this->toolUseResponse('capture_lead', [
                     'name' => 'Bob Buyer', 'email' => 'bob@buyer.co', 'score' => 80,
@@ -143,7 +146,7 @@ class AgentRuntimeTest extends TestCase
     public function test_kb_context_is_injected_into_the_system_prompt(): void
     {
         Http::fake([
-            'api.openai.com/*' => function (Request $request) {
+            'api.openai.com/v1/embeddings' => function (Request $request) {
                 $inputs = (array) $request->data()['input'];
                 $data = [];
                 foreach (array_values($inputs) as $i => $text) {
@@ -152,7 +155,7 @@ class AgentRuntimeTest extends TestCase
 
                 return Http::response(['data' => $data]);
             },
-            'api.anthropic.com/*' => Http::response($this->textResponse('The Starter plan is $99/mo.')),
+            'api.openai.com/v1/chat/completions' => Http::response($this->textResponse('The Starter plan is $99/mo.')),
         ]);
 
         $agent = $this->agent();
@@ -162,18 +165,18 @@ class AgentRuntimeTest extends TestCase
         app(AgentRuntime::class)->sendText($agent, 'v1', 'how much does it cost?');
 
         Http::assertSent(function (Request $request): bool {
-            if (! str_contains($request->url(), 'anthropic')) {
+            if (! str_contains($request->url(), 'openai')) {
                 return false;
             }
 
-            return str_contains(SystemPrompt::toText($request->data()['system'] ?? ''), 'Starter plan costs $99 per month.');
+            return str_contains($this->systemTextOf($request), 'Starter plan costs $99 per month.');
         });
     }
 
     public function test_max_turns_cap_short_circuits_without_llm_call(): void
     {
         config(['runtime.safety.max_turns_per_session' => 1]);
-        Http::fake(['api.anthropic.com/*' => Http::response($this->textResponse('one reply'))]);
+        Http::fake(['api.openai.com/v1/chat/completions' => Http::response($this->textResponse('one reply'))]);
 
         $agent = $this->agent();
         $runtime = app(AgentRuntime::class);
@@ -192,7 +195,7 @@ class AgentRuntimeTest extends TestCase
     {
         config(['runtime.safety.max_tool_calls_per_turn' => 2]);
         Http::fake([
-            'api.anthropic.com/*' => Http::sequence()
+            'api.openai.com/v1/chat/completions' => Http::sequence()
                 ->push($this->toolUseResponse('set_variable', ['name' => 'a', 'value' => '1']))
                 ->push($this->toolUseResponse('set_variable', ['name' => 'b', 'value' => '2']))
                 ->push($this->toolUseResponse('set_variable', ['name' => 'c', 'value' => '3'])), // would exceed cap
@@ -213,7 +216,7 @@ class AgentRuntimeTest extends TestCase
     public function test_stream_text_yields_tool_message_done(): void
     {
         Http::fake([
-            'api.anthropic.com/*' => Http::sequence()
+            'api.openai.com/v1/chat/completions' => Http::sequence()
                 ->push($this->toolUseResponse('capture_lead', ['name' => 'Eve', 'email' => 'eve@x.co']))
                 ->push($this->textResponse('Saved — talk soon, Eve!')),
         ]);
@@ -233,7 +236,7 @@ class AgentRuntimeTest extends TestCase
 
     public function test_end_session_is_idempotent_via_contract(): void
     {
-        Http::fake(['api.anthropic.com/*' => Http::response($this->textResponse('hi'))]);
+        Http::fake(['api.openai.com/v1/chat/completions' => Http::response($this->textResponse('hi'))]);
 
         $agent = $this->agent();
         $runtime = app(AgentRuntime::class);
@@ -248,7 +251,7 @@ class AgentRuntimeTest extends TestCase
     public function test_embed_endpoints_serve_a_native_agent_end_to_end(): void
     {
         Http::fake([
-            'api.anthropic.com/*' => Http::sequence()
+            'api.openai.com/v1/chat/completions' => Http::sequence()
                 ->push($this->textResponse('Welcome to Flowstack! How can I help?'))
                 ->push($this->textResponse('Starter is $99/mo.')),
         ]);
@@ -267,7 +270,7 @@ class AgentRuntimeTest extends TestCase
             'message' => 'price?',
         ])->assertOk()->assertJsonPath('traces.0.payload.message', 'Starter is $99/mo.');
 
-        $this->assertSame(78, $agent->team->fresh()->credit_balance); // (1+1 reply) × 11
+        $this->assertSame(98, $agent->team->fresh()->credit_balance); // (1+1 reply) × Core's 1 credit
         Http::assertNotSent(fn (Request $r) => str_contains($r->url(), 'voiceflow.com'));
     }
 
@@ -299,10 +302,11 @@ class AgentRuntimeTest extends TestCase
      */
     private function textResponse(string $text): array
     {
+        // Flowstack Core (OpenAI chat-completions) — the tier every agent
+        // runs on unless its team has connected a provider key.
         return [
-            'content' => [['type' => 'text', 'text' => $text]],
-            'stop_reason' => 'end_turn',
-            'usage' => ['input_tokens' => 10, 'output_tokens' => 10],
+            'choices' => [['message' => ['role' => 'assistant', 'content' => $text], 'finish_reason' => 'stop']],
+            'usage' => ['prompt_tokens' => 10, 'completion_tokens' => 10],
         ];
     }
 
@@ -313,12 +317,19 @@ class AgentRuntimeTest extends TestCase
     private function toolUseResponse(string $tool, array $input): array
     {
         return [
-            'content' => [
-                ['type' => 'text', 'text' => 'One moment…'],
-                ['type' => 'tool_use', 'id' => 'toolu_'.uniqid(), 'name' => $tool, 'input' => $input],
-            ],
-            'stop_reason' => 'tool_use',
-            'usage' => ['input_tokens' => 30, 'output_tokens' => 25],
+            'choices' => [[
+                'message' => [
+                    'role' => 'assistant',
+                    'content' => 'One moment…',
+                    'tool_calls' => [[
+                        'id' => 'call_'.uniqid(),
+                        'type' => 'function',
+                        'function' => ['name' => $tool, 'arguments' => json_encode((object) $input)],
+                    ]],
+                ],
+                'finish_reason' => 'tool_calls',
+            ]],
+            'usage' => ['prompt_tokens' => 30, 'completion_tokens' => 25],
         ];
     }
 }

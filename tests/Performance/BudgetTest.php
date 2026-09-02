@@ -41,6 +41,10 @@ class BudgetTest extends TestCase
         // billing, broadcast) — real-turn latency is provider-dominated
         // and out of scope for CI.
         Http::fake([
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'Hello! What brings you here?'], 'finish_reason' => 'stop']],
+                'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 50],
+            ]),
             'api.anthropic.com/*' => Http::response([
                 'content' => [['type' => 'text', 'text' => 'Hello! What brings you here?']],
                 'stop_reason' => 'end_turn',

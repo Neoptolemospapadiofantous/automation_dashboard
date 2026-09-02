@@ -5,6 +5,7 @@ namespace Tests\Feature\Billing;
 use App\Billing\OwnKey;
 use App\Billing\Plan;
 use App\Models\Agent;
+use App\Models\AgentConfigVersion;
 use App\Models\Team;
 use App\Models\TeamProviderKey;
 use App\Models\User;
@@ -37,6 +38,24 @@ class OwnKeyTest extends TestCase
         return $team->fresh();
     }
 
+    /**
+     * Put the agent on a premium engine — those are the byok_only tiers a
+     * customer key exists to run. An unpublished agent sits on Flowstack
+     * Core, which the platform serves and bills.
+     */
+    private function onPremium(Agent $agent, string $tier = 'haiku'): Agent
+    {
+        AgentConfigVersion::create([
+            'agent_id' => $agent->id,
+            'version' => 1,
+            'status' => 'published',
+            'config' => ['instructions' => '', 'greeting' => '', 'model_tier' => $tier],
+            'published_at' => now(),
+        ]);
+
+        return $agent->fresh();
+    }
+
     private function key(Team $team, string $provider = 'anthropic', bool $verified = true): TeamProviderKey
     {
         return TeamProviderKey::create([
@@ -49,11 +68,14 @@ class OwnKeyTest extends TestCase
         ]);
     }
 
-    public function test_operator_allows_own_key_and_lower_plans_do_not(): void
+    public function test_byok_is_sold_above_starter_and_not_below(): void
     {
-        $this->assertTrue(Plan::Pro->allowsOwnKey(), 'Operator (Pro) is the rung that sells BYOK');
+        // Premium engines are BYOK-only, so this gate also decides who can
+        // run anything other than Flowstack Core.
+        $this->assertTrue(Plan::Growth->allowsOwnKey(), 'Growth is the first rung that sells BYOK');
+        $this->assertTrue(Plan::Pro->allowsOwnKey());
         $this->assertTrue(Plan::Business->allowsOwnKey());
-        foreach ([Plan::Free, Plan::Starter, Plan::Growth] as $plan) {
+        foreach ([Plan::Free, Plan::Starter] as $plan) {
             $this->assertFalse($plan->allowsOwnKey(), $plan->value.' must not allow BYOK');
         }
     }
@@ -73,7 +95,7 @@ class OwnKeyTest extends TestCase
     public function test_a_verified_key_on_operator_zeroes_the_chat_credits(): void
     {
         $team = $this->team();
-        $agent = Agent::factory()->for($team)->create();
+        $agent = $this->onPremium(Agent::factory()->for($team)->create());
         $this->key($team);
 
         $ownKey = app(OwnKey::class);
@@ -102,13 +124,13 @@ class OwnKeyTest extends TestCase
         $this->assertFalse(app(OwnKey::class)->coversAgent($agent->fresh()));
     }
 
-    public function test_downgrading_off_operator_stops_byok_without_deleting_the_key(): void
+    public function test_downgrading_below_growth_stops_byok_without_deleting_the_key(): void
     {
         $team = $this->team();
         $agent = Agent::factory()->for($team)->create();
         $this->key($team);
 
-        $team->forceFill(['plan' => Plan::Growth->value])->save();
+        $team->forceFill(['plan' => Plan::Starter->value])->save();
 
         $this->assertFalse(app(OwnKey::class)->coversAgent($agent->fresh()->refresh()));
         // the key row survives a downgrade — BYOK is disabled by the plan gate,
@@ -119,11 +141,11 @@ class OwnKeyTest extends TestCase
     public function test_a_key_for_another_provider_does_not_cover_this_agent(): void
     {
         $team = $this->team();
-        $agent = Agent::factory()->for($team)->create();
+        $agent = $this->onPremium(Agent::factory()->for($team)->create());
         $this->key($team, provider: 'openai');
 
-        // The agent's tier resolves to anthropic by default, so an OpenAI key
-        // must not be handed to an Anthropic call.
+        // This agent's tier resolves to anthropic, so an OpenAI key must not
+        // be handed to an Anthropic call.
         $ownKey = app(OwnKey::class);
         $this->assertSame('anthropic', $ownKey->providerFor($agent->fresh()));
         $this->assertFalse($ownKey->coversAgent($agent->fresh()));

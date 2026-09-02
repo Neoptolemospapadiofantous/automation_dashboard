@@ -25,7 +25,14 @@ class ExceptionsTest extends TestCase
 
     public function test_engine_without_llm_key_throws_misconfigured(): void
     {
-        config(['runtime.llm.anthropic.api_key' => '']);
+        // The default engine is Flowstack Core, which runs on OpenAI. Every
+        // other provider is blanked too, so tier resolution has nothing to
+        // degrade to and the missing Core key is what surfaces.
+        config([
+            'runtime.llm.openai.api_key' => '',
+            'runtime.llm.anthropic.api_key' => '',
+            'runtime.llm.google.api_key' => '',
+        ]);
 
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create();
@@ -35,14 +42,13 @@ class ExceptionsTest extends TestCase
             $this->fail('Expected Misconfigured');
         } catch (RuntimeException $e) {
             $this->assertInstanceOf(Misconfigured::class, $e);
-            $this->assertStringContainsString('ANTHROPIC_API_KEY', $e->getMessage());
+            $this->assertStringContainsString('OPENAI_API_KEY', $e->getMessage());
         }
     }
 
     public function test_provider_failure_surfaces_as_upstream_unavailable(): void
     {
-        config(['runtime.llm.anthropic.api_key' => 'sk-test']);
-        Http::fake(['api.anthropic.com/*' => Http::response(['error' => ['message' => 'overloaded']], 500)]);
+        Http::fake(['api.openai.com/v1/chat/completions' => Http::response(['error' => ['message' => 'overloaded']], 500)]);
 
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create();

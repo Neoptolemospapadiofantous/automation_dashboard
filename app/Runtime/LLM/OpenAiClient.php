@@ -43,7 +43,7 @@ class OpenAiClient implements LlmClient
     {
         $apiKey = $this->apiKeyOverride ?? (string) config('runtime.llm.openai.api_key');
         if ($apiKey === '') {
-            throw new Misconfigured('OPENAI_API_KEY is not set — the ChatGPT tier cannot answer.');
+            throw new Misconfigured('OPENAI_API_KEY is not set — Flowstack Core cannot answer.');
         }
 
         $payload = [

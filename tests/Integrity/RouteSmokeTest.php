@@ -58,7 +58,7 @@ class RouteSmokeTest extends TestCase
                 'stop_reason' => 'end_turn',
                 'usage' => ['input_tokens' => 1, 'output_tokens' => 1],
             ]),
-            'api.openai.com/*' => Http::response(['data' => [['index' => 0, 'embedding' => [0.5, 0.5, 0.5, 0.5]]]]),
+            'api.openai.com/v1/embeddings' => Http::response(['data' => [['index' => 0, 'embedding' => [0.5, 0.5, 0.5, 0.5]]]]),
             'generativelanguage.googleapis.com/*' => Http::response([]),
         ]);
     }

@@ -138,15 +138,19 @@ return [
     | deliberately still the better deal per message — but far enough above the
     | old values that a €39 top plan clears the margin bars with room.
     */
-    // Tier every new/unconfigured agent falls back to. Point this at a
-    // FUNDED provider's tier (e.g. 'gemini') so a fresh signup's agent
-    // answers out of the box instead of landing on a dead default. Must be
-    // a key in 'tiers' below; invalid values degrade to the hard floor
-    // (AgentConfigVersion::DEFAULT_TIER = 'haiku').
-    'default_tier' => env('RUNTIME_DEFAULT_TIER', 'haiku'),
+    // Tier every new/unconfigured agent falls back to. This must be a tier
+    // the PLATFORM can serve, so it can never be a byok_only one: those run
+    // only on a key the customer supplies, and a fresh signup has none.
+    // Flowstack Core is that tier — it is included in every plan. Must be a
+    // key in 'tiers' below; invalid values degrade to the hard floor
+    // (AgentConfigVersion::DEFAULT_TIER).
+    'default_tier' => env('RUNTIME_DEFAULT_TIER', 'gpt'),
 
     'tiers' => array_merge([
         'haiku' => [
+            // Premium engines run ONLY on the customer's own provider key
+            // (Growth and above). Platform credits never buy these.
+            'byok_only' => true,
             'provider' => 'anthropic',
             'label' => 'Claude Haiku 4.5',
             'description' => 'Fastest replies at the lowest cost. Excellent for FAQ answering, lead capture, and high-traffic sites.',
@@ -155,6 +159,9 @@ return [
             'pricing_per_mtok' => ['in' => 1.00, 'out' => 5.00],
         ],
         'sonnet' => [
+            // Premium engines run ONLY on the customer's own provider key
+            // (Growth and above). Platform credits never buy these.
+            'byok_only' => true,
             'provider' => 'anthropic',
             'label' => 'Claude Sonnet 4.6',
             'description' => 'Smarter conversations with deeper reasoning. Best for complex products, nuanced qualification, and longer sales cycles.',
@@ -163,6 +170,9 @@ return [
             'pricing_per_mtok' => ['in' => 3.00, 'out' => 15.00],
         ],
         'opus' => [
+            // Premium engines run ONLY on the customer's own provider key
+            // (Growth and above). Platform credits never buy these.
+            'byok_only' => true,
             'provider' => 'anthropic',
             'label' => 'Claude Opus 4.8',
             'description' => 'The most capable model. Expert-grade reasoning for technical sales, high-stakes conversations, and premium experiences.',
@@ -172,13 +182,16 @@ return [
         ],
         'gpt' => [
             'provider' => 'openai',
-            'label' => 'ChatGPT Nano',
-            'description' => 'OpenAI\'s fastest model (GPT-5 Nano). Snappy, familiar conversational style at the lowest cost.',
+            'label' => 'Flowstack Core',
+            'description' => 'The engine included in every plan. Fast, capable answers for FAQ, lead capture and high-traffic sites. Runs on OpenAI GPT-5 Nano.',
             'model' => env('RUNTIME_TIER_GPT_MODEL', 'gpt-5-nano'),
             'credits_per_message' => (int) env('RUNTIME_TIER_GPT_CREDITS', 1),
             'pricing_per_mtok' => ['in' => 0.05, 'out' => 0.40],
         ],
         'gemini' => [
+            // Premium engines run ONLY on the customer's own provider key
+            // (Growth and above). Platform credits never buy these.
+            'byok_only' => true,
             'provider' => 'google',
             'label' => 'Gemini 2.5 Flash',
             'description' => 'Google\'s fast multimodal model. Snappy answers at low cost with solid factual recall.',

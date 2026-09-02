@@ -9,8 +9,8 @@ use App\Notifications\HandoffRequestedNotification;
 use App\Runtime\AgentRuntime;
 use App\Runtime\Contracts\KnowledgeStore;
 use App\Runtime\Flow\FlowExecutor;
-use App\Runtime\LLM\AnthropicClient;
 use App\Runtime\LLM\CompletionResult;
+use App\Runtime\LLM\OpenAiClient;
 use App\Runtime\LLM\ToolCall;
 use App\Runtime\Models\KbGap;
 use App\Runtime\Models\RuntimeSession;
@@ -323,16 +323,16 @@ class GroundedAnswersTest extends TestCase
     }
 
     /**
-     * Bind a fake Anthropic LlmClient that replays the given results in
-     * order (the router resolves the anthropic provider for the default
-     * tier, so binding AnthropicClient swaps the client the executor uses).
+     * Bind a fake Flowstack Core LlmClient that replays the given results in
+     * order (the router resolves the openai provider for Core,
+     * so binding OpenAiClient swaps the client the executor uses).
      */
     private function fakeLlm(CompletionResult ...$results): void
     {
-        // Extend the concrete AnthropicClient so it satisfies LlmRouter's
+        // Extend the concrete OpenAiClient so it satisfies LlmRouter's
         // constructor type-hint while replaying canned completions instead
         // of hitting the wire.
-        $client = new class(array_values($results)) extends AnthropicClient
+        $client = new class(array_values($results)) extends OpenAiClient
         {
             /** @param list<CompletionResult> $queue */
             public function __construct(private array $queue) {}
@@ -345,7 +345,7 @@ class GroundedAnswersTest extends TestCase
 
         // AnthropicClient is constructor-injected into LlmRouter; replace the
         // concrete so clientFor('anthropic') hands back our fake.
-        $this->app->instance(AnthropicClient::class, $client);
+        $this->app->instance(OpenAiClient::class, $client);
     }
 
     private function textResult(string $text): CompletionResult

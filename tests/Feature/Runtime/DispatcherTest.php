@@ -27,6 +27,10 @@ class DispatcherTest extends TestCase
     {
         config(['runtime.llm.anthropic.api_key' => 'sk-test']);
         Http::fake([
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'Hi there! What brings you here today?'], 'finish_reason' => 'stop']],
+                'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 50],
+            ]),
             'api.anthropic.com/*' => Http::response([
                 'content' => [['type' => 'text', 'text' => 'Hi there! What brings you here today?']],
                 'stop_reason' => 'end_turn',

@@ -21,6 +21,21 @@ use Throwable;
  */
 class GeminiClient implements LlmClient
 {
+    private ?string $apiKeyOverride = null;
+
+    /**
+     * A customer-supplied Google key. Clones rather than mutating: clients
+     * are resolved from the container and shared, so setting the key in
+     * place would leak one team's key into another team's request.
+     */
+    public function withApiKey(string $apiKey): static
+    {
+        $clone = clone $this;
+        $clone->apiKeyOverride = $apiKey;
+
+        return $clone;
+    }
+
     /**
      * @param  string|list<array<string, mixed>>  $system  System prompt (blocks flattened to text; Gemini has no explicit cache control)
      * @param  list<array<string, mixed>>  $messages  Canonical messages
@@ -28,7 +43,7 @@ class GeminiClient implements LlmClient
      */
     public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
     {
-        $apiKey = (string) config('runtime.llm.google.api_key');
+        $apiKey = $this->apiKeyOverride ?? (string) config('runtime.llm.google.api_key');
         if ($apiKey === '') {
             throw new Misconfigured('GEMINI_API_KEY is not set — the Gemini tier cannot answer.');
         }

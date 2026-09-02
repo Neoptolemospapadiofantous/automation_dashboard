@@ -152,7 +152,7 @@ class KnowledgeBaseTest extends TestCase
     public function test_dimension_mismatch_throws_upstream_unavailable(): void
     {
         Http::fake([
-            'api.openai.com/*' => Http::response([
+            'api.openai.com/v1/embeddings' => Http::response([
                 'data' => [['index' => 0, 'embedding' => [0.1, 0.2]]], // 2 dims, expected 4
             ]),
         ]);
@@ -212,7 +212,7 @@ class KnowledgeBaseTest extends TestCase
     private function fakeEmbeddings(array $map = []): void
     {
         Http::fake([
-            'api.openai.com/*' => function (Request $request) use ($map) {
+            'api.openai.com/v1/embeddings' => function (Request $request) use ($map) {
                 $inputs = (array) $request->data()['input'];
                 $data = [];
                 foreach (array_values($inputs) as $i => $text) {
