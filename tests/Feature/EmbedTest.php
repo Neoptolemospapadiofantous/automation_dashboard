@@ -123,8 +123,8 @@ class EmbedTest extends TestCase
         ])->assertOk()
             ->assertJsonStructure(['traces']);
 
-        // (1 user message + 1 reply) × haiku multiplier 1 = 2 credits.
-        $this->assertSame(80, $agent->team->fresh()->credit_balance);
+        // (1 user message + 1 reply) × haiku multiplier 11 = 22 credits.
+        $this->assertSame(78, $agent->team->fresh()->credit_balance);
     }
 
     public function test_canned_answer_short_circuits_without_llm_or_credits(): void
@@ -256,8 +256,8 @@ class EmbedTest extends TestCase
         ])->assertOk();
 
         Http::assertSent(fn ($request) => str_contains($request->url(), 'anthropic'));
-        // LLM turn billed normally: (1 + 1) × 1.
-        $this->assertSame(80, $agent->team->fresh()->credit_balance);
+        // LLM turn billed normally: (1 + 1) × 11.
+        $this->assertSame(78, $agent->team->fresh()->credit_balance);
     }
 
     public function test_launch_exposes_canned_chips(): void

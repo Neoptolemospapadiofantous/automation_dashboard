@@ -87,8 +87,8 @@ class BillingCreditMeterTest extends TestCase
             ->assertOk();
 
         // 1 user message + 1 agent reply (the fake returns 1 text trace)
-        // = 2 messages x haiku's 10 credits = 20 credits.
-        $this->assertSame($start - 20, $user->currentTeam->fresh()->credit_balance);
+        // = 2 messages x haiku's 11 credits = 22 credits.
+        $this->assertSame($start - 22, $user->currentTeam->fresh()->credit_balance);
     }
 
     public function test_renewal_resets_monthly_but_topups_roll_over(): void

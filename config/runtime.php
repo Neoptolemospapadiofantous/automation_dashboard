@@ -117,7 +117,13 @@ return [
     | five rate pairs exact. Re-verify when bumping any model env.
     |
     | MULTIPLIERS REPRICED 2026-08-27 (gemini 1→4, haiku 1→10, sonnet 3→28,
-    | opus 10→45).
+    | opus 10→45), then NUDGED 2026-09-02 (haiku 10→11, sonnet 28→32,
+    | opus 45→52): the margin audit added ANNUAL prices (17% cheaper per
+    | credit) to the invariants test's revenue floor, and at that floor the
+    | old values left the worst-case scenario under the 10% buffer on the
+    | Claude tiers (opus went negative at EUR/USD parity). Real-world
+    | margins were ~90% throughout — this hardens the contractual floor,
+    | it does not respond to a loss.
     | They had drifted out of step with the rates above: haiku billed the
     | SAME 1 credit as gpt/nano while costing 20x per token, which pinned the
     | plan margin floor at €0.01333/credit and made any real price cut
@@ -145,7 +151,7 @@ return [
             'label' => 'Claude Haiku 4.5',
             'description' => 'Fastest replies at the lowest cost. Excellent for FAQ answering, lead capture, and high-traffic sites.',
             'model' => env('RUNTIME_TIER_HAIKU_MODEL', 'claude-haiku-4-5-20251001'),
-            'credits_per_message' => (int) env('RUNTIME_TIER_HAIKU_CREDITS', 10),
+            'credits_per_message' => (int) env('RUNTIME_TIER_HAIKU_CREDITS', 11),
             'pricing_per_mtok' => ['in' => 1.00, 'out' => 5.00],
         ],
         'sonnet' => [
@@ -153,7 +159,7 @@ return [
             'label' => 'Claude Sonnet 4.6',
             'description' => 'Smarter conversations with deeper reasoning. Best for complex products, nuanced qualification, and longer sales cycles.',
             'model' => env('RUNTIME_TIER_SONNET_MODEL', 'claude-sonnet-4-6'),
-            'credits_per_message' => (int) env('RUNTIME_TIER_SONNET_CREDITS', 28),
+            'credits_per_message' => (int) env('RUNTIME_TIER_SONNET_CREDITS', 32),
             'pricing_per_mtok' => ['in' => 3.00, 'out' => 15.00],
         ],
         'opus' => [
@@ -161,7 +167,7 @@ return [
             'label' => 'Claude Opus 4.8',
             'description' => 'The most capable model. Expert-grade reasoning for technical sales, high-stakes conversations, and premium experiences.',
             'model' => env('RUNTIME_TIER_OPUS_MODEL', 'claude-opus-4-8'),
-            'credits_per_message' => (int) env('RUNTIME_TIER_OPUS_CREDITS', 45),
+            'credits_per_message' => (int) env('RUNTIME_TIER_OPUS_CREDITS', 52),
             'pricing_per_mtok' => ['in' => 5.00, 'out' => 25.00],
         ],
         'gpt' => [

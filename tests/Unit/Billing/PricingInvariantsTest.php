@@ -64,6 +64,11 @@ class PricingInvariantsTest extends TestCase
         foreach (Plan::cases() as $plan) {
             if ($plan->isPaid()) {
                 $sources[] = $plan->priceEur() / $plan->monthlyCredits();
+                // Annual billing sells the SAME monthly credits ~17% cheaper —
+                // it is the true floor, and it was missing from this guard
+                // until the 2026-09-02 margin audit (annual Operator + opus
+                // worst-case sat under the buffer; negative at FX parity).
+                $sources[] = $plan->annualPriceEur() / 12 / $plan->monthlyCredits();
             }
         }
         foreach (TopUpPack::cases() as $pack) {

@@ -46,8 +46,8 @@ class NativeDashboardTest extends TestCase
             ->assertJsonPath('ended', false)
             ->assertJsonPath('captured', []);
 
-        // 1 user-equivalent + 1 reply = 2 credits, same math as legacy.
-        $this->assertSame(80, $user->currentTeam->fresh()->credit_balance);
+        // 1 user-equivalent + 1 reply = 22 credits (2 x haiku's 11).
+        $this->assertSame(78, $user->currentTeam->fresh()->credit_balance);
         Http::assertNotSent(fn (Request $r) => str_contains($r->url(), 'voiceflow.com'));
     }
 
@@ -200,12 +200,12 @@ class NativeDashboardTest extends TestCase
         $this->assertStringContainsString('event: trace', $body);
         $this->assertStringContainsString('Streamed reply!', $body);
         // …then a summary frame with the billing total: 2 messages
-        // (1 user + 1 reply) x haiku's 10 credits = 20.
+        // (1 user + 1 reply) x haiku's 11 credits = 22.
         $this->assertStringContainsString('event: summary', $body);
-        $this->assertStringContainsString('"messages_billed":20', $body);
+        $this->assertStringContainsString('"messages_billed":22', $body);
 
         // Billing + transcript recording ran after the stream.
-        $this->assertSame(80, $user->currentTeam->fresh()->credit_balance);
+        $this->assertSame(78, $user->currentTeam->fresh()->credit_balance);
         $this->assertDatabaseHas('messages', ['role' => 'agent', 'text' => 'Streamed reply!']);
     }
 

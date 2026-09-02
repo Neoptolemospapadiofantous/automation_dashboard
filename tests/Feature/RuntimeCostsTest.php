@@ -87,9 +87,9 @@ class RuntimeCostsTest extends TestCase
         $this->postJson("/embed/{$agent->slug}/launch")->assertOk();
         $this->assertSame(50, $user->currentTeam->fresh()->credit_balance);
 
-        // Third greeting of the day: debited at haiku's 10 credits/message.
+        // Third greeting of the day: debited at haiku's 11 credits/message.
         $this->postJson("/embed/{$agent->slug}/launch")->assertOk();
-        $this->assertSame(40, $user->currentTeam->fresh()->credit_balance);
+        $this->assertSame(39, $user->currentTeam->fresh()->credit_balance);
     }
 
     public function test_over_cap_greeting_with_zero_balance_is_rejected(): void
@@ -98,8 +98,8 @@ class RuntimeCostsTest extends TestCase
 
         $user = $this->owner();
         $agent = $user->currentTeam->currentAgent;
-        // Exactly one greeting's worth (haiku bills 10 credits/message).
-        $user->currentTeam->forceFill(['credit_balance' => 10])->save();
+        // Exactly one greeting's worth (haiku bills 11 credits/message).
+        $user->currentTeam->forceFill(['credit_balance' => 11])->save();
 
         // Cap 0 → every greeting debits. First eats the last credits…
         $this->postJson("/embed/{$agent->slug}/launch")->assertOk();

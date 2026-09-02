@@ -44,7 +44,7 @@ class BillingInvariantsTest extends TestCase
 
         $this->actingAs($user)->postJson(route('knowledge.query'), ['question' => 'price?'])->assertOk();
 
-        $this->assertSame(90, $user->currentTeam->fresh()->credit_balance); // 1 message x haiku's 10 credits
+        $this->assertSame(89, $user->currentTeam->fresh()->credit_balance); // 1 message x haiku's 11 credits
     }
 
     public function test_kb_query_rejects_at_zero_balance(): void
