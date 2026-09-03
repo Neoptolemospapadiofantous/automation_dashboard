@@ -91,12 +91,16 @@ class ProviderHealthCheck extends Command
         $model = (string) config('runtime.llm.anthropic.model_default');
 
         if ($key === '') {
-            // Deliberate state, not an incident (2026-08-10 metered flip):
-            // without a key the Claude tiers show as "Coming soon" in the
-            // tier picker and agents degrade to the funded default tier.
-            // WARN keeps the hourly findings honest without burying real
-            // FAILs under expected noise.
-            return $this->finding('provider-anthropic', 'WARN', 'ANTHROPIC_API_KEY not set — Claude tiers shown as coming soon; agents degrade to the default tier');
+            // Every Claude tier is byok_only, so the platform never buys one:
+            // holding no key is the design, not an outage, and a customer who
+            // connects their own is unaffected by this. PASS rather than WARN
+            // on purpose — a warning that can never be cleared is how a digest
+            // stops being read.
+            if ($this->providerIsByokOnly('anthropic')) {
+                return $this->finding('provider-anthropic', 'PASS', 'no platform key by design — every Claude tier is byok_only and runs on the customer\'s own key');
+            }
+
+            return $this->finding('provider-anthropic', 'WARN', 'ANTHROPIC_API_KEY not set — no Claude tier can be served');
         }
 
         try {
@@ -170,6 +174,32 @@ class ProviderHealthCheck extends Command
     }
 
     /**
+     * True when every tier on this provider is byok_only — i.e. the platform
+     * never buys it, so holding no key is the intended permanent state rather
+     * than an outage. Derived from the tier config so a policy change here
+     * cannot leave the health check asserting the opposite.
+     */
+    protected function providerIsByokOnly(string $provider): bool
+    {
+        $tiers = array_filter(
+            (array) config('runtime.tiers'),
+            fn (array $t): bool => ($t['provider'] ?? null) === $provider,
+        );
+
+        if ($tiers === []) {
+            return false;
+        }
+
+        foreach ($tiers as $tier) {
+            if (! ($tier['byok_only'] ?? false)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * @return array{check: string, status: string, detail: string}
      */
     protected function checkGemini(): array
@@ -179,6 +209,10 @@ class ProviderHealthCheck extends Command
         $model = (string) config('runtime.llm.google.model_default');
 
         if ($key === '') {
+            if ($this->providerIsByokOnly('google')) {
+                return $this->finding('provider-gemini', 'PASS', 'no platform key by design — the Gemini tier is byok_only and runs on the customer\'s own key');
+            }
+
             return $this->finding('provider-gemini', 'WARN', 'GEMINI_API_KEY is not set');
         }
 
