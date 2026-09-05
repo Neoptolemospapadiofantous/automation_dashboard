@@ -19,7 +19,7 @@ Named services, each scoped to your stack:
 - **Invoices & documents** — made, sent and chased; the follow-up runs itself
 - **Connect your tools** — your CRM, sheets and inbox stop needing the same thing typed twice
 - **Inbox triage** — incoming mail sorted, labelled and routed automatically
-- **Email automation** — follow-ups, reminders and replies that send themselves, in your voice
+- **Email automation** — follow-ups, reminders and replies that send themselves, in your voice. Full details at flowstack.run/email-automation — the mail your business already owes people (booking confirmations and reminders, follow-ups after a job, review requests, invoice chasers), sent from your own address to people who already know you. We do not buy lists or mail strangers; finding new customers is Cold outreach, a separate service
 - **Ongoing care** — we watch what we built and fix it before you notice
 
 These are examples, not the boundary: anything a team does by hand every week
