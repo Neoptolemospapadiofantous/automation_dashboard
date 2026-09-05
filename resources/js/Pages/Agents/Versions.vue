@@ -29,6 +29,18 @@ const form = useForm({
 
 const tierLabel = (key) => props.tiers.find((t) => t.key === key)?.label ?? key;
 const tierCost = (key) => props.tiers.find((t) => t.key === key)?.credits_per_message ?? 1;
+
+// What a turn on this tier actually costs, for the history rows. A premium
+// tier is byok_only — credits cannot buy it at any price — so quoting its
+// multiplier there would advertise a price that can never be charged. Mirrors
+// the badge logic in the picker above.
+const tierBadge = (key) => {
+    const t = props.tiers.find((x) => x.key === key);
+    if (!t) return `${tierCost(key)}cr/msg`;
+    if (t.own_key) return 'your key · 0 cr';
+    if (t.byok_only) return 'your key';
+    return `${t.credits_per_message}cr/msg`;
+};
 const anyOwnKey = computed(() => props.tiers.some((t) => t.own_key));
 const providerLabel = (p) => ({ anthropic: 'Anthropic', openai: 'OpenAI', google: 'Google' }[p] ?? p);
 
@@ -200,7 +212,7 @@ const dirty = computed(() => form.isDirty);
                                     {{ v.status }}
                                 </span>
                                 <span class="rounded-none bg-surface-hi px-2 py-0.5 font-mono text-[10px] font-medium text-ink-dim">
-                                    {{ tierLabel(v.config?.model_tier ?? 'standard') }} · {{ tierCost(v.config?.model_tier ?? 'standard') }}cr/msg
+                                    {{ tierLabel(v.config?.model_tier ?? 'standard') }} · {{ tierBadge(v.config?.model_tier ?? 'standard') }}
                                 </span>
                             </div>
                             <p class="mt-0.5 truncate text-xs text-ink-dim">
