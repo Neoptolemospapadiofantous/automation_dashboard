@@ -195,7 +195,7 @@ class LandingFaqSeeder extends Seeder
                     'what do you do', 'what is this', 'what does the agent', 'how does it work', 'what can you do',
                     'what is flowstack', 'what do you actually do', 'what does flowstack do',
                 ],
-                'answer' => 'Three things: chat that answers your website, outreach that finds you customers, and one dashboard of your numbers. The chat is free to start and live in about a minute; the rest we build around your tools. Which of the three is closest to what you need?',
+                'answer' => 'We build the whole online side of a business: your website, a chat on it that answers from your own knowledge, the email and busywork automated behind it, and your numbers in one live dashboard. The chat is free to start and live in about a minute; the rest is quoted after a free call. Take one piece, or the lot. Which piece are you after?',
             ],
             [
                 'category' => 'Book the audit',

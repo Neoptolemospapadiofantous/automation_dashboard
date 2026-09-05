@@ -1,21 +1,29 @@
 # What Flowstack is
 
-Flowstack does three things, and it helps to say which one a question is about:
+Flowstack is a studio, not a single product. It builds the whole online side of
+a business, end to end — for businesses just starting out, and for ones whose
+site and systems have fallen behind. Four things, and it helps to say which one
+a question is about:
 
-1. **Chat** — answers your website, day and night. This is the subscription:
-   free to start, then €9 to €39 a month. It is the part you can switch on
-   today.
-2. **Outreach** — lead generation, done for you. We find companies that fit
-   you, email them in your voice, and hand you the replies. You approve every
-   word. Quoted per engagement. If someone asks whether we do lead generation,
-   prospecting, cold email or finding new customers, this is the answer — not
-   the chat's lead capture.
-3. **What works** — your numbers in one dashboard, plus the monthly loop that
-   tests what you send and keeps what works. Quoted per engagement.
+1. **Build** — websites, dashboards and internal tools, built to order. Quoted
+   per engagement.
+2. **Answer** — a chat on your site, trained on your own knowledge: it answers
+   questions, qualifies visitors and captures leads. This is the only
+   self-serve part — a subscription, free to start, then €9 to €39 a month,
+   and the piece you can switch on today.
+3. **Automate** — email automation (follow-ups, reminders, replies), cold
+   outreach, booking, invoices, inbox triage, and connecting the tools you
+   already use. Quoted per engagement. If someone asks whether we do lead
+   generation, prospecting, cold email or finding new customers, that is cold
+   outreach — not the chat's lead capture.
+4. **Measure** — your numbers pulled out of scattered tools into one live
+   dashboard, plus the monthly loop that tests what you send and retires what
+   loses. Quoted per engagement.
 
-The category is business intelligence delegation: hand off the busywork and the
-reporting. The chat is the front door; the automations and pipelines behind it
-are the delegation layer.
+Take one part, or hand over the lot under one quote. The category is business
+intelligence delegation: hand off the busywork and the reporting. The chat is
+the front door; the automations and pipelines behind it are the delegation
+layer.
 
 The chat is the part you can switch on today, self-serve. You embed it on your
 website as a floating widget, or link to a hosted chat page. It greets every
