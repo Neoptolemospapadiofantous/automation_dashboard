@@ -143,6 +143,20 @@ enum Plan: string
     }
 
     /**
+     * Whether the plan includes a free website build — the brochure-style
+     * engagement at flowstack.run/website-build, up to about six pages with
+     * the chat installed. A shop or portal is still quoted as its own build.
+     *
+     * ANNUAL ONLY, and that is the whole point: a monthly Operator subscriber
+     * does not qualify. Every surface that shows this must name the annual
+     * condition, because the same plan card renders for both cycles.
+     */
+    public function includesWebsiteBuildOnAnnual(): bool
+    {
+        return $this === self::Pro;
+    }
+
+    /**
      * Monthly chat-message ceiling for turns that run on the team's OWN key.
      *
      * A BYOK turn spends no credits, so the credit balance stops bounding

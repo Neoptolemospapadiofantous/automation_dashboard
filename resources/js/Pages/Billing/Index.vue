@@ -288,6 +288,17 @@ function openPortal() {
                                 >
                                     Billed yearly · €{{ p.annual_eur.toLocaleString() }} / yr
                                 </span>
+                                <!-- Annual-only, so the wording carries the condition in
+                                     both states: on the annual toggle it reads as included,
+                                     on monthly it reads as what switching would add. -->
+                                <span
+                                    v-if="p.website_build_on_annual"
+                                    class="mt-1 text-[10px] leading-snug"
+                                    :class="cycle === 'annual' ? 'text-state-ok-ink' : 'text-ink-mute'"
+                                >
+                                    <template v-if="cycle === 'annual'">Includes a free website build</template>
+                                    <template v-else>Free website build on the annual plan</template>
+                                </span>
                                 <span
                                     v-else-if="cycle === 'annual' && !p.annual_available"
                                     class="mt-1 text-[10px] leading-snug text-state-warn-ink"

@@ -132,4 +132,20 @@ class PremiumTiersAreByokOnlyTest extends TestCase
             'name' => 'Bot', 'model_tier' => 'opus',
         ])->assertSessionHasErrors('model_tier');
     }
+
+    public function test_the_free_website_build_is_annual_only_and_operator_only(): void
+    {
+        // The promotion the landing sells: annual Operator includes the
+        // brochure-style website build. Locked here because the plan cards
+        // render for BOTH cycles, so a surface that drops the annual
+        // condition promises a monthly subscriber something they do not get.
+        $this->assertTrue(Plan::Pro->includesWebsiteBuildOnAnnual());
+
+        foreach ([Plan::Free, Plan::Starter, Plan::Growth, Plan::Business] as $plan) {
+            $this->assertFalse(
+                $plan->includesWebsiteBuildOnAnnual(),
+                $plan->value.' must not advertise the free website build',
+            );
+        }
+    }
 }

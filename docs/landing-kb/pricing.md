@@ -56,8 +56,15 @@ For a site with real traffic, or a team that wants a different agent per role.
 - Or connect your own OpenAI, Anthropic or Google API key to use the premium
   engines: those replies run on your provider account, spend no credits, and are
   capped at 25,000 messages a month
+- **On the annual plan (€390/yr): a free website build**
 - Best rate per credit
 - Cancel anytime, no lock-in
+
+The annual Operator plan includes a free website build — the brochure-style
+build at flowstack.run/website-build, up to about six pages with the chat
+installed from day one. It is scoped on the same free 30-minute call. A shop,
+a booking portal or anything custom is still quoted as its own build. This
+comes with the ANNUAL plan only: paying €39 monthly does not include it.
 
 For teams running several agents every day. This is the most expensive plan we
 sell — everything above it is build work, quoted per project.

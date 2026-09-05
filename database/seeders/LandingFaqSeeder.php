@@ -187,7 +187,7 @@ class LandingFaqSeeder extends Seeder
                     'price', 'prices', 'pricing', 'cost', 'costs', 'how much', 'plan', 'plans', 'quote',
                     'expensive',
                 ],
-                'answer' => 'The chat starts free: 1 agent, 250 credits a month, no card. Then €9 a month (1 agent, 2,500 credits), €19 (5 agents, 10,000) or €39 (5 agents, 25,000) — €39 is our most expensive plan. A short chat is about 5-8 credits, so €9 buys roughly 300-500 a month. Cancel anytime, VAT not included. Builds have no list price; we quote them after a free call. Which do you mean — the chat, or a build?',
+                'answer' => 'The chat starts free: 1 agent, 250 credits a month, no card. Then €9 (1 agent, 2,500 credits), €19 (5 agents, 10,000) or €39 (5 agents, 25,000) — our top plan, and paying that one yearly also includes a free website build. A short chat is about 5-8 credits, so €9 buys roughly 300-500. Cancel anytime, VAT not included. Builds are quoted after a free call. The chat, or a build?',
             ],
             [
                 'category' => 'What it does',

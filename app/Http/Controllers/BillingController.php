@@ -78,7 +78,8 @@ class BillingController extends Controller
      * @return array{
      *   key: string, value: string, label: string, plan_rank: int, monthly_eur: int,
      *   annual_eur: ?int, annual_equivalent_monthly_eur: ?int, annual_savings_pct: int,
-     *   annual_available: bool, max_agents: int, monthly_credits: int
+     *   annual_available: bool, max_agents: int, monthly_credits: int,
+     *   allows_own_key: bool, message_cap: int, website_build_on_annual: bool
      * }
      */
     protected function planSummary(Plan $plan, string $key): array
@@ -103,6 +104,9 @@ class BillingController extends Controller
             // must show the same entitlement.
             'allows_own_key' => $plan->allowsOwnKey(),
             'message_cap' => $plan->monthlyMessageCap(),
+            // Annual-only perk. The card renders for both cycles, so the UI
+            // must state the condition rather than just the benefit.
+            'website_build_on_annual' => $plan->includesWebsiteBuildOnAnnual(),
         ];
     }
 
