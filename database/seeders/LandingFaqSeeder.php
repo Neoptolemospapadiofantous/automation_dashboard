@@ -139,6 +139,32 @@ class LandingFaqSeeder extends Seeder
                 'answer' => 'Two things: all your numbers in one dashboard, and a monthly loop that tests what you send and keeps what works. Built around the tools you already use, quoted after a free 30-minute call — flowstack.run/what-works. What are you rebuilding by hand right now?',
             ],
             [
+                // Sits ahead of 'Custom build' so "can you do booking" is read as an
+                // AVAILABILITY question before it can be read as a build one. It exists
+                // because the LLM path answered "we don't have booking yet" and then
+                // offered to fetch a human — routing a routine product question into the
+                // escalation path, which rings the founder's phone. A chip matches first
+                // and cannot escalate (same reason the BYOK chip was added on 08-27).
+                //
+                // Keywords are PHRASE-LEVEL and deliberately exclude bare 'booking' and
+                // bare 'whatsapp': "set up booking for me" is the Studio's, and "can I
+                // contact you on WhatsApp" is a contact question. Also excluded, after
+                // probing: 'email automation', 'send follow-ups', 'send reminders' and
+                // 'live dashboard' — those name services the Studio SELLS TODAY (there
+                // is a live /email-automation page), and routing them here would answer
+                // "not yet" about work we already do. 'one live view' is redundant:
+                // 'What works' sits ahead of this and wins it.
+                'category' => "What's coming",
+                'keywords' => [
+                    'can you do booking', 'do you do booking', 'do you have booking',
+                    'is booking available', 'can the app do booking', 'can the chat book',
+                    'book appointments',
+                    'whatsapp channel', 'whatsapp integration', 'answer on whatsapp', 'work on whatsapp',
+                    "what's coming", 'whats coming', 'coming soon', 'roadmap', 'not yet available',
+                ],
+                'answer' => 'Not in the app yet — booking, WhatsApp, inbox and portal enquiries, email automation and the live dashboard are all on the way. In your dashboard, open Suite and press Request on the ones you need; we build in that order and email you when yours is ready. Need it now? The Studio sets it up for you as part of a package. Which one are you after?',
+            ],
+            [
                 'category' => 'Custom build',
                 'keywords' => [
                     'custom build', 'custom-build', 'bespoke', 'own llm', 'what do you build', 'build me',

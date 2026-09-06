@@ -124,6 +124,53 @@ class LandingFaqSeederTest extends TestCase
         $this->assertNull($canned->match('what are the key features?'));
     }
 
+    public function test_whats_coming_answers_availability_without_stealing_what_the_studio_sells(): void
+    {
+        // "can you do booking?" reached the LLM, which answered "we don't have
+        // booking yet" and then offered to fetch a human — routing a routine
+        // product question into the escalation path, which rings a phone. A
+        // chip matches first and cannot escalate.
+        $agent = $this->landingAgent();
+
+        $this->seed(LandingFaqSeeder::class);
+
+        $canned = CannedAnswers::forAgent($agent->id);
+        foreach ([
+            'can you do booking?',
+            'do you do booking?',
+            'do you have booking?',
+            'is booking available?',
+            'can the app do booking?',
+            'can the chat answer on whatsapp?',
+            "what's coming next?",
+        ] as $q) {
+            $this->assertSame("What's coming", $canned->match($q)?->category, "'{$q}' must land on the What's coming chip.");
+        }
+
+        // It must NOT answer "not yet" about work the Studio sells today —
+        // email automation has its own live page, and a dashboard build is
+        // quoted work. Those stay on the LLM, grounded by the knowledge base.
+        foreach ([
+            'do you do email automation?',
+            'do you send follow-ups to customers?',
+            'can you send reminders after a job?',
+            'can you build a live dashboard for me?',
+        ] as $q) {
+            $this->assertNull($canned->match($q), "'{$q}' names something the Studio sells today — it must not be answered as 'not yet'.");
+        }
+
+        // Bare nouns are deliberately not keywords.
+        $this->assertNull($canned->match('can I contact you on whatsapp?'), 'bare "whatsapp" must not be a keyword');
+        $this->assertNull($canned->match('set up booking for me'), 'bare "booking" must not be a keyword');
+
+        // The collisions the chip must NOT cause — it sits at position 3.
+        $this->assertSame('Pricing', $canned->match('how much does it cost?')?->category);
+        $this->assertSame('Custom build', $canned->match('can you build my website?')?->category);
+        $this->assertSame('Custom build', $canned->match("what's the studio?")?->category);
+        $this->assertSame('Outreach', $canned->match('do you do lead generation?')?->category);
+        $this->assertSame('What works', $canned->match('do you do one live view?')?->category);
+    }
+
     public function test_buy_intent_reaches_getting_started_with_the_real_signup_url(): void
     {
         // A real visitor asked "the link to buy it" and the chat answered it
