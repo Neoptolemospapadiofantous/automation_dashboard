@@ -163,6 +163,10 @@ const handleMobileNavClick = (event) => {
                                 </template>
                                 Versions
                             </SidebarLink>
+                            <SidebarLink :href="route('suite.index')" active-pattern="suite.*">
+                                <template #icon>
+                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
+                                </template>Suite</SidebarLink>
                             <SidebarLink :href="route('install.index')" active-pattern="install.*">
                                 <template #icon>
                                     <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
@@ -492,6 +496,7 @@ const handleMobileNavClick = (event) => {
                                 <SidebarLink v-if="automationsEnabled" :href="route('agents.activity.index')" active-pattern="agents.activity.*">Activity</SidebarLink>
                                 <SidebarLink v-if="isAdmin" :href="route('agents.faq.index')" active-pattern="agents.faq.*">FAQ</SidebarLink>
                                 <SidebarLink :href="route('agents.versions.index')" active-pattern="agents.versions.*">Versions</SidebarLink>
+                                <SidebarLink :href="route('suite.index')" active-pattern="suite.*">Suite</SidebarLink>
                                 <SidebarLink :href="route('install.index')" active-pattern="install.*">Install</SidebarLink>
                                 <SidebarLink :href="route('billing.index')" active-pattern="billing.*">Billing</SidebarLink>
                             </div>

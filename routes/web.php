@@ -21,6 +21,7 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OwnKeyController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SubscribeController;
+use App\Http\Controllers\SuiteController;
 use App\Http\Middleware\RequireAgent;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -265,6 +266,13 @@ Route::middleware([
     Route::put('/install/widget', [InstallController::class, 'update'])
         ->middleware('throttle:30,1')
         ->name('install.update');
+
+    // The Suite — every module in two lines (the app, the Studio). A
+    // `coming` module's only action is "request it", recorded per team.
+    Route::get('/suite', [SuiteController::class, 'index'])->name('suite.index');
+    Route::post('/suite/request', [SuiteController::class, 'request'])
+        ->middleware('throttle:30,1')
+        ->name('suite.request');
 
     // Knowledge Base (native runtime RAG store).
     Route::get('/knowledge', [KnowledgeBaseController::class, 'index'])->name('knowledge.index');

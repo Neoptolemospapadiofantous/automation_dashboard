@@ -113,3 +113,28 @@ upload your knowledge, paste one script tag.
 Three ways: book the free 30-minute audit at flowstack.run/audit (a human runs
 it), email hello@flowstack.run, or ask this chat for a human — the team is
 notified and someone picks the chat up.
+
+## What is the difference between the app and the Studio?
+
+Two separate things. The app is the chat you run yourself from the dashboard —
+free to start, then €9, €19 or €39 a month, on your own card, cancel anytime.
+The Studio is the done-for-you side for businesses in Cyprus: website, outreach,
+booking, email automation, one live dashboard, and ongoing care — built and
+watched by us, quoted after the free Leak Report, invoiced separately. A Studio
+client runs the app too; the subscription stays theirs.
+
+## What is the Leak Report?
+
+The free first step with the Studio. With your permission we look at your site,
+listings and inbox for about a week and give you one page: how fast enquiries
+are answered, how many go unanswered, which languages and hours are uncovered,
+and three fixes ranked by what they cost you. Five working days, then the free
+30-minute call and a written price within 48 hours. Book at flowstack.run/audit.
+
+## Can the app do booking, WhatsApp, email automation or a live dashboard?
+
+Not yet on its own. In the dashboard, the Suite page lists each of these as
+"not yet available" with a Request button — the requests decide what gets built
+next, and we email you when yours is ready. If you need one now, the Studio
+sets it up for you as part of a package. Do not describe any of these as
+working in the app today.

@@ -1,13 +1,45 @@
-# Custom build
+# The Studio — custom build, done for you
 
-The standard agent covers about 80% of what people need. The custom build is
-everything behind it: the work your team does by hand, handed to automations
-wired into your own tools (CRM, sheets, internal systems); lead sourcing,
-enrichment and outreach; and reporting that pulls your scattered numbers into
-one live dashboard. Reports that build themselves, every run audited. It is the
-same setup we run our own company on.
+Flowstack is two things, kept separate on purpose. The **app** is the chat you
+run yourself from the dashboard: free to start, paid plans €9–€39 a month, and
+inside it a Suite page listing every module — the ones live today and the ones
+not yet available, which you can request. The **Studio** is the done-for-you
+side: we build, install and watch the rest, for businesses in Cyprus, quoted
+and invoiced separately from the subscription. Ask which one someone means
+before answering "can you do X" — the app is a switch, the Studio is a team.
 
-## What we build
+## How the Studio starts: the free Leak Report
+
+Every Studio engagement starts with the Leak Report. With the customer's
+permission we look at their site, their listings and their inbox for about a
+week, then hand them one page: how fast enquiries get answered, how many go
+unanswered, which languages and hours arrive uncovered, and three fixes ranked
+by what they are costing. It is free, takes five working days, and ends in the
+free 30-minute call (Greek or English) with a written price within 48 hours —
+theirs to keep whether or not they hire us. It replaces nothing: the call and
+the 48-hour written scope are the same as before; the report is what comes
+first now. Book it at flowstack.run/audit; the Studio is described at
+flowstack.run/studio.
+
+## The two packages
+
+- **Never Miss an Enquiry** — every enquiry from the site, WhatsApp and the
+  inbox answered in under a minute, in the visitor's language, and booked into
+  the calendar; instant answers for the questions they get every day; a weekly
+  one-line report; and Care — we watch it and fix it. For car-rental desks,
+  hotels, villas, venues, studios, clinics: anyone whose customer asks at 23:40.
+- **Fill the Calendar** — everything above, plus we go and find the customers:
+  the cold outreach engine on their own sending domain, email automation to
+  people they already know, their numbers in one live dashboard, and Managed —
+  a monthly report on what came in and what it produced, and changes made
+  because of it.
+
+Both are quoted after the Leak Report. Do not quote or estimate a price for
+either; do not describe a package's WhatsApp or inbox routing as something the
+app does on its own today — in the app those modules are listed as not yet
+available and can be requested; in a package the Studio sets them up.
+
+## Add-ons — after a package, not instead of one
 
 Named services, each scoped to your stack:
 
