@@ -146,7 +146,9 @@ class LandingFaqSeeder extends Seeder
                     'build my website', 'build a website', 'build websites', 'website build',
                     // The Studio line (2026-09-06). Bare 'studio' is NOT a keyword: a
                     // visitor who runs a yoga or dance studio would land here.
-                    'the studio', 'done for you', 'do it for me', 'do it for us', 'package', 'packages',
+                    // Bare 'package'/'packages' were tried and REJECTED the same day: "what's in the
+                    // €19 package?" is a Growth-plan question and Custom build sits ahead of Pricing.
+                    'the studio', 'done for you', 'do it for me', 'do it for us',
                 ],
                 'answer' => 'That\'s the Studio — the done-for-you side, separate from the app. It starts with the free Leak Report: one page on where you\'re losing customers, in five working days. Then two packages, Never Miss an Enquiry or Fill the Calendar, with website, invoices, inbox triage and tool connections as add-ons. Quoted after the report, written price within 48 hours, and you keep everything built. Which sounds like you?',
             ],

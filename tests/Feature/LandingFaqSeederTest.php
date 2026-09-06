@@ -148,6 +148,18 @@ class LandingFaqSeederTest extends TestCase
         $this->assertNull($canned->match("what's the link to your linkedin?"), "bare 'link' must not be a keyword");
         $this->assertNull($canned->match('send me the link'), 'only the exact observed phrase is safe — the rest of the bare-link family belongs to the (now correctly grounded) LLM path');
         $this->assertSame('Book the audit', $canned->match('can you send me the link to the audit page?')?->category);
+
+        // The Studio reframe (2026-09-06). Intent phrases route to Custom build; a
+        // subscription-price question must still land on Pricing — bare 'package'
+        // was found stealing it the day it shipped.
+        $this->assertSame('Custom build', $canned->match('can you just do it for me?')?->category);
+        $this->assertSame('Custom build', $canned->match('what does the studio do?')?->category);
+        $this->assertSame('Book the audit', $canned->match('what is the leak report?')?->category);
+        // Bare 'package' used to send this to Custom build. Pricing has no keyword for
+        // it either, so it falls through to the LLM, whose grounding (pricing.md) knows
+        // the plans — the thing that must never happen is the Studio pitch answering
+        // a subscription-price question.
+        $this->assertNotSame('Custom build', $canned->match("what's in the €19 package?")?->category);
         $this->assertSame('Your own key', $canned->match('can I use my own API key?')?->category);
         $this->assertSame('Pricing', $canned->match('how much does it cost?')?->category);
         $this->assertSame('Pricing', $canned->match('how much do I pay each month?')?->category, 'Pricing sits before Getting started and keeps price questions');
