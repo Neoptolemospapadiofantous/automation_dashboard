@@ -144,8 +144,11 @@ class LandingFaqSeeder extends Seeder
                     'custom build', 'custom-build', 'bespoke', 'own llm', 'what do you build', 'build me',
                     'build us', 'build for me', 'build for us', 'scope', 'proposal',
                     'build my website', 'build a website', 'build websites', 'website build',
+                    // The Studio line (2026-09-06). Bare 'studio' is NOT a keyword: a
+                    // visitor who runs a yoga or dance studio would land here.
+                    'the studio', 'done for you', 'do it for me', 'do it for us', 'package', 'packages',
                 ],
-                'answer' => 'We build to order: your website, agent go-live, cold outreach, email automation, booking, invoices, one live dashboard, connecting your tools, inbox triage — and ongoing care after. Take one, or hand us everything end to end. Each build is quoted after a free 30-minute call — a written price within 48 hours, and you keep the code. What would you want built?',
+                'answer' => 'That\'s the Studio — the done-for-you side, separate from the app. It starts with the free Leak Report: one page on where you\'re losing customers, in five working days. Then two packages, Never Miss an Enquiry or Fill the Calendar, with website, invoices, inbox triage and tool connections as add-ons. Quoted after the report, written price within 48 hours, and you keep everything built. Which sounds like you?',
             ],
             [
                 // Placed ahead of 'Pricing' deliberately: first match wins, and
@@ -201,8 +204,9 @@ class LandingFaqSeeder extends Seeder
                 'category' => 'Book the audit',
                 'keywords' => [
                     'audit', 'free audit', 'book a call', 'book an audit', 'schedule a call', 'consultation',
+                    'leak report', 'losing customers', 'where am i losing',
                 ],
-                'answer' => 'A free 30-minute call with a human, then a written price and scope within 48 hours — yours to keep either way. Book at flowstack.run/audit, or leave your name and email here and we\'ll send you times. Which do you prefer?',
+                'answer' => 'Start with the free Leak Report: with your OK we look at your site, listings and inbox for a week and hand you one page — response time, enquiries missed, three fixes ranked by what they cost you. Five working days, then the free 30-minute call in Greek or English, and a written price within 48 hours. Book at flowstack.run/audit, or leave your email here. Which do you prefer?',
             ],
             [
                 'category' => 'Integrations',
