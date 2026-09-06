@@ -100,7 +100,9 @@ with the same restraint as the accent (~2–5 per page).
 
 | Class | What | Where |
 |---|---|---|
-| `.bg-grid` / `.bg-grid-major` (+ `.bg-grid-fade`) | hairline schematic grid | header/hero/empty-state backdrop |
+| `.atmosphere-grid` | ambient 64px grid, 40s drift | **shell-wide backdrop** — mounted once by `Atmosphere.vue`, never by a page |
+| `.bg-grid` (+ `.bg-grid-fade`) | hairline 32px schematic grid | *local* "nothing here yet" texture only — empty states, dashed drop zones, the auth brand panel |
+| `.bg-footer-grid` | 32/160px title-block grid | the footer register (`SiteFooter.vue`) |
 | `.bp-node` | outlined node box | framed stat / feature / snippet card |
 | `.bp-ref` | mono accent sheet-ref label | `DASH/01`, `LEADS/PIPELINE` — card corner / section head |
 | `.bp-annot` | mono ink-mute caption | annotations, empty-state subtext |
@@ -111,6 +113,16 @@ with the same restraint as the accent (~2–5 per page).
 | `.bp-wire` | animated dashed connector | only where a flow is the point (onboarding steps) |
 | `.shadow-sheet` | hard offset shadow via `--elevation` | depth that **survives dark mode** (a black shadow vanishes on black) |
 | `.glass` | translucent panel | over a grid |
+
+**One ambient grid, one title block.** Page chrome does not carry a grid
+of its own — the landing retired its body-wide `.bg-grid` in the 2026-08
+"ink on paper" redesign, and the dashboard follows: `Atmosphere.vue`
+(`-z-10`, fixed) is the only page-scale grid, `.bg-footer-grid` the only
+other one. Stacking a `.bg-grid` backdrop on a header or hero puts a 32px
+grid over a 64px one — moiré, and twice the visual noise the motif is
+worth. The sheet colour lives on `<body>` (`app.blade.php`) so the
+`-z-10` layer stays visible; an opaque background on a wrapper between
+the two hides it.
 
 Naming convention for `.bp-ref` labels: `AREA/SUBJECT` in caps
 (`DASH/FUNNEL`, `AGENT/RUNTIME`, `TEAM/MEMBERS`). Keep them consistent

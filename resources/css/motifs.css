@@ -24,8 +24,13 @@
       linear-gradient(to bottom, var(--line) 1px, transparent 1px);
     background-size: 32px 32px;
   }
-  /* Coarser grid with stronger lines — "title block" / footer register. */
-  .bg-grid-major {
+  /* Footer-only editorial grid — the "title block" register under a
+     printed sheet. Same recipe and name as the landing's
+     `.bg-footer-grid`: a 32px fine grid for detail under dense footer
+     copy, plus the 160px major grid the body used to carry.
+     (Was `.bg-grid-major` here, unused; renamed to the landing's name
+     when the grid layer was ported across.) */
+  .bg-footer-grid {
     background-image:
       linear-gradient(var(--line) 1px, transparent 1px),
       linear-gradient(90deg, var(--line) 1px, transparent 1px),
@@ -37,6 +42,38 @@
   .bg-grid-fade {
     -webkit-mask-image: radial-gradient(ellipse at top, black 30%, transparent 75%);
     mask-image: radial-gradient(ellipse at top, black 30%, transparent 75%);
+  }
+
+  /* Ambient page-wide backdrop — a faint blueprint grid that slowly
+     drifts, giving the flat sheet depth. Ported verbatim from the
+     landing's globals.css (2026-08 "ink on paper" redesign), where it
+     replaced the body-wide `.bg-grid`. Mounted once per shell by
+     Components/Atmosphere.vue; decorative, so it is aria-hidden and
+     pointer-events-none there.
+
+     Drift is a transform (compositor-friendly) rather than
+     background-position, which would repaint the whole viewport every
+     frame. Silenced under prefers-reduced-motion. */
+  .atmosphere-grid {
+    position: absolute;
+    /* Oversized so the transform drift never reveals a hard edge. */
+    inset: -64px;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    opacity: 0.6;
+    animation: atmosphere-grid-drift 40s linear infinite;
+    will-change: transform;
+  }
+  @keyframes atmosphere-grid-drift {
+    from { transform: translate3d(0, 0, 0); }
+    to   { transform: translate3d(64px, 64px, 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .atmosphere-grid {
+      animation: none !important;
+    }
   }
 
   /* ── Sheet depth ────────────────────────────────────────────────── */

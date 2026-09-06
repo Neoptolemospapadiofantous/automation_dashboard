@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
 import AppConfirmDialog from '@/Components/AppConfirmDialog.vue';
+import Atmosphere from '@/Components/Atmosphere.vue';
 import SiteFooter from '@/Components/SiteFooter.vue';
 import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
@@ -68,7 +69,12 @@ const handleMobileNavClick = (event) => {
         <Head :title="title" />
         <Banner />
 
-        <div class="min-h-screen bg-bg-elev">
+        <!-- Ambient blueprint grid behind the whole shell (the landing's
+             grid layer). Sits at -z-10; the sheet colour is on <body> in
+             app.blade.php so this stays visible under the content. -->
+        <Atmosphere />
+
+        <div class="min-h-screen">
             <!-- ───────────────────────── Sidebar (desktop) ───────────────────────── -->
             <aside class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-[220px] lg:flex-col lg:border-r lg:border-border-line lg:bg-bg">
                 <!-- Logo -->

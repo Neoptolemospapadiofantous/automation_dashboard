@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
+import Atmosphere from '@/Components/Atmosphere.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 
 defineProps({
@@ -73,7 +74,11 @@ function continueOn() {
 
 <template>
     <Head title="Welcome — Set up your agent" />
-    <div class="min-h-screen bg-bg-elev bg-grid">
+    <!-- Standalone page (no AppLayout), so it mounts the shell's ambient
+         grid itself instead of tiling a static .bg-grid. Sheet colour comes
+         from <body>. -->
+    <Atmosphere />
+    <div class="min-h-screen">
         <div class="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
             <div class="bp-rise mb-8 flex items-center justify-between text-xs">
                 <ol class="flex items-center gap-3 font-mono font-medium text-ink-dim">

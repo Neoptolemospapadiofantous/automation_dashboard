@@ -30,8 +30,9 @@ defineProps({
 </script>
 
 <template>
+    <!-- No grid backdrop of its own: the shell's Atmosphere layer carries
+         the ambient grid now, so the header stays a clean opaque sheet. -->
     <header class="relative overflow-hidden border-b border-border-line bg-bg">
-        <div class="bg-grid bg-grid-fade pointer-events-none absolute inset-0 opacity-50" aria-hidden="true" />
         <div class="relative mx-auto px-4 py-4 sm:px-6 sm:py-5 lg:px-8" :class="width">
             <nav v-if="breadcrumbs.length" class="mb-2 flex" aria-label="Breadcrumb">
                 <ol class="flex items-center gap-1.5 font-mono text-xs tracking-wider text-ink-dim">

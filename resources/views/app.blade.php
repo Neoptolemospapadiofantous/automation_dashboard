@@ -38,7 +38,11 @@
         @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
         @inertiaHead
     </head>
-    <body class="font-sans antialiased">
+    {{-- The sheet colour lives here, not on a wrapper div, so it propagates
+         to the canvas. That is what lets Components/Atmosphere.vue paint its
+         ambient grid at -z-10 (above the canvas, below every in-flow
+         element) — and it also gives overscroll the right colour. --}}
+    <body class="bg-bg-elev font-sans antialiased">
         @inertia
     </body>
 </html>

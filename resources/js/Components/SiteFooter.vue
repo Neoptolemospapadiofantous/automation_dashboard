@@ -14,7 +14,11 @@ const year = new Date().getFullYear();
 </script>
 
 <template>
-    <footer class="border-t border-border-line bg-bg">
+    <!-- bg-footer-grid: the denser "title block" register under a printed
+         sheet — the one place the landing still carries a grid of its own,
+         and the only place the dashboard does now. relative keeps the footer
+         painting above the -z-10 atmosphere layer. -->
+    <footer class="bg-footer-grid relative border-t border-border-line bg-bg">
         <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
             <div class="flex flex-col items-start gap-3 font-mono text-xs tracking-wider text-ink-mute sm:flex-row sm:items-center sm:justify-between">
                 <p>
