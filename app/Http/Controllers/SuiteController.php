@@ -114,6 +114,11 @@ class SuiteController extends Controller
 
     private function planCovers(Plan $plan, string $minPlan): bool
     {
+        // The left side is deliberately unguarded: PLAN_RANK's keys are the Plan enum's
+        // cases, and phpstan proves it — add a case to the enum without adding it here
+        // and the analysis fails at the gate, which is a better guard than `?? 0`
+        // silently ranking a new plan as Free. (A `?? 0` on this side is itself a
+        // phpstan error: the offset always exists.)
         return self::PLAN_RANK[$plan->value] >= (self::PLAN_RANK[$minPlan] ?? 0);
     }
 }
