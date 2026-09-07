@@ -345,6 +345,29 @@ class EmbedController extends Controller
         // and Google Calendar") repeats the trigger keywords, and getting
         // the identical paragraph twice reads as the agent ignoring them —
         // the second ask deserves the LLM (live-caught 2026-08-10).
+        // Waiting for contact after a handoff: check this message for an
+        // email or phone BEFORE anything else can answer it. Deterministic,
+        // no model turn, no credits — and it is what turns "someone asked for
+        // a human" into a lead a teammate can actually reply to.
+        if ($conversation !== null && (bool) (($conversation->meta ?? [])['handoff_awaiting_contact'] ?? false)) {
+            $lead = app(EscalateToHuman::class)->captureContactReply($agent, $conversation, $data['visitor_id'], $data['message']);
+            if ($lead !== null) {
+                $reach = $lead->email ?: $lead->phone;
+                $thanks = "Thanks — a teammate will reach you at {$reach}.";
+                $this->recordMessage($conversation, 'user', $data['message']);
+                $this->broadcastEmbed($team->id, 'user', $data['message'], $conversation->id);
+                $this->recordMessage($conversation, 'agent', $thanks);
+                $this->broadcastEmbed($team->id, 'agent', $thanks, $conversation->id);
+
+                return response()->json([
+                    'traces' => [['type' => 'text', 'payload' => ['message' => $thanks, 'citations' => [], 'canned' => true]]],
+                    'ended' => false,
+                    'handoff' => true,
+                    'takeover' => false,
+                ]);
+            }
+        }
+
         $handoffPending = (bool) (($conversation->meta ?? [])['handoff_requested'] ?? false);
         $canned = $handoffPending ? null : CannedAnswers::forAgent($agent->id)->match($data['message']);
         if ($canned !== null && $conversation !== null && $conversation->messages()

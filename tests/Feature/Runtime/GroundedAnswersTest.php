@@ -14,6 +14,7 @@ use App\Runtime\LLM\OpenAiClient;
 use App\Runtime\LLM\ToolCall;
 use App\Runtime\Models\KbGap;
 use App\Runtime\Models\RuntimeSession;
+use App\Runtime\Support\EscalateToHuman;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -375,5 +376,36 @@ class GroundedAnswersTest extends TestCase
             inputTokens: 20,
             outputTokens: 15,
         );
+    }
+
+    public function test_backstop_escalation_asks_how_to_reach_an_anonymous_visitor(): void
+    {
+        // Both real unanswerable handoffs came from this path: the backstop
+        // escalated, the reply never asked for contact, the visitor left.
+        Notification::fake();
+        $this->ownerWithAgent($agent, autoEscalate: true);
+        $this->fakeKnowledge(hasDocuments: true, topScore: 0.20, title: 'Pricing FAQ');
+        $this->fakeLlm($this->textResult('Hmm, let me think about that.'));
+
+        $this->seedSession($agent, 'v1', 'discovery');
+        $traces = app(AgentRuntime::class)->sendText($agent, 'v1', 'do you support SAML SSO?');
+
+        $text = $traces[0]['payload']['message'];
+        $this->assertStringEndsWith(app(EscalateToHuman::class)->contactAsk(), $text);
+    }
+
+    public function test_backstop_does_not_ask_twice_when_the_model_already_did(): void
+    {
+        Notification::fake();
+        $this->ownerWithAgent($agent, autoEscalate: true);
+        $this->fakeKnowledge(hasDocuments: true, topScore: 0.20, title: 'Pricing FAQ');
+        $this->fakeLlm($this->textResult('Not sure — what is your email so a teammate can reply?'));
+
+        $this->seedSession($agent, 'v1', 'discovery');
+        $traces = app(AgentRuntime::class)->sendText($agent, 'v1', 'do you support SAML SSO?');
+
+        $text = $traces[0]['payload']['message'];
+        $this->assertSame(1, substr_count(strtolower($text), 'email'), 'one ask, not two');
+        $this->assertStringNotContainsString(app(EscalateToHuman::class)->contactAsk(), $text);
     }
 }

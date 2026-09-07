@@ -2,6 +2,8 @@
 
 namespace App\Runtime\Support;
 
+use App\Enums\LeadStatus;
+use App\Models\Agent;
 use App\Models\Conversation;
 use App\Models\Lead;
 use App\Models\Team;
@@ -47,6 +49,14 @@ class EscalateToHuman
             $meta['handoff_requested'] = true;
             $meta['handoff_reason'] = $reason;
             $meta['handoff_at'] = now()->toIso8601String();
+            // A handoff with no way to reach the visitor is a lost lead
+            // recorded as a task (two sat unanswerable for a week). Mark
+            // the conversation as waiting for contact so the next visitor
+            // message is checked for an email or phone before anything
+            // else — see captureContactReply().
+            if (! $this->hasContact($context)) {
+                $meta['handoff_awaiting_contact'] = true;
+            }
             $conversation->meta = $meta;
             $conversation->save();
         }
@@ -107,6 +117,95 @@ class EscalateToHuman
         ], fn (string $v): bool => $v !== ''));
 
         return $bits === [] ? null : implode(' · ', $bits);
+    }
+
+    /**
+     * The one line every escalation path appends when no contact is on
+     * file. Deterministic and identical everywhere so a visitor is asked
+     * the same way whether the chip, the tool or the backstop escalated.
+     */
+    public function contactAsk(): string
+    {
+        return 'So a teammate can reach you: what is the best email or phone number?';
+    }
+
+    /**
+     * Called on every visitor message while the conversation is waiting
+     * for contact. If the message carries an email or phone, upsert the
+     * lead exactly as capture_lead would, clear the wait, and re-notify the
+     * owner WITH the contact — quietly, without a second phone call.
+     * Returns the lead, or null when the message carried no contact.
+     */
+    public function captureContactReply(Agent $agent, Conversation $conversation, string $visitorId, string $message): ?Lead
+    {
+        $email = self::extractEmail($message);
+        $phone = self::extractPhone($message);
+        if ($email === null && $phone === null) {
+            return null;
+        }
+
+        $attributes = [
+            'name' => '(no name)',
+            'phone' => $phone,
+            'status' => LeadStatus::New->value,
+            'source' => 'chat',
+            'score' => 0,
+            'score_breakdown' => [],
+            'captured' => array_keys(array_filter(['email' => $email, 'phone' => $phone])),
+            'notes' => 'Left after asking for a human.',
+            'visitor_id' => $visitorId,
+        ];
+
+        // Same dedupe rule as CaptureLeadTool: the email is the identity
+        // when there is one, otherwise the chat session.
+        $lead = $email !== null
+            ? Lead::updateOrCreate(['team_id' => $agent->team_id, 'agent_id' => $agent->id, 'email' => $email], $attributes)
+            : Lead::updateOrCreate(['team_id' => $agent->team_id, 'agent_id' => $agent->id, 'email' => null, 'visitor_id' => $visitorId], $attributes);
+
+        $meta = (array) ($conversation->meta ?? []);
+        $meta['handoff_awaiting_contact'] = false;
+        $meta['handoff_contact_at'] = now()->toIso8601String();
+        $conversation->meta = $meta;
+        $conversation->lead_id = $conversation->lead_id ?? $lead->id;
+        $conversation->save();
+
+        rescue(function () use ($agent, $visitorId, $conversation, $message, $email, $phone): void {
+            $team = $agent->team;
+            $owner = $team instanceof Team ? $team->owner : null;
+            if ($owner instanceof User) {
+                $owner->notify(new HandoffRequestedNotification(
+                    agent: $agent,
+                    visitorId: $visitorId,
+                    reason: 'Visitor left contact details after asking for a human.',
+                    conversationId: $conversation->id,
+                    lastMessage: $message,
+                    contact: implode(' · ', array_filter([$email, $phone])),
+                    ring: false,
+                ));
+            }
+        }, report: true);
+
+        return $lead;
+    }
+
+    public static function extractEmail(string $text): ?string
+    {
+        return preg_match('/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i', $text, $m) === 1 ? strtolower($m[0]) : null;
+    }
+
+    /**
+     * A phone number is at least 8 digits, optionally with a leading +, and
+     * the usual separators — enough to catch "+357 97 606063" and "99123456"
+     * without matching a price or a date.
+     */
+    public static function extractPhone(string $text): ?string
+    {
+        if (preg_match('/\+?\d[\d\s().-]{6,}\d/', $text, $m) !== 1) {
+            return null;
+        }
+        $digits = preg_replace('/\D/', '', $m[0]) ?? '';
+
+        return strlen($digits) >= 8 ? trim($m[0]) : null;
     }
 
     private function conversation(ConversationContext $context): ?Conversation

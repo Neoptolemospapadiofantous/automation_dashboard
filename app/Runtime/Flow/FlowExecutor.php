@@ -200,7 +200,9 @@ class FlowExecutor
         // Deterministic backstop for the hybrid gate: if this was a
         // low-confidence turn and the model didn't escalate on its own,
         // escalate anyway so the human-follow-up promise is always kept.
+        $backstopEscalated = false;
         if ($lowConfidence && ! $this->toolFired($toolEvents, 'request_handoff')) {
+            $backstopEscalated = true;
             rescue(
                 fn () => $this->escalate->handle($context, 'Low-confidence answer: no KB match above the confidence threshold.'),
                 report: true,
@@ -243,6 +245,16 @@ class FlowExecutor
 
         if (trim($finalText) === '') {
             $finalText = 'Thanks — a teammate will follow up shortly.';
+        }
+
+        // The backstop escalated without the model choosing to, so the reply
+        // never asked how to reach the visitor — the tool path's directive
+        // does that, this path had nothing. Both real unanswerable handoffs
+        // came from here. Ask once, unless the model already did.
+        if ($backstopEscalated
+            && ! $this->escalate->hasContact($context)
+            && ! preg_match('/\b(e-?mail|phone)\b/i', $finalText)) {
+            $finalText = rtrim($finalText).' '.$this->escalate->contactAsk();
         }
 
         // Only attach the citations key when there are sources — keeps the

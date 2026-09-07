@@ -34,6 +34,9 @@ class HandoffRequestedNotification extends Notification
         public ?int $conversationId = null,
         public string $lastMessage = '',
         public ?string $contact = null,
+        // False for the follow-up that carries the contact the first alert
+        // lacked: the phone already rang once for this visitor.
+        public bool $ring = true,
     ) {}
 
     /**
@@ -45,7 +48,7 @@ class HandoffRequestedNotification extends Notification
 
         // Ring the founder's phone (free CallMeBot Telegram call) — see
         // the channel class for why a call is the chosen phone layer.
-        if (CallMeBotTelegramCallChannel::configured()) {
+        if ($this->ring && CallMeBotTelegramCallChannel::configured()) {
             $channels[] = CallMeBotTelegramCallChannel::class;
         }
 

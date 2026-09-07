@@ -333,4 +333,90 @@ class HumanTakeoverTest extends TestCase
                 ->where('conversations.data.0.id', $conversation->id)
             );
     }
+
+    public function test_escalation_without_contact_marks_the_conversation_as_waiting(): void
+    {
+        Notification::fake();
+        [, $agent, $conversation, $session] = $this->escalatableConversation();
+
+        app(EscalateToHuman::class)->handle(new ConversationContext($agent, $session, 'human please'), 'asked');
+
+        $this->assertTrue((bool) ($conversation->fresh()->meta['handoff_awaiting_contact'] ?? false));
+    }
+
+    public function test_escalation_with_a_captured_lead_does_not_wait(): void
+    {
+        Notification::fake();
+        [, $agent, $conversation, $session] = $this->escalatableConversation();
+        Lead::create([
+            'team_id' => $agent->team_id, 'agent_id' => $agent->id, 'name' => 'Maria',
+            'email' => 'maria@example.com', 'status' => 'new', 'source' => 'chat',
+            'visitor_id' => 'embed-testvisitor0000001',
+        ]);
+
+        app(EscalateToHuman::class)->handle(new ConversationContext($agent, $session, 'human please'), 'asked');
+
+        $this->assertFalse((bool) ($conversation->fresh()->meta['handoff_awaiting_contact'] ?? false));
+    }
+
+    public function test_a_contact_reply_after_handoff_becomes_a_lead_without_a_second_ring(): void
+    {
+        Notification::fake();
+        [$owner, $agent, $conversation] = $this->escalatableConversation();
+        $conversation->forceFill(['meta' => ['handoff_requested' => true, 'handoff_awaiting_contact' => true]])->save();
+        $startBalance = $agent->team->fresh()->totalCredits();
+
+        $this->postJson(route('embed.interact', $agent->slug), [
+            'visitor_id' => 'embed-testvisitor0000001',
+            'message' => 'sure, Maria@Example.com works',
+        ])
+            ->assertOk()
+            ->assertJsonPath('handoff', true)
+            ->assertJsonPath('traces.0.payload.canned', true)
+            ->assertJsonPath('traces.0.payload.message', 'Thanks — a teammate will reach you at maria@example.com.');
+
+        // The lead the teammate can actually reply to — same shape capture_lead makes.
+        $this->assertDatabaseHas('leads', [
+            'team_id' => $agent->team_id,
+            'agent_id' => $agent->id,
+            'email' => 'maria@example.com',
+            'source' => 'chat',
+            'visitor_id' => 'embed-testvisitor0000001',
+        ]);
+        $fresh = $conversation->fresh();
+        $this->assertFalse((bool) ($fresh->meta['handoff_awaiting_contact'] ?? false));
+        $this->assertNotNull($fresh->meta['handoff_contact_at'] ?? null);
+        $this->assertNotNull($fresh->lead_id);
+
+        // The owner learns the contact — quietly. The phone rang on the first alert.
+        Notification::assertSentTo($owner, HandoffRequestedNotification::class, function (HandoffRequestedNotification $n): bool {
+            return $n->ring === false && str_contains((string) $n->contact, 'maria@example.com');
+        });
+
+        // Deterministic turn: no model call, no credits.
+        $this->assertSame($startBalance, $agent->team->fresh()->totalCredits());
+    }
+
+    public function test_a_reply_without_contact_keeps_waiting(): void
+    {
+        [, $agent, $conversation] = $this->escalatableConversation();
+        $conversation->forceFill(['meta' => ['handoff_requested' => true, 'handoff_awaiting_contact' => true]])->save();
+
+        $lead = app(EscalateToHuman::class)->captureContactReply($agent, $conversation, 'embed-testvisitor0000001', 'I would rather not say, is it €19 a month?');
+
+        $this->assertNull($lead, 'a price is not a phone number');
+        $this->assertDatabaseCount('leads', 0);
+        $this->assertTrue((bool) ($conversation->fresh()->meta['handoff_awaiting_contact'] ?? false));
+    }
+
+    public function test_contact_extraction_reads_what_visitors_actually_type(): void
+    {
+        $this->assertSame('kristi@klkarma.com', EscalateToHuman::extractEmail('you can reach me on Kristi@klkarma.com thanks'));
+        $this->assertNull(EscalateToHuman::extractEmail('no email, just call'));
+
+        $this->assertSame('+357 97 606063', EscalateToHuman::extractPhone('call me on +357 97 606063'));
+        $this->assertSame('99123456', EscalateToHuman::extractPhone('my number is 99123456'));
+        $this->assertNull(EscalateToHuman::extractPhone('it costs €19 a month'), 'a price must not read as a phone');
+        $this->assertNull(EscalateToHuman::extractPhone('booked for 12/09/2026'), 'a date must not read as a phone');
+    }
 }
