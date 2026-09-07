@@ -59,6 +59,17 @@ class EscalateToHuman
             }
             $conversation->meta = $meta;
             $conversation->save();
+
+            // The escalating message itself may carry the contact ("call me
+            // on 99123456, I need a person") — that message is never seen
+            // by the waiting check, which only runs on the NEXT one. Capture
+            // it now so an email in the same breath as the ask is not lost.
+            if (($meta['handoff_awaiting_contact'] ?? false) && trim($context->userMessage) !== '') {
+                rescue(
+                    fn () => $this->captureContactReply($context->agent, $conversation, $context->session->visitor_id, $context->userMessage),
+                    report: true,
+                );
+            }
         }
 
         // Make the "a teammate has been notified" promise TRUE: bell + email

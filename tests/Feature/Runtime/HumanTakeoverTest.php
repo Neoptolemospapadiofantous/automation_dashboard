@@ -419,4 +419,20 @@ class HumanTakeoverTest extends TestCase
         $this->assertNull(EscalateToHuman::extractPhone('it costs €19 a month'), 'a price must not read as a phone');
         $this->assertNull(EscalateToHuman::extractPhone('booked for 12/09/2026'), 'a date must not read as a phone');
     }
+
+    public function test_contact_in_the_escalating_message_itself_is_captured_at_once(): void
+    {
+        // The waiting check only sees the NEXT message; "call me on 99123456,
+        // I need a person" must not have to be typed twice.
+        Notification::fake();
+        [$owner, $agent, $conversation, $session] = $this->escalatableConversation();
+
+        app(EscalateToHuman::class)->handle(new ConversationContext($agent, $session, 'call me on 99123456, I need a person'), 'asked');
+
+        $this->assertDatabaseHas('leads', ['team_id' => $agent->team_id, 'phone' => '99123456', 'visitor_id' => 'embed-testvisitor0000001']);
+        $fresh = $conversation->fresh();
+        $this->assertFalse((bool) ($fresh->meta['handoff_awaiting_contact'] ?? false), 'nothing left to wait for');
+        $this->assertNotNull($fresh->lead_id);
+        Notification::assertSentTo($owner, HandoffRequestedNotification::class, fn (HandoffRequestedNotification $n): bool => $n->ring === false && str_contains((string) $n->contact, '99123456'));
+    }
 }
