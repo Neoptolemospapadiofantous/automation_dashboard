@@ -293,7 +293,7 @@ const handleMobileNavClick = (event) => {
                         <Dropdown align="left" width="56">
                             <template #trigger>
                                 <button type="button" class="group flex h-8 w-full items-center gap-2 rounded-none border border-border-line bg-bg px-2.5 text-left text-sm font-medium text-ink-dim transition hover:border-border-hi hover:bg-surface-hi hover:text-ink">
-                                    <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-none bg-surface-hi text-ink">
+                                    <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center text-ink">
                                         <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                                         </svg>
