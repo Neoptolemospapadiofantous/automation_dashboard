@@ -89,6 +89,15 @@ return [
             'min_plan' => 'growth',
         ],
         [
+            'key' => 'webhooks',
+            'line' => 'app',
+            'status' => 'live',
+            'name' => 'Webhooks',
+            'blurb' => 'Each new lead and handoff request pushed to Zapier, Make, Google Sheets or your CRM as it happens, signed with your own secret.',
+            'route' => 'webhooks.index',
+            'min_plan' => 'starter',
+        ],
+        [
             'key' => 'booking',
             'line' => 'app',
             'status' => 'coming',
