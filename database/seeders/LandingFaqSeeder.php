@@ -226,7 +226,10 @@ class LandingFaqSeeder extends Seeder
                     'what do you do', 'what is this', 'what does the agent', 'how does it work', 'what can you do',
                     'what is flowstack', 'what do you actually do', 'what does flowstack do',
                 ],
-                'answer' => 'We build the whole online side of a business: your website, a chat on it that answers from your own knowledge, the email and busywork automated behind it, and your numbers in one live dashboard. The chat is free to start and live in about a minute; the rest is quoted after a free call. Take one piece, or the lot. Which piece are you after?',
+                // The site's frame since 2026-09-13: FOUR things, named as the
+                // header names them. The website chat is the only self-serve
+                // part; the phone assistant is Studio-built, never "in the app".
+                'answer' => 'Four things: your website, built or rebuilt; a chat and voice assistant that answers every enquiry from your own knowledge — the website chat is free to start and live in a minute, the phone assistant is built to order; automations for your CRM, follow-ups and invoices; and lead generation — cold email, plus call-back and SMS to people who enquired. Take one, or the lot. Which one are you after?',
             ],
             [
                 'category' => 'Book the audit',

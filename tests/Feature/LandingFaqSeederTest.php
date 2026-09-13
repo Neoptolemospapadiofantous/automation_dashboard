@@ -221,6 +221,15 @@ class LandingFaqSeederTest extends TestCase
         // kb_gaps #18: 'what do you do' can't phrase-match through 'actually'.
         $this->assertSame('What it does', $canned->match('what do you actually do?')?->category);
         $this->assertSame('What it does', $canned->match('what does flowstack do for me?')?->category);
+        // The identity answer carries the site's CURRENT frame (four things,
+        // 2026-09-13) and stays honest about voice: the phone assistant is
+        // built to order, never sold as part of the app.
+        $identity = $canned->match('what do you do?')?->answer ?? '';
+        $this->assertStringContainsString('Four things', $identity);
+        foreach (['website', 'voice assistant', 'automations', 'lead generation', 'built to order'] as $must) {
+            $this->assertStringContainsString($must, strtolower($identity), "identity answer must name '{$must}'");
+        }
+        $this->assertStringNotContainsString('Three things', $identity);
     }
 
     public function test_chip_order_and_pricing_rules_hold(): void

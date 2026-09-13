@@ -5,20 +5,23 @@ a business, end to end — for businesses just starting out, and for ones whose
 site and systems have fallen behind. Four things, and it helps to say which one
 a question is about:
 
-1. **Build** — websites, dashboards and internal tools, built to order. Quoted
-   per engagement.
-2. **Answer** — a chat on your site, trained on your own knowledge: it answers
-   questions, qualifies visitors and captures leads. This is the only
-   self-serve part — a subscription, free to start, then €9 to €39 a month,
-   and the piece you can switch on today.
-3. **Automate** — email automation (follow-ups, reminders, replies), cold
-   outreach, booking, invoices, inbox triage, and connecting the tools you
-   already use. Quoted per engagement. If someone asks whether we do lead
-   generation, prospecting, cold email or finding new customers, that is cold
-   outreach — not the chat's lead capture.
-4. **Measure** — your numbers pulled out of scattered tools into one live
-   dashboard, plus the monthly loop that tests what you send and retires what
-   loses. Quoted per engagement.
+1. **Website** — built or rebuilt, English or Greek, with the chat installed
+   from day one. Quoted per engagement.
+2. **Chat & voice assistant** — a chat on your site, trained on your own
+   knowledge: it answers questions, qualifies visitors, books and captures
+   leads. The website chat is the only self-serve part — a subscription, free
+   to start, then €9 to €39 a month, and the piece you can switch on today. A
+   phone assistant that answers calls and books is built to order by the
+   Studio; it is not part of the app or any plan, so never describe it as one.
+3. **Automations** — wired into your CRM and the tools you already use: email
+   follow-ups and reminders, invoice chasers, inbox triage, booking, and live
+   reports that build themselves. Quoted per engagement.
+4. **Lead generation** — cold email from your own address to a checked list,
+   plus an instant call-back and SMS follow-up to people who have enquired.
+   Call-back and SMS go only to people who asked to be contacted; there is no
+   cold SMS and no cold automated calling. Quoted per engagement. If someone
+   asks whether we do lead generation, prospecting, cold email or finding new
+   customers, that is this — cold outreach — not the chat's lead capture.
 
 Take one part, or hand over the lot under one quote. The category is business
 intelligence delegation: hand off the busywork and the reporting. The chat is

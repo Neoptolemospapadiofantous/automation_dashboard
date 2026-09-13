@@ -2,9 +2,10 @@
 
 ## Is this just a chat widget?
 
-No. The chat answers your website. Behind it, we automate your repetitive work
-and pull your numbers into one live view — built around your own tools, and
-scoped after the free 30-minute audit.
+No. The chat is one of four things: a website, a chat and voice assistant,
+automations, and lead generation. Everything beyond the website chat is built
+around your own tools and scoped after the free 30-minute audit; the website
+chat is the part you switch on yourself.
 
 On its own the chat greets every visitor, does the job its role calls for
 (qualify a lead, answer a sales question, resolve a support ticket, walk a new
