@@ -7,6 +7,7 @@ use App\Billing\Plan;
 use App\Models\Agent;
 use App\Models\PlatformSetting;
 use App\Models\Team;
+use App\Support\SignIn;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -42,6 +43,10 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+
+            // Which "Continue with …" buttons the sign-in and register pages
+            // show — only providers with credentials configured.
+            'socialProviders' => fn () => SignIn::configuredProviders(),
 
             // Platform-engineer (Hermes operator) flag for the admin nav.
             // Stricter than team Owner — scoped to the allowlist in

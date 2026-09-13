@@ -16,7 +16,10 @@ use App\Runtime\Tools\SetVariableTool;
 use App\Runtime\Tools\ToolRegistry;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use SocialiteProviders\Manager\SocialiteWasCalled;
+use SocialiteProviders\Microsoft\MicrosoftExtendSocialite;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -57,6 +60,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Socialite's Microsoft driver ships as a community provider and
+        // registers itself through this event (Google is built in).
+        Event::listen(SocialiteWasCalled::class, MicrosoftExtendSocialite::class.'@handle');
+
         // Branded verification email. Replaces Laravel's default
         // "Whoops" generic template with Flowstack copy + tone, while
         // keeping the signed URL Fortify generates.

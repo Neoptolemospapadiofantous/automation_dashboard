@@ -17,6 +17,11 @@ const props = defineProps({
 
 const page = usePage();
 
+// "Continue with …" buttons: only the providers the server has credentials
+// for. Plain anchors — the OAuth redirect is a full-page navigation.
+const providers = computed(() => page.props.socialProviders ?? []);
+const providerLabel = { google: 'Google', microsoft: 'Microsoft' };
+
 // Active panel. `forgot` is a sub-mode of the sign-in side.
 const mode = ref(props.initialMode);
 const panelRef = ref(null);
@@ -26,6 +31,7 @@ const refLabel = computed(() => ({
     login: 'ACCESS/LOGIN',
     register: 'ACCESS/NEW',
     forgot: 'ACCESS/RESET',
+    link: 'ACCESS/LINK',
 }[mode.value]));
 
 // Human heading + supporting line, per mode — the tabs switch modes, these
@@ -34,11 +40,13 @@ const heading = computed(() => ({
     login: 'Welcome back',
     register: 'Create your account',
     forgot: 'Reset your password',
+    link: 'Sign in by email',
 }[mode.value]));
 const subline = computed(() => ({
     login: 'Sign in to your workspace.',
     register: 'Set up your workspace and agent in minutes.',
     forgot: "We'll email you a secure reset link.",
+    link: 'No password — we email you a one-time link.',
 }[mode.value]));
 
 // The segmented control has two segments; `forgot` sits under the sign-in one.
@@ -66,6 +74,10 @@ const registerForm = useForm({
     name: '', email: '', password: '', password_confirmation: '', terms: false,
 });
 const forgotForm = useForm({ email: '' });
+const linkForm = useForm({ email: '' });
+const submitLink = () => {
+    linkForm.post(route('magic-link.send'), { onSuccess: () => linkForm.reset() });
+};
 
 const submitLogin = () => {
     loginForm.transform((data) => ({
@@ -128,6 +140,29 @@ const submitForgot = () => {
             {{ status }}
         </div>
 
+        <!-- Other ways in. Same buttons on both tabs: a provider account that
+             does not exist yet is created on the callback, so "sign in" and
+             "create account" are the same click. -->
+        <div v-if="providers.length && mode !== 'forgot'" class="mb-6">
+            <div class="grid gap-2" :class="providers.length > 1 ? 'sm:grid-cols-2' : ''">
+                <a
+                    v-for="p in providers"
+                    :key="p"
+                    :href="route('social.redirect', p)"
+                    class="inline-flex min-h-10 items-center justify-center gap-2 rounded-none border border-border-hi bg-bg px-3 text-sm font-medium text-ink transition hover:bg-surface-hi focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1"
+                >
+                    <svg v-if="p === 'google'" class="size-4" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 12.23c0-.68-.06-1.36-.19-2.02H12v3.83h5.4a4.62 4.62 0 0 1-2 3.03v2.5h3.23c1.9-1.75 2.97-4.32 2.97-7.34Z"/><path fill="currentColor" d="M12 21.6c2.7 0 4.96-.9 6.62-2.43l-3.23-2.5c-.9.6-2.04.95-3.39.95-2.6 0-4.8-1.76-5.6-4.12H3.07v2.58A9.99 9.99 0 0 0 12 21.6Z" opacity=".75"/><path fill="currentColor" d="M6.4 13.5a6 6 0 0 1 0-3.83V7.09H3.07a10 10 0 0 0 0 8.99L6.4 13.5Z" opacity=".55"/><path fill="currentColor" d="M12 6.38c1.47 0 2.79.5 3.83 1.5l2.86-2.86A9.6 9.6 0 0 0 12 2.4a9.99 9.99 0 0 0-8.93 5.5L6.4 10.5c.8-2.36 3-4.12 5.6-4.12Z" opacity=".9"/></svg>
+                    <svg v-else-if="p === 'microsoft'" class="size-4" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 3h8.5v8.5H3z"/><path fill="currentColor" d="M12.5 3H21v8.5h-8.5z" opacity=".8"/><path fill="currentColor" d="M3 12.5h8.5V21H3z" opacity=".6"/><path fill="currentColor" d="M12.5 12.5H21V21h-8.5z" opacity=".4"/></svg>
+                    Continue with {{ providerLabel[p] ?? p }}
+                </a>
+            </div>
+            <div class="mt-5 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
+                <span class="bp-dim flex-1" aria-hidden="true" />
+                or with email
+                <span class="bp-dim flex-1" aria-hidden="true" />
+            </div>
+        </div>
+
         <Transition name="auth-swap" mode="out-in" @after-enter="focusFirstField">
             <!-- ── Sign in ─────────────────────────────────────────── -->
             <form v-if="mode === 'login'" key="login" ref="panelRef" @submit.prevent="submitLogin">
@@ -155,6 +190,16 @@ const submitForgot = () => {
                         @click="switchMode('forgot')"
                     >
                         Forgot your password?
+                    </button>
+                </div>
+
+                <div class="bp-rise mt-2 text-right" style="--rise-delay: 160ms">
+                    <button
+                        type="button"
+                        class="inline-flex items-center py-1 text-sm text-ink-dim underline transition-colors hover:text-ink focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ink"
+                        @click="switchMode('link')"
+                    >
+                        Email me a sign-in link instead
                     </button>
                 </div>
 
@@ -206,6 +251,32 @@ const submitForgot = () => {
                 <div class="bp-rise mt-6 flex items-center justify-end" style="--rise-delay: 290ms">
                     <PrimaryButton :class="{ 'opacity-25': registerForm.processing }" :disabled="registerForm.processing">
                         Create account
+                    </PrimaryButton>
+                </div>
+            </form>
+
+            <!-- ── Sign in by email (one-time link) ─────────────────── -->
+            <form v-else-if="mode === 'link'" key="link" ref="panelRef" @submit.prevent="submitLink">
+                <p class="bp-rise text-sm text-ink-dim" style="--rise-delay: 40ms">
+                    Enter your email and we send a link that signs you in. It works once and expires in 15 minutes.
+                </p>
+
+                <div class="bp-rise mt-4" style="--rise-delay: 90ms">
+                    <InputLabel for="link-email" value="Email" />
+                    <TextInput id="link-email" v-model="linkForm.email" type="email" class="mt-1 block w-full" required autocomplete="username" />
+                    <InputError class="mt-2" :message="linkForm.errors.email" />
+                </div>
+
+                <div class="bp-rise mt-6 flex items-center justify-between" style="--rise-delay: 140ms">
+                    <button
+                        type="button"
+                        class="inline-flex items-center py-1 text-sm text-ink-dim underline transition-colors hover:text-ink focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ink"
+                        @click="switchMode('login')"
+                    >
+                        ← Back to sign in
+                    </button>
+                    <PrimaryButton :class="{ 'opacity-25': linkForm.processing }" :disabled="linkForm.processing">
+                        Email sign-in link
                     </PrimaryButton>
                 </div>
             </form>

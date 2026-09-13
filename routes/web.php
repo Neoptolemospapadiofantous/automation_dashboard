@@ -17,10 +17,12 @@ use App\Http\Controllers\HermesMetricsController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\MagicLinkController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NotificationPreferencesController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OwnKeyController;
+use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SubscribeController;
 use App\Http\Controllers\SuiteController;
@@ -368,6 +370,28 @@ Route::middleware([
         ->where('documentID', '[A-Za-z0-9_\-]+')
         ->middleware('throttle:30,1')
         ->name('knowledge.destroy');
+});
+
+// Other ways in, beside the password form. Guest-only; Fortify keeps its own
+// login/register/2FA routes. A provider with no client id 404s.
+Route::middleware('guest')->group(function () {
+    Route::get('/auth/{provider}', [SocialAuthController::class, 'redirect'])
+        ->where('provider', 'google|microsoft')
+        ->middleware('throttle:20,1')
+        ->name('social.redirect');
+    Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])
+        ->where('provider', 'google|microsoft')
+        ->middleware('throttle:20,1')
+        ->name('social.callback');
+
+    // Passwordless: email a one-time signed link (15 min), click to sign in.
+    Route::post('/magic-link', [MagicLinkController::class, 'send'])
+        ->middleware('throttle:5,1')
+        ->name('magic-link.send');
+    Route::get('/magic-link/{user}', [MagicLinkController::class, 'login'])
+        ->whereNumber('user')
+        ->middleware(['signed', 'throttle:10,1'])
+        ->name('magic-link.login');
 });
 
 // Shareable weekly report — public by unguessable token (teams.report_token).

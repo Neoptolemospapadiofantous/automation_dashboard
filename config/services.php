@@ -22,6 +22,24 @@ return [
         'key' => env('RESEND_API_KEY'),
     ],
 
+    // "Continue with Google / Microsoft" (App\Support\SignIn, SocialAuthController).
+    // A provider with no client id is simply not offered — no button, 404 on
+    // its routes. Redirect URIs must be registered verbatim in each console:
+    //   https://app.flowstack.run/auth/google/callback
+    //   https://app.flowstack.run/auth/microsoft/callback
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
+    ],
+    'microsoft' => [
+        'client_id' => env('MICROSOFT_CLIENT_ID'),
+        'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
+        'redirect' => env('MICROSOFT_REDIRECT_URI', '/auth/microsoft/callback'),
+        // 'common' = work, school AND personal Microsoft accounts.
+        'tenant' => env('MICROSOFT_TENANT', 'common'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
