@@ -2,9 +2,11 @@
 import { computed, ref, watch } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import axios from 'axios';
+import TagEditor from '@/Components/TagEditor.vue';
 
 const props = defineProps({
     lead: { type: Object, default: null },
+    tagSuggestions: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(['close']);
@@ -49,6 +51,21 @@ async function saveNotes() {
 }
 
 const fmtDate = (iso) => (iso ? new Date(iso).toLocaleString() : '—');
+
+// Tags save immediately (one small request per change) and patch the
+// shared lead object so the card behind the drawer updates too.
+const tagsSaving = ref(false);
+async function saveTags(tags) {
+    if (!props.lead) return;
+    tagsSaving.value = true;
+    try {
+        const { data } = await axios.patch(route('leads.tags', props.lead.id), { tags });
+        // eslint-disable-next-line vue/no-mutating-props
+        props.lead.tags = data.tags;
+    } finally {
+        tagsSaving.value = false;
+    }
+}
 
 // Captured-vars renderer — shows entries as key/value rows, falls back
 // to a single line for primitive values. the engine can shove anything
@@ -140,6 +157,15 @@ const capturedRows = computed(() => {
                         No contact info captured yet.
                     </p>
                 </dl>
+            </section>
+
+            <!-- Tags -->
+            <section class="border-b border-border-line px-5 py-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">Tags</h3>
+                    <p v-if="tagsSaving" class="font-mono text-[10px] text-ink-mute">Saving…</p>
+                </div>
+                <TagEditor class="mt-2" :model-value="lead.tags ?? []" :suggestions="tagSuggestions" @update:model-value="saveTags" />
             </section>
 
             <!-- Captured variables -->

@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Events\LeadMessage;
 use App\Models\Conversation;
 use App\Models\Lead;
+use App\Models\Team;
 use App\Runtime\Models\RuntimeSession;
 use App\Services\ConversationRecorder;
+use App\Support\Tags;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,6 +53,7 @@ class ConversationController extends Controller
         $channel = trim((string) $request->input('channel', ''));
         $status = trim((string) $request->input('status', ''));
         $ratingFilter = trim((string) $request->input('rating', ''));
+        $labelFilter = Tags::normalize((string) $request->input('label', ''))[0] ?? null;
 
         // Phase G: agent-scoped so switching agents swaps the conversation
         // list. forAgent(null) returns no rows (no current agent = nothing to show).
@@ -70,6 +73,7 @@ class ConversationController extends Controller
             })
             ->when($channel !== '', fn ($query) => $query->where('channel', $channel))
             ->when($status !== '', fn ($query) => $query->where('status', $status))
+            ->when($labelFilter !== null, fn ($query) => $query->whereJsonContains('labels', $labelFilter))
             // "Needs human": escalated and still open — the never-miss-a-lead view.
             ->when($request->boolean('needs_human'), fn ($query) => $query
                 ->where('meta->handoff_requested', true)
@@ -138,14 +142,60 @@ class ConversationController extends Controller
                 'status' => $status,
                 'rating' => $ratingFilter,
                 'needs_human' => $request->boolean('needs_human'),
+                'label' => $labelFilter,
             ],
             'channel_options' => $channelOptions,
+            'label_options' => $this->labelOptions($teamId, $agentId),
             'filter_lead' => $leadFilter ? [
                 'id' => $leadFilter->id,
                 'name' => $leadFilter->name,
                 'email' => $leadFilter->email,
             ] : null,
         ]);
+    }
+
+    /**
+     * Every label in use on this agent's conversations, most used first.
+     *
+     * @return list<string>
+     */
+    protected function labelOptions(int $teamId, ?int $agentId): array
+    {
+        if ($agentId === null) {
+            return [];
+        }
+        $counts = [];
+        Conversation::query()
+            ->where('team_id', $teamId)
+            ->where('agent_id', $agentId)
+            ->whereNotNull('labels')
+            ->pluck('labels')
+            ->each(function ($labels) use (&$counts): void {
+                foreach ((array) $labels as $label) {
+                    $counts[$label] = ($counts[$label] ?? 0) + 1;
+                }
+            });
+        arsort($counts);
+
+        return array_keys($counts);
+    }
+
+    /**
+     * Replace a conversation's labels (whole list each time).
+     */
+    public function updateLabels(Request $request, Conversation $conversation): JsonResponse
+    {
+        $team = $request->user()->currentTeam;
+        abort_unless($team instanceof Team && $conversation->team_id === $team->id, 403);
+
+        $data = $request->validate([
+            'labels' => ['present', 'array', 'max:'.Tags::MAX_TAGS],
+            'labels.*' => ['string', 'max:'.Tags::MAX_LENGTH],
+        ]);
+
+        $conversation->forceFill(['labels' => $data['labels']])->save();
+
+        return response()->json(['ok' => true, 'labels' => $conversation->fresh()->labels ?? []]);
     }
 
     /**

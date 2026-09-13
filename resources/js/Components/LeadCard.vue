@@ -83,6 +83,10 @@ function onAssignChange(e) {
             </a>
         </div>
 
+        <div v-if="lead.tags?.length" class="mt-1 flex flex-wrap gap-1">
+            <span v-for="t in lead.tags" :key="t" class="rounded-none border border-border-line px-1 py-px font-mono text-[10px] text-ink-dim">{{ t }}</span>
+        </div>
+
         <div class="mt-1 flex items-center justify-between gap-2">
             <div class="flex min-w-0 items-center gap-1.5">
                 <span class="rounded-none bg-surface-hi px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-dim">

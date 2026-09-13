@@ -11,6 +11,10 @@ use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Lead;
 use App\Models\Team;
 use App\Services\LeadDelegator;
+use App\Services\WebhookDispatcher;
+use App\Support\LeadCsv;
+use App\Support\Tags;
+use App\Support\WebhookPayloads;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LeadController extends Controller
 {
@@ -78,7 +83,10 @@ class LeadController extends Controller
             'statuses' => LeadStatus::board(),
             'members' => $team->allUsers()->map->only('id', 'name')->values(),
             'sources' => $sources,
+            'tags' => $this->teamTags($team),
             'filters' => $filters,
+            // The import summary flashed back by import(), if any.
+            'importResult' => $request->session()->get('lead_import'),
         ]);
     }
 
@@ -138,6 +146,7 @@ class LeadController extends Controller
             ->when($filters['assignee'] !== null, fn ($q) => $q->where('assigned_to', $filters['assignee']))
             ->when($filters['min_score'] !== null, fn ($q) => $q->where('score', '>=', $filters['min_score']))
             ->when($filters['since'] !== null, fn ($q) => $q->where('created_at', '>=', $filters['since']))
+            ->when($filters['tag'] !== null, fn ($q) => $q->whereJsonContains('tags', $filters['tag']))
             ->when($filters['q'] !== '', function ($q) use ($filters) {
                 // SQLite LIKE is case-insensitive for ASCII; covers most
                 // first-line search needs (name/email/company/phone). Migrating
@@ -158,11 +167,12 @@ class LeadController extends Controller
     /**
      * @return array{
      *   mine: bool, q: string, status: ?string, source: ?string,
-     *   assignee: ?int, min_score: ?int, since: ?string
+     *   assignee: ?int, min_score: ?int, since: ?string, since_key: ?string, tag: ?string
      * }
      */
     protected function parseFilters(Request $request): array
     {
+        $tag = Tags::normalize((string) $request->query('tag', ''));
 
         $status = $request->query('status');
         $statusValid = is_string($status) && in_array(
@@ -200,7 +210,149 @@ class LeadController extends Controller
             // Keep the since *key* (not the resolved datetime) so the UI
             // can re-render the chip in active state.
             'since_key' => in_array($sinceRaw, ['7d', '30d', '90d'], true) ? $sinceRaw : null,
+            'tag' => $tag[0] ?? null,
         ];
+    }
+
+    /**
+     * Every tag in use on this agent's leads, most used first — the filter
+     * dropdown and the tag editor's suggestions. JSON arrays cannot be
+     * grouped in SQL portably, so this reads the (small) column and counts
+     * in PHP; leads.tags is null for the untagged majority, so the scan is
+     * only over rows that have any.
+     *
+     * @return list<string>
+     */
+    protected function teamTags(Team $team): array
+    {
+        $counts = [];
+        Lead::query()
+            ->where('team_id', $team->id)
+            ->forAgent($team->current_agent_id)
+            ->whereNotNull('tags')
+            ->pluck('tags')
+            ->each(function ($tags) use (&$counts): void {
+                foreach ((array) $tags as $tag) {
+                    $counts[$tag] = ($counts[$tag] ?? 0) + 1;
+                }
+            });
+        arsort($counts);
+
+        return array_keys($counts);
+    }
+
+    /**
+     * Replace a lead's tags (the editor sends the whole list every time, so
+     * add and remove are the same request).
+     */
+    public function updateTags(Request $request, Lead $lead): JsonResponse
+    {
+        $this->authorizeLead($request, $lead);
+
+        $data = $request->validate([
+            'tags' => ['present', 'array', 'max:'.Tags::MAX_TAGS],
+            'tags.*' => ['string', 'max:'.Tags::MAX_LENGTH],
+        ]);
+
+        $lead->forceFill(['tags' => $data['tags']])->save();
+
+        broadcast(new LeadSaved($lead->fresh()))->toOthers();
+
+        return response()->json(['ok' => true, 'tags' => $lead->fresh()->tags ?? []]);
+    }
+
+    /**
+     * CSV of the leads currently on the board — same filters as the page
+     * (so "export what I'm looking at" is literal), streamed so a large
+     * board never buffers in memory.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $team = $request->user()->currentTeam;
+        if (! $team instanceof Team) {
+            abort(403, 'Sign in to a team first.');
+        }
+        $filters = $this->parseFilters($request);
+        $query = $this->boardQuery($request, $team, $filters)->orderBy('id');
+
+        $filename = 'leads-'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($query): void {
+            $out = fopen('php://output', 'w');
+            if ($out === false) {
+                return;
+            }
+            fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM so Excel opens Greek names correctly
+            fputcsv($out, LeadCsv::COLUMNS, ',', '"', '\\');
+            foreach ($query->cursor() as $lead) {
+                fputcsv($out, LeadCsv::row($lead), ',', '"', '\\');
+            }
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * Import leads from a CSV. Dedupe rule is the chat capturer's: an
+     * email is the identity when there is one, otherwise the row creates
+     * a new lead. Existing leads keep their status and score (the file
+     * fills blanks, it does not overwrite pipeline state). No owner alert
+     * and no webhook per row — a bulk import is not "a lead landed".
+     */
+    public function import(Request $request): RedirectResponse
+    {
+        $this->requireCapability($request, fn (Role $r) => $r->canManageLeads(), 'import leads');
+
+        $team = $request->user()->currentTeam;
+        if (! $team instanceof Team) {
+            abort(403, 'Sign in to a team first.');
+        }
+        abort_if($team->current_agent_id === null, 422, 'Pick an agent before importing leads.');
+
+        $data = $request->validate([
+            'file' => ['required', 'file', 'max:2048', 'mimetypes:text/csv,text/plain,application/csv,application/vnd.ms-excel'],
+        ]);
+
+        $parsed = LeadCsv::parse((string) file_get_contents($data['file']->getRealPath()));
+
+        $created = 0;
+        $updated = 0;
+        foreach ($parsed['rows'] as $row) {
+            $existing = $row['email'] !== null
+                ? Lead::query()
+                    ->where('team_id', $team->id)
+                    ->where('agent_id', $team->current_agent_id)
+                    ->where('email', $row['email'])
+                    ->first()
+                : null;
+
+            if ($existing !== null) {
+                $existing->forceFill([
+                    'name' => $existing->name === '(no name)' && $row['name'] !== '(no name)' ? $row['name'] : $existing->name,
+                    'phone' => $existing->phone ?? $row['phone'],
+                    'company' => $existing->company ?? $row['company'],
+                    'notes' => $existing->notes ?? $row['notes'],
+                    'tags' => array_values(array_unique([...((array) ($existing->tags ?? [])), ...$row['tags']])),
+                ])->save();
+                $updated++;
+
+                continue;
+            }
+
+            Lead::create([
+                ...$row,
+                'team_id' => $team->id,
+                'agent_id' => $team->current_agent_id,
+            ]);
+            $created++;
+        }
+
+        return redirect()->route('leads.index')->with('lead_import', [
+            'created' => $created,
+            'updated' => $updated,
+            'skipped' => count($parsed['errors']),
+            'errors' => array_slice($parsed['errors'], 0, 20),
+            'truncated' => $parsed['truncated'],
+        ]);
     }
 
     /**
@@ -268,16 +420,22 @@ class LeadController extends Controller
         $this->requireCapability($request, fn (Role $r) => $r->canManageLeads(), 'create leads');
 
         $data = $this->validateLead($request);
+        $team = $request->user()->currentTeam;
+        if (! $team instanceof Team) {
+            abort(403, 'Sign in to a team first.');
+        }
 
         // Stamp agent_id from the current team so Phase G's agent-scoped
         // queries can find this lead. Mirrors the engine's capture_lead upsert.
         $lead = Lead::create([
             ...$data,
-            'team_id' => $request->user()->currentTeam->id,
-            'agent_id' => $request->user()->currentTeam->current_agent_id,
+            'team_id' => $team->id,
+            'agent_id' => $team->current_agent_id,
         ]);
 
         broadcast(new LeadSaved($lead))->toOthers();
+
+        rescue(fn () => app(WebhookDispatcher::class)->dispatch($team, 'lead.captured', WebhookPayloads::lead($lead)), report: false);
 
         return back();
     }
@@ -339,6 +497,8 @@ class LeadController extends Controller
             'score' => ['nullable', 'integer', 'min:0', 'max:100'],
             'assigned_to' => ['nullable', 'integer', Rule::in($this->memberIds($request))],
             'notes' => ['nullable', 'string'],
+            'tags' => ['nullable', 'array', 'max:'.Tags::MAX_TAGS],
+            'tags.*' => ['string', 'max:'.Tags::MAX_LENGTH],
         ]);
     }
 

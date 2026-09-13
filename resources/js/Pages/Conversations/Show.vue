@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Link, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
+import TagEditor from '@/Components/TagEditor.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import { confirm } from '@/Composables/useConfirm';
@@ -20,6 +21,13 @@ const props = defineProps({
 const transcript = ref([...props.messages]);
 const hasMore = ref(props.messagesHasMore);
 const loadingMore = ref(false);
+
+// --- Labels ---------------------------------------------------------------
+const labels = ref([...(props.conversation.labels ?? [])]);
+async function saveLabels(next) {
+    const { data } = await axios.patch(route('conversations.labels', props.conversation.id), { labels: next });
+    labels.value = data.labels;
+}
 
 // --- Human takeover -------------------------------------------------------
 // Escalated conversations can be answered live from here: the first reply
@@ -200,6 +208,12 @@ const deleteUpstream = async () => {
 
         <div class="py-8">
             <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+                <!-- Labels: free-form, saved on every change. -->
+                <div class="mb-4 flex flex-wrap items-start gap-3">
+                    <span class="mt-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">Labels</span>
+                    <TagEditor class="min-w-[16rem] flex-1" :model-value="labels" placeholder="Add a label…" compact @update:model-value="saveLabels" />
+                </div>
+
                 <!-- Escalation banner: the visitor asked for a human. -->
                 <div
                     v-if="handoff && isActive"

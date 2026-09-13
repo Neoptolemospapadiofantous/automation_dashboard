@@ -63,6 +63,12 @@ Schedule::exec('bash scripts/agents/system_check.sh')->everySixHours();
 // the real record; prunes to a bounded history. Idempotent per run.
 Schedule::command('findings:ingest')->everyFifteenMinutes();
 
+// URL knowledge documents are re-read weekly and re-ingested when the page
+// changed (knowledge:refresh-urls) — a customer whose site moved should not
+// keep serving last month's answer. Sunday, off-peak; unchanged pages cost
+// one fetch and no embedding call.
+Schedule::command('knowledge:refresh-urls')->weeklyOn(0, '03:30')->withoutOverlapping();
+
 // A chat nobody closes stays open forever — that is what fills the takeover
 // queue with conversations no one is waiting on. Closes chats idle past
 // runtime.auto_close.close_after_minutes; never touches one under human

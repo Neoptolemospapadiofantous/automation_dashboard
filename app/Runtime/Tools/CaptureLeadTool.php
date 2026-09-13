@@ -11,7 +11,9 @@ use App\Models\User;
 use App\Notifications\LeadCapturedNotification;
 use App\Runtime\Contracts\Tool;
 use App\Runtime\Session\ConversationContext;
+use App\Services\WebhookDispatcher;
 use App\Support\BiEmitter;
+use App\Support\WebhookPayloads;
 
 /**
  * Persist contact details the agent collected into the leads pipeline.
@@ -164,6 +166,14 @@ class CaptureLeadTool implements Tool
                     $owner->notify(new LeadCapturedNotification($lead));
                 }
             }, report: true);
+
+            // Outbound webhooks (Zapier, Sheets, a CRM) — same "new lead" moment.
+            rescue(function () use ($lead, $context): void {
+                $team = $context->agent->team;
+                if ($team instanceof Team) {
+                    app(WebhookDispatcher::class)->dispatch($team, 'lead.captured', WebhookPayloads::lead($lead));
+                }
+            }, report: false);
 
             // BI: a genuinely new lead landed (best-effort, gated — see BiEmitter).
             BiEmitter::emit('dashboard', 'lead_captured', [

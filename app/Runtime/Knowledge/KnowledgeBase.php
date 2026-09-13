@@ -134,13 +134,16 @@ class KnowledgeBase implements KnowledgeStore
         return KbDocument::query()
             ->where('agent_id', $agentId)
             ->orderByDesc('created_at')
-            ->get(['id', 'title', 'chunk_count', 'created_at', 'metadata'])
+            ->get(['id', 'title', 'chunk_count', 'created_at', 'metadata', 'refresh_checked_at', 'refreshed_at', 'refresh_error'])
             ->map(fn (KbDocument $d) => [
                 'id' => (int) $d->id,
                 'title' => (string) $d->title,
                 'chunk_count' => (int) $d->chunk_count,
                 'created_at' => (string) $d->created_at->toIso8601String(),
                 'metadata' => (array) ($d->metadata ?? []),
+                'refresh_checked_at' => $d->refresh_checked_at?->toIso8601String(),
+                'refreshed_at' => $d->refreshed_at?->toIso8601String(),
+                'refresh_error' => $d->refresh_error,
             ])
             ->all();
     }

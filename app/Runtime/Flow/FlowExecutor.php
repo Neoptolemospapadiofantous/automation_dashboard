@@ -257,6 +257,15 @@ class FlowExecutor
             $finalText = rtrim($finalText).' '.$this->escalate->contactAsk();
         }
 
+        // Outside business hours, every escalation reply ends with the
+        // team's away line — the visitor learns WHEN someone will answer
+        // instead of waiting on a promise nobody is awake to keep.
+        if (($backstopEscalated || $this->toolFired($toolEvents, 'request_handoff'))
+            && ($away = $this->escalate->awayLine($context->agent)) !== null
+            && ! str_contains($finalText, $away)) {
+            $finalText = rtrim($finalText).' '.$away;
+        }
+
         // Only attach the citations key when there are sources — keeps the
         // trace payload shape unchanged for greetings / low-confidence /
         // no-KB turns (the UI + recorder both treat it as optional).

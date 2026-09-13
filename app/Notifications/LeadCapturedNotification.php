@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Lead;
+use App\Models\User;
 use App\Support\MailText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -32,7 +33,9 @@ class LeadCapturedNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return $notifiable instanceof User
+            ? $notifiable->notificationPreferences()->filter('lead_captured', ['database', 'mail'])
+            : ['database', 'mail'];
     }
 
     public function toMail(object $notifiable): MailMessage

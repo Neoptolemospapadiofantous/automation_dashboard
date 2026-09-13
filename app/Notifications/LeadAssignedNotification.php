@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Lead;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -26,7 +27,9 @@ class LeadAssignedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return $notifiable instanceof User
+            ? $notifiable->notificationPreferences()->filter('lead_assigned', ['database', 'mail'])
+            : ['database', 'mail'];
     }
 
     public function toMail(object $notifiable): MailMessage

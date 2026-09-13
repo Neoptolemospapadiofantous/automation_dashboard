@@ -17,6 +17,9 @@ use Illuminate\Support\Carbon;
  * @property string $raw_content
  * @property array<string, mixed>|null $metadata
  * @property int $chunk_count
+ * @property Carbon|null $refresh_checked_at
+ * @property Carbon|null $refreshed_at
+ * @property string|null $refresh_error
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
@@ -32,11 +35,16 @@ class KbDocument extends Model
         'raw_content',
         'metadata',
         'chunk_count',
+        'refresh_checked_at',
+        'refreshed_at',
+        'refresh_error',
     ];
 
     protected $casts = [
         'metadata' => 'array',
         'chunk_count' => 'integer',
+        'refresh_checked_at' => 'datetime',
+        'refreshed_at' => 'datetime',
     ];
 
     /** @return BelongsTo<Agent, $this> */

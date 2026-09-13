@@ -51,6 +51,14 @@ class RequestHandoffTool implements Tool
     {
         $this->escalate->handle($context, (string) ($args['reason'] ?? ''));
 
+        // Outside business hours the promise changes: nobody is picking
+        // this up now. The model is told so it does not say "right away";
+        // the deterministic away line is appended by FlowExecutor regardless.
+        $hours = $this->escalate->isOpen($context->agent)
+            ? ''
+            : ' NOTE: the team is currently outside its business hours, so nobody will reply immediately — '
+                .'say a teammate will follow up when they are back, not "right away".';
+
         // Contact-aware result: an anonymous handoff is an un-followable
         // promise, so steer the model to collect a reachable detail NOW.
         if (! $this->escalate->hasContact($context)) {
@@ -58,10 +66,10 @@ class RequestHandoffTool implements Tool
                 'status' => 'handoff_flagged',
                 'message' => 'A teammate has been notified — but NO contact details are on file for '
                     .'this visitor. In your reply, ask for an email address or phone number so the '
-                    .'team can follow up, then save it with capture_lead.',
+                    .'team can follow up, then save it with capture_lead.'.$hours,
             ];
         }
 
-        return ['status' => 'handoff_flagged', 'message' => 'A teammate has been notified.'];
+        return ['status' => 'handoff_flagged', 'message' => 'A teammate has been notified.'.$hours];
     }
 }

@@ -90,6 +90,17 @@ async function destroy(documentID, name) {
     router.delete(route('knowledge.destroy', documentID), { preserveScroll: true });
 }
 
+// --- Refresh a URL document -------------------------------------------------
+const refreshing = ref(null);
+function refresh(documentID) {
+    refreshing.value = documentID;
+    router.post(route('knowledge.refresh', documentID), {}, {
+        preserveScroll: true,
+        onFinish: () => (refreshing.value = null),
+    });
+}
+const fmtShort = (iso) => (iso ? new Date(iso).toLocaleDateString() : null);
+
 // --- Inspect (chunks) -------------------------------------------------------
 const inspecting = ref(null); // { documentID, data, chunks, metadata } | null
 const inspectLoading = ref(false);
@@ -335,6 +346,12 @@ const description = computed(() => {
                                     <div v-if="d.data?.url && d.data?.name !== d.data?.url" class="truncate text-xs text-ink-dim">
                                         {{ d.data.url }}
                                     </div>
+                                    <div v-if="d.refresh" class="truncate font-mono text-[10px] text-ink-mute">
+                                        <span v-if="d.refresh.error" class="text-state-bad-ink" :title="d.refresh.error">last read failed · {{ fmtShort(d.refresh.checked_at) }}</span>
+                                        <span v-else-if="d.refresh.refreshed_at">page changed · re-read {{ fmtShort(d.refresh.refreshed_at) }}</span>
+                                        <span v-else-if="d.refresh.checked_at">unchanged · checked {{ fmtShort(d.refresh.checked_at) }}</span>
+                                        <span v-else>re-read weekly</span>
+                                    </div>
                                 </div>
                                 <span class="shrink-0 rounded-none px-2 py-0.5 font-mono text-[10px] font-medium" :class="statusTone(d.status?.type)">
                                     {{ d.status?.type || '—' }}
@@ -342,6 +359,15 @@ const description = computed(() => {
                                 <!-- Always visible below sm: touch devices have no hover
                                      to reveal these, so hover-only would make documents
                                      unmanageable on mobile. -->
+                                <button
+                                    v-if="d.refresh"
+                                    type="button"
+                                    class="py-2 text-xs text-ink-mute transition hover:text-ink disabled:opacity-50 sm:py-1.5 sm:opacity-0 sm:group-hover:opacity-100"
+                                    :disabled="refreshing === d.documentID"
+                                    @click="refresh(d.documentID)"
+                                >
+                                    {{ refreshing === d.documentID ? 'Reading…' : 'Refresh' }}
+                                </button>
                                 <button
                                     type="button"
                                     class="py-2 text-xs text-ink-mute transition hover:text-ink sm:py-1.5 sm:opacity-0 sm:group-hover:opacity-100"

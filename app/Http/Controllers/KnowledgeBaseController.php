@@ -6,6 +6,7 @@ use App\Authorization\Role;
 use App\Billing\CreditMeter;
 use App\Billing\Exceptions\OutOfCredits;
 use App\Billing\OwnKey;
+use App\Console\Commands\RefreshKnowledgeUrls;
 use App\Http\Controllers\Concerns\AuthorizesByTeamRole;
 use App\Models\Agent;
 use App\Models\Team;
@@ -73,6 +74,13 @@ class KnowledgeBaseController extends Controller
                     ],
                     'status' => ['type' => 'SUCCESS'],
                     'updatedAt' => $doc['created_at'],
+                    // URL documents only: when the page was last re-read,
+                    // when its content last changed, and the last fetch error.
+                    'refresh' => $type === 'url' ? [
+                        'checked_at' => $doc['refresh_checked_at'] ?? null,
+                        'refreshed_at' => $doc['refreshed_at'] ?? null,
+                        'error' => $doc['refresh_error'] ?? null,
+                    ] : null,
                 ];
             }
         }
@@ -205,6 +213,32 @@ class KnowledgeBaseController extends Controller
         }
 
         return back();
+    }
+
+    /**
+     * Re-read one URL document now (the Refresh button). Same code path as
+     * the weekly knowledge:refresh-urls sweep.
+     */
+    public function refresh(Request $request, string $documentID): RedirectResponse
+    {
+        $this->requireCapability($request, fn (Role $r) => $r->canAddKnowledge(), 'refresh knowledge documents');
+        $agent = $this->currentAgentOrAbort($request);
+
+        $doc = KbDocument::query()
+            ->where('agent_id', $agent->id)
+            ->where('source', 'url')
+            ->find((int) $documentID);
+        if ($doc === null) {
+            return back()->withErrors(['url' => 'Only documents added from a URL can be refreshed.']);
+        }
+
+        $outcome = app(RefreshKnowledgeUrls::class)->refresh($doc, $this->knowledge, app(PublicWebPage::class));
+
+        return back()->with('flash', ['banner' => match ($outcome) {
+            'changed' => 'The page changed — re-indexed with the new content.',
+            'unchanged' => 'The page is unchanged since the last read.',
+            default => 'Could not fetch that page right now. The existing content stays in service.',
+        }, 'bannerStyle' => $outcome === 'failed' ? 'danger' : 'success']);
     }
 
     /**

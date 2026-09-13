@@ -10,6 +10,7 @@ const props = defineProps({
     feedback: { type: Array, default: () => [] },
     filters: { type: Object, default: () => ({}) },
     channel_options: { type: Array, default: () => [] },
+    label_options: { type: Array, default: () => [] },
     filter_lead: { type: Object, default: null },
 });
 
@@ -21,6 +22,7 @@ const channel = ref(props.filters.channel ?? '');
 const status = ref(props.filters.status ?? '');
 const ratingFilter = ref(props.filters.rating ?? '');
 const needsHuman = ref(!!props.filters.needs_human);
+const label = ref(props.filters.label ?? '');
 
 function applyFilters() {
     router.get(
@@ -31,6 +33,7 @@ function applyFilters() {
             status: status.value || undefined,
             rating: ratingFilter.value || undefined,
             needs_human: needsHuman.value ? 1 : undefined,
+            label: label.value || undefined,
             lead_id: props.filter_lead?.id || undefined,
         },
         { preserveState: true, preserveScroll: true, replace: true },
@@ -44,7 +47,7 @@ watch(q, () => {
     clearTimeout(debounce);
     debounce = setTimeout(applyFilters, 350);
 });
-watch([channel, status, ratingFilter, needsHuman], applyFilters);
+watch([channel, status, ratingFilter, needsHuman, label], applyFilters);
 
 function clearFilters() {
     q.value = '';
@@ -52,6 +55,7 @@ function clearFilters() {
     status.value = '';
     ratingFilter.value = '';
     needsHuman.value = false;
+    label.value = '';
 }
 
 const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
@@ -149,13 +153,21 @@ const rating = (key) => ratings[key] ?? null;
                         <option value="ok">😐 OK</option>
                         <option value="bad">☹ Bad</option>
                     </select>
+                    <select
+                        v-if="label_options.length"
+                        v-model="label"
+                        class="rounded-none border-border-line bg-bg font-mono text-sm text-ink focus:border-ink focus:ring-0"
+                    >
+                        <option value="">Any label</option>
+                        <option v-for="opt in label_options" :key="opt" :value="opt">{{ opt }}</option>
+                    </select>
                     <!-- Never-miss-a-lead view: escalated + still open. -->
                     <label class="inline-flex cursor-pointer items-center gap-1.5 rounded-none border border-border-line bg-bg px-3 py-2 font-mono text-sm" :class="needsHuman ? 'border-violet text-ink' : 'text-ink-dim'">
                         <input v-model="needsHuman" type="checkbox" class="rounded-none border-border-hi text-ink focus:ring-ink" />
                         Needs human
                     </label>
                     <button
-                        v-if="q || channel || status || ratingFilter || needsHuman"
+                        v-if="q || channel || status || ratingFilter || needsHuman || label"
                         type="button"
                         class="font-mono text-xs text-ink-dim underline hover:text-ink"
                         @click="clearFilters"
@@ -185,6 +197,9 @@ const rating = (key) => ratings[key] ?? null;
                             >
                                 <td class="px-4 py-3 font-medium text-ink">
                                     {{ c.lead?.name || c.visitor_id }}
+                                    <div v-if="c.labels?.length" class="mt-1 flex flex-wrap gap-1">
+                                        <span v-for="l in c.labels" :key="l" class="rounded-none border border-border-line px-1 py-px font-mono text-[10px] font-normal text-ink-dim">{{ l }}</span>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3 text-ink-dim">{{ c.channel }}</td>
                                 <td class="px-4 py-3 font-mono text-ink-dim">{{ c.message_count }}</td>

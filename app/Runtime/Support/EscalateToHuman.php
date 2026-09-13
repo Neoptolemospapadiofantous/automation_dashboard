@@ -10,6 +10,8 @@ use App\Models\Team;
 use App\Models\User;
 use App\Notifications\HandoffRequestedNotification;
 use App\Runtime\Session\ConversationContext;
+use App\Services\WebhookDispatcher;
+use App\Support\WebhookPayloads;
 
 /**
  * The one place that escalates a conversation to a human: flag the session
@@ -57,6 +59,12 @@ class EscalateToHuman
             if (! $this->hasContact($context)) {
                 $meta['handoff_awaiting_contact'] = true;
             }
+            // Outside the team's business hours the request still lands
+            // (bell + email) but the phone stays quiet and the visitor is
+            // told when to expect someone. This flag is also where an
+            // automated voice agent will pick up out-of-hours handoffs once
+            // one exists — it is the routing signal, not just a badge.
+            $meta['handoff_out_of_hours'] = ! $this->isOpen($context->agent);
             $conversation->meta = $meta;
             $conversation->save();
 
@@ -90,9 +98,51 @@ class EscalateToHuman
                     conversationId: $conversation?->id,
                     lastMessage: $context->userMessage,
                     contact: $this->contactSummary($context),
+                    ring: $this->isOpen($context->agent),
                 ));
             }
         }, report: true);
+
+        if ($conversation !== null) {
+            rescue(function () use ($context, $reason, $conversation): void {
+                $team = $context->agent->team;
+                if ($team instanceof Team) {
+                    app(WebhookDispatcher::class)->dispatch($team, 'handoff.requested', [
+                        ...WebhookPayloads::conversation($conversation),
+                        'reason' => $reason,
+                        'last_message' => mb_substr(trim($context->userMessage), 0, 500),
+                        'contact' => $this->contactSummary($context),
+                        'out_of_hours' => (bool) (($conversation->meta ?? [])['handoff_out_of_hours'] ?? false),
+                    ]);
+                }
+            }, report: false);
+        }
+    }
+
+    /**
+     * Whether the agent's team is inside its business hours right now
+     * (always true for a team that never set any).
+     */
+    public function isOpen(Agent $agent): bool
+    {
+        $team = $agent->team;
+
+        return $team instanceof Team ? $team->businessHours()->isOpen() : true;
+    }
+
+    /**
+     * The out-of-hours line appended to an escalation reply, or null while
+     * the team is open. Deterministic — no model turn, no credits.
+     */
+    public function awayLine(Agent $agent): ?string
+    {
+        $team = $agent->team;
+        if (! $team instanceof Team) {
+            return null;
+        }
+        $hours = $team->businessHours();
+
+        return $hours->isOpen() ? null : $hours->awayLine();
     }
 
     /**

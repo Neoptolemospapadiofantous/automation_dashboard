@@ -6,6 +6,7 @@ use App\Enums\LeadStatus;
 use App\Lifecycle\HasLifecycle;
 use App\Lifecycle\LeadStateMachine;
 use App\Lifecycle\StateMachine;
+use App\Support\Tags;
 use Database\Factories\LeadFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -45,6 +46,7 @@ class Lead extends Model
         'visitor_id',
         'captured',
         'notes',
+        'tags',
         'last_contacted_at',
     ];
 
@@ -55,9 +57,22 @@ class Lead extends Model
             'captured' => 'array',
             'score' => 'integer',
             'score_breakdown' => 'array',
+            'tags' => 'array',
             'last_contacted_at' => 'datetime',
             'follow_up_nudged_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Tags always enter normalised (see App\Support\Tags) whichever path
+     * writes them — the board, the CSV importer, or a future API.
+     *
+     * @param  mixed  $value
+     */
+    public function setTagsAttribute($value): void
+    {
+        $tags = Tags::normalize($value);
+        $this->attributes['tags'] = $tags === [] ? null : json_encode($tags);
     }
 
     public function team(): BelongsTo

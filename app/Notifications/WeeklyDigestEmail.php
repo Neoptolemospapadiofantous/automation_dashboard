@@ -112,8 +112,22 @@ class WeeklyDigestEmail extends Notification implements ShouldQueue
             }
         }
 
-        return $mail
-            ->line(sprintf('Conversation credits: %d used last week, %d remaining.', $s['credits_used'], $s['credits_remaining']))
+        if (($s['refreshed_docs'] ?? 0) > 0) {
+            $mail->line(sprintf(
+                '%d knowledge page%s changed on your site and %s re-read automatically.',
+                $s['refreshed_docs'],
+                $s['refreshed_docs'] === 1 ? '' : 's',
+                $s['refreshed_docs'] === 1 ? 'was' : 'were',
+            ));
+        }
+
+        $mail->line(sprintf('Conversation credits: %d used last week, %d remaining.', $s['credits_used'], $s['credits_remaining']))
             ->action('Open your dashboard', url('/dashboard'));
+
+        if (! empty($s['share_url'])) {
+            $mail->line('Forward the numbers without a login: ['.$s['share_url'].']('.$s['share_url'].') — the page refreshes itself every week.');
+        }
+
+        return $mail;
     }
 }

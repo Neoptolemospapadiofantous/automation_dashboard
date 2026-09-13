@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Billing\CreditMeter;
 use App\Billing\Plan;
+use App\Support\BusinessHours;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -70,6 +71,8 @@ class Team extends JetstreamTeam
         'stripe_subscription_status',
         'stripe_current_period_end',
         'profile',
+        'business_hours',
+        'report_token',
     ];
 
     /** @return HasMany<Agent, $this> */
@@ -132,7 +135,23 @@ class Team extends JetstreamTeam
             // captured at signup. Free-form JSON; the wizard validates
             // the shape on the way in. See OnboardingController::startAgent.
             'profile' => 'array',
+            // Reachability window for human handoffs — App\Support\BusinessHours.
+            'business_hours' => 'array',
         ];
+    }
+
+    /** @return HasMany<TeamWebhook, $this> */
+    public function webhooks(): HasMany
+    {
+        return $this->hasMany(TeamWebhook::class);
+    }
+
+    /**
+     * The team's handoff hours with defaults applied (null column = always open).
+     */
+    public function businessHours(): BusinessHours
+    {
+        return BusinessHours::fromArray($this->getAttribute('business_hours'));
     }
 
     public function creditTransactions(): HasMany

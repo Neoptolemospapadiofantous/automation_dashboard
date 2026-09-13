@@ -71,6 +71,7 @@ write a new phase doc that supersedes the prior one).
 - [phase-2-realtime.md](./phase-2-realtime.md) — [[phase-2-realtime|broadcasting backbone (Pusher / Echo)]]
 - [domain-events.md](./domain-events.md) — the domain-event seam (`app/Events/Domain` — dispatched on every lifecycle transition, intentionally unlistened)
 - [operations/commands.md](./operations/commands.md) — artisan commands + the cron schedule (`app/Console/Commands`, `routes/console.php`)
+- [operations/team-settings.md](./operations/team-settings.md) — notification preferences, business hours, outbound webhooks, the shareable weekly report, tags/labels, lead CSV, KB URL refresh (2026-09-13)
 - [phase-4-deploy.md](./phase-4-deploy.md) — Forge deploy command
 - [typesense-setup.md](./typesense-setup.md) — conversation search backend
 

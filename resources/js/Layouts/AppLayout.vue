@@ -182,6 +182,39 @@ const handleMobileNavClick = (event) => {
                         </div>
                     </div>
 
+
+                    <!-- Settings group — per-user preferences and team-level
+                         controls that are not a workspace surface. -->
+                    <div>
+                        <div class="px-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Settings</div>
+                        <div class="space-y-0.5">
+                            <SidebarLink :href="route('notifications.preferences')" active-pattern="notifications.preferences*">
+                                <template #icon>
+                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+                                </template>
+                                Notifications
+                            </SidebarLink>
+                            <SidebarLink :href="route('hours.index')" active-pattern="hours.*">
+                                <template #icon>
+                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </template>
+                                Business hours
+                            </SidebarLink>
+                            <SidebarLink :href="route('webhooks.index')" active-pattern="webhooks.*">
+                                <template #icon>
+                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
+                                </template>
+                                Webhooks
+                            </SidebarLink>
+                            <SidebarLink :href="route('report.settings')" active-pattern="report.settings">
+                                <template #icon>
+                                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>
+                                </template>
+                                Weekly report
+                            </SidebarLink>
+                        </div>
+                    </div>
+
                     <!-- Admin group — the Hermes platform pages only (operator
                          allowlist + local-only routes). Hidden entirely when
                          neither route is registered (prod), so no empty label. -->
@@ -236,6 +269,7 @@ const handleMobileNavClick = (event) => {
                             <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Account</div>
                             <DropdownLink :href="route('profile.show')">Profile</DropdownLink>
                             <DropdownLink :href="route('own-key.index')">Your own API key</DropdownLink>
+                            <DropdownLink :href="route('notifications.preferences')">Notifications</DropdownLink>
                             <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">API tokens</DropdownLink>
 
                             <template v-if="$page.props.jetstream.hasTeamFeatures">
@@ -501,6 +535,15 @@ const handleMobileNavClick = (event) => {
                                 <SidebarLink :href="route('billing.index')" active-pattern="billing.*">Billing</SidebarLink>
                             </div>
                         </div>
+                        <div>
+                            <div class="px-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Settings</div>
+                            <div class="space-y-0.5">
+                                <SidebarLink :href="route('notifications.preferences')" active-pattern="notifications.preferences*">Notifications</SidebarLink>
+                                <SidebarLink :href="route('hours.index')" active-pattern="hours.*">Business hours</SidebarLink>
+                                <SidebarLink :href="route('webhooks.index')" active-pattern="webhooks.*">Webhooks</SidebarLink>
+                                <SidebarLink :href="route('report.settings')" active-pattern="report.settings">Weekly report</SidebarLink>
+                            </div>
+                        </div>
                         <div v-if="isAdmin && (hasRoute('hermes.metrics') || hasRoute('architecture.graph'))">
                             <div class="px-2 pb-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink-mute">Admin</div>
                             <div class="space-y-0.5">
@@ -543,6 +586,7 @@ const handleMobileNavClick = (event) => {
                             <div class="block px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink-mute">Account</div>
                             <DropdownLink :href="route('profile.show')">Profile</DropdownLink>
                             <DropdownLink :href="route('own-key.index')">Your own API key</DropdownLink>
+                            <DropdownLink :href="route('notifications.preferences')">Notifications</DropdownLink>
                             <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">API tokens</DropdownLink>
 
                             <template v-if="$page.props.jetstream.hasTeamFeatures">

@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Team;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -27,7 +28,9 @@ class OutOfCreditsNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return $notifiable instanceof User
+            ? $notifiable->notificationPreferences()->filter('credits', ['database', 'mail'])
+            : ['database', 'mail'];
     }
 
     public function toMail(object $notifiable): MailMessage

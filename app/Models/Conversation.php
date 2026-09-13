@@ -5,6 +5,9 @@ namespace App\Models;
 use App\Lifecycle\ConversationStateMachine;
 use App\Lifecycle\HasLifecycle;
 use App\Lifecycle\StateMachine;
+use App\Services\WebhookDispatcher;
+use App\Support\Tags;
+use App\Support\WebhookPayloads;
 use Database\Factories\ConversationFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $visitor_id
  * @property int|null $lead_id
  * @property array<string, mixed>|null $meta
+ * @property list<string>|null $labels
  */
 class Conversation extends Model
 {
@@ -28,6 +32,27 @@ class Conversation extends Model
 
     /** Visitor satisfaction ratings, worst → best. */
     public const RATINGS = ['bad', 'ok', 'good'];
+
+    protected static function booted(): void
+    {
+        // Every way a chat ends — the model's end_session, the auto-close
+        // sweep, the teammate's Close button — lands on status='ended'
+        // through save(), so the conversation.ended webhook is emitted here
+        // rather than at each call site. Best-effort: a queue hiccup must
+        // never break the save.
+        static::updated(function (Conversation $conversation): void {
+            if ($conversation->wasChanged('status') && $conversation->getAttribute('status') === 'ended') {
+                $team = $conversation->team;
+                if ($team instanceof Team) {
+                    rescue(fn () => app(WebhookDispatcher::class)->dispatch(
+                        $team,
+                        'conversation.ended',
+                        WebhookPayloads::conversation($conversation),
+                    ), report: false);
+                }
+            }
+        });
+    }
 
     public function stateMachine(): StateMachine
     {
@@ -52,17 +77,30 @@ class Conversation extends Model
         'ended_at',
         'last_message_at',
         'meta',
+        'labels',
     ];
 
     protected function casts(): array
     {
         return [
             'meta' => 'array',
+            'labels' => 'array',
             'rated_at' => 'datetime',
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
             'last_message_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Labels are normalised on the way in exactly like lead tags.
+     *
+     * @param  mixed  $value
+     */
+    public function setLabelsAttribute($value): void
+    {
+        $labels = Tags::normalize($value);
+        $this->attributes['labels'] = $labels === [] ? null : json_encode($labels);
     }
 
     public function team(): BelongsTo

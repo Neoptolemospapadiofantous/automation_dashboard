@@ -8,6 +8,7 @@ use App\Http\Controllers\AgentVersionsController;
 use App\Http\Controllers\ArchitectureGraphController;
 use App\Http\Controllers\AutomationActivityController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\BusinessHoursController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
@@ -17,11 +18,14 @@ use App\Http\Controllers\InstallController;
 use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\NotificationPreferencesController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OwnKeyController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SubscribeController;
 use App\Http\Controllers\SuiteController;
+use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\WeeklyReportController;
 use App\Http\Middleware\RequireAgent;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -140,6 +144,50 @@ Route::middleware([
         ->middleware('throttle:10,1')
         ->name('own-key.destroy');
 
+    // Per-user notification preferences (which alert reaches which channel,
+    // plus quiet hours). Every Notification::via() consults these.
+    Route::get('/settings/notifications', [NotificationPreferencesController::class, 'index'])
+        ->name('notifications.preferences');
+    Route::put('/settings/notifications', [NotificationPreferencesController::class, 'update'])
+        ->middleware('throttle:30,1')
+        ->name('notifications.preferences.update');
+
+    // Team business hours — when a handoff rings the phone and what the
+    // visitor is told outside them. Owner-only writes.
+    Route::get('/settings/hours', [BusinessHoursController::class, 'index'])->name('hours.index');
+    Route::put('/settings/hours', [BusinessHoursController::class, 'update'])
+        ->middleware('throttle:30,1')
+        ->name('hours.update');
+
+    // Outbound webhooks — the app's integration surface. Owner-only writes,
+    // paid plans; store() SSRF-checks the URL, test() queues a real delivery.
+    Route::get('/settings/webhooks', [WebhookController::class, 'index'])->name('webhooks.index');
+    Route::post('/settings/webhooks', [WebhookController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('webhooks.store');
+    Route::post('/settings/webhooks/{webhook}/test', [WebhookController::class, 'test'])
+        ->middleware('throttle:10,1')
+        ->name('webhooks.test');
+    Route::post('/settings/webhooks/{webhook}/toggle', [WebhookController::class, 'toggle'])
+        ->middleware('throttle:30,1')
+        ->name('webhooks.toggle');
+    Route::delete('/settings/webhooks/{webhook}', [WebhookController::class, 'destroy'])
+        ->middleware('throttle:30,1')
+        ->name('webhooks.destroy');
+
+    // Shareable weekly report — the owner's on/off/rotate control. The
+    // public page itself is outside the auth group (see the bottom).
+    Route::get('/settings/report', [WeeklyReportController::class, 'settings'])->name('report.settings');
+    Route::post('/settings/report/enable', [WeeklyReportController::class, 'enable'])
+        ->middleware('throttle:10,1')
+        ->name('report.enable');
+    Route::post('/settings/report/rotate', [WeeklyReportController::class, 'rotate'])
+        ->middleware('throttle:10,1')
+        ->name('report.rotate');
+    Route::post('/settings/report/disable', [WeeklyReportController::class, 'disable'])
+        ->middleware('throttle:10,1')
+        ->name('report.disable');
+
     // Billing — current plan, credit history, top-up purchase.
     // Top-up flow is DEV-MODE (instant grant) until Phase H wires Stripe
     // Checkout. See BillingController::topup for the swap-over plan.
@@ -191,6 +239,14 @@ Route::middleware([
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
     // Registered before /leads/{lead} so "board" isn't bound as a {lead}.
     Route::get('/leads/board', [LeadController::class, 'board'])->name('leads.board');
+    // CSV out (same filters as the board) and CSV in. Both registered before
+    // /leads/{lead} so "export" and "import" are not bound as a {lead}.
+    Route::get('/leads/export', [LeadController::class, 'export'])
+        ->middleware('throttle:10,1')
+        ->name('leads.export');
+    Route::post('/leads/import', [LeadController::class, 'import'])
+        ->middleware('throttle:5,1')
+        ->name('leads.import');
     Route::get('/leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
     Route::post('/leads', [LeadController::class, 'store'])
         ->middleware('throttle:30,1')
@@ -208,6 +264,9 @@ Route::middleware([
     Route::patch('/leads/{lead}/notes', [LeadController::class, 'updateNotes'])
         ->middleware('throttle:120,1')
         ->name('leads.notes');
+    Route::patch('/leads/{lead}/tags', [LeadController::class, 'updateTags'])
+        ->middleware('throttle:120,1')
+        ->name('leads.tags');
     Route::post('/leads/{lead}/assign', [LeadController::class, 'assign'])
         ->middleware('throttle:30,1')
         ->name('leads.assign');
@@ -240,6 +299,9 @@ Route::middleware([
         ->name('conversations.messages');
     // Human takeover: reply to the visitor live from the dashboard (first
     // reply pauses the AI), release hands the conversation back to it.
+    Route::patch('/conversations/{conversation}/labels', [ConversationController::class, 'updateLabels'])
+        ->middleware('throttle:120,1')
+        ->name('conversations.labels');
     Route::post('/conversations/{conversation}/reply', [ConversationController::class, 'reply'])
         ->middleware('throttle:60,1')
         ->name('conversations.reply');
@@ -295,6 +357,10 @@ Route::middleware([
     Route::post('/knowledge/gaps/{gap}/answer', [KnowledgeBaseController::class, 'resolveGapWithAnswer'])
         ->middleware('throttle:30,1')
         ->name('knowledge.gaps.answer');
+    Route::post('/knowledge/{documentID}/refresh', [KnowledgeBaseController::class, 'refresh'])
+        ->where('documentID', '[0-9]+')
+        ->middleware('throttle:10,1')
+        ->name('knowledge.refresh');
     Route::get('/knowledge/{documentID}', [KnowledgeBaseController::class, 'show'])
         ->where('documentID', '[A-Za-z0-9_\-]+')
         ->name('knowledge.show');
@@ -303,6 +369,13 @@ Route::middleware([
         ->middleware('throttle:30,1')
         ->name('knowledge.destroy');
 });
+
+// Shareable weekly report — public by unguessable token (teams.report_token).
+// Read-only, no auth, no session; a rotated or disabled token 404s.
+Route::get('/report/{token}', [WeeklyReportController::class, 'show'])
+    ->where('token', '[a-z0-9]{40}')
+    ->middleware('throttle:60,1')
+    ->name('report.public');
 
 // Stripe webhook — public, no auth, no CSRF, signature-verified inside the
 // controller. Lives outside the auth group because Stripe doesn't send

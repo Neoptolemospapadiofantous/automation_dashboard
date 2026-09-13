@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Notifications\QueuedResetPassword;
 use App\Notifications\QueuedVerifyEmail;
+use App\Support\NotificationPreferences;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -68,7 +69,17 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'notification_preferences' => 'array',
         ];
+    }
+
+    /**
+     * The user's notification preferences with defaults filled in — the
+     * one object every Notification::via() consults.
+     */
+    public function notificationPreferences(): NotificationPreferences
+    {
+        return NotificationPreferences::fromArray($this->getAttribute('notification_preferences'));
     }
 
     /**

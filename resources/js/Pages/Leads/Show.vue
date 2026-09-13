@@ -6,6 +6,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
+import TagEditor from '@/Components/TagEditor.vue';
 import { confirm } from '@/Composables/useConfirm';
 
 const props = defineProps({
@@ -41,6 +42,13 @@ function saveNotes() {
             preserveState: true,
         });
     }, 600);
+}
+
+// --- Tags -----------------------------------------------------------------
+const tags = ref([...(props.lead.tags ?? [])]);
+async function saveTags(next) {
+    const { data } = await axios.patch(route('leads.tags', props.lead.id), { tags: next });
+    tags.value = data.tags;
 }
 
 // --- Mark contacted ---------------------------------------------------------
@@ -224,6 +232,12 @@ const scoreBreakdown = computed(() => {
                             <dd class="mt-0.5 text-ink-dim">{{ fmt(lead.updated_at) }}</dd>
                         </div>
                     </dl>
+                </div>
+
+                <!-- Tags -->
+                <div class="rounded-none border border-border-line bg-bg p-5">
+                    <h3 class="text-sm font-semibold text-ink-dim">Tags</h3>
+                    <TagEditor class="mt-3" :model-value="tags" @update:model-value="saveTags" />
                 </div>
 
                 <!-- Notes -->

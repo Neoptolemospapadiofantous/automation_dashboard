@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Agent;
+use App\Models\User;
 use App\Notifications\Channels\CallMeBotTelegramCallChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -48,11 +49,19 @@ class HandoffRequestedNotification extends Notification
 
         // Ring the founder's phone (free CallMeBot Telegram call) — see
         // the channel class for why a call is the chosen phone layer.
+        // ring=false on the contact follow-up AND on an out-of-hours
+        // escalation (Settings → Business hours): the request still lands
+        // in the bell and the inbox, the phone stays quiet.
         if ($this->ring && CallMeBotTelegramCallChannel::configured()) {
             $channels[] = CallMeBotTelegramCallChannel::class;
         }
 
-        return $channels;
+        // Then the recipient's own preferences: a switched-off channel or
+        // an active quiet-hours window drops mail and the call; the bell
+        // entry is always written so nothing is ever lost.
+        return $notifiable instanceof User
+            ? $notifiable->notificationPreferences()->filter('handoff', $channels)
+            : $channels;
     }
 
     /**

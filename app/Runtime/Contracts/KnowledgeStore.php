@@ -57,7 +57,7 @@ interface KnowledgeStore
      * List the documents belonging to an agent (for the dashboard's
      * Knowledge page). Returns lightweight summaries — no chunk content.
      *
-     * @return list<array{id: int, title: string, chunk_count: int, created_at: string, metadata: array<string, mixed>}>
+     * @return list<array{id: int, title: string, chunk_count: int, created_at: string, metadata: array<string, mixed>, refresh_checked_at?: string|null, refreshed_at?: string|null, refresh_error?: string|null}>
      */
     public function listDocuments(int $agentId): array;
 }

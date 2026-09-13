@@ -23,7 +23,9 @@ const props = defineProps({
     statuses: { type: Array, required: true },
     members: { type: Array, required: true },
     sources: { type: Array, default: () => [] },
-    filters: { type: Object, default: () => ({ mine: false, q: '', status: null, source: null, assignee: null, min_score: null, since_key: null }) },
+    tags: { type: Array, default: () => [] },
+    filters: { type: Object, default: () => ({ mine: false, q: '', status: null, source: null, assignee: null, min_score: null, since_key: null, tag: null }) },
+    importResult: { type: Object, default: null },
 });
 
 const page = usePage();
@@ -38,7 +40,7 @@ function toggleMine() {
 // Generic filter setter — merges the patch onto current URL-bound
 // filters and navigates. URL params are explicitly whitelisted so
 // server-derived fields (since_key, etc.) don't round-trip.
-const URL_KEYS = ['mine', 'q', 'status', 'source', 'assignee', 'min_score', 'since'];
+const URL_KEYS = ['mine', 'q', 'status', 'source', 'assignee', 'min_score', 'since', 'tag'];
 function applyFilters(patch) {
     const current = {
         mine: props.filters.mine,
@@ -48,6 +50,7 @@ function applyFilters(patch) {
         assignee: props.filters.assignee,
         min_score: props.filters.min_score,
         since: props.filters.since_key, // server parses 'since' → exposes 'since_key'
+        tag: props.filters.tag,
     };
     const next = { ...current, ...patch };
     // Drop empties so the URL stays clean.
@@ -79,8 +82,27 @@ const activeFilterCount = computed(() => {
     if (props.filters.assignee) n++;
     if (props.filters.min_score) n++;
     if (props.filters.since_key) n++;
+    if (props.filters.tag) n++;
     return n;
 });
+
+// CSV out carries the same filters as the board, so the file is what you
+// see. CSV in goes through a plain form post (file upload).
+const exportUrl = computed(() => route('leads.export', currentFilterParams()));
+const showImport = ref(false);
+const importForm = useForm({ file: null });
+function submitImport() {
+    importForm.post(route('leads.import'), {
+        forceFormData: true,
+        onSuccess: () => {
+            importForm.reset();
+            showImport.value = false;
+        },
+    });
+}
+const importBanner = ref(props.importResult);
+watch(() => props.importResult, (r) => (importBanner.value = r));
+
 
 // Assign a single lead (manual to a member, or a strategy like round_robin).
 function assign(lead, { strategy = 'manual', assigned_to = null } = {}) {
@@ -129,6 +151,7 @@ function currentFilterParams() {
         assignee: props.filters.assignee || undefined,
         min_score: props.filters.min_score || undefined,
         since: props.filters.since_key || undefined,
+        tag: props.filters.tag || undefined,
     };
 }
 
@@ -249,12 +272,41 @@ function submit() {
                 >
                     {{ filters.mine ? 'My leads' : 'All leads' }}
                 </button>
+                <a
+                    :href="exportUrl"
+                    class="rounded-none border border-border-hi bg-bg px-3 py-1.5 text-sm font-medium text-ink-dim transition hover:bg-surface-hi"
+                    title="Download the leads on this board as CSV"
+                >
+                    Export CSV
+                </a>
+                <button
+                    type="button"
+                    class="rounded-none border border-border-hi bg-bg px-3 py-1.5 text-sm font-medium text-ink-dim transition hover:bg-surface-hi"
+                    @click="showImport = true"
+                >
+                    Import CSV
+                </button>
                 <PrimaryButton @click="showCreate = true">New lead</PrimaryButton>
             </template>
         </PageHeader>
 
         <div class="py-8">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+                <!-- Import summary, flashed back by the importer. -->
+                <div v-if="importBanner" class="mb-4 rounded-none border border-border-hi bg-bg p-3 text-sm text-ink shadow-sheet">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <p>
+                            Imported <strong>{{ importBanner.created }}</strong> new, updated <strong>{{ importBanner.updated }}</strong>,
+                            skipped <strong>{{ importBanner.skipped }}</strong>.
+                            <span v-if="importBanner.truncated" class="text-state-warn-ink">Only the first 5,000 rows were read.</span>
+                        </p>
+                        <button type="button" class="py-1 text-xs text-ink-dim underline hover:text-ink" @click="importBanner = null">Dismiss</button>
+                    </div>
+                    <ul v-if="importBanner.errors?.length" class="mt-2 list-disc pl-5 text-xs text-ink-dim">
+                        <li v-for="(e, i) in importBanner.errors" :key="i">{{ e }}</li>
+                    </ul>
+                </div>
 
                 <!-- Filter bar. All filters are server-side (URL-bound) so
                      state survives reload + can be shared. The text search
@@ -310,6 +362,16 @@ function submit() {
                         <option :value="50">50+</option>
                         <option :value="70">70+</option>
                         <option :value="90">90+</option>
+                    </select>
+
+                    <select
+                        v-if="tags.length"
+                        :value="filters.tag ?? ''"
+                        class="rounded-none border-border-hi bg-bg py-1.5 text-xs text-ink-dim focus:border-ink focus:ring-ink"
+                        @change="applyFilters({ tag: $event.target.value || null })"
+                    >
+                        <option value="">Any tag</option>
+                        <option v-for="t in tags" :key="t" :value="t">{{ t }}</option>
                     </select>
 
                     <div class="flex items-center gap-1">
@@ -478,9 +540,32 @@ function submit() {
             </template>
         </DialogModal>
 
+        <DialogModal :show="showImport" @close="showImport = false">
+            <template #title>Import leads from CSV</template>
+            <template #content>
+                <p class="text-sm text-ink-dim">
+                    A header row plus one lead per line. Recognised columns: <span class="font-mono text-xs">name, email, phone, company, source, status, score, tags, notes</span>.
+                    Leads are matched by email — an existing lead keeps its status and score and only fills blanks. Up to 5,000 rows, 2 MB.
+                </p>
+                <input
+                    type="file"
+                    accept=".csv,text/csv,text/plain"
+                    class="mt-4 block w-full text-sm text-ink-dim file:mr-3 file:rounded-none file:border file:border-border-hi file:bg-bg file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink"
+                    @change="importForm.file = $event.target.files[0] ?? null"
+                />
+                <InputError class="mt-2" :message="importForm.errors.file" />
+            </template>
+            <template #footer>
+                <SecondaryButton @click="showImport = false">Cancel</SecondaryButton>
+                <PrimaryButton class="sm:ms-3" :disabled="importForm.processing || !importForm.file" @click="submitImport">
+                    {{ importForm.processing ? 'Importing…' : 'Import' }}
+                </PrimaryButton>
+            </template>
+        </DialogModal>
+
         <!-- Right-side detail drawer. Opens on card click. Notes auto-save
              with 800ms debounce; conversation cross-link and captured
              fields are inline. -->
-        <LeadDetailDrawer :lead="drawerLead" @close="closeDetail" />
+        <LeadDetailDrawer :lead="drawerLead" :tag-suggestions="tags" @close="closeDetail" />
     </AppLayout>
 </template>
