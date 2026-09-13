@@ -65,6 +65,14 @@ class LandingFaqSeederTest extends TestCase
             'Integrations',
             $canned->match('Do you integrate with a Shopify store running on a custom subdomain?')?->category
         );
+        // Webhooks (2026-09-13) are answered here, and the answer says they
+        // exist — the chip must never again claim there is no way to push
+        // leads out. 'make.com' is the keyword, never bare 'make'.
+        foreach (['do you have webhooks?', 'can I send new leads to Zapier?', 'does it work with make.com?', 'can you push leads into Google Sheets?'] as $q) {
+            $this->assertSame('Integrations', $canned->match($q)?->category, "'{$q}' must land on Integrations.");
+        }
+        $this->assertStringContainsString('webhooks push', $canned->match('do you have webhooks?')?->answer ?? '');
+        $this->assertNull($canned->match('can you make it answer in Greek?'), 'bare "make" must not be a keyword');
         // Role questions must not hit Custom build via the "custom" stem, and
         // credit-rollover questions must fall through to the grounded LLM.
         $this->assertNull($canned->match('do you do customer support?'));

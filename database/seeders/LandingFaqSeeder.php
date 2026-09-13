@@ -210,7 +210,7 @@ class LandingFaqSeeder extends Seeder
                     'public api', 'rest api', 'api access', 'api endpoint', 'api endpoints', 'an api',
                     'your api', 'the api', 'api docs', 'api documentation', 'developer api', 'sdk', 'graphql',
                 ],
-                'answer' => 'Not yet — there is no public API or SDK today. Two ways in: the website widget (one script tag) and the hosted chat page; leads and transcripts land in your dashboard, with email alerts. Need our data inside your own systems? That is a custom build, quoted after a free call. What would you connect it to?',
+                'answer' => 'Not yet — there is no public API or SDK today. What there is: outbound webhooks on paid plans, pushing each new lead and handoff request to Zapier, Make, Google Sheets or your CRM, signed with your secret — plus the widget and the hosted chat page. Need more of our data inside your own systems? A custom build, quoted after a free call. What would you connect it to?',
             ],
             [
                 'category' => 'Pricing',
@@ -238,12 +238,18 @@ class LandingFaqSeeder extends Seeder
             ],
             [
                 'category' => 'Integrations',
+                // Webhooks shipped 2026-09-13 (Settings → Webhooks, paid plans):
+                // the honest answer changed from "we build it for you" to
+                // "push it yourself, we build the deeper wiring". 'make.com'
+                // rather than bare 'make' — "make it answer in Greek" must not
+                // land here.
                 'keywords' => [
                     'integration', 'integrations', 'integrate', 'integrates', 'crm', 'hubspot', 'salesforce',
-                    'pipedrive', 'zapier', 'shopify', 'wordpress', 'wix', 'webflow', 'calendar', 'connect to',
-                    'connects to',
+                    'pipedrive', 'zapier', 'make.com', 'google sheets', 'webhook', 'webhooks', 'shopify',
+                    'wordpress', 'wix', 'webflow', 'calendar', 'connect to', 'connects to', 'send leads to',
+                    'push leads',
                 ],
-                'answer' => 'The widget goes on any site — Shopify, WordPress, Wix, React — it\'s one script tag. Leads and transcripts land in your Flowstack dashboard. Wiring it into your own CRM, calendar or phone system is something we build for you: quoted after a free call, and you keep the code. Which tools would you want it talking to?',
+                'answer' => 'The widget goes on any site — Shopify, WordPress, Wix, React — one script tag. Leads and transcripts land in your dashboard. On a paid plan, webhooks push each new lead and handoff request to Zapier, Make, Google Sheets or your CRM the moment it happens, signed with your own secret. Deeper wiring — calendars, phone, internal systems — we build for you, quoted after a free call. Which tools would you connect?',
             ],
             [
                 'category' => 'Getting started',

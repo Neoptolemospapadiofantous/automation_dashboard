@@ -42,10 +42,12 @@ put that wording in the knowledge base and the agent will use it.
 ## Does it connect to my existing stack?
 
 Every plan ships the agent itself — the chat, the knowledge base, transcripts,
-and lead routing into your dashboard. Wiring it into your CRM, helpdesk or
-internal APIs is custom build work: fixed scope, credentials encrypted in your
-own tenant, and you keep the code. The free 30-minute audit is where that gets
-scoped.
+and lead routing into your dashboard. Paid plans add outbound webhooks
+(Settings → Webhooks): each new lead or handoff request is pushed to Zapier,
+Make, Google Sheets or your CRM as it happens. Wiring that goes further —
+two-way CRM sync, a helpdesk, internal APIs — is custom build work: fixed
+scope, credentials encrypted in your own tenant, and you keep the code. The
+free 30-minute audit is where that gets scoped.
 
 ## Is there a free trial?
 

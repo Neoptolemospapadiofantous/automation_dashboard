@@ -12,22 +12,34 @@ to, with nothing to install.
 
 Captured leads and full transcripts land in the real-time Flowstack dashboard,
 and your team gets email alerts for new leads and human-handoff requests. The
-agent answers from the knowledge you upload (docs, FAQs, site pages). There are
-no self-serve third-party connectors (HubSpot, Salesforce, Zapier and the like)
-and no public API today — out of the box, leads live in the dashboard and the
-email alerts.
+agent answers from the knowledge you upload (docs, FAQs, site pages). There is
+no public API today.
+
+## Webhooks — push leads to Zapier, Make, Google Sheets or your CRM
+
+On any paid plan (Starter and up) the dashboard sends outbound webhooks:
+Settings → Webhooks, add the URL of your Zapier or Make trigger, a Google
+Sheets connector or your own endpoint, and pick the events. Three events
+exist: a new lead is captured, a visitor asks for a human, a conversation
+ends. Each delivery is a signed JSON POST (HMAC-SHA256 with a secret shown
+once when you create the endpoint), retried twice if your endpoint is down,
+and you can send a test event from the page. That is how self-serve
+customers get leads into HubSpot, Pipedrive, Salesforce, a spreadsheet or a
+Slack channel without a build. There are no pre-built connectors to click
+— the webhook is the connector, and Zapier or Make does the mapping.
 
 ## Connecting your own tools — CRM, calendars, telephony
 
-Wiring the agent into your own tools is build work: CRM sync (HubSpot,
-Pipedrive, Salesforce, or anything with an API), calendar booking, telephony,
-helpdesks, internal databases. Fixed scope, usually 4–6 weeks, and you keep the
-code. The way in is the free 30-minute call at flowstack.run/audit — a written
-price within 48 hours, yours to keep either way.
+Wiring that goes beyond a webhook is build work: two-way CRM sync, calendar
+booking, telephony, helpdesks, internal databases. Fixed scope, usually 4–6
+weeks, and you keep the code. The way in is the free 30-minute call at
+flowstack.run/audit — a written price within 48 hours, yours to keep either
+way.
 
-When a visitor asks about connecting a specific tool: confirm that exact wiring
-is what a custom build delivers, then ask for their email so the team can map
-their stack with them.
+When a visitor asks about connecting a specific tool: if it accepts a webhook
+or has a Zapier/Make trigger, say so and point at Settings → Webhooks on a
+paid plan; otherwise confirm that exact wiring is what a custom build
+delivers, then ask for their email so the team can map their stack with them.
 
 ## Channels
 
