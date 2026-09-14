@@ -51,9 +51,8 @@ class PlanPricingTest extends TestCase
     {
         // Equivalent-monthly is the REAL yearly charge over 12, not a
         // percentage applied to the monthly price.
-        $this->assertSame(8, Plan::Starter->annualEquivalentMonthlyEur());   // €90/yr
-        $this->assertSame(16, Plan::Growth->annualEquivalentMonthlyEur());   // €190/yr
-        $this->assertSame(33, Plan::Pro->annualEquivalentMonthlyEur());      // €390/yr
+        $this->assertSame(17, Plan::Starter->annualEquivalentMonthlyEur());  // €199/yr
+        $this->assertSame(33, Plan::Pro->annualEquivalentMonthlyEur());      // €399/yr
         // Free is €0 — the discount is a no-op, not null.
         $this->assertSame(0, Plan::Free->annualEquivalentMonthlyEur());
         // Business has no monthly price → null.
@@ -81,7 +80,6 @@ class PlanPricingTest extends TestCase
             'billing.stripe_price.operator' => 'price_operator_monthly',
         ]);
 
-        $this->assertSame(Plan::Growth, Plan::fromStripePriceId('price_growth_monthly'));
         $this->assertSame(Plan::Pro, Plan::fromStripePriceId('price_operator_monthly'));
         $this->assertNull(Plan::fromStripePriceId('price_unknown'));
     }
@@ -92,7 +90,7 @@ class PlanPricingTest extends TestCase
         // Stripe annual Price), so nothing derives it — which means nothing
         // stops a typo either. This is that guard: every paid rung must save
         // the buyer something real, but not so much that annual is a mistake.
-        foreach ([Plan::Starter, Plan::Growth, Plan::Pro] as $plan) {
+        foreach ([Plan::Starter, Plan::Pro] as $plan) {
             $twelveMonths = $plan->priceEur() * 12;
             $annual = $plan->annualPriceEur();
 

@@ -9,8 +9,8 @@ a question is about:
    from day one. Quoted per engagement.
 2. **Chat & voice assistant** — a chat on your site, trained on your own
    knowledge: it answers questions, qualifies visitors, books and captures
-   leads. The website chat is the only self-serve part — a subscription, free
-   to start, then €9 to €39 a month, and the piece you can switch on today. A
+   leads. The website chat is the only self-serve part — a subscription at
+   €19.99 or €39.99 a month, and the piece you can switch on today. A
    phone assistant that answers calls and books is built to order by us; it
    is not part of the app or any plan, so never describe it as one.
 3. **Automations** — wired into your CRM and the tools you already use: email
@@ -37,8 +37,8 @@ every transcript. Nobody watches a queue.
 
 Setup takes about a minute. You upload your own knowledge — docs and FAQs — and
 the agent answers from what you actually ship, not generic filler. There is a
-permanent free tier (1 agent, 250 conversation credits a month, no card), paid
-plans run €9 to €39 a month, and you can cancel any month.
+two plans — €19.99 or €39.99 a month — and you can cancel any month. There is
+no free tier; the free things are the 30-minute call and the written quote.
 
 Everything behind the chat is built to order in the custom build engagement, and
 the way in is the free 30-minute audit. The pipeline runs end to end: the chat

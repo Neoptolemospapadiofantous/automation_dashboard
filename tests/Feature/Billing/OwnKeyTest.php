@@ -68,16 +68,15 @@ class OwnKeyTest extends TestCase
         ]);
     }
 
-    public function test_byok_is_sold_above_starter_and_not_below(): void
+    public function test_byok_is_sold_on_every_paid_plan_and_not_to_the_unsubscribed(): void
     {
         // Premium engines are BYOK-only, so this gate also decides who can
-        // run anything other than Flowstack Core.
-        $this->assertTrue(Plan::Growth->allowsOwnKey(), 'Growth is the first rung that sells BYOK');
+        // run anything other than Flowstack Core. Since the 2026-09-15
+        // two-plan repricing, every paid rung sells it.
+        $this->assertTrue(Plan::Starter->allowsOwnKey(), 'Starter is the first rung that sells BYOK');
         $this->assertTrue(Plan::Pro->allowsOwnKey());
         $this->assertTrue(Plan::Business->allowsOwnKey());
-        foreach ([Plan::Free, Plan::Starter] as $plan) {
-            $this->assertFalse($plan->allowsOwnKey(), $plan->value.' must not allow BYOK');
-        }
+        $this->assertFalse(Plan::Free->allowsOwnKey(), 'unsubscribed teams must not run BYOK');
     }
 
     public function test_key_is_encrypted_at_rest_and_hidden_from_serialization(): void

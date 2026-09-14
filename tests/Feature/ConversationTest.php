@@ -71,7 +71,7 @@ class ConversationTest extends TestCase
 
         $user = $this->user();
         $agent = Agent::factory()->for($user->currentTeam)->create();
-        $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
+        $user->currentTeam->forceFill(['current_agent_id' => $agent->id, 'credit_balance' => 100])->save();
         $user = $user->fresh();
 
         $response = $this->actingAs($user)->postJson(route('chat.interact'), [

@@ -2,7 +2,7 @@
 
 Flowstack sells four things, always in this order: **Website**, **Chat & voice
 assistant**, **Automations**, **Lead generation**. The website chat is the only
-part you switch on yourself — free to start, paid plans €9–€39 a month, run
+part you switch on yourself — €19.99 or €39.99 a month, run
 from the dashboard, where a page lists every module that is live and every one
 not yet available, which you can request. Everything else is built to order:
 we build it, install it and watch it, for a fixed price agreed before work

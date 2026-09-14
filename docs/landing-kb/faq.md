@@ -21,9 +21,8 @@ see every transcript. Nobody watches a queue.
 
 ## What do the plans cost?
 
-Free is €0 — 1 agent, 250 conversation credits a month, no card. Starter is
-€9/month (1 agent, 2,500 credits), Growth €19/month (up to 5 agents, 10,000),
-Operator €39/month (up to 5 agents, 25,000, best rate per credit and the most
+Two plans. Starter is €19.99/month (up to 5 agents, 10,000 credits), Operator
+€39.99/month (up to 5 agents, 25,000, best rate per credit and the most
 expensive plan we sell).
 
 Every feature is on at every tier, and every paid plan cancels anytime with no
@@ -52,12 +51,8 @@ free 30-minute audit is where that gets scoped.
 
 ## Is there a free trial?
 
-Better — there is a permanent free tier: 1 agent, 250 conversation credits a
-month, every feature on, no card. Put the agent on your own site with your own
-content before paying anything. It does not expire; when you outgrow 250 credits
-you move to Starter at €9/month.
-
-Separately, the 30-minute audit for build work is free, and ends in a written
+No free tier and no trial. Plans start at €19.99 a month and cancel anytime,
+so trying it for one month is the trial. Separately, the 30-minute audit for build work is free, and ends in a written
 fixed-scope proposal within 48 hours, yours to keep either way.
 
 ## When do I need a custom build instead of the off-the-shelf agent?
@@ -82,12 +77,12 @@ roll over until used.
 
 ## Can I use my own OpenAI, Anthropic or Google key? (bring your own key / BYOK)
 
-Yes, from Growth (€19/month) up. Every plan includes Flowstack Core, our fast
+Yes, on any paid plan. Every plan includes Flowstack Core, our fast
 default engine, and that runs on credits as usual. The premium engines — Claude,
 GPT-5 and Gemini — run only on a key you connect, so you pay the provider
 directly for the model and we charge no credits for those replies. Connect it in
 Settings → Your own API key. Your plan's monthly message allowance applies:
-10,000 on Growth, 25,000 on Operator. Past it the chat keeps working and falls
+10,000 on Starter, 25,000 on Operator. Past it the chat keeps working and falls
 back to your credits until the month resets.
 
 Some detail buyers ask about: it is an API key from the provider's developer
@@ -102,7 +97,7 @@ use credits, because those run on our side.
 ## Where do I sign up, buy, or subscribe?
 
 Create your account at app.flowstack.run/register — that is the signup link,
-and it is free to start (no card). Paid plans are bought from the Billing page
+Plans are bought from the Billing page
 inside the dashboard once you have an account; there is no separate checkout
 link. Existing customers log in at app.flowstack.run/login.
 
@@ -121,8 +116,7 @@ notified and someone picks the chat up.
 
 Four things, in this order: a website, a chat and voice assistant,
 automations, and lead generation. The website chat is the only part you run
-yourself — free to start, then €9, €19 or €39 a month, on your own card, cancel
-anytime. Everything else is built to order for businesses in Cyprus, quoted
+yourself — €19.99 or €39.99 a month, on your own card, cancel anytime. Everything else is built to order for businesses in Cyprus, quoted
 after a free 30-minute call and invoiced separately. A build client runs the
 chat too; the subscription stays theirs.
 

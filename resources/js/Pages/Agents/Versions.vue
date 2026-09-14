@@ -133,7 +133,7 @@ const dirty = computed(() => form.isDirty);
                             Tiers on your own key run on your provider account and cost no credits; Flowstack Core bills per message. Applies to this agent only, from the moment you publish.
                         </p>
                         <p v-else class="mt-0.5 text-xs text-ink-dim">
-                            Flowstack Core is included in every plan. The premium engines run on your own provider key — available on Growth and above. Applies to this agent only, from the moment you publish.
+                            Flowstack Core is included in every plan. The premium engines run on your own provider key — available on every plan and above. Applies to this agent only, from the moment you publish.
                         </p>
                         <div class="mt-2 grid gap-3 sm:grid-cols-3">
                             <label
@@ -161,7 +161,7 @@ const dirty = computed(() => form.isDirty);
                                     </span>
                                     <span class="mt-1 block text-xs leading-snug text-ink-dim">
                                         <template v-if="t.available === false">Coming soon.</template>
-                                        <template v-else-if="t.byok_only && !t.own_key">Runs on your own {{ providerLabel(t.provider) }} key — connect one on Growth or above to use it. {{ t.description }}</template>
+                                        <template v-else-if="t.byok_only && !t.own_key">Runs on your own {{ providerLabel(t.provider) }} key — connect one on any paid plan to use it. {{ t.description }}</template>
                                         <template v-else>{{ t.description }}</template>
                                     </span>
                                     <span v-if="t.model" class="mt-1 block font-mono text-[10px] tracking-wide text-ink-mute">{{ t.model }}</span>

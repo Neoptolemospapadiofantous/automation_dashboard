@@ -19,11 +19,10 @@ use Illuminate\Console\Command;
  * the webhook well inside the window, so they never double-grant —
  * matching here means the webhook was missed (self-heal).
  *
- * Since the 2026-08-27 repricing this command is ALSO the only grant path
- * for the Free tier: a free team has no Stripe subscription, so no webhook
- * ever fires for it. Its small allotment is renewed here on the same
- * staleness rule. Custom (Business) is excluded from both paths — those
- * credits are negotiated per engagement and granted by hand.
+ * Free is not a tier since 2026-09-15 (unsubscribed teams get nothing), so
+ * only live paid subscriptions are renewed here. Custom (Business) is
+ * excluded — those credits are negotiated per engagement and granted by
+ * hand.
  */
 class GrantCreditRenewals extends Command
 {
@@ -34,23 +33,17 @@ class GrantCreditRenewals extends Command
     public function handle(CreditMeter $credits): int
     {
         // Every plan that receives an automatic monthly allotment: the paid
-        // recurring tiers, plus Free. Business/Custom is deliberately absent.
+        // recurring tiers. Free (unsubscribed) and Business/Custom get nothing.
         $paidPlans = array_values(array_map(
             fn (Plan $p) => $p->value,
             array_filter(Plan::cases(), fn (Plan $p) => $p->isPaid()),
         ));
 
         $teams = Team::query()
-            ->where(function ($q) use ($paidPlans): void {
-                // Paid tiers: only while Stripe says the subscription is live.
-                $q->where(function ($paid) use ($paidPlans): void {
-                    $paid->where('stripe_subscription_status', 'active')
-                        ->whereIn('plan', $paidPlans);
-                })
-                    // Free tier: no subscription exists, so there is nothing to
-                    // check — the plan itself is the entitlement.
-                    ->orWhere('plan', Plan::Free->value);
-            })
+            // Paid tiers only, and only while Stripe says the subscription
+            // is live. An unsubscribed (free) team receives nothing.
+            ->where('stripe_subscription_status', 'active')
+            ->whereIn('plan', $paidPlans)
             ->where(function ($q): void {
                 $q->whereNull('credits_renewed_at')
                     ->orWhere('credits_renewed_at', '<=', now()->subDays(32));

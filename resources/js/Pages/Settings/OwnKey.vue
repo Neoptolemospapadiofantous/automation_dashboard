@@ -91,11 +91,11 @@ const remove = (id) => {
 
         <div class="py-6">
             <div class="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
-                <!-- Below Growth: explain the trade rather than just refusing. -->
+                <!-- Not subscribed: explain the trade rather than just refusing. -->
                 <div v-if="!allowed" class="rounded-none border border-border-line bg-bg-elev p-6">
-                    <h2 class="text-base font-semibold text-ink">Available on Growth and above</h2>
+                    <h2 class="text-base font-semibold text-ink">Available on every paid plan</h2>
                     <p class="mt-2 text-sm text-ink-dim">
-                        You're on {{ planLabel }}. From Growth up you can connect your own Anthropic,
+                        You're on {{ planLabel }}. On any paid plan you can connect your own Anthropic,
                         OpenAI or Google key — the premium engines then run on your provider account
                         instead of your credits, with a monthly message allowance in place of the
                         credit balance.

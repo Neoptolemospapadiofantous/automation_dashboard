@@ -68,7 +68,6 @@ class BillingController extends Controller
             // the monthly/annual toggle and the savings %.
             'plan_catalog' => [
                 'starter' => $this->planSummary(Plan::Starter, 'starter'),
-                'growth' => $this->planSummary(Plan::Growth, 'growth'),
                 'operator' => $this->planSummary(Plan::Pro, 'operator'),
             ],
         ]);
@@ -76,7 +75,7 @@ class BillingController extends Controller
 
     /**
      * @return array{
-     *   key: string, value: string, label: string, plan_rank: int, monthly_eur: int,
+     *   key: string, value: string, label: string, plan_rank: int, monthly_eur: ?float,
      *   annual_eur: ?int, annual_equivalent_monthly_eur: ?int, annual_savings_pct: int,
      *   annual_available: bool, max_agents: int, monthly_credits: int,
      *   allows_own_key: bool, message_cap: int, website_build_on_annual: bool
@@ -91,7 +90,7 @@ class BillingController extends Controller
             // Ladder position — the UI compares it against billing.plan_rank
             // to decide Upgrade vs Downgrade vs Current plan.
             'plan_rank' => $plan->rank(),
-            'monthly_eur' => (int) $plan->priceEur(),
+            'monthly_eur' => $plan->priceEur(),
             // The real yearly charge, not equivalent-monthly × 12 — those
             // disagree, and the UI must quote what Stripe will bill.
             'annual_eur' => $plan->annualPriceEur(),

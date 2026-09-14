@@ -174,7 +174,7 @@ class LandingFaqSeeder extends Seeder
                     // public copy on 2026-09-14 — visitors who saw it still ask. Bare
                     // 'studio' is NOT one: a yoga or dance studio would land here.
                     // Bare 'package'/'packages' were tried and REJECTED the same day: "what's in the
-                    // €19 package?" is a Growth-plan question and Custom build sits ahead of Pricing.
+                    // €19.99 package?" is a subscription question and Custom build sits ahead of Pricing.
                     'the studio', 'done for you', 'do it for me', 'do it for us',
                 ],
                 'answer' => 'We build four things to order: your website; a chat and voice assistant, including a phone assistant that answers calls and books; automations for your CRM, follow-ups and invoices; and lead generation by cold email. One step to start: a free 30-minute call at flowstack.run/audit, then a written fixed price within 48 hours. You keep everything built. Which one are you after?',
@@ -200,7 +200,7 @@ class LandingFaqSeeder extends Seeder
                     'own anthropic key', 'own provider key', 'own google key',
                     'own gemini key', 'bring your own', 'byok',
                 ],
-                'answer' => 'Yes, from €19 Growth up. Every plan includes Flowstack Core on credits. The premium engines — Claude, GPT-5, Gemini — run on a key you connect, so you pay the provider and we charge no credits for those replies. Growth covers 10,000 messages a month on your key, Operator 25,000. We store it encrypted and stop using it the moment you disconnect. Want me to show you where to add it?',
+                'answer' => 'Yes, on any paid plan. Every plan includes Flowstack Core on credits; the premium engines — Claude, GPT-5, Gemini — run on your own OpenAI, Anthropic or Google API key instead, at no credits, against your plan\'s monthly message allowance. Connect it in Settings → Your own API key; we verify it before saving. Which provider do you use?',
             ],
             [
                 // Sits after "Your own key" so "can I use my own API key?" keeps
@@ -219,7 +219,7 @@ class LandingFaqSeeder extends Seeder
                     'price', 'prices', 'pricing', 'cost', 'costs', 'how much', 'plan', 'plans', 'quote',
                     'expensive',
                 ],
-                'answer' => 'The chat starts free: 1 agent, 250 credits a month, no card. Then €9 (1 agent, 2,500 credits), €19 (5 agents, 10,000) or €39 (5 agents, 25,000) — our top plan, and paying that one yearly also includes a free website build. A short chat is about 5-8 credits, so €9 buys roughly 300-500. Cancel anytime, VAT not included. Builds are quoted after a free call. The chat, or a build?',
+                'answer' => 'Two plans: €19.99 a month (5 agents, 10,000 credits) or €39.99 (5 agents, 25,000 credits, best rate) — and paying €39.99 yearly (€399) includes a free website build. A short chat is about 5-8 credits, so €19.99 buys roughly 1,200-2,000 chats. Cancel anytime, VAT not included. Builds are quoted after a free 30-minute call. The chat, or a build?',
             ],
             [
                 'category' => 'What it does',
@@ -230,7 +230,7 @@ class LandingFaqSeeder extends Seeder
                 // The site's frame since 2026-09-13: FOUR things, named as the
                 // header names them. The website chat is the only self-serve
                 // part; the phone assistant is built to order, never "in the app".
-                'answer' => 'Four things: your website, built or rebuilt; a chat and voice assistant that answers every enquiry from your own knowledge — the website chat is free to start and live in a minute, the phone assistant is built to order; automations for your CRM, follow-ups and invoices; and lead generation — cold email, plus call-back and SMS to people who enquired. Take one, or the lot. Which one are you after?',
+                'answer' => 'Four things: your website, built or rebuilt; a chat and voice assistant that answers every enquiry from your own knowledge — the website chat runs from €19.99 a month and is live in a minute, the phone assistant is built to order; automations for your CRM, follow-ups and invoices; and lead generation — cold email, plus call-back and SMS to people who enquired. Take one, or the lot. Which one are you after?',
             ],
             [
                 'category' => 'Book the audit',
@@ -274,7 +274,7 @@ class LandingFaqSeeder extends Seeder
                     // to the LLM path, which faq.md now grounds correctly.
                     'give me the link', 'purchase', 'purchasing',
                 ],
-                'answer' => 'Create your account at app.flowstack.run/register — free to start: 1 agent, 250 credits a month, no card, no expiry. Then pick a role, upload your docs, paste one script tag, and you\'re live in about a minute. Paid plans start at €9 a month from the Billing page, cancel anytime. Want a hand with any of those steps?',
+                'answer' => 'Create your account at app.flowstack.run/register, pick a plan — €19.99 or €39.99 a month, cancel anytime — upload your own docs and FAQs, and the chat is answering on your site in about a minute with one script tag. Prefer to see it first? Book the free 30-minute call. Ready to try it?',
             ],
             [
                 'category' => 'Talk to a human',

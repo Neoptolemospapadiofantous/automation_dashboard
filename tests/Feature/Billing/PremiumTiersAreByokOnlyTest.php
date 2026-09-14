@@ -54,18 +54,18 @@ class PremiumTiersAreByokOnlyTest extends TestCase
         return $agent->fresh();
     }
 
-    public function test_byok_is_available_above_starter_only(): void
+    public function test_byok_is_available_on_every_paid_plan(): void
     {
-        $this->assertFalse(Plan::Free->allowsOwnKey());
-        $this->assertFalse(Plan::Starter->allowsOwnKey(), 'Starter is Core-only');
-        $this->assertTrue(Plan::Growth->allowsOwnKey());
+        $this->assertFalse(Plan::Free->allowsOwnKey(), 'unsubscribed teams are Core-only');
+        $this->assertTrue(Plan::Starter->allowsOwnKey());
         $this->assertTrue(Plan::Pro->allowsOwnKey());
-        $this->assertSame(10_000, Plan::Growth->monthlyMessageCap());
+        $this->assertSame(10_000, Plan::Starter->monthlyMessageCap());
+        $this->assertSame(25_000, Plan::Pro->monthlyMessageCap());
     }
 
     public function test_a_premium_tier_without_a_key_runs_and_bills_as_core(): void
     {
-        $agent = $this->agentOn('sonnet', Plan::Growth); // no key connected
+        $agent = $this->agentOn('sonnet', Plan::Starter); // no key connected
         $ownKey = app(OwnKey::class);
 
         // The customer's choice is preserved…
@@ -78,16 +78,16 @@ class PremiumTiersAreByokOnlyTest extends TestCase
 
     public function test_a_premium_tier_with_a_key_runs_on_that_key_for_no_credits(): void
     {
-        $agent = $this->agentOn('sonnet', Plan::Growth, withKey: true);
+        $agent = $this->agentOn('sonnet', Plan::Starter, withKey: true);
         $ownKey = app(OwnKey::class);
 
         $this->assertSame('sonnet', $ownKey->effectiveTier($agent));
         $this->assertSame(0, $ownKey->creditsForChat($agent), 'their key, their provider bill');
     }
 
-    public function test_starter_cannot_reach_a_premium_tier_even_holding_a_key(): void
+    public function test_an_unsubscribed_team_cannot_reach_a_premium_tier_even_holding_a_key(): void
     {
-        $agent = $this->agentOn('opus', Plan::Starter, withKey: true);
+        $agent = $this->agentOn('opus', Plan::Free, withKey: true);
 
         $this->assertSame('gpt', app(OwnKey::class)->effectiveTier($agent));
     }
@@ -117,7 +117,7 @@ class PremiumTiersAreByokOnlyTest extends TestCase
     {
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create(['status' => 'active']);
-        $user->currentTeam->forceFill(['plan' => Plan::Growth->value, 'current_agent_id' => $agent->id])->save();
+        $user->currentTeam->forceFill(['plan' => Plan::Starter->value, 'current_agent_id' => $agent->id])->save();
 
         $this->actingAs($user)->post(route('agents.versions.draft'), [
             'instructions' => '', 'greeting' => '', 'model_tier' => 'sonnet',
@@ -141,7 +141,7 @@ class PremiumTiersAreByokOnlyTest extends TestCase
         // condition promises a monthly subscriber something they do not get.
         $this->assertTrue(Plan::Pro->includesWebsiteBuildOnAnnual());
 
-        foreach ([Plan::Free, Plan::Starter, Plan::Growth, Plan::Business] as $plan) {
+        foreach ([Plan::Free, Plan::Business] as $plan) {
             $this->assertFalse(
                 $plan->includesWebsiteBuildOnAnnual(),
                 $plan->value.' must not advertise the free website build',

@@ -55,15 +55,16 @@ class OwnKeyControllerTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('Settings/OwnKey')->where('allowed', true));
 
-        $this->actingOnPlan(Plan::Starter);
+        // The only rung without the feature is the unsubscribed state.
+        $this->actingOnPlan(Plan::Free);
         $this->get(route('own-key.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('allowed', false));
     }
 
-    public function test_a_plan_below_operator_cannot_store_a_key_even_by_replaying_the_request(): void
+    public function test_an_unsubscribed_team_cannot_store_a_key_even_by_replaying_the_request(): void
     {
-        $this->actingOnPlan(Plan::Growth);
+        $this->actingOnPlan(Plan::Free);
 
         $this->post(route('own-key.store'), [
             'provider' => 'anthropic',

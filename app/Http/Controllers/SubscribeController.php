@@ -47,9 +47,8 @@ class SubscribeController extends Controller
 
         // Free is not purchasable — it is the default state, not a checkout.
         $plan = match ($planKey) {
-            'starter' => Plan::Starter,   // €9 · 1 agent · 2,500 credits
-            'growth' => Plan::Growth,     // €19 · 5 agents · 10,000 credits
-            'operator' => Plan::Pro,      // case Pro has label "Operator" · €39
+            'starter' => Plan::Starter,   // €19.99 · 5 agents · 10,000 credits
+            'operator' => Plan::Pro,      // case Pro has label "Operator" · €39.99
             default => abort(404, 'Unknown plan'),
         };
 
@@ -269,7 +268,6 @@ class SubscribeController extends Controller
     {
         return match ($planKey) {
             'starter' => Plan::Starter,
-            'growth' => Plan::Growth,
             'operator' => Plan::Pro,
             // Free is a downgrade, done by cancelling; Custom is negotiated.
             default => abort(404, 'Unknown plan'),

@@ -180,7 +180,7 @@ function openPortal() {
                     v-else-if="billing?.subscription_status === 'canceled'"
                     class="rounded-none border border-border-hi bg-bg-elev px-4 py-3 text-sm text-ink-dim"
                 >
-                    Your subscription was canceled. You're back on the free tier; subscribe again below to reactivate.
+                    Your subscription was canceled. Your agent pauses when your remaining credits run out; subscribe again below to reactivate.
                 </div>
 
                 <!-- Current plan + usage -->
@@ -432,7 +432,7 @@ function openPortal() {
                             </div>
                         </div>
                         <div class="mt-3 text-xs text-ink-dim">
-                            Each user message and each agent reply consumes 1 conversation credit on Flowstack Core, the engine included in every plan. The premium engines run on your own provider key instead of credits (Growth and above — see the Versions page). Your monthly allowance resets on renewal; purchased top-up credits roll over until used.
+                            Each user message and each agent reply consumes 1 conversation credit on Flowstack Core, the engine included in every plan. The premium engines run on your own provider key instead of credits (any paid plan — see the Versions page). Your monthly allowance resets on renewal; purchased top-up credits roll over until used.
                         </div>
                         <div v-if="billing?.allows_topups" class="mt-4">
                             <PrimaryButton type="button" @click="openTopup">

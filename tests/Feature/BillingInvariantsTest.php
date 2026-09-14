@@ -97,25 +97,20 @@ class BillingInvariantsTest extends TestCase
         return $user->fresh();
     }
 
-    public function test_a_new_team_can_use_the_product_immediately_on_the_free_tier(): void
+    public function test_a_new_team_starts_with_nothing_until_it_subscribes(): void
     {
-        // The free tier is an entitlement, not an unpaid invoice. Before the
-        // 2026-08-27 fix a fresh signup sat at 0 credits until the nightly
-        // credits:grant-renewals ran — up to 24 hours during which its agent
-        // could not answer a single message, silently defeating the free tier.
+        // No free tier since 2026-09-15: a fresh signup gets 0 credits and
+        // no ledger row — the door is subscribing, not a grant. If this test
+        // starts failing with a granted balance, something reintroduced a
+        // free allotment (Plan::Free->monthlyCredits() or the booted hook).
         config(['billing.grant_on_signup' => false]);   // prod's setting
 
         $team = Team::factory()->create();
 
         $this->assertSame(Plan::Free, $team->planObject());
-        $this->assertSame(
-            Plan::Free->monthlyCredits(),
-            (int) $team->fresh()->credit_balance,
-            'A new free team must be able to answer immediately, not after the nightly job.',
-        );
-        $this->assertDatabaseHas('credit_transactions', [
+        $this->assertSame(0, (int) $team->fresh()->credit_balance);
+        $this->assertDatabaseMissing('credit_transactions', [
             'team_id' => $team->id,
-            'amount' => Plan::Free->monthlyCredits(),
             'reason' => CreditTransaction::REASON_GRANT_RENEWAL,
         ]);
     }

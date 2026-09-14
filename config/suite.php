@@ -48,7 +48,7 @@ return [
             'name' => 'Website chat',
             'blurb' => 'Answers visitors from your own material, in their language, on your site and on a hosted chat page.',
             'route' => 'install.index',
-            'min_plan' => 'free',
+            'min_plan' => 'starter',
         ],
         [
             'key' => 'knowledge',
@@ -57,7 +57,7 @@ return [
             'name' => 'Knowledge base',
             'blurb' => 'Upload documents and pages; the chat answers from them and cites where the answer came from.',
             'route' => 'knowledge.index',
-            'min_plan' => 'free',
+            'min_plan' => 'starter',
         ],
         [
             'key' => 'leads',
@@ -66,7 +66,7 @@ return [
             'name' => 'Lead capture & scoring',
             'blurb' => 'Every conversation that gives a name or an email lands on the board, scored, with the transcript attached.',
             'route' => 'leads.index',
-            'min_plan' => 'free',
+            'min_plan' => 'starter',
         ],
         [
             'key' => 'takeover',
@@ -75,7 +75,7 @@ return [
             'name' => 'Live takeover',
             'blurb' => 'Step into any chat as yourself. The visitor sees a human; the agent waits until you hand back.',
             'route' => 'conversations.index',
-            'min_plan' => 'free',
+            'min_plan' => 'starter',
         ],
         [
             'key' => 'analytics',
@@ -84,7 +84,7 @@ return [
             'name' => 'Analytics & the Monday summary',
             'blurb' => 'Conversations, leads and capture rate per agent, plus one summary in your inbox every Monday.',
             'route' => 'agents.index',
-            'min_plan' => 'free',
+            'min_plan' => 'starter',
         ],
         [
             'key' => 'own_key',
@@ -93,7 +93,7 @@ return [
             'name' => 'Your own engine key',
             'blurb' => 'Run premium engines on your own OpenAI, Anthropic or Google key — no credits spent.',
             'route' => 'own-key.index',
-            'min_plan' => 'growth',
+            'min_plan' => 'starter',
         ],
         [
             'key' => 'webhooks',
@@ -120,7 +120,7 @@ return [
             'name' => 'WhatsApp channel',
             'blurb' => 'The same agent answering on your WhatsApp Business number, with the transcript on the same board.',
             'route' => null,
-            'min_plan' => 'growth',
+            'min_plan' => 'starter',
         ],
         [
             'key' => 'inbox',
@@ -129,7 +129,7 @@ return [
             'name' => 'Inbox & portal enquiries',
             'blurb' => 'Enquiries arriving by email — booking portals, listing sites, your contact form — routed to the agent.',
             'route' => null,
-            'min_plan' => 'growth',
+            'min_plan' => 'starter',
         ],
         [
             'key' => 'email_automation',
@@ -138,7 +138,7 @@ return [
             'name' => 'Email automation',
             'blurb' => 'Follow-ups, reminders and reactivation to people who already know you, from your own address.',
             'route' => null,
-            'min_plan' => 'growth',
+            'min_plan' => 'starter',
         ],
         [
             'key' => 'live_view',

@@ -40,11 +40,11 @@ abstract class TestCase extends BaseTestCase
     /**
      * Connect a provider key for a team, the only way to reach a premium
      * engine now that platform credits buy Flowstack Core alone. Moves the
-     * team to Growth, the lowest plan BYOK is available on.
+     * team to Starter, the lowest plan BYOK is available on.
      */
     protected function grantOwnKey(Team $team, string $provider = 'anthropic'): void
     {
-        $team->forceFill(['plan' => Plan::Growth->value])->save();
+        $team->forceFill(['plan' => Plan::Starter->value])->save();
 
         TeamProviderKey::updateOrCreate(
             ['team_id' => $team->id, 'provider' => $provider],

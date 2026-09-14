@@ -23,11 +23,13 @@ class SuiteTest extends TestCase
                 ->component('Suite/Index')
                 ->where('plan.key', Plan::Free->value)
                 ->has('modules', count(config('suite.modules')))
-                // A Free team sees the chat as on-plan and the own-key module as gated.
+                // No free tier since 2026-09-15: an unsubscribed team sees
+                // every module gated behind Starter, the entry plan.
                 ->where('modules', fn ($modules) => collect($modules)
-                    ->firstWhere('key', 'chat')['on_plan'] === true
+                    ->firstWhere('key', 'chat')['on_plan'] === false
+                    && collect($modules)->firstWhere('key', 'chat')['min_plan_label'] === Plan::Starter->label()
                     && collect($modules)->firstWhere('key', 'own_key')['on_plan'] === false
-                    && collect($modules)->firstWhere('key', 'own_key')['min_plan_label'] === Plan::Growth->label()
+                    && collect($modules)->firstWhere('key', 'own_key')['min_plan_label'] === Plan::Starter->label()
                 )
                 ->where('audit_url', config('suite.audit_url'))
                 // The four built-to-order services, in the site's order, each with its page.
@@ -37,10 +39,10 @@ class SuiteTest extends TestCase
             );
     }
 
-    public function test_growth_team_has_the_own_key_module_on_plan(): void
+    public function test_starter_team_has_the_own_key_module_on_plan(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
-        $user->currentTeam->forceFill(['plan' => Plan::Growth->value])->save();
+        $user->currentTeam->forceFill(['plan' => Plan::Starter->value])->save();
 
         $this->actingAs($user)
             ->get(route('suite.index'))

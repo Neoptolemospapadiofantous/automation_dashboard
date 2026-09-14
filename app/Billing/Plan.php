@@ -21,12 +21,17 @@ namespace App\Billing;
  * data migration. `starter`/`growth` are new rungs added in the 2026-08-27
  * competitive repricing and carry their own values.
  *
- * Offer tiers (aligned with flowstack.run/pricing as of 2026-08-27):
- *   - Free     (€0/mo)   — 1 agent, 250 credits, the try-before-you-buy rung
- *   - Starter  (€9/mo)   — 1 agent, 2,500 credits
- *   - Growth   (€19/mo)  — up to 5 agents, 10,000 credits
- *   - Operator (€39/mo)  — up to 5 agents, 25,000 credits, best €/credit
+ * Offer tiers (aligned with flowstack.run/pricing as of 2026-09-15 — the
+ * two-plan repricing; founder call, "remove the 4 packages, make them 2"):
+ *   - Starter  (€19.99/mo) — up to 5 agents, 10,000 credits, own key allowed
+ *   - Operator (€39.99/mo) — up to 5 agents, 25,000 credits, best €/credit
  *   - Custom   (scoped 4-6 week project) — bespoke flows, custom integrations
+ *
+ * Free is NOT a tier any more (founder call 2026-09-15, reversing 2026-08-27):
+ * it is the UNSUBSCRIBED default state — 0 credits, nothing granted, nothing
+ * sold. The enum case stays because teams.plan persists 'free' for every team
+ * that has not subscribed. Growth was folded into Starter in the same call;
+ * a data migration maps any 'growth' row to 'starter'.
  *
  * Pricing is EUR throughout — we sell in Europe.
  *
@@ -49,16 +54,14 @@ namespace App\Billing;
  * Credits are sized so a typical team comfortably stays inside its
  * monthly allotment at normal usage; top-up packs cover the spike weeks.
  *
- * The Free tier replaces the old "no free trial" stance (product decision
- * 2026-06-09, reversed 2026-08-27). It is a permanent capped allotment, not a
- * time-boxed trial — do not add Stripe Checkout `trial_period_days` to
- * subscription sessions.
+ * There is no trial either — do not add Stripe Checkout `trial_period_days`
+ * to subscription sessions. The free door into the product is the free
+ * 30-minute call, not a plan.
  */
 enum Plan: string
 {
     case Free = 'free';
     case Starter = 'starter';
-    case Growth = 'growth';
     case Pro = 'pro';
     case Business = 'business';
 
@@ -73,9 +76,9 @@ enum Plan: string
     public function monthlyCredits(): int
     {
         return match ($this) {
-            self::Free => 250,
-            self::Starter => 2_500,
-            self::Growth => 10_000,
+            // Unsubscribed teams receive nothing — subscribing is the door.
+            self::Free => 0,
+            self::Starter => 10_000,
             self::Pro => 25_000,
             self::Business => 0,
         };
@@ -87,24 +90,25 @@ enum Plan: string
     public function maxAgents(): int
     {
         return match ($this) {
-            self::Free, self::Starter => 1,
-            self::Growth, self::Pro => 5,
+            // An unsubscribed team keeps the one agent onboarding created.
+            self::Free => 1,
+            self::Starter, self::Pro => 5,
             self::Business => PHP_INT_MAX,
         };
     }
 
     /**
-     * Monthly recurring price in EUR. Returned as int so display code
-     * can format consistently. Null on Custom — that tier is project-based
-     * (scoped 4-6 week build) rather than recurring SaaS.
+     * Monthly recurring price in EUR. A float since the 2026-09-15 repricing
+     * (psychological .99 pricing); format with two decimals in display code.
+     * Null on Custom — that tier is project-based (scoped 4-6 week build)
+     * rather than recurring SaaS.
      */
-    public function priceEur(): ?int
+    public function priceEur(): ?float
     {
         return match ($this) {
-            self::Free => 0,
-            self::Starter => 9,
-            self::Growth => 19,
-            self::Pro => 39,
+            self::Free => 0.0,
+            self::Starter => 19.99,
+            self::Pro => 39.99,
             self::Business => null,
         };
     }
@@ -129,15 +133,15 @@ enum Plan: string
      * quietly powering free traffic.
      */
     /**
-     * Bring-your-own-key is available ABOVE Starter (founder call 2026-09-02).
-     * Premium engines are BYOK-only, so this is also the gate on using any
-     * model other than Flowstack Core — which is what makes Growth a real
-     * step up rather than "the same model, more credits".
+     * Bring-your-own-key is available on every paid plan (since the
+     * 2026-09-15 two-plan repricing folded Growth — the old BYOK floor —
+     * into Starter). Premium engines are BYOK-only, so this is also the
+     * gate on using any model other than Flowstack Core.
      */
     public function allowsOwnKey(): bool
     {
         return match ($this) {
-            self::Growth, self::Pro, self::Business => true,
+            self::Starter, self::Pro, self::Business => true,
             default => false,
         };
     }
@@ -171,7 +175,7 @@ enum Plan: string
         return match ($this) {
             // Mirrors each plan's credit allotment, so the customer story
             // stays one number whichever way their turns are paid for.
-            self::Growth => 10_000,
+            self::Starter => 10_000,
             self::Pro => 25_000,
             self::Business => PHP_INT_MAX,
             default => 0,
@@ -183,9 +187,8 @@ enum Plan: string
         return match ($this) {
             self::Free => 0,
             self::Starter => 1,
-            self::Growth => 2,
-            self::Pro => 3,
-            self::Business => 4,
+            self::Pro => 2,
+            self::Business => 3,
         };
     }
 
@@ -206,7 +209,7 @@ enum Plan: string
     public function isPaid(): bool
     {
         return match ($this) {
-            self::Starter, self::Growth, self::Pro => true,
+            self::Starter, self::Pro => true,
             self::Free, self::Business => false,
         };
     }
@@ -238,8 +241,6 @@ enum Plan: string
         $value = match ([$this, $cycle]) {
             [self::Starter, BillingCycle::Monthly] => config('billing.stripe_price.starter'),
             [self::Starter, BillingCycle::Annual] => config('billing.stripe_price.starter_annual'),
-            [self::Growth, BillingCycle::Monthly] => config('billing.stripe_price.growth'),
-            [self::Growth, BillingCycle::Annual] => config('billing.stripe_price.growth_annual'),
             [self::Pro, BillingCycle::Monthly] => config('billing.stripe_price.operator'),
             [self::Pro, BillingCycle::Annual] => config('billing.stripe_price.operator_annual'),
             default => null, // Free has no Stripe object; Custom is project-based
@@ -264,9 +265,8 @@ enum Plan: string
     {
         return match ($this) {
             self::Free => 0,
-            self::Starter => 90,
-            self::Growth => 190,
-            self::Pro => 390,
+            self::Starter => 199,
+            self::Pro => 399,
             self::Business => null,
         };
     }
@@ -279,7 +279,7 @@ enum Plan: string
     {
         $monthly = $this->priceEur();
         $annual = $this->annualPriceEur();
-        if ($monthly === null || $annual === null || $monthly === 0) {
+        if ($monthly === null || $annual === null || $monthly === 0.0) {
             return 0;
         }
 
@@ -303,7 +303,6 @@ enum Plan: string
         return match ($this) {
             self::Free => 'Free',
             self::Starter => 'Starter',
-            self::Growth => 'Growth',
             self::Pro => 'Operator',
             self::Business => 'Custom',
         };

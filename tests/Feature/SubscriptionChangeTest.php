@@ -50,18 +50,18 @@ class SubscriptionChangeTest extends TestCase
 
     public function test_upgrade_invoices_the_difference_immediately(): void
     {
-        config(['billing.stripe_price.growth' => 'price_growth_m']);
+        config(['billing.stripe_price.operator' => 'price_operator_m']);
         $user = $this->owner(Plan::Starter);
 
         $this->stripeSpy()
             ->shouldReceive('changeSubscriptionPrice')
             ->once()
-            ->withArgs(fn ($team, $priceId, $invoiceImmediately) => $priceId === 'price_growth_m' && $invoiceImmediately === true)
+            ->withArgs(fn ($team, $priceId, $invoiceImmediately) => $priceId === 'price_operator_m' && $invoiceImmediately === true)
             ->andReturn(new Subscription('sub_test_1'));
 
         $this->actingAs($user)
             ->from(route('billing.index'))
-            ->post(route('subscribe.change', 'growth'))
+            ->post(route('subscribe.change', 'operator'))
             ->assertRedirect(route('billing.index'))
             ->assertSessionHasNoErrors();
     }
@@ -88,7 +88,7 @@ class SubscriptionChangeTest extends TestCase
     {
         // The expensive mistake this guards: a second Checkout creates a
         // SECOND Stripe subscription and the customer is billed twice.
-        config(['billing.stripe_price.growth' => 'price_growth_m']);
+        config(['billing.stripe_price.operator' => 'price_operator_m']);
         $user = $this->owner(Plan::Starter);
 
         $mock = $this->stripeSpy();
@@ -96,14 +96,14 @@ class SubscriptionChangeTest extends TestCase
 
         $this->actingAs($user)
             ->from(route('billing.index'))
-            ->post(route('subscribe.start', 'growth'))
+            ->post(route('subscribe.start', 'operator'))
             ->assertRedirect(route('billing.index'))
             ->assertSessionHasErrors('plan');
     }
 
     public function test_change_is_refused_without_a_live_subscription(): void
     {
-        config(['billing.stripe_price.growth' => 'price_growth_m']);
+        config(['billing.stripe_price.operator' => 'price_operator_m']);
         $user = $this->owner(Plan::Free, 'none');
 
         $mock = $this->stripeSpy();
@@ -111,29 +111,29 @@ class SubscriptionChangeTest extends TestCase
 
         $this->actingAs($user)
             ->from(route('billing.index'))
-            ->post(route('subscribe.change', 'growth'))
+            ->post(route('subscribe.change', 'operator'))
             ->assertSessionHasErrors('plan');
     }
 
     public function test_switching_to_the_price_you_are_already_on_is_rejected(): void
     {
-        config(['billing.stripe_price.growth' => 'price_growth_m']);
-        $user = $this->owner(Plan::Growth);
+        config(['billing.stripe_price.operator' => 'price_operator_m']);
+        $user = $this->owner(Plan::Starter);
 
         $mock = Mockery::mock(StripeClient::class);
-        $mock->shouldReceive('subscriptionPriceId')->andReturn('price_growth_m');
+        $mock->shouldReceive('subscriptionPriceId')->andReturn('price_operator_m');
         $mock->shouldNotReceive('changeSubscriptionPrice');
         $this->app->instance(StripeClient::class, $mock);
 
         $this->actingAs($user)
             ->from(route('billing.index'))
-            ->post(route('subscribe.change', 'growth'))
+            ->post(route('subscribe.change', 'operator'))
             ->assertSessionHasErrors('plan');
     }
 
     public function test_non_owner_cannot_change_the_plan(): void
     {
-        config(['billing.stripe_price.growth' => 'price_growth_m']);
+        config(['billing.stripe_price.operator' => 'price_operator_m']);
         $owner = $this->owner(Plan::Starter);
         $member = User::factory()->create();
         $owner->currentTeam->users()->attach($member, ['role' => 'editor']);
@@ -143,13 +143,13 @@ class SubscriptionChangeTest extends TestCase
         $mock->shouldNotReceive('changeSubscriptionPrice');
 
         $this->actingAs($member->fresh())
-            ->post(route('subscribe.change', 'growth'))
+            ->post(route('subscribe.change', 'operator'))
             ->assertForbidden();
     }
 
     public function test_cancel_is_scheduled_not_immediate_and_can_be_resumed(): void
     {
-        $user = $this->owner(Plan::Growth);
+        $user = $this->owner(Plan::Starter);
         $team = $user->currentTeam;
 
         $mock = $this->stripeSpy();
@@ -160,7 +160,7 @@ class SubscriptionChangeTest extends TestCase
         $team->refresh();
         $this->assertTrue((bool) $team->stripe_cancel_at_period_end);
         // Still on the plan — cancellation is scheduled, nothing is taken away.
-        $this->assertSame(Plan::Growth, $team->planObject());
+        $this->assertSame(Plan::Starter, $team->planObject());
 
         $mock->shouldReceive('setCancelAtPeriodEnd')->once()->withArgs(fn ($t, $c) => $c === false)->andReturn(new Subscription('sub_test_1'));
         $this->actingAs($user)->post(route('subscribe.resume'))->assertSessionHasNoErrors();
@@ -175,27 +175,27 @@ class SubscriptionChangeTest extends TestCase
         // confiscate credits the customer already paid for.
         $team = Team::factory()->create([
             'plan' => Plan::Starter->value,
-            'credit_balance' => 9_000,   // paid for on Growth, still unspent
+            'credit_balance' => 12_000,  // paid for on Operator, still unspent
         ]);
 
         (new CreditMeter)->raiseMonthlyAllowance($team, ['source' => 'test']);
 
-        $this->assertSame(9_000, (int) $team->fresh()->credit_balance);
+        $this->assertSame(12_000, (int) $team->fresh()->credit_balance);
     }
 
     public function test_a_mid_period_upgrade_tops_the_allowance_up(): void
     {
         $team = Team::factory()->create([
-            'plan' => Plan::Growth->value,
+            'plan' => Plan::Starter->value,
             'credit_balance' => 400,
         ]);
 
         (new CreditMeter)->raiseMonthlyAllowance($team, ['source' => 'test']);
 
-        $this->assertSame(Plan::Growth->monthlyCredits(), (int) $team->fresh()->credit_balance);
+        $this->assertSame(Plan::Starter->monthlyCredits(), (int) $team->fresh()->credit_balance);
         $this->assertDatabaseHas('credit_transactions', [
             'team_id' => $team->id,
-            'amount' => Plan::Growth->monthlyCredits() - 400,
+            'amount' => Plan::Starter->monthlyCredits() - 400,
             'reason' => CreditTransaction::REASON_GRANT_RENEWAL,
         ]);
     }

@@ -102,30 +102,23 @@ class PricingInvariantsTest extends TestCase
         }
     }
 
-    public function test_free_tier_allotment_stays_capped(): void
+    public function test_free_means_unsubscribed_and_grants_nothing(): void
     {
-        // The Free tier is the one plan with no revenue to defend a margin
-        // with, so its exposure is bounded by the allotment alone. At the
-        // served tier (gpt/nano, 1 credit/message) 100 credits costs us
-        // fractions of a cent per team per month; a careless bump here is the
-        // only way a free signup becomes expensive. Raise deliberately.
-        $this->assertSame(0, Plan::Free->priceEur(), 'The Free tier must stay free.');
-        $this->assertLessThanOrEqual(
-            500,
-            Plan::Free->monthlyCredits(),
-            'Free allotment above 500 credits — re-run the acquisition-cost maths before raising it.',
-        );
-        $this->assertFalse(
-            Plan::Free->allowsTopUps(),
-            'Free must not buy top-ups — the cap is the upgrade prompt.',
-        );
+        // Since 2026-09-15 Free is not a tier: it is the unsubscribed default
+        // state. It must never grant credits, never sell top-ups, and never
+        // carry a price — an allotment here would silently reintroduce a
+        // free tier through the renewal command.
+        $this->assertSame(0.0, Plan::Free->priceEur());
+        $this->assertSame(0, Plan::Free->monthlyCredits(), 'Unsubscribed teams receive nothing — subscribing is the door.');
+        $this->assertFalse(Plan::Free->allowsTopUps());
+        $this->assertFalse(Plan::Free->isPaid());
     }
 
     public function test_the_paid_ladder_improves_per_credit_as_it_climbs(): void
     {
         // A rung that costs more per credit than the one below it is a broken
         // ladder — nobody should pay more to get a worse rate.
-        $rungs = [Plan::Starter, Plan::Growth, Plan::Pro];
+        $rungs = [Plan::Starter, Plan::Pro];
         $previous = null;
         foreach ($rungs as $plan) {
             $perCredit = $plan->priceEur() / $plan->monthlyCredits();

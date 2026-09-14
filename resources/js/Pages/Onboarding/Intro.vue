@@ -172,7 +172,7 @@ function continueOn() {
                                     </span>
                                     <span class="mt-1 block text-[11px] leading-snug text-ink-dim">
                                         <template v-if="t.available === false">Coming soon.</template>
-                                        <template v-else-if="t.byok_only">Bring your own provider key on Growth or above. You can switch any time.</template>
+                                        <template v-else-if="t.byok_only">Bring your own provider key on any paid plan. You can switch any time.</template>
                                         <template v-else>{{ t.description }}</template>
                                     </span>
                                     <span v-if="t.model" class="mt-1 block font-mono text-[10px] tracking-wide text-ink-mute">{{ t.model }}</span>

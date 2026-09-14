@@ -26,9 +26,9 @@ class LedgerIntegrityTest extends TestCase
         $team = User::factory()->withPersonalTeam()->create()->currentTeam;
         // Simulate a clean ledger start: initial grant row matching balance.
         $team->forceFill(['plan' => Plan::Starter->value, 'credit_balance' => 0, 'topup_balance' => 0])->save();
-        (new CreditMeter)->grantMonthlyRenewal($team);   // ledger +2500, balance 2500
+        (new CreditMeter)->grantMonthlyRenewal($team);   // ledger +10000, balance 10000
 
-        (new CreditMeter)->consume($team->fresh(), 2_000);       // ledger -2000, balance 500
+        (new CreditMeter)->consume($team->fresh(), 9_500);       // ledger -9500, balance 500
         (new CreditMeter)->grantTopUp($team->fresh(), 1_000);    // ledger +1000, topup 1000
         (new CreditMeter)->grantMonthlyRenewal($team->fresh());  // wipes 500 → MUST record -500
 

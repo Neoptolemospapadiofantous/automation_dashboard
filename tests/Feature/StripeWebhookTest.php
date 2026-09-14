@@ -247,17 +247,17 @@ class StripeWebhookTest extends TestCase
         // customer.subscription.updated is how a plan switch arrives. Syncing
         // only the status would leave the team paying the new price while
         // keeping the old rung's agent cap and allotment.
-        config(['billing.stripe_price.growth' => 'price_growth_m']);
+        config(['billing.stripe_price.starter' => 'price_starter_m']);
         $team = Team::factory()->create([
             'plan' => Plan::Starter->value,
             'stripe_subscription_id' => 'sub_switch_1',
             'stripe_subscription_status' => 'active',
         ]);
 
-        $this->fakeWebhook($this->subscriptionUpdatedEvent('sub_switch_1', 'price_growth_m'));
+        $this->fakeWebhook($this->subscriptionUpdatedEvent('sub_switch_1', 'price_starter_m'));
 
         $fresh = $team->fresh();
-        $this->assertSame(Plan::Growth, $fresh->plan);
+        $this->assertSame(Plan::Starter, $fresh->plan);
         $this->assertSame(5, $fresh->planObject()->maxAgents());
         $this->assertTrue((bool) $fresh->stripe_cancel_at_period_end === false);
     }
@@ -265,7 +265,7 @@ class StripeWebhookTest extends TestCase
     public function test_a_scheduled_cancellation_is_mirrored_from_stripe(): void
     {
         $team = Team::factory()->create([
-            'plan' => Plan::Growth->value,
+            'plan' => Plan::Starter->value,
             'stripe_subscription_id' => 'sub_switch_2',
             'stripe_subscription_status' => 'active',
         ]);
@@ -274,7 +274,7 @@ class StripeWebhookTest extends TestCase
 
         $this->assertTrue((bool) $team->fresh()->stripe_cancel_at_period_end);
         // Scheduled, not applied — they keep the plan until the period ends.
-        $this->assertSame(Plan::Growth, $team->fresh()->plan);
+        $this->assertSame(Plan::Starter, $team->fresh()->plan);
     }
 
     public function test_an_upgrade_invoice_grants_the_new_allotment_even_if_it_arrives_first(): void
@@ -282,7 +282,7 @@ class StripeWebhookTest extends TestCase
         // Stripe does not order its events. If invoice.paid lands before
         // customer.subscription.updated, reading the plan column would grant
         // the OLD, smaller allotment — so the handler reads the invoice price.
-        config(['billing.stripe_price.growth' => 'price_growth_m']);
+        config(['billing.stripe_price.starter' => 'price_starter_m']);
         $team = Team::factory()->create([
             'plan' => Plan::Starter->value,      // not yet updated
             'stripe_subscription_id' => 'sub_switch_3',
@@ -290,28 +290,28 @@ class StripeWebhookTest extends TestCase
             'credit_balance' => 100,
         ]);
 
-        $this->fakeWebhook($this->invoicePaidEvent('sub_switch_3', 'price_growth_m', 'subscription_update'));
+        $this->fakeWebhook($this->invoicePaidEvent('sub_switch_3', 'price_starter_m', 'subscription_update'));
 
         $fresh = $team->fresh();
-        $this->assertSame(Plan::Growth, $fresh->plan);
-        $this->assertSame(Plan::Growth->monthlyCredits(), (int) $fresh->credit_balance);
+        $this->assertSame(Plan::Starter, $fresh->plan);
+        $this->assertSame(Plan::Starter->monthlyCredits(), (int) $fresh->credit_balance);
     }
 
     public function test_a_downgrade_invoice_does_not_confiscate_paid_credits(): void
     {
         config(['billing.stripe_price.starter' => 'price_starter_m']);
         $team = Team::factory()->create([
-            'plan' => Plan::Growth->value,
+            'plan' => Plan::Starter->value,
             'stripe_subscription_id' => 'sub_switch_4',
             'stripe_subscription_status' => 'active',
-            'credit_balance' => 9_000,           // paid for at the higher rung
+            'credit_balance' => 12_000,          // paid for at the higher rung
         ]);
 
         $this->fakeWebhook($this->invoicePaidEvent('sub_switch_4', 'price_starter_m', 'subscription_update'));
 
         $fresh = $team->fresh();
         $this->assertSame(Plan::Starter, $fresh->plan);          // entitlement moves
-        $this->assertSame(9_000, (int) $fresh->credit_balance);  // credits do not
+        $this->assertSame(12_000, (int) $fresh->credit_balance); // credits do not
     }
 
     public function test_a_true_renewal_still_resets_the_bucket(): void

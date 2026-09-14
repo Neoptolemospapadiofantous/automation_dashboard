@@ -200,7 +200,7 @@ Route::middleware([
     // silently, which is exactly how 'growth' was unreachable between the
     // 2026-08-27 repricing and this route being widened.
     Route::post('/subscribe/{plan}', [SubscribeController::class, 'start'])
-        ->where('plan', 'starter|growth|operator')
+        ->where('plan', 'starter|operator')
         ->middleware('throttle:10,1')
         ->name('subscribe.start');
 
@@ -208,7 +208,7 @@ Route::middleware([
     // Separate from start() on purpose — running an already-subscribed team
     // through Checkout again creates a second subscription and double-bills.
     Route::post('/subscribe/change/{plan}', [SubscribeController::class, 'change'])
-        ->where('plan', 'starter|growth|operator')
+        ->where('plan', 'starter|operator')
         ->middleware('throttle:10,1')
         ->name('subscribe.change');
     Route::post('/subscribe/schedule-cancel', [SubscribeController::class, 'scheduleCancel'])

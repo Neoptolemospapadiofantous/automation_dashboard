@@ -280,7 +280,7 @@ class LandingFaqSeederTest extends TestCase
         // A retired price surviving here is the exact drift that makes the
         // cheapest, most-read turns on the site contradict the pricing page.
         $everyAnswer = implode(' ', array_column($chips, 'answer'));
-        foreach (['€99', '€399', '€179', 'no free trial'] as $retired) {
+        foreach (['€99', '€179', '€9 (', '€19 (', '€39 (', 'free tier', 'free to start'] as $retired) {
             $this->assertStringNotContainsString($retired, $everyAnswer, "Retired pricing copy '{$retired}' is still being served.");
         }
 

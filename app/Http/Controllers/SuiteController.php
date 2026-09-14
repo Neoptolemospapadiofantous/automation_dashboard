@@ -34,9 +34,8 @@ class SuiteController extends Controller
     private const PLAN_RANK = [
         'free' => 0,
         'starter' => 1,
-        'growth' => 2,
-        'pro' => 3,
-        'business' => 4,
+        'pro' => 2,
+        'business' => 3,
     ];
 
     public function index(Request $request): Response

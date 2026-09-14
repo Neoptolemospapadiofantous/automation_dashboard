@@ -27,6 +27,9 @@ class BillingCreditMeterTest extends TestCase
     public function test_consume_decrements_balance_and_writes_audit_row(): void
     {
         $team = User::factory()->withPersonalTeam()->create()->currentTeam;
+        // No free allotment since 2026-09-15 — fund the team like a subscriber.
+        $team->forceFill(['credit_balance' => 100])->save();
+        $team = $team->fresh();
         $start = $team->credit_balance;
 
         (new CreditMeter)->consume($team, 3, agentId: null, meta: ['source' => 'test']);
@@ -71,8 +74,8 @@ class BillingCreditMeterTest extends TestCase
         $user = User::factory()->withPersonalTeam()->create();
         $agent = Agent::factory()->for($user->currentTeam)->create([
         ]);
-        $user->currentTeam->forceFill(['current_agent_id' => $agent->id])->save();
-        $start = $user->currentTeam->credit_balance;
+        $user->currentTeam->forceFill(['current_agent_id' => $agent->id, 'credit_balance' => 100])->save();
+        $start = $user->currentTeam->fresh()->credit_balance;
 
         $this->actingAs($user->fresh())
             ->postJson(route('chat.interact'), ['user_id' => 'web-x', 'message' => 'hi'])

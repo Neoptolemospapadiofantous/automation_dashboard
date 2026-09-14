@@ -71,7 +71,7 @@ class OwnKeyAwarenessTest extends TestCase
             );
         $plans = collect($this->actingAs($user)->get(route('billing.index'))->inertiaProps()['plan_catalog']);
         $this->assertTrue($plans->firstWhere('value', Plan::Pro->value)['allows_own_key'] ?? false, 'Operator card must advertise own-key use');
-        $this->assertFalse($plans->firstWhere('value', Plan::Starter->value)['allows_own_key'] ?? true, 'Starter card must not');
+        $this->assertTrue($plans->firstWhere('value', Plan::Starter->value)['allows_own_key'] ?? false, 'Starter card advertises it too since the 2026-09-15 repricing');
 
         // Only tiers on the key's provider are free; the others still bill.
         $tiers = $response->inertiaProps()['tiers'];

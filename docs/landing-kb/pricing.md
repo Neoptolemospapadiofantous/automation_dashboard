@@ -1,62 +1,40 @@
 # Pricing
 
-Flowstack has a free tier, three paid plans, and custom build work. Every plan
-includes the full feature set — knowledge-base upload, transcript review, and
-lead routing into the real-time dashboard — and every paid plan can be
-cancelled anytime with no lock-in.
+Flowstack has two paid plans and custom build work. Both plans include the
+full feature set — knowledge-base upload, transcript review, lead routing
+into the real-time dashboard, webhooks, and your own engine key — and both
+can be cancelled anytime with no lock-in. There is no free tier: the free
+things are the 30-minute call and the written quote that follows it.
 
-## How to buy a paid plan
+## How to buy a plan
 
-Create your account at app.flowstack.run/register — that is the signup link,
-and it is free to start (no card). Paid plans are bought from the Billing page
-inside the dashboard once you have an account; there is no separate checkout
-link. Existing customers log in at app.flowstack.run/login.
+Create your account at app.flowstack.run/register — that is the signup link.
+Plans are bought from the Billing page inside the dashboard once you have an
+account; there is no separate checkout link. Existing customers log in at
+app.flowstack.run/login.
 
 Someone asking where to buy, purchase, subscribe, check out, or get the link
 is asking for this: there is no separate purchase page, and the answer is
-always to create the account first and upgrade from Billing.
+always to create the account first and subscribe from Billing.
 
-## Free — €0/month
+## Starter — €19.99/month
 
-- 1 agent, any role
-- 250 conversation credits per month
-- Real-time leads dashboard
-- Knowledge-base upload + transcripts
-- No card required
-
-The way to try the product on your own site with your own content. The credit
-allowance is small on purpose — enough to see the agent answer from your
-knowledge base, not enough to run a busy site. No top-ups on Free: when you run
-out, you upgrade.
-
-## Starter — €9/month
-
-- 1 agent, any role
-- 2,500 conversation credits per month
+- Up to 5 agents, any role
+- 10,000 conversation credits per month
+- Or connect your own OpenAI, Anthropic or Google API key to use the premium
+  engines: those replies run on your provider account, spend no credits, and
+  are capped at 10,000 messages a month
+- Webhooks to Zapier, Make, Google Sheets or your CRM
 - Top-up credits anytime
 - Cancel anytime, no lock-in
 
-One agent, live in about a minute. Every feature on. This is the entry paid plan.
+Live in about a minute. Every feature on. This is the entry plan.
 
-## Growth — €19/month
+## Operator — €39.99/month
 
 - Everything in Starter
-- Up to 5 agents
-- 10,000 conversation credits per month
-- Top-up credits anytime
-- Cancel anytime, no lock-in
-
-For a site with real traffic, or a team that wants a different agent per role.
-
-## Operator — €39/month
-
-- Everything in Growth
-- Up to 5 agents
-- 25,000 conversation credits per month
-- Or connect your own OpenAI, Anthropic or Google API key to use the premium
-  engines: those replies run on your provider account, spend no credits, and are
-  capped at 25,000 messages a month
-- **On the annual plan (€390/yr): a free website build**
+- 25,000 conversation credits per month (own-key message cap 25,000)
+- **On the annual plan (€399/yr): a free website build**
 - Best rate per credit
 - Cancel anytime, no lock-in
 
@@ -64,10 +42,10 @@ The annual Operator plan includes a free website build — the brochure-style
 build at flowstack.run/website, up to about six pages with the chat
 installed from day one. It is scoped on the same free 30-minute call. A shop,
 a booking portal or anything custom is still quoted as its own build. This
-comes with the ANNUAL plan only: paying €39 monthly does not include it.
+comes with the ANNUAL plan only: paying €39.99 monthly does not include it.
 
-For teams running several agents every day. This is the most expensive plan we
-sell — everything above it is build work, quoted per project.
+This is the most expensive plan we sell — everything above it is build work,
+quoted per project.
 
 ## Custom — let's talk (scoped, 4–6 week build)
 
@@ -83,33 +61,29 @@ no list price for build work; the call is the answer.
 
 ## Credits and top-ups
 
-Conversations are metered in credits (250/month on Free, 2,500 on Starter,
-10,000 on Growth, 25,000 on Operator). A message on the fast default model costs
-1 credit; smarter models cost more per message, because they cost us more to
-run.
-
-On Operator you can skip credits for chat entirely by connecting your own
-OpenAI or Anthropic API key (see the FAQ). Knowledge-base uploads and automations
-still use credits either way.
+Conversations are metered in credits (10,000/month on Starter, 25,000 on
+Operator). A message on the fast default model costs 1 credit; smarter models
+run on your own provider key instead (see the FAQ). Knowledge-base uploads and
+automations use credits either way.
 
 In practice a short chat uses about 5-8 credits. So Starter covers roughly
-300-500 chats a month and Operator about ten times that. You are not charged for
+1,200-2,000 chats a month and Operator two and a half times that. You are not charged for
 the opening hello, a visitor coming back to an old chat, the instant answers set
 up for common questions, or any chat one of your team takes over.
 
-If you need more headroom on a paid plan, buy a top-up pack — €5 for 1,000
+If you need more headroom, buy a top-up pack — €5 for 1,000
 credits, €15 for 5,000, €40 for 20,000 — or choose your own amount from €10 to
 €2,000 at 500 credits per euro. Moving up a plan is always the better rate.
 Top-up credits you have paid for roll over; the monthly allowance does not.
 
 ## Annual billing
 
-Every paid plan can be billed yearly instead of monthly for about two months
-free (17% off): €90/year for Starter, €190 for Growth, €390 for Operator. You
-can switch between monthly and annual at any time.
+Both plans can be billed yearly instead of monthly for about two months
+free (17% off): €199/year for Starter, €399 for Operator. You can switch
+between monthly and annual at any time.
 
 ## Trials, discounts and VAT
 
-There is no time-limited trial, because there is a permanent free tier instead —
-start on Free, upgrade when the volume justifies it. The free 30-minute audit is
-separate, and it's for scoping custom build work. Prices are shown excluding VAT.
+There is no free tier and no time-limited trial. The free things are the
+30-minute call (for anything built to order) and the written quote that
+follows it within 48 hours. Prices are shown excluding VAT.
