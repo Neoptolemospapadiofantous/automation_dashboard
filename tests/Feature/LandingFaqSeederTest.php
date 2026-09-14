@@ -210,6 +210,17 @@ class LandingFaqSeederTest extends TestCase
         $this->assertSame('Custom build', $canned->match('can you just do it for me?')?->category);
         $this->assertSame('Custom build', $canned->match('what does the studio do?')?->category);
         $this->assertSame('Book the audit', $canned->match('what is the leak report?')?->category);
+        // The names themselves were retired from public copy on 2026-09-14 (the
+        // site sells four services and one free call). The keywords stay so a
+        // visitor who saw the old names still lands somewhere sensible, but no
+        // ANSWER may use them or link a retired URL.
+        foreach ($canned->chips() as $category) {
+            $answer = $canned->match($category)?->answer ?? '';
+            foreach (['Leak Report', 'the Studio', 'Never Miss', 'Fill the Calendar', 'package', '/outreach', '/website-build', '/email-automation', '/studio', '/suite'] as $retired) {
+                $this->assertStringNotContainsString($retired, $answer, "'{$category}' still says '{$retired}'.");
+            }
+        }
+        $this->assertStringContainsString('flowstack.run/lead-generation', $canned->match('do you do lead generation?')?->answer ?? '');
         // Bare 'package' used to send this to Custom build. Pricing has no keyword for
         // it either, so it falls through to the LLM, whose grounding (pricing.md) knows
         // the plans — the thing that must never happen is the Studio pitch answering

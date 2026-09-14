@@ -128,7 +128,7 @@ class LandingFaqSeeder extends Seeder
                     'prospecting', 'find customers', 'find me customers', 'get me customers', 'get customers',
                     'more customers', 'win customers', 'new customers', 'customer acquisition', 'email campaign',
                 ],
-                'answer' => 'Yes — that\'s a separate service from the chat. We find companies that fit you, email them in your voice, and hand you the replies. You approve every word. Quoted after a free 30-minute call — flowstack.run/outreach. What kind of companies do you want to reach?',
+                'answer' => 'Yes — that\'s a separate service from the chat. We find companies that fit you, email them in your voice, and hand you the replies. You approve every word. Quoted after a free 30-minute call — flowstack.run/lead-generation. What kind of companies do you want to reach?',
             ],
             [
                 'category' => 'What works',
@@ -147,12 +147,12 @@ class LandingFaqSeeder extends Seeder
                 // and cannot escalate (same reason the BYOK chip was added on 08-27).
                 //
                 // Keywords are PHRASE-LEVEL and deliberately exclude bare 'booking' and
-                // bare 'whatsapp': "set up booking for me" is the Studio's, and "can I
+                // bare 'whatsapp': "set up booking for me" is built to order, and "can I
                 // contact you on WhatsApp" is a contact question. Also excluded, after
                 // probing: 'email automation', 'send follow-ups', 'send reminders' and
-                // 'live dashboard' — those name services the Studio SELLS TODAY (there
-                // is a live /email-automation page), and routing them here would answer
-                // "not yet" about work we already do. 'one live view' is redundant:
+                // 'live dashboard' — those name services we SELL TODAY (the live
+                // /automations page), and routing them here would answer "not yet"
+                // about work we already do. 'one live view' is redundant:
                 // 'What works' sits ahead of this and wins it.
                 'category' => "What's coming",
                 'keywords' => [
@@ -162,7 +162,7 @@ class LandingFaqSeeder extends Seeder
                     'whatsapp channel', 'whatsapp integration', 'answer on whatsapp', 'work on whatsapp',
                     "what's coming", 'whats coming', 'coming soon', 'roadmap', 'not yet available',
                 ],
-                'answer' => 'Not in the app yet — booking, WhatsApp, inbox and portal enquiries, email automation and the live dashboard are all on the way. In your dashboard, open Suite and press Request on the ones you need; we build in that order and email you when yours is ready. Need it now? The Studio sets it up for you as part of a package. Which one are you after?',
+                'answer' => 'Not in the app yet — booking, WhatsApp, inbox and portal enquiries, email automation and the live dashboard are all on the way. In your dashboard, open Suite and press Request on the ones you need; we build in that order and email you when yours is ready. Need it now? We build it to order after a free 30-minute call. Which one are you after?',
             ],
             [
                 'category' => 'Custom build',
@@ -170,13 +170,14 @@ class LandingFaqSeeder extends Seeder
                     'custom build', 'custom-build', 'bespoke', 'own llm', 'what do you build', 'build me',
                     'build us', 'build for me', 'build for us', 'scope', 'proposal',
                     'build my website', 'build a website', 'build websites', 'website build',
-                    // The Studio line (2026-09-06). Bare 'studio' is NOT a keyword: a
-                    // visitor who runs a yoga or dance studio would land here.
+                    // 'the studio' stays as a keyword although the name was retired from
+                    // public copy on 2026-09-14 — visitors who saw it still ask. Bare
+                    // 'studio' is NOT one: a yoga or dance studio would land here.
                     // Bare 'package'/'packages' were tried and REJECTED the same day: "what's in the
                     // €19 package?" is a Growth-plan question and Custom build sits ahead of Pricing.
                     'the studio', 'done for you', 'do it for me', 'do it for us',
                 ],
-                'answer' => 'That\'s the Studio — the done-for-you side, separate from the app. It starts with the free Leak Report: one page on where you\'re losing customers, in five working days. Then two packages, Never Miss an Enquiry or Fill the Calendar, with website, invoices, inbox triage and tool connections as add-ons. Quoted after the report, written price within 48 hours, and you keep everything built. Which sounds like you?',
+                'answer' => 'We build four things to order: your website; a chat and voice assistant, including a phone assistant that answers calls and books; automations for your CRM, follow-ups and invoices; and lead generation by cold email. One step to start: a free 30-minute call at flowstack.run/audit, then a written fixed price within 48 hours. You keep everything built. Which one are you after?',
             ],
             [
                 // Placed ahead of 'Pricing' deliberately: first match wins, and
@@ -228,7 +229,7 @@ class LandingFaqSeeder extends Seeder
                 ],
                 // The site's frame since 2026-09-13: FOUR things, named as the
                 // header names them. The website chat is the only self-serve
-                // part; the phone assistant is Studio-built, never "in the app".
+                // part; the phone assistant is built to order, never "in the app".
                 'answer' => 'Four things: your website, built or rebuilt; a chat and voice assistant that answers every enquiry from your own knowledge — the website chat is free to start and live in a minute, the phone assistant is built to order; automations for your CRM, follow-ups and invoices; and lead generation — cold email, plus call-back and SMS to people who enquired. Take one, or the lot. Which one are you after?',
             ],
             [
@@ -237,7 +238,9 @@ class LandingFaqSeeder extends Seeder
                     'audit', 'free audit', 'book a call', 'book an audit', 'schedule a call', 'consultation',
                     'leak report', 'losing customers', 'where am i losing',
                 ],
-                'answer' => 'Start with the free Leak Report: with your OK we look at your site, listings and inbox for a week and hand you one page — response time, enquiries missed, three fixes ranked by what they cost you. Five working days, then the free 30-minute call in Greek or English, and a written price within 48 hours. Book at flowstack.run/audit, or leave your email here. Which do you prefer?',
+                // 'leak report' stays as a keyword for the same reason as 'the studio':
+                // the name was retired on 2026-09-14 but people who saw it still ask.
+                'answer' => 'One step: book a free 30-minute call, in Greek or English. You show us the work you want off your plate; within 48 hours you get a written fixed price — what ships, how long, how much — yours to keep whether or not you hire us. Book at flowstack.run/audit, or leave your email here and we\'ll set it up. Which do you prefer?',
             ],
             [
                 'category' => 'Integrations',

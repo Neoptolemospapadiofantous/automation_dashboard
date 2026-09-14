@@ -5,11 +5,13 @@
 | The suite — every module a team can see from inside the app
 |--------------------------------------------------------------------------
 |
-| Two lines, kept apart on purpose (founder decision, 2026-09-06):
+| Two kinds of entry, kept apart on purpose:
 |
-|   app    — self-serve software. Lives in this dashboard, billed by plan.
-|   studio — the done-for-you service line, sold locally in Cyprus and
-|            invoiced by Flowstack Studio. The dashboard only points at it.
+|   app      — self-serve software. Lives in this dashboard, billed by plan.
+|   services — built to order: the four services the site sells (Website,
+|              Chat & voice assistant, Automations, Lead generation), quoted
+|              after a free 30-minute call and invoiced separately. The
+|              dashboard only points at them.
 |
 | Statuses, and the framing rule that goes with them:
 |
@@ -20,7 +22,12 @@
 |             rule sitewide is that claims match what ships (see the
 |             landing's copy-accuracy rule). Interest counts are the only
 |             honest demand signal for an unbuilt module.
-|   studio  — done for you by the Studio, not a switch in the app.
+|   built   — built to order by us, not a switch in the app; `url` is the
+|             landing page that describes it.
+|
+| Names and order of the four services follow SHARED.md §3.4 (2026-09-14):
+| the landing's /chat-assistant page mirrors the app list by hand, so a
+| module added here is added there too.
 |
 | `min_plan` gates app modules by plan; a team below it sees an "upgrade"
 | path rather than the module. Keys are stable identifiers — the
@@ -29,7 +36,7 @@
 */
 
 return [
-    'studio_url' => 'https://www.flowstack.run/studio',
+    // The one entry step for anything built to order.
     'audit_url' => 'https://www.flowstack.run/audit',
 
     'modules' => [
@@ -143,59 +150,45 @@ return [
             'min_plan' => 'pro',
         ],
 
-        // ---- the studio --------------------------------------------------
+        // ---- built to order: the four services ----------------------------
         [
-            'key' => 'studio_leak_report',
-            'line' => 'studio',
-            'status' => 'studio',
-            'name' => 'The Leak Report',
-            'blurb' => 'Free. One page on where you are losing customers this month, in five working days, ending in a call.',
+            'key' => 'service_website',
+            'line' => 'services',
+            'status' => 'built',
+            'name' => 'Website',
+            'blurb' => 'Built or rebuilt, English or Greek, with the chat installed from day one.',
             'route' => null,
+            'url' => 'https://www.flowstack.run/website',
             'min_plan' => null,
         ],
         [
-            'key' => 'studio_enquiry',
-            'line' => 'studio',
-            'status' => 'studio',
-            'name' => 'Never Miss an Enquiry',
-            'blurb' => 'Site, WhatsApp and inbox enquiries answered in under a minute and booked — set up and watched by us.',
+            'key' => 'service_chat_voice',
+            'line' => 'services',
+            'status' => 'built',
+            'name' => 'Chat & voice assistant',
+            'blurb' => 'The chat you run here, loaded and tuned by us — plus a phone assistant that answers calls and books, built to order and never part of a plan.',
             'route' => null,
+            'url' => 'https://www.flowstack.run/chat-assistant',
             'min_plan' => null,
         ],
         [
-            'key' => 'studio_calendar',
-            'line' => 'studio',
-            'status' => 'studio',
-            'name' => 'Fill the Calendar',
-            'blurb' => 'Everything above, plus we go and find the customers — and change what we do each month on the numbers.',
+            'key' => 'service_automations',
+            'line' => 'services',
+            'status' => 'built',
+            'name' => 'Automations',
+            'blurb' => 'Your CRM, follow-ups, reminders, invoice chasers, inbox triage and live reports, running themselves around the tools you already use.',
             'route' => null,
+            'url' => 'https://www.flowstack.run/automations',
             'min_plan' => null,
         ],
         [
-            'key' => 'studio_website',
-            'line' => 'studio',
-            'status' => 'studio',
-            'name' => 'Website build',
-            'blurb' => 'A fast, simple site with the chat installed from day one. English or Greek.',
+            'key' => 'service_lead_generation',
+            'line' => 'services',
+            'status' => 'built',
+            'name' => 'Lead generation',
+            'blurb' => 'Cold email from your own address to a checked list, in your voice, replies handed to you — you approve every word.',
             'route' => null,
-            'min_plan' => null,
-        ],
-        [
-            'key' => 'studio_outreach',
-            'line' => 'studio',
-            'status' => 'studio',
-            'name' => 'Cold outreach engine',
-            'blurb' => 'Your own sending domain, a verified list, sequences in your voice, replies handed to you.',
-            'route' => null,
-            'min_plan' => null,
-        ],
-        [
-            'key' => 'studio_tools',
-            'line' => 'studio',
-            'status' => 'studio',
-            'name' => 'Invoices, inbox triage, connecting your tools',
-            'blurb' => 'The back-office busywork, automated around the tools you already use.',
-            'route' => null,
+            'url' => 'https://www.flowstack.run/lead-generation',
             'min_plan' => null,
         ],
     ],

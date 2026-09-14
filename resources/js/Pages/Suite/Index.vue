@@ -7,16 +7,15 @@ import PageHeader from '@/Components/PageHeader.vue';
 const props = defineProps({
     modules: { type: Array, required: true },
     plan: { type: Object, required: true },
-    studio_url: { type: String, required: true },
     audit_url: { type: String, required: true },
 });
 
-// Two lines, kept apart on purpose: the app is what this dashboard runs;
-// the Studio is the done-for-you service line, invoiced separately. The
-// page never blends them — a Studio item has no switch here, only a door.
+// Two kinds of entry, kept apart on purpose: the app is what this dashboard
+// runs; the four services are built to order and invoiced separately. The
+// page never blends them — a service has no switch here, only a door.
 const appLive = computed(() => props.modules.filter((m) => m.line === 'app' && m.status === 'live'));
 const appComing = computed(() => props.modules.filter((m) => m.line === 'app' && m.status === 'coming'));
-const studio = computed(() => props.modules.filter((m) => m.line === 'studio'));
+const services = computed(() => props.modules.filter((m) => m.line === 'services'));
 
 const requesting = new Set();
 function requestModule(m) {
@@ -33,7 +32,7 @@ function requestModule(m) {
     <AppLayout title="Suite">
         <PageHeader
             title="Suite"
-            description="Everything Flowstack does, in two lines: what the app runs for you, and what the Studio does for you."
+            description="What runs in the app, what is on the way, and what we build to order."
             width="max-w-6xl"
         />
 
@@ -86,7 +85,7 @@ function requestModule(m) {
                 <h3 class="mt-8 text-xs font-medium uppercase tracking-wider text-ink-mute">Not yet available — request it</h3>
                 <p class="mt-2 max-w-[60ch] text-sm text-ink-dim">
                     None of these work today. Tell us which ones you need and we'll build in that order — and email you when yours is ready.
-                    Need one now? The Studio does all of them for you, below.
+                    Need one now? We build it to order — see below.
                 </p>
                 <ul class="mt-3 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
                     <li v-for="m in appComing" :key="m.key" class="flex flex-col gap-3 bg-bg-elev p-5">
@@ -109,27 +108,31 @@ function requestModule(m) {
                 </ul>
             </section>
 
-            <!-- ================= THE STUDIO ================= -->
+            <!-- ================= BUILT TO ORDER ================= -->
             <section class="mt-12">
                 <div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-ink pb-3">
-                    <h2 class="text-lg font-semibold tracking-tight text-ink">From the Studio</h2>
-                    <p class="text-sm text-ink-dim">Done for you, in Cyprus. Quoted and invoiced separately from this subscription.</p>
+                    <h2 class="text-lg font-semibold tracking-tight text-ink">Built to order</h2>
+                    <p class="text-sm text-ink-dim">Quoted after a free 30-minute call. Invoiced separately from this subscription.</p>
                 </div>
                 <p class="mt-4 max-w-[62ch] text-sm leading-relaxed text-ink-dim">
-                    Nothing here is a switch in the app. It starts with the free Leak Report — one page on where you are losing customers — and everything after it is built, installed and watched by us. The chat you run here is what the Studio installs; your subscription stays your own.
+                    Nothing here is a switch in the app. Four services, built, installed and watched by us; a written fixed price within 48 hours of the call, yours to keep either way. The chat you run here is what we install; your subscription stays your own.
                 </p>
-                <ul class="mt-4 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
-                    <li v-for="m in studio" :key="m.key" class="flex flex-col gap-3 bg-bg p-5">
+                <ul class="mt-4 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+                    <li v-for="m in services" :key="m.key" class="flex flex-col gap-3 bg-bg p-5">
                         <h4 class="text-base font-semibold text-ink">{{ m.name }}</h4>
-                        <p class="text-sm leading-relaxed text-ink-dim">{{ m.blurb }}</p>
+                        <p class="flex-1 text-sm leading-relaxed text-ink-dim">{{ m.blurb }}</p>
+                        <a
+                            v-if="m.url"
+                            :href="m.url"
+                            class="inline-flex min-h-[32px] items-center text-sm font-medium text-ink underline underline-offset-4"
+                        >See the service →</a>
                     </li>
                 </ul>
-                <div class="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2">
+                <div class="mt-5">
                     <a
                         :href="audit_url"
                         class="inline-flex min-h-[36px] items-center rounded-none border border-ink bg-ink px-4 text-sm font-medium text-bg hover:bg-bg hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
-                    >Start with the free Leak Report →</a>
-                    <a :href="studio_url" class="inline-flex min-h-[32px] items-center text-sm font-medium text-ink underline underline-offset-4">What the Studio does</a>
+                    >Book a free 30-minute call →</a>
                 </div>
             </section>
         </div>

@@ -1,6 +1,6 @@
 # What Flowstack is
 
-Flowstack is a studio, not a single product. It builds the whole online side of
+Flowstack sells four services, not a single product. It builds the whole online side of
 a business, end to end — for businesses just starting out, and for ones whose
 site and systems have fallen behind. Four things, and it helps to say which one
 a question is about:
@@ -11,8 +11,8 @@ a question is about:
    knowledge: it answers questions, qualifies visitors, books and captures
    leads. The website chat is the only self-serve part — a subscription, free
    to start, then €9 to €39 a month, and the piece you can switch on today. A
-   phone assistant that answers calls and books is built to order by the
-   Studio; it is not part of the app or any plan, so never describe it as one.
+   phone assistant that answers calls and books is built to order by us; it
+   is not part of the app or any plan, so never describe it as one.
 3. **Automations** — wired into your CRM and the tools you already use: email
    follow-ups and reminders, invoice chasers, inbox triage, booking, and live
    reports that build themselves. Quoted per engagement.

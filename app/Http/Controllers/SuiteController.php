@@ -12,10 +12,11 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * The Suite — every module in one place, in two lines that are kept
- * apart on purpose: the app (self-serve, this dashboard, billed by plan)
- * and the Studio (done for you, invoiced separately, the dashboard only
- * points at it). Catalogue and framing rules live in config/suite.php.
+ * The Suite — every module in one place, in two kinds of entry that are
+ * kept apart on purpose: the app (self-serve, this dashboard, billed by
+ * plan) and the four services built to order (quoted after a free call,
+ * invoiced separately, the dashboard only points at them). Catalogue and
+ * framing rules live in config/suite.php.
  *
  * A `coming` module is not sold here and is never described as working;
  * the one action it offers is "request it", which records interest per
@@ -61,6 +62,8 @@ class SuiteController extends Controller
                 'name' => $m['name'],
                 'blurb' => $m['blurb'],
                 'href' => is_string($m['route'] ?? null) ? route($m['route']) : null,
+                // Built-to-order services link out to the page that describes them.
+                'url' => is_string($m['url'] ?? null) ? $m['url'] : null,
                 'min_plan' => $minPlan,
                 'min_plan_label' => $minPlan !== null ? Plan::from($minPlan)->label() : null,
                 'on_plan' => $minPlan === null || $this->planCovers($plan, $minPlan),
@@ -71,7 +74,6 @@ class SuiteController extends Controller
         return Inertia::render('Suite/Index', [
             'modules' => $modules,
             'plan' => ['key' => $plan->value, 'label' => $plan->label()],
-            'studio_url' => (string) config('suite.studio_url'),
             'audit_url' => (string) config('suite.audit_url'),
         ]);
     }
@@ -79,7 +81,7 @@ class SuiteController extends Controller
     /**
      * Record that this team wants a module that is not built yet. Only
      * `coming` modules accept a request — a live module is opened, a
-     * Studio line is a conversation, and neither is a vote.
+     * built-to-order service is a conversation, and neither is a vote.
      */
     public function request(Request $request): RedirectResponse
     {

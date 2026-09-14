@@ -29,7 +29,11 @@ class SuiteTest extends TestCase
                     && collect($modules)->firstWhere('key', 'own_key')['on_plan'] === false
                     && collect($modules)->firstWhere('key', 'own_key')['min_plan_label'] === Plan::Growth->label()
                 )
-                ->where('studio_url', config('suite.studio_url'))
+                ->where('audit_url', config('suite.audit_url'))
+                // The four built-to-order services, in the site's order, each with its page.
+                ->where('modules', fn ($modules) => collect($modules)->where('line', 'services')->pluck('name')->values()->all()
+                    === ['Website', 'Chat & voice assistant', 'Automations', 'Lead generation']
+                    && collect($modules)->firstWhere('key', 'service_website')['url'] === 'https://www.flowstack.run/website')
             );
     }
 
@@ -64,11 +68,11 @@ class SuiteTest extends TestCase
             );
     }
 
-    public function test_live_studio_and_unknown_modules_cannot_be_requested(): void
+    public function test_live_built_and_unknown_modules_cannot_be_requested(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
 
-        foreach (['chat', 'studio_leak_report', 'teleportation'] as $key) {
+        foreach (['chat', 'service_website', 'teleportation'] as $key) {
             $this->actingAs($user)
                 ->from(route('suite.index'))
                 ->post(route('suite.request'), ['module' => $key])
