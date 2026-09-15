@@ -177,7 +177,7 @@ return [
             'label' => 'Claude Opus 4.8',
             'description' => 'The most capable model. Expert-grade reasoning for technical sales, high-stakes conversations, and premium experiences.',
             'model' => env('RUNTIME_TIER_OPUS_MODEL', 'claude-opus-4-8'),
-            'credits_per_message' => (int) env('RUNTIME_TIER_OPUS_CREDITS', 52),
+            'credits_per_message' => (int) env('RUNTIME_TIER_OPUS_CREDITS', 53),
             'pricing_per_mtok' => ['in' => 5.00, 'out' => 25.00],
         ],
         'gpt' => [

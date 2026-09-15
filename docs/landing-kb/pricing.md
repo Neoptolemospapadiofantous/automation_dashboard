@@ -34,7 +34,7 @@ Live in about a minute. Every feature on. This is the entry plan.
 
 - Everything in Starter
 - 25,000 conversation credits per month (own-key message cap 25,000)
-- **On the annual plan (€399/yr): a free website build**
+- **On the annual plan (€383.90/yr): a free website build**
 - Best rate per credit
 - Cancel anytime, no lock-in
 
@@ -79,7 +79,7 @@ Top-up credits you have paid for roll over; the monthly allowance does not.
 ## Annual billing
 
 Both plans can be billed yearly instead of monthly for about two months
-free (17% off): €199/year for Starter, €399 for Operator. You can switch
+free (20% off 12x the monthly price): €191.90/year for Starter, €383.90 for Operator. You can switch
 between monthly and annual at any time.
 
 ## Trials, discounts and VAT

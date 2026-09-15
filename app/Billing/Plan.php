@@ -261,12 +261,15 @@ enum Plan: string
      * annual Stripe Prices (STRIPE_PRICE_*_ANNUAL) — PlanPricingTest asserts
      * the discount they imply stays sane.
      */
-    public function annualPriceEur(): ?int
+    public function annualPriceEur(): ?float
     {
         return match ($this) {
-            self::Free => 0,
-            self::Starter => 199,
-            self::Pro => 399,
+            // 20% off 12x the monthly price (founder 2026-09-15): 239.88 → 191.90,
+            // 479.88 → 383.90. Kept as its own source of truth, in step with the
+            // annual Stripe Prices; annualSavingsPct() derives the 20 from it.
+            self::Free => 0.0,
+            self::Starter => 191.90,
+            self::Pro => 383.90,
             self::Business => null,
         };
     }

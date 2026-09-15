@@ -219,7 +219,7 @@ class LandingFaqSeeder extends Seeder
                     'price', 'prices', 'pricing', 'cost', 'costs', 'how much', 'plan', 'plans', 'quote',
                     'expensive',
                 ],
-                'answer' => 'Two plans: €19.99 a month (5 agents, 10,000 credits) or €39.99 (5 agents, 25,000 credits, best rate) — and paying €39.99 yearly (€399) includes a free website build. A short chat is about 5-8 credits, so €19.99 buys roughly 1,200-2,000 chats. Cancel anytime, VAT not included. Builds are quoted after a free 30-minute call. The chat, or a build?',
+                'answer' => 'Two plans: €19.99 a month (5 agents, 10,000 credits) or €39.99 (5 agents, 25,000 credits, best rate) — and paying yearly (€383.90, 20% off) includes a free website build. A short chat is about 5-8 credits, so €19.99 buys roughly 1,200-2,000 chats. Cancel anytime, VAT not included. Builds are quoted after a free 30-minute call. The chat, or a build?',
             ],
             [
                 'category' => 'What it does',

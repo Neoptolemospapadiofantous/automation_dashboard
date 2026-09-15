@@ -76,7 +76,7 @@ class BillingController extends Controller
     /**
      * @return array{
      *   key: string, value: string, label: string, plan_rank: int, monthly_eur: ?float,
-     *   annual_eur: ?int, annual_equivalent_monthly_eur: ?int, annual_savings_pct: int,
+     *   annual_eur: ?float, annual_equivalent_monthly_eur: ?int, annual_savings_pct: int,
      *   annual_available: bool, max_agents: int, monthly_credits: int,
      *   allows_own_key: bool, message_cap: int, website_build_on_annual: bool
      * }

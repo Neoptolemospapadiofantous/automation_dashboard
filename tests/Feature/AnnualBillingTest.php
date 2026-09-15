@@ -103,8 +103,8 @@ class AnnualBillingTest extends TestCase
                 ->has('plan_catalog.starter', fn ($p) => $p
                     ->where('annual_available', true)
                     ->where('monthly_eur', 19.99)
-                    ->where('annual_eur', 199)
-                    ->where('annual_equivalent_monthly_eur', 17)
+                    ->where('annual_eur', 191.9)
+                    ->where('annual_equivalent_monthly_eur', 16)
                     ->etc()
                 )
                 ->has('plan_catalog.operator', fn ($p) => $p

@@ -51,8 +51,11 @@ class PlanPricingTest extends TestCase
     {
         // Equivalent-monthly is the REAL yearly charge over 12, not a
         // percentage applied to the monthly price.
-        $this->assertSame(17, Plan::Starter->annualEquivalentMonthlyEur());  // €199/yr
-        $this->assertSame(33, Plan::Pro->annualEquivalentMonthlyEur());      // €399/yr
+        $this->assertSame(16, Plan::Starter->annualEquivalentMonthlyEur());  // €191.90/yr
+        $this->assertSame(32, Plan::Pro->annualEquivalentMonthlyEur());      // €383.90/yr
+        // 20% off 12x monthly, derived — not hand-set.
+        $this->assertSame(20, Plan::Starter->annualSavingsPct());
+        $this->assertSame(20, Plan::Pro->annualSavingsPct());
         // Free is €0 — the discount is a no-op, not null.
         $this->assertSame(0, Plan::Free->annualEquivalentMonthlyEur());
         // Business has no monthly price → null.
@@ -104,7 +107,7 @@ class PlanPricingTest extends TestCase
         }
 
         // Free and Custom have nothing to discount.
-        $this->assertSame(0, Plan::Free->annualPriceEur());
+        $this->assertSame(0.0, Plan::Free->annualPriceEur());
         $this->assertNull(Plan::Business->annualPriceEur());
     }
 }

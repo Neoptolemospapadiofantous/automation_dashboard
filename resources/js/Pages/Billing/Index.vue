@@ -286,7 +286,7 @@ function openPortal() {
                                     v-if="cycle === 'annual' && p.annual_available"
                                     class="mt-1 text-[10px] leading-snug text-state-ok-ink"
                                 >
-                                    Billed yearly · €{{ p.annual_eur.toLocaleString() }} / yr
+                                    Billed yearly · €{{ p.annual_eur.toLocaleString(undefined, { minimumFractionDigits: 2 }) }} / yr
                                 </span>
                                 <!-- Annual-only, so the wording carries the condition in
                                      both states: on the annual toggle it reads as included,
