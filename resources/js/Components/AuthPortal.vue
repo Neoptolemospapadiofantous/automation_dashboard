@@ -144,16 +144,20 @@ const submitForgot = () => {
              does not exist yet is created on the callback, so "sign in" and
              "create account" are the same click. -->
         <div v-if="providers.length && mode !== 'forgot'" class="mb-6">
+            <!-- Short labels ("Google", not "Continue with Google") so the
+                 pair fits side-by-side inside the max-w-md sheet without
+                 wrapping (founder call, 2026-09-15). -->
             <div class="grid gap-2" :class="providers.length > 1 ? 'sm:grid-cols-2' : ''">
                 <a
                     v-for="p in providers"
                     :key="p"
                     :href="route('social.redirect', p)"
+                    :aria-label="`Sign in with ${providerLabel[p] ?? p}`"
                     class="inline-flex min-h-10 items-center justify-center gap-2 rounded-none border border-border-hi bg-bg px-3 text-sm font-medium text-ink transition hover:bg-surface-hi focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1"
                 >
                     <svg v-if="p === 'google'" class="size-4" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 12.23c0-.68-.06-1.36-.19-2.02H12v3.83h5.4a4.62 4.62 0 0 1-2 3.03v2.5h3.23c1.9-1.75 2.97-4.32 2.97-7.34Z"/><path fill="currentColor" d="M12 21.6c2.7 0 4.96-.9 6.62-2.43l-3.23-2.5c-.9.6-2.04.95-3.39.95-2.6 0-4.8-1.76-5.6-4.12H3.07v2.58A9.99 9.99 0 0 0 12 21.6Z" opacity=".75"/><path fill="currentColor" d="M6.4 13.5a6 6 0 0 1 0-3.83V7.09H3.07a10 10 0 0 0 0 8.99L6.4 13.5Z" opacity=".55"/><path fill="currentColor" d="M12 6.38c1.47 0 2.79.5 3.83 1.5l2.86-2.86A9.6 9.6 0 0 0 12 2.4a9.99 9.99 0 0 0-8.93 5.5L6.4 10.5c.8-2.36 3-4.12 5.6-4.12Z" opacity=".9"/></svg>
                     <svg v-else-if="p === 'microsoft'" class="size-4" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 3h8.5v8.5H3z"/><path fill="currentColor" d="M12.5 3H21v8.5h-8.5z" opacity=".8"/><path fill="currentColor" d="M3 12.5h8.5V21H3z" opacity=".6"/><path fill="currentColor" d="M12.5 12.5H21V21h-8.5z" opacity=".4"/></svg>
-                    Continue with {{ providerLabel[p] ?? p }}
+                    {{ providerLabel[p] ?? p }}
                 </a>
             </div>
             <div class="mt-5 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">

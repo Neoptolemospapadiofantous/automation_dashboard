@@ -30,13 +30,13 @@ import ApplicationMark from '@/Components/ApplicationMark.vue';
             <!-- Tagline + schematic -->
             <div class="relative px-10 py-12">
                 <h1 class="bp-rise max-w-md text-3xl font-semibold leading-tight text-ink" style="--rise-delay: 40ms">
-                    Automate the busywork.
-                    <span class="text-ink-dim">Aggregate the data.</span>
-                    <span class="marker">Answer every inbound.</span>
+                    We build your website,
+                    <span class="text-ink-dim">answer every enquiry,</span>
+                    <span class="marker">and bring you customers.</span>
                 </h1>
                 <p class="bp-rise mt-4 max-w-md text-sm leading-relaxed text-ink-dim" style="--rise-delay: 110ms">
-                    Automations run the repetitive work, your data lands in one
-                    live view, and a chat agent on your site answers every inbound.
+                    Four services, one team: website, chat &amp; voice assistant,
+                    automations, lead generation.
                 </p>
 
                 <!-- Flow schematic: visitor → agent → lead -->
@@ -56,7 +56,7 @@ import ApplicationMark from '@/Components/ApplicationMark.vue';
                 </div>
                 <div class="bp-rise mt-5 flex max-w-md items-center gap-3" style="--rise-delay: 250ms">
                     <span class="bp-dim w-16 flex-none" />
-                    <span class="bp-annot">answers · qualifies · books · hands off</span>
+                    <span class="bp-annot">answers · qualifies · captures · hands off</span>
                 </div>
             </div>
 
