@@ -10,6 +10,7 @@ use App\Runtime\Knowledge\KnowledgeBase;
 use App\Runtime\Tools\CallAutomationTool;
 use App\Runtime\Tools\CaptureLeadTool;
 use App\Runtime\Tools\EndSessionTool;
+use App\Runtime\Tools\NoHandoffNeededTool;
 use App\Runtime\Tools\QueryKnowledgeTool;
 use App\Runtime\Tools\RequestHandoffTool;
 use App\Runtime\Tools\SetVariableTool;
@@ -49,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
             $registry->register(new EndSessionTool);
             $registry->register(new SetVariableTool);
             $registry->register($app->make(RequestHandoffTool::class));
+            $registry->register(new NoHandoffNeededTool);
             $registry->register($app->make(CallAutomationTool::class));
 
             return $registry;

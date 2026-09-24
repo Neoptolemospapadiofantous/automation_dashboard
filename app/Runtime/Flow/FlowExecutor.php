@@ -65,7 +65,14 @@ class FlowExecutor
         $retrievalWeak = $this->retrievalWeak($context->agent, $retrieval);
 
         // Escalation gate keys the same weakness through the operator's toggle.
-        $lowConfidence = $context->agent->auto_escalate_low_confidence && $retrievalWeak;
+        // Once a handoff is already pending on this session the gate stands
+        // down entirely: a teammate is coming, so re-promising one (and
+        // re-asking for contact) on every weak turn only nags a visitor who
+        // is often just saying goodbye — a real conversation did exactly
+        // that three replies in a row. The no-invented-facts rule in the
+        // stable prompt still applies to whatever the model answers.
+        $handoffPending = (bool) (((array) ($context->session->variables ?? []))['handoff_requested'] ?? false);
+        $lowConfidence = $context->agent->auto_escalate_low_confidence && $retrievalWeak && ! $handoffPending;
 
         // KB-gap capture: persist the question the KB couldn't answer so the
         // Knowledge page can show operators exactly what to add. Only genuine
@@ -90,9 +97,11 @@ class FlowExecutor
         $system = $this->systemPrompt($context->agent, $state, $context, $retrieval['text'], $lowConfidence, $automations);
 
         // Low confidence → make sure the model CAN escalate even if the
-        // current state didn't expose request_handoff.
+        // current state didn't expose request_handoff — and can explicitly
+        // decline (no_handoff_needed) so the backstop can tell "judged this
+        // small talk" apart from "forgot to escalate".
         $toolNames = $lowConfidence
-            ? array_values(array_unique([...$state->tools, 'request_handoff']))
+            ? array_values(array_unique([...$state->tools, 'request_handoff', 'no_handoff_needed']))
             : $state->tools;
 
         // Offer call_automation whenever the feature is on and the agent has a
@@ -198,10 +207,15 @@ class FlowExecutor
         $this->sessions->appendHistory($session, $newEntries); // also saves + touches activity
 
         // Deterministic backstop for the hybrid gate: if this was a
-        // low-confidence turn and the model didn't escalate on its own,
-        // escalate anyway so the human-follow-up promise is always kept.
+        // low-confidence turn and the model called NEITHER gate tool,
+        // escalate anyway so the human-follow-up promise is kept for real
+        // questions. An explicit no_handoff_needed call is the model's
+        // judgment that this was small talk / off-topic — trusted, so a
+        // goodbye or a playful question no longer rings anyone's phone.
         $backstopEscalated = false;
-        if ($lowConfidence && ! $this->toolFired($toolEvents, 'request_handoff')) {
+        if ($lowConfidence
+            && ! $this->toolFired($toolEvents, 'request_handoff')
+            && ! $this->toolFired($toolEvents, 'no_handoff_needed')) {
             $backstopEscalated = true;
             rescue(
                 fn () => $this->escalate->handle($context, 'Low-confidence answer: no KB match above the confidence threshold.'),
@@ -352,10 +366,17 @@ class FlowExecutor
 
         if ($lowConfidence) {
             $dynamic[] = 'IMPORTANT: The knowledge base has no confident answer to the visitor\'s current '
-                .'question. Do NOT answer it — no guesses, no partial answers, and NO claims about what '
-                .'the product does or does not include (saying a feature "doesn\'t exist" is also a guess). '
-                .'Reply with one or two sentences only: acknowledge the question and say you\'re connecting '
-                .'a teammate who can answer it properly, then call the request_handoff tool.';
+                .'message. Decide which of two cases this is and call EXACTLY ONE of these tools. '
+                .'(a) A real question about the product, pricing, or the company: do NOT answer it — no '
+                .'guesses, no partial answers, and NO claims about what the product does or does not '
+                .'include (saying a feature "doesn\'t exist" is also a guess). Call the request_handoff '
+                .'tool, and reply with one or two sentences: acknowledge the question and say you\'re '
+                .'connecting a teammate who can answer it properly. '
+                .'(b) Small talk, thanks, a goodbye, or something clearly unrelated to the company: call '
+                .'the no_handoff_needed tool and reply with one short, friendly line — answering a playful '
+                .'question like a person is fine — then steer gently back. Do not mention a teammate and '
+                .'never ask for contact details on such a turn. In both cases, never state or deny a '
+                .'product fact that is not in the knowledge-base context.';
         }
 
         return SystemPrompt::blocks($stable, $dynamic);

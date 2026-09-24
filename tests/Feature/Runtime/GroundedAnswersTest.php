@@ -408,4 +408,52 @@ class GroundedAnswersTest extends TestCase
         $this->assertSame(1, substr_count(strtolower($text), 'email'), 'one ask, not two');
         $this->assertStringNotContainsString(app(EscalateToHuman::class)->contactAsk(), $text);
     }
+
+    public function test_no_handoff_needed_call_is_trusted_and_nothing_escalates(): void
+    {
+        // A playful off-topic question used to hard-escalate (and ring the
+        // owner's phone): weak retrieval + no request_handoff call read as
+        // "the model forgot". The explicit no_handoff_needed call is the
+        // model saying it judged the turn small talk — the backstop trusts it.
+        Notification::fake();
+        $this->ownerWithAgent($agent, autoEscalate: true);
+        $this->fakeKnowledge(hasDocuments: true, topScore: 0.10, title: 'Pricing FAQ');
+        $this->fakeLlm(
+            $this->toolUseResult('no_handoff_needed', ['reason' => 'off-topic small talk']),
+            $this->textResult('Grey, mostly — Limassol clouds commit to the look. What brings you by?'),
+        );
+
+        $this->seedSession($agent, 'v1', 'discovery');
+        $traces = app(AgentRuntime::class)->sendText($agent, 'v1', 'what color is the sky on a cloudy day?');
+
+        $session = RuntimeSession::where('visitor_id', 'v1')->first();
+        $this->assertArrayNotHasKey('handoff_requested', (array) $session->variables);
+        Notification::assertNothingSent();
+        $this->assertStringNotContainsString(app(EscalateToHuman::class)->contactAsk(), $traces[0]['payload']['message']);
+    }
+
+    public function test_gate_stands_down_when_a_handoff_is_already_pending(): void
+    {
+        // A real conversation got the contact-ask appended to THREE goodbye
+        // replies in a row after the visitor had already asked for a human:
+        // every weak turn re-fired the gate. Once a handoff is pending the
+        // gate must stand down — no forced escalation reply, no re-appended
+        // ask, no repeat notification.
+        Notification::fake();
+        $this->ownerWithAgent($agent, autoEscalate: true);
+        $this->fakeKnowledge(hasDocuments: true, topScore: 0.10, title: 'Pricing FAQ');
+        $this->fakeLlm($this->textResult('Got it — thanks for stopping by.'));
+
+        RuntimeSession::create([
+            'agent_id' => $agent->id,
+            'visitor_id' => 'v1',
+            'flow_state' => 'discovery',
+            'variables' => ['handoff_requested' => true, 'handoff_reason' => 'visitor asked for a human'],
+            'history' => [],
+        ]);
+        $traces = app(AgentRuntime::class)->sendText($agent, 'v1', 'ok we are done');
+
+        $this->assertSame('Got it — thanks for stopping by.', $traces[0]['payload']['message']);
+        Notification::assertNothingSent();
+    }
 }

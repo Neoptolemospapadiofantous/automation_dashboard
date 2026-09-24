@@ -15,7 +15,7 @@ Controller (chat / embed)                    bills credits AROUND the engine
              │    │                      Anthropic complete → tool dispatch → transition
              │    │    ├─ AnthropicClient   POST /v1/messages, tool calling, retries
              │    │    ├─ ToolRegistry      capture_lead · query_kb · set_variable ·
-             │    │    │                    request_handoff · end_session
+             │    │    │                    request_handoff · no_handoff_needed · end_session
              │    │    └─ KnowledgeBase     chunk → embed (OpenAI) → cosine top-k
              │    └─ LeadCaptureFlow     greeting → discovery → wrapup → ended
 ```
@@ -113,12 +113,23 @@ greetings, low-confidence, or no-KB turns.
 
 **Hybrid auto-escalate.** When the agent HAS a knowledge base but the best
 retrieved score is below `answer_confidence`, the turn is low-confidence:
-1. the system prompt tells the model not to guess and to escalate;
-2. `request_handoff` is added to the turn's tools even if the state didn't
-   expose it;
-3. a deterministic backstop — if the model didn't escalate, `FlowExecutor`
+1. the system prompt tells the model to pick a branch: a real question about
+   the product/company → don't guess, call `request_handoff`; small talk, a
+   goodbye, or an off-topic aside → call `no_handoff_needed` and answer with
+   one friendly line (no teammate promise, no contact ask);
+2. `request_handoff` AND `no_handoff_needed` are added to the turn's tools
+   even if the state didn't expose them;
+3. a deterministic backstop — if the model called NEITHER tool, `FlowExecutor`
    calls `EscalateToHuman` itself (flags the session + notifies the owner via
-   `HandoffRequestedNotification`).
+   `HandoffRequestedNotification`). An explicit `no_handoff_needed` call is
+   trusted: it is the model's positive judgment, not forgetting — without it
+   the backstop escalated goodbyes and jokes (a no-op tool exists precisely so
+   absence-of-escalation stops being ambiguous).
+
+Once a handoff is already pending on the session (`handoff_requested`), the
+gate stands down entirely for the rest of the conversation — a teammate is
+coming, and re-promising one on every weak turn nagged a real visitor through
+three goodbye replies in a row.
 
 `EscalateToHuman` (`app/Runtime/Support/`) is the single escalation path,
 shared with `RequestHandoffTool` so the two can't drift. Per-agent opt-out:
@@ -141,5 +152,6 @@ trips the gate — a weak score there means "answers from instructions," not
 `docs/operations/economics.md` predates this engine (it models the legacy
 engine's per-plan pricing). Native cost basis: ~$0.005–0.01 per customer
 message (Haiku + embeddings) →
-~99% gross margin at the $99 Starter price. A rewrite of the economics doc is
+~99% gross margin at the current €19.99 Starter price (repriced 2026-09-15).
+A rewrite of the economics doc is
 pending; until then treat it as historical.
