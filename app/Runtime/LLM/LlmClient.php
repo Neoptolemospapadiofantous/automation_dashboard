@@ -28,6 +28,11 @@ interface LlmClient
      * @param  list<array<string, mixed>>  $messages  Canonical messages
      * @param  list<array<string, mixed>>  $tools  Canonical tool specs
      *                                             ({name, description, input_schema})
+     * @param  ?string  $toolChoice  'required' forces the model to call one of
+     *                               the offered tools on THIS completion (a
+     *                               prose instruction alone is ignored by small
+     *                               models — live-verified with gpt-5-nano on
+     *                               the confidence gate); null = model's choice.
      */
-    public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult;
+    public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null, ?string $toolChoice = null): CompletionResult;
 }

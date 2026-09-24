@@ -143,8 +143,24 @@ class FlowExecutor
         $tokensIn = 0;
         $tokensOut = 0;
 
+        // On a gate turn the FIRST completion is forced to choose: only the
+        // two gate tools are offered and tool_choice demands a call, because
+        // the prose instruction alone is ignored by small models (nano
+        // answered text-only straight past it, live-verified) — which made
+        // every gate turn read as "forgot to escalate" to the backstop.
+        // Later iterations return to the full toolset, unforced.
+        $firstCompletion = true;
+
         while (true) {
-            $result = $client->complete($system, $messages, $specs, $model);
+            $gateForced = $lowConfidence && $firstCompletion;
+            $result = $client->complete(
+                $system,
+                $messages,
+                $gateForced ? $this->tools->specs(['request_handoff', 'no_handoff_needed']) : $specs,
+                $model,
+                toolChoice: $gateForced ? 'required' : null,
+            );
+            $firstCompletion = false;
             $tokensIn += $result->inputTokens;
             $tokensOut += $result->outputTokens;
 

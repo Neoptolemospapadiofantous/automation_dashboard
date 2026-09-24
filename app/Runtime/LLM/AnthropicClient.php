@@ -47,7 +47,7 @@ class AnthropicClient implements LlmClient
         return $clone;
     }
 
-    public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
+    public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null, ?string $toolChoice = null): CompletionResult
     {
         $apiKey = $this->apiKeyOverride ?? (string) config('runtime.llm.anthropic.api_key');
         if ($apiKey === '') {
@@ -64,6 +64,9 @@ class AnthropicClient implements LlmClient
         ];
         if ($tools !== []) {
             $payload['tools'] = $tools;
+            if ($toolChoice === 'required') {
+                $payload['tool_choice'] = ['type' => 'any'];
+            }
         }
 
         try {

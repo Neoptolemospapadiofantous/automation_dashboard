@@ -41,7 +41,7 @@ class GeminiClient implements LlmClient
      * @param  list<array<string, mixed>>  $messages  Canonical messages
      * @param  list<array<string, mixed>>  $tools  Canonical tool specs
      */
-    public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
+    public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null, ?string $toolChoice = null): CompletionResult
     {
         $apiKey = $this->apiKeyOverride ?? (string) config('runtime.llm.google.api_key');
         if ($apiKey === '') {
@@ -65,6 +65,9 @@ class GeminiClient implements LlmClient
                     'parameters' => $t['input_schema'],
                 ], $tools),
             ]];
+            if ($toolChoice === 'required') {
+                $payload['toolConfig'] = ['functionCallingConfig' => ['mode' => 'ANY']];
+            }
         }
 
         try {

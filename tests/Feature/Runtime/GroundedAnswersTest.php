@@ -328,18 +328,24 @@ class GroundedAnswersTest extends TestCase
      * order (the router resolves the openai provider for Core,
      * so binding OpenAiClient swaps the client the executor uses).
      */
-    private function fakeLlm(CompletionResult ...$results): void
+    private function fakeLlm(CompletionResult ...$results): object
     {
         // Extend the concrete OpenAiClient so it satisfies LlmRouter's
         // constructor type-hint while replaying canned completions instead
-        // of hitting the wire.
+        // of hitting the wire. Each call's offered tool names + toolChoice
+        // are recorded so tests can assert the gate's forced first pick.
         $client = new class(array_values($results)) extends OpenAiClient
         {
+            /** @var list<array{tools: list<string>, toolChoice: ?string}> */
+            public array $calls = [];
+
             /** @param list<CompletionResult> $queue */
             public function __construct(private array $queue) {}
 
-            public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
+            public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null, ?string $toolChoice = null): CompletionResult
             {
+                $this->calls[] = ['tools' => array_column($tools, 'name'), 'toolChoice' => $toolChoice];
+
                 return array_shift($this->queue) ?? new CompletionResult('', [], [['type' => 'text', 'text' => '']], 'end_turn', 0, 0);
             }
         };
@@ -347,6 +353,8 @@ class GroundedAnswersTest extends TestCase
         // AnthropicClient is constructor-injected into LlmRouter; replace the
         // concrete so clientFor('anthropic') hands back our fake.
         $this->app->instance(OpenAiClient::class, $client);
+
+        return $client;
     }
 
     private function textResult(string $text): CompletionResult
@@ -455,5 +463,43 @@ class GroundedAnswersTest extends TestCase
 
         $this->assertSame('Got it — thanks for stopping by.', $traces[0]['payload']['message']);
         Notification::assertNothingSent();
+    }
+
+    public function test_gate_turn_forces_a_choice_between_the_two_gate_tools(): void
+    {
+        // The prose instruction alone was ignored by the live model (it
+        // answered text-only straight past it, the backstop escalated, and a
+        // probe rang the owner's phone). The first completion of a gate turn
+        // must offer ONLY the two gate tools with toolChoice=required; the
+        // follow-up completion returns to the full toolset, unforced.
+        Notification::fake();
+        $this->ownerWithAgent($agent, autoEscalate: true);
+        $this->fakeKnowledge(hasDocuments: true, topScore: 0.10, title: 'Pricing FAQ');
+        $client = $this->fakeLlm(
+            $this->toolUseResult('no_handoff_needed', ['reason' => 'small talk']),
+            $this->textResult('Ha — good one. What brings you by?'),
+        );
+
+        $this->seedSession($agent, 'v1', 'discovery');
+        app(AgentRuntime::class)->sendText($agent, 'v1', 'tell me a joke about chatbots');
+
+        $this->assertSame(['request_handoff', 'no_handoff_needed'], $client->calls[0]['tools']);
+        $this->assertSame('required', $client->calls[0]['toolChoice']);
+        $this->assertNull($client->calls[1]['toolChoice']);
+        $this->assertContains('capture_lead', $client->calls[1]['tools'], 'follow-up returns to the full toolset');
+    }
+
+    public function test_high_confidence_turn_is_never_forced(): void
+    {
+        Notification::fake();
+        $this->ownerWithAgent($agent, autoEscalate: true);
+        $this->fakeKnowledge(hasDocuments: true, topScore: 0.92, title: 'Pricing FAQ');
+        $client = $this->fakeLlm($this->textResult('Starter is on the pricing page.'));
+
+        $this->seedSession($agent, 'v1', 'discovery');
+        app(AgentRuntime::class)->sendText($agent, 'v1', 'what does starter cost?');
+
+        $this->assertNull($client->calls[0]['toolChoice']);
+        $this->assertNotContains('no_handoff_needed', $client->calls[0]['tools']);
     }
 }

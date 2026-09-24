@@ -117,8 +117,10 @@ retrieved score is below `answer_confidence`, the turn is low-confidence:
    the product/company → don't guess, call `request_handoff`; small talk, a
    goodbye, or an off-topic aside → call `no_handoff_needed` and answer with
    one friendly line (no teammate promise, no contact ask);
-2. `request_handoff` AND `no_handoff_needed` are added to the turn's tools
-   even if the state didn't expose them;
+2. the FIRST completion of the turn offers ONLY those two tools with
+   `toolChoice: 'required'` (the prose instruction alone is ignored by small
+   models — live-verified with gpt-5-nano); after the tool result, the loop
+   returns to the full toolset, unforced;
 3. a deterministic backstop — if the model called NEITHER tool, `FlowExecutor`
    calls `EscalateToHuman` itself (flags the session + notifies the owner via
    `HandoffRequestedNotification`). An explicit `no_handoff_needed` call is

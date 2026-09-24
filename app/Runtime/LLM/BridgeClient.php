@@ -29,19 +29,25 @@ use Throwable;
  */
 class BridgeClient implements LlmClient
 {
-    public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
+    public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null, ?string $toolChoice = null): CompletionResult
     {
         $url = rtrim((string) config('runtime.llm.bridge.url'), '/');
         if (! (bool) config('runtime.llm.bridge.enabled') || $url === '') {
             throw new Misconfigured('claude-bridge is not enabled — set CLAUDE_BRIDGE_ENABLED + CLAUDE_BRIDGE_URL.');
         }
 
+        // Prompt-protocol tools have no API-level forcing — the strongest
+        // available form of 'required' is an explicit demand in the protocol.
+        $force = $toolChoice === 'required' && $tools !== []
+            ? "\nFor THIS reply you MUST use one of the tools above — a plain-text reply is not acceptable.\n"
+            : '';
+
         $payload = [
             // The tool reminder rides at the transcript tail (recency): the
             // bridge can only APPEND to the CLI's own system prompt, which
             // otherwise drowns out the protocol on smaller models.
             'user' => $this->transcript($messages, $tools !== []),
-            'system' => SystemPrompt::toText($system).$this->toolProtocol($tools),
+            'system' => SystemPrompt::toText($system).$this->toolProtocol($tools).$force,
             'model' => $model ?? (string) config('runtime.llm.anthropic.model_default'),
         ];
 

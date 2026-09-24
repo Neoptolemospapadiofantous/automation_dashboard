@@ -39,7 +39,7 @@ class OpenAiClient implements LlmClient
         return $clone;
     }
 
-    public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null): CompletionResult
+    public function complete(string|array $system, array $messages, array $tools = [], ?string $model = null, ?int $maxTokens = null, ?string $toolChoice = null): CompletionResult
     {
         $apiKey = $this->apiKeyOverride ?? (string) config('runtime.llm.openai.api_key');
         if ($apiKey === '') {
@@ -68,6 +68,9 @@ class OpenAiClient implements LlmClient
                     'parameters' => $t['input_schema'],
                 ],
             ], $tools);
+            if ($toolChoice === 'required') {
+                $payload['tool_choice'] = 'required';
+            }
         }
 
         try {
