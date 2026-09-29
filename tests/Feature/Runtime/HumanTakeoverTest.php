@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\HandoffRequestedNotification;
 use App\Runtime\Models\RuntimeSession;
 use App\Runtime\Session\ConversationContext;
+use App\Runtime\Session\SessionManager;
 use App\Runtime\Support\EscalateToHuman;
 use App\Runtime\Tools\RequestHandoffTool;
 use App\Services\ConversationRecorder;
@@ -357,6 +358,50 @@ class HumanTakeoverTest extends TestCase
         app(EscalateToHuman::class)->handle(new ConversationContext($agent, $session, 'human please'), 'asked');
 
         $this->assertFalse((bool) ($conversation->fresh()->meta['handoff_awaiting_contact'] ?? false));
+    }
+
+    public function test_a_greek_visitors_contact_confirmation_comes_back_in_greek(): void
+    {
+        // The confirmation is written by us, not the model, so it was English
+        // for everyone. Note the contact reply itself is DIGITS ONLY — reading
+        // just that message would call this visitor English, which is why the
+        // conversation decides. This is the lead-capture moment: the one reply
+        // a prospect must understand.
+        Notification::fake();
+        [$owner, $agent, $conversation] = $this->escalatableConversation();
+        $conversation->forceFill(['meta' => ['handoff_requested' => true, 'handoff_awaiting_contact' => true]])->save();
+        app(ConversationRecorder::class)
+            ->record($conversation, 'user', 'Έχω διαρροή στην πισίνα μου', 'text');
+
+        $this->postJson(route('embed.interact', $agent->slug), [
+            'visitor_id' => 'embed-testvisitor0000001',
+            'message' => '99 123456',
+        ])
+            ->assertOk()
+            ->assertJsonPath('handoff', true)
+            ->assertJsonPath('traces.0.payload.message',
+                app(EscalateToHuman::class)->reachLine('99 123456', 'el'));
+    }
+
+    public function test_a_captured_contact_is_written_into_the_session_so_the_model_stops_asking(): void
+    {
+        // The capture is deterministic and the model never sees it, so without
+        // this the prompt's "Known facts about this visitor (do not re-ask)"
+        // block stays empty and later turns keep asking for a number the
+        // visitor already gave.
+        Notification::fake();
+        [$owner, $agent, $conversation] = $this->escalatableConversation();
+        $conversation->forceFill(['meta' => ['handoff_requested' => true, 'handoff_awaiting_contact' => true]])->save();
+
+        $this->postJson(route('embed.interact', $agent->slug), [
+            'visitor_id' => 'embed-testvisitor0000001',
+            'message' => 'zoe@example.com, 99 123456',
+        ])->assertOk();
+
+        $session = app(SessionManager::class)->find($agent, 'embed-testvisitor0000001');
+        $this->assertNotNull($session);
+        $this->assertSame('zoe@example.com', $session->variables['email'] ?? null);
+        $this->assertSame('99 123456', $session->variables['phone'] ?? null);
     }
 
     public function test_a_contact_reply_after_handoff_becomes_a_lead_without_a_second_ring(): void

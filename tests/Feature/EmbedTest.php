@@ -44,6 +44,28 @@ class EmbedTest extends TestCase
             ->assertSee('Type a message');
     }
 
+    public function test_the_ai_act_disclosure_follows_the_visitors_browser_language(): void
+    {
+        // A transparency notice the visitor cannot read does not inform them,
+        // and the panel renders before they have typed, so Accept-Language is
+        // the only signal available at that point.
+        $agent = $this->makeAgent('active');
+
+        $this->get("/embed/{$agent->slug}")
+            ->assertOk()
+            ->assertSee('AI assistant — not a person. You can ask for a human at any time.')
+            ->assertSee('Type a message…', false)
+            ->assertSee('End chat');
+
+        $this->withHeader('Accept-Language', 'el-GR,el;q=0.9')
+            ->get("/embed/{$agent->slug}")
+            ->assertOk()
+            ->assertSee('Βοηθός AI — όχι άνθρωπος. Μπορείτε να ζητήσετε άνθρωπο οποιαδήποτε στιγμή.', false)
+            ->assertSee('Γράψτε το μήνυμά σας…', false)
+            ->assertSee('Τέλος συνομιλίας', false)
+            ->assertDontSee('Type a message', false);
+    }
+
     public function test_embed_chat_page_allows_iframe_embedding(): void
     {
         $agent = $this->makeAgent('active');

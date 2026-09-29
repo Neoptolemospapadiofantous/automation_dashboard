@@ -10,6 +10,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Notifications\HandoffRequestedNotification;
 use App\Runtime\Session\ConversationContext;
+use App\Runtime\Session\SessionManager;
 use App\Services\WebhookDispatcher;
 use App\Support\WebhookPayloads;
 
@@ -27,6 +28,27 @@ use App\Support\WebhookPayloads;
  */
 class EscalateToHuman
 {
+    /**
+     * The deterministic lines an escalation appends, keyed by the visitor's
+     * own language. These are the only two strings the runtime writes for
+     * itself rather than getting from the model, so they are the only two
+     * that can be in the wrong language — add a key here to localise both.
+     */
+    private const CONTACT_ASK = [
+        'el' => 'Για να επικοινωνήσει μαζί σας ένας συνάδελφος: ποιο είναι το καλύτερο email ή τηλέφωνο;',
+        'en' => 'So a teammate can reach you: what is the best email or phone number?',
+    ];
+
+    private const FOLLOW_UP = [
+        'el' => 'Ευχαριστούμε — ένας συνάδελφος θα επικοινωνήσει σύντομα μαζί σας.',
+        'en' => 'Thanks — a teammate will follow up shortly.',
+    ];
+
+    private const REACH_AT = [
+        'el' => 'Ευχαριστούμε — ένας συνάδελφος θα επικοινωνήσει μαζί σας στο :reach.',
+        'en' => 'Thanks — a teammate will reach you at :reach.',
+    ];
+
     /**
      * Flag the session + conversation for handoff and (best-effort) notify
      * the owner. Idempotent — calling twice in a turn is harmless.
@@ -183,11 +205,85 @@ class EscalateToHuman
     /**
      * The one line every escalation path appends when no contact is on
      * file. Deterministic and identical everywhere so a visitor is asked
-     * the same way whether the chip, the tool or the backstop escalated.
+     * the same way whether the chip, the tool or the backstop escalated —
+     * but IN THE VISITOR'S OWN LANGUAGE. It used to be English always, so
+     * a Greek conversation ended with an English sentence stapled to it at
+     * the exact moment the chat asks for the lead. English remains the
+     * fallback for any language not listed, i.e. the behaviour that shipped.
      */
-    public function contactAsk(): string
+    public function contactAsk(?string $language = null): string
     {
-        return 'So a teammate can reach you: what is the best email or phone number?';
+        return self::CONTACT_ASK[$language] ?? self::CONTACT_ASK['en'];
+    }
+
+    /**
+     * The stand-in used when the model returned nothing at all on an
+     * escalation turn. Same language rule as contactAsk().
+     */
+    public function followUpLine(?string $language = null): string
+    {
+        return self::FOLLOW_UP[$language] ?? self::FOLLOW_UP['en'];
+    }
+
+    /**
+     * The visitor's language, detected from their own text by script.
+     * Deterministic and free on purpose: the backstop fires precisely when
+     * the model did NOT, so it cannot spend a model call deciding which
+     * language to ask a one-line question in.
+     */
+    public function languageOf(?string $text): string
+    {
+        return preg_match('/\p{Greek}/u', (string) $text) === 1 ? 'el' : 'en';
+    }
+
+    /**
+     * The language to answer a CONTACT REPLY in. That message is usually a
+     * bare phone number or email — no letters at all — so reading it alone
+     * would call every Greek visitor English at the one moment the chat
+     * confirms their lead. Fall back to what they typed earlier.
+     */
+    public function languageOfConversation(?Conversation $conversation, ?string $current = null): string
+    {
+        if ($this->languageOf($current) === 'el') {
+            return 'el';
+        }
+        if ($conversation === null) {
+            return 'en';
+        }
+
+        $recent = $conversation->messages()
+            ->where('role', 'user')
+            ->latest('id')
+            ->limit(6)
+            ->pluck('text');
+
+        foreach ($recent as $text) {
+            if ($this->languageOf((string) $text) === 'el') {
+                return 'el';
+            }
+        }
+
+        return 'en';
+    }
+
+    /**
+     * The confirmation after a contact reply is captured, in the visitor's
+     * language. `:reach` is their own email or phone, echoed back.
+     */
+    public function reachLine(string $reach, ?string $language = null): string
+    {
+        return str_replace(':reach', $reach, self::REACH_AT[$language] ?? self::REACH_AT['en']);
+    }
+
+    /**
+     * Whether a reply already asked for contact details. Matching only
+     * English is what let the Greek path ask twice: the model HAD asked,
+     * in Greek, and the de-dupe could not see it.
+     */
+    public function asksForContact(string $text): bool
+    {
+        return preg_match('/\b(e-?mail|phone)\b/iu', $text) === 1
+            || preg_match('/(τηλέφων|ηλεκτρονικ)/iu', $text) === 1;
     }
 
     /**
@@ -222,6 +318,27 @@ class EscalateToHuman
         $lead = $email !== null
             ? Lead::updateOrCreate(['team_id' => $agent->team_id, 'agent_id' => $agent->id, 'email' => $email], $attributes)
             : Lead::updateOrCreate(['team_id' => $agent->team_id, 'agent_id' => $agent->id, 'email' => null, 'visitor_id' => $visitorId], $attributes);
+
+        // Tell the MODEL what the deterministic path just captured. Without
+        // this the prompt's "Known facts about this visitor (do not re-ask)"
+        // block stays empty and every later turn asks for a phone or email
+        // the visitor has already given — the same class of defect as the
+        // hardcoded-English reply: a silent capture the model cannot see.
+        rescue(function () use ($agent, $visitorId, $email, $phone): void {
+            $session = app(SessionManager::class)->find($agent, $visitorId);
+            if ($session === null) {
+                return;
+            }
+            $vars = (array) ($session->variables ?? []);
+            if ($email !== null) {
+                $vars['email'] = $email;
+            }
+            if ($phone !== null) {
+                $vars['phone'] = $phone;
+            }
+            $session->variables = $vars;
+            $session->save();
+        }, report: true);
 
         $meta = (array) ($conversation->meta ?? []);
         $meta['handoff_awaiting_contact'] = false;

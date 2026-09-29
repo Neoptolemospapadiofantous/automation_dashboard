@@ -427,27 +427,27 @@
             <p class="subtitle"><span class="status-dot" aria-hidden="true"></span><span>{{ $subtitle }}</span></p>
         @endif
     </div>
-    <button type="button" id="fs-end" class="end-btn" aria-label="End chat and leave feedback" hidden>End chat</button>
-    <button type="button" id="fs-close" class="close-btn" aria-label="Close chat">
+    <button type="button" id="fs-end" class="end-btn" aria-label="{{ $chrome['end_aria'] }}" hidden>{{ $chrome['end'] }}</button>
+    <button type="button" id="fs-close" class="close-btn" aria-label="{{ $chrome['close_aria'] }}">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
     </button>
     {{-- EU AI Act Art. 50 transparency: rendered by the PLATFORM,
          independent of agent scripting, at every conversation. A direct
          header child so it wraps to its own full-width row — nested beside
          the buttons it collapses into a sliver on phones. --}}
-    <p class="ai-disclosure">AI assistant — not a person. You can ask for a human at any time.</p>
+    <p class="ai-disclosure">{{ $chrome['disclosure'] }}</p>
 </header>
 
 <div id="backbar" class="backbar" hidden>
-    <button type="button" id="fs-back" class="back-btn">← Back</button>
-    <button type="button" id="fs-newchat-2" class="back-new">Start new chat</button>
+    <button type="button" id="fs-back" class="back-btn">{{ $chrome['back'] }}</button>
+    <button type="button" id="fs-newchat-2" class="back-new">{{ $chrome['new_chat'] }}</button>
 </div>
 
 <div id="thread" role="log" aria-live="polite"></div>
 
 <div id="home" hidden>
     <p class="home-intro" id="home-intro" hidden></p>
-    <button type="button" id="fs-newchat" class="newchat-btn">Start new chat</button>
+    <button type="button" id="fs-newchat" class="newchat-btn">{{ $chrome['new_chat'] }}</button>
     <div class="history-head" id="history-head" hidden>Recent conversations</div>
     <ul id="history" class="history"></ul>
 </div>
@@ -458,7 +458,7 @@
          site sees it on load). Focus is handled in JS instead — on init
          and on the widget's fs:visible message — which covers the
          standalone hosted page too. --}}
-    <input id="msg" type="text" placeholder="Type a message…" required maxlength="2000">
+    <input id="msg" type="text" placeholder="{{ $chrome['placeholder'] }}" required maxlength="2000">
     <button type="submit" id="send" aria-label="Send">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.27 3.13a.6.6 0 0 1 .82-.73l16.5 8.06a.6.6 0 0 1 0 1.08l-16.5 8.06a.6.6 0 0 1-.82-.73L6 12zm0 0h7"/></svg>
     </button>

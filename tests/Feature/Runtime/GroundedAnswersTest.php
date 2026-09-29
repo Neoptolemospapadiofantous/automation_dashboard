@@ -417,6 +417,50 @@ class GroundedAnswersTest extends TestCase
         $this->assertStringNotContainsString(app(EscalateToHuman::class)->contactAsk(), $text);
     }
 
+    public function test_backstop_asks_a_greek_visitor_in_greek(): void
+    {
+        // The ask is written by the runtime, not the model, so it was English
+        // for everyone — a Greek conversation ended with an English sentence
+        // stapled on at the exact moment the chat asks for the lead.
+        Notification::fake();
+        $this->ownerWithAgent($agent, autoEscalate: true);
+        $this->fakeKnowledge(hasDocuments: true, topScore: 0.20, title: 'Pricing FAQ');
+        $this->fakeLlm($this->textResult('Δεν είμαι σίγουρος γι’ αυτό.'));
+
+        $this->seedSession($agent, 'v1', 'discovery');
+        $traces = app(AgentRuntime::class)->sendText($agent, 'v1', 'Έχω διαρροή στην πισίνα μου;');
+
+        $text = $traces[0]['payload']['message'];
+        $escalate = app(EscalateToHuman::class);
+        $this->assertStringEndsWith($escalate->contactAsk('el'), $text);
+        $this->assertStringNotContainsString($escalate->contactAsk('en'), $text);
+    }
+
+    public function test_backstop_does_not_ask_twice_when_the_model_already_asked_in_greek(): void
+    {
+        // The de-dupe matched English words only, so a Greek reply that had
+        // already asked got the question a second time.
+        Notification::fake();
+        $this->ownerWithAgent($agent, autoEscalate: true);
+        $this->fakeKnowledge(hasDocuments: true, topScore: 0.20, title: 'Pricing FAQ');
+        $this->fakeLlm($this->textResult('Ποιο είναι το τηλέφωνό σας για να σας καλέσουμε;'));
+
+        $this->seedSession($agent, 'v1', 'discovery');
+        $traces = app(AgentRuntime::class)->sendText($agent, 'v1', 'Θέλω να μιλήσω με κάποιον;');
+
+        $text = $traces[0]['payload']['message'];
+        $this->assertStringNotContainsString(app(EscalateToHuman::class)->contactAsk('el'), $text);
+    }
+
+    public function test_english_visitor_still_gets_the_english_ask(): void
+    {
+        $escalate = app(EscalateToHuman::class);
+        $this->assertSame($escalate->contactAsk('en'), $escalate->contactAsk());
+        $this->assertSame($escalate->contactAsk('en'), $escalate->contactAsk('de'));
+        $this->assertSame('el', $escalate->languageOf('Έχω διαρροή'));
+        $this->assertSame('en', $escalate->languageOf('I have a leak'));
+    }
+
     public function test_no_handoff_needed_call_is_trusted_and_nothing_escalates(): void
     {
         // A playful off-topic question used to hard-escalate (and ring the

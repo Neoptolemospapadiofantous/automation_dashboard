@@ -121,6 +121,28 @@ class EmbedController extends Controller
             // Parent host forwarded by the loader (?ref=) — echoed back on
             // launch/interact for the best-effort origin check.
             'host' => DomainAllowlist::host((string) $request->query('ref', '')) ?? '',
+            // The panel renders before the visitor has typed, so the browser's
+            // own preference is the only language signal available here. The
+            // Art. 50 disclosure in particular only discloses if it can be read.
+            'chrome' => $request->getPreferredLanguage(['en', 'el']) === 'el'
+                ? [
+                    'disclosure' => 'Βοηθός AI — όχι άνθρωπος. Μπορείτε να ζητήσετε άνθρωπο οποιαδήποτε στιγμή.',
+                    'end' => 'Τέλος συνομιλίας',
+                    'end_aria' => 'Τέλος συνομιλίας και αξιολόγηση',
+                    'close_aria' => 'Κλείσιμο συνομιλίας',
+                    'back' => '← Πίσω',
+                    'new_chat' => 'Νέα συνομιλία',
+                    'placeholder' => 'Γράψτε το μήνυμά σας…',
+                ]
+                : [
+                    'disclosure' => 'AI assistant — not a person. You can ask for a human at any time.',
+                    'end' => 'End chat',
+                    'end_aria' => 'End chat and leave feedback',
+                    'close_aria' => 'Close chat',
+                    'back' => '← Back',
+                    'new_chat' => 'Start new chat',
+                    'placeholder' => 'Type a message…',
+                ],
         ])->render(), 200, $headers);
     }
 
@@ -350,10 +372,17 @@ class EmbedController extends Controller
         // no model turn, no credits — and it is what turns "someone asked for
         // a human" into a lead a teammate can actually reply to.
         if ($conversation !== null && (bool) (($conversation->meta ?? [])['handoff_awaiting_contact'] ?? false)) {
-            $lead = app(EscalateToHuman::class)->captureContactReply($agent, $conversation, $data['visitor_id'], $data['message']);
+            $escalate = app(EscalateToHuman::class);
+            $lead = $escalate->captureContactReply($agent, $conversation, $data['visitor_id'], $data['message']);
             if ($lead !== null) {
                 $reach = $lead->email ?: $lead->phone;
-                $thanks = "Thanks — a teammate will reach you at {$reach}.";
+                // Written by us, not the model, so it is on us to say it in
+                // the visitor's language — and a contact reply is usually
+                // digits only, so the conversation decides, not this message.
+                $thanks = $escalate->reachLine(
+                    (string) $reach,
+                    $escalate->languageOfConversation($conversation, $data['message']),
+                );
                 $this->recordMessage($conversation, 'user', $data['message']);
                 $this->broadcastEmbed($team->id, 'user', $data['message'], $conversation->id);
                 $this->recordMessage($conversation, 'agent', $thanks);

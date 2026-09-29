@@ -273,18 +273,26 @@ class FlowExecutor
             report: true,
         );
 
+        // Both lines below are written by the runtime rather than the model,
+        // so they are the only ones that can come out in the wrong language.
+        // Detect from the visitor's OWN message, not the reply: on an empty
+        // reply there is nothing else to read.
+        $language = $this->escalate->languageOf($context->userMessage);
+
         if (trim($finalText) === '') {
-            $finalText = 'Thanks — a teammate will follow up shortly.';
+            $finalText = $this->escalate->followUpLine($language);
         }
 
         // The backstop escalated without the model choosing to, so the reply
         // never asked how to reach the visitor — the tool path's directive
         // does that, this path had nothing. Both real unanswerable handoffs
-        // came from here. Ask once, unless the model already did.
+        // came from here. Ask once, unless the model already did — in any
+        // language we localise, or a Greek reply that already asked gets the
+        // question a second time.
         if ($backstopEscalated
             && ! $this->escalate->hasContact($context)
-            && ! preg_match('/\b(e-?mail|phone)\b/i', $finalText)) {
-            $finalText = rtrim($finalText).' '.$this->escalate->contactAsk();
+            && ! $this->escalate->asksForContact($finalText)) {
+            $finalText = rtrim($finalText).' '.$this->escalate->contactAsk($language);
         }
 
         // Outside business hours, every escalation reply ends with the
