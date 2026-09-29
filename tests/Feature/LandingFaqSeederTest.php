@@ -211,16 +211,18 @@ class LandingFaqSeederTest extends TestCase
         $this->assertSame('Custom build', $canned->match('what does the studio do?')?->category);
         $this->assertSame('Book the audit', $canned->match('what is the leak report?')?->category);
         // The names themselves were retired from public copy on 2026-09-14 (the
-        // site sells four services and one free call). The keywords stay so a
+        // site then sold four services and one free call; one since 2026-09-29). The keywords stay so a
         // visitor who saw the old names still lands somewhere sensible, but no
         // ANSWER may use them or link a retired URL.
         foreach ($canned->chips() as $category) {
             $answer = $canned->match($category)?->answer ?? '';
-            foreach (['Leak Report', 'the Studio', 'Never Miss', 'Fill the Calendar', 'package', '/outreach', '/website-build', '/email-automation', '/studio', '/suite'] as $retired) {
+            foreach (['Leak Report', 'the Studio', 'Never Miss', 'Fill the Calendar', 'package', '/outreach', '/website-build', '/email-automation', '/studio', '/suite', 'flowstack.run/website', '/automations', '/lead-generation'] as $retired) {
                 $this->assertStringNotContainsString($retired, $answer, "'{$category}' still says '{$retired}'.");
             }
         }
-        $this->assertStringContainsString('flowstack.run/lead-generation', $canned->match('do you do lead generation?')?->answer ?? '');
+        // Since 2026-09-29 we sell ONE service. Lead generation still routes to its
+        // chip, which now says plainly that we stopped selling it.
+        $this->assertStringContainsString('We stopped selling that', $canned->match('do you do lead generation?')?->answer ?? '');
         // Bare 'package' used to send this to Custom build. Pricing has no keyword for
         // it either, so it falls through to the LLM, whose grounding (pricing.md) knows
         // the plans — the thing that must never happen is the Studio pitch answering
@@ -232,12 +234,13 @@ class LandingFaqSeederTest extends TestCase
         // kb_gaps #18: 'what do you do' can't phrase-match through 'actually'.
         $this->assertSame('What it does', $canned->match('what do you actually do?')?->category);
         $this->assertSame('What it does', $canned->match('what does flowstack do for me?')?->category);
-        // The identity answer carries the site's CURRENT frame (four things,
-        // 2026-09-13) and stays honest about voice: the phone assistant is
+        // The identity answer carries the site's CURRENT frame (ONE service,
+        // 2026-09-29) and stays honest about voice: the phone assistant is
         // built to order, never sold as part of the app.
         $identity = $canned->match('what do you do?')?->answer ?? '';
-        $this->assertStringContainsString('Four things', $identity);
-        foreach (['website', 'voice assistant', 'automations', 'lead generation', 'built to order'] as $must) {
+        $this->assertStringContainsString('One thing', $identity);
+        $this->assertStringNotContainsString('Four things', $identity);
+        foreach (['chat', 'every enquiry', 'crm', 'phone assistant', 'built to order'] as $must) {
             $this->assertStringContainsString($must, strtolower($identity), "identity answer must name '{$must}'");
         }
         $this->assertStringNotContainsString('Three things', $identity);

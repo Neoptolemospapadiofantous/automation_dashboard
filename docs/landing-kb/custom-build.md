@@ -1,8 +1,10 @@
-# Built to order — the four services
+# Built to order — the one service
 
-Flowstack sells four things, always in this order: **Website**, **Chat & voice
-assistant**, **Automations**, **Lead generation**. The website chat is the only
-part you switch on yourself — €19.99 or €39.99 a month, run
+Flowstack sells one thing and specialises in it: the **Chat & voice
+assistant**, and the wiring that files an answered enquiry into the systems you
+already run. Standalone website builds, standalone automations and lead
+generation were retired from sale on 2026-09-29 — do not offer them. The
+website chat is the only part you switch on yourself — €19.99 or €39.99 a month, run
 from the dashboard, where a page lists every module that is live and every one
 not yet available, which you can request. Everything else is built to order:
 we build it, install it and watch it, for a fixed price agreed before work
@@ -17,13 +19,6 @@ price and scope — what ships, on which tools, how long, how much — yours to
 keep whether or not you hire us. No retainer, no NDA, no follow-up sales
 emails. There is no other first step and no separate report to wait for.
 
-## Website — flowstack.run/website
-
-Built or rebuilt, English or Greek, with the chat installed from day one. A
-brochure-style site of up to about six pages; a shop, a booking portal or
-anything custom is quoted as its own build on the same call. The annual
-Operator plan includes this brochure-style build (see pricing).
-
 ## Chat & voice assistant — flowstack.run/chat-assistant
 
 The chat on your site, loaded with your knowledge and tuned to your voice by
@@ -34,26 +29,6 @@ people who have enquired. The phone assistant, call-back and SMS are never
 part of a plan and are never something the app does on its own today — say
 so plainly. Call-back and SMS go only to people who asked to be contacted;
 there is no cold SMS and no cold automated calling.
-
-## Automations — flowstack.run/automations
-
-Wired into your CRM and the tools you already use: email follow-ups and
-reminders (the mail your business already owes people — booking
-confirmations, follow-ups after a job, review requests, invoice chasers —
-sent from your own address to people who already know you; we do not buy
-lists or mail strangers), invoice chasers, inbox triage, booking, connecting
-your tools so nothing is typed twice, and live reports that build themselves
-from your numbers (flowstack.run/what-works). In the app, booking, WhatsApp,
-inbox routing and email automation are listed as not yet available and can
-be requested; as a build we set them up around your tools.
-
-## Lead generation — flowstack.run/lead-generation
-
-Cold email, and only cold email: your own sending address, a checked list of
-companies that fit you, sequences in your voice, replies handed to you — you
-approve every word. If someone asks about lead generation, prospecting, cold
-email or finding new customers, this is what they mean, not the chat's lead
-capture.
 
 ## What it costs
 

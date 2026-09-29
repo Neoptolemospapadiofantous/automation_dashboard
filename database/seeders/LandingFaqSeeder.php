@@ -128,7 +128,7 @@ class LandingFaqSeeder extends Seeder
                     'prospecting', 'find customers', 'find me customers', 'get me customers', 'get customers',
                     'more customers', 'win customers', 'new customers', 'customer acquisition', 'email campaign',
                 ],
-                'answer' => 'Yes — that\'s a separate service from the chat. We find companies that fit you, email them in your voice, and hand you the replies. You approve every word. Quoted after a free 30-minute call — flowstack.run/lead-generation. What kind of companies do you want to reach?',
+                'answer' => 'We stopped selling that — we now do one thing only: the chat that answers every enquiry on your site, day and night, and files it into the calendar or CRM you already use. If missed enquiries are the problem, a free 30-minute call at flowstack.run/audit gets you a written fixed price in 48 hours. Would that help?',
             ],
             [
                 'category' => 'What works',
@@ -177,7 +177,7 @@ class LandingFaqSeeder extends Seeder
                     // €19.99 package?" is a subscription question and Custom build sits ahead of Pricing.
                     'the studio', 'done for you', 'do it for me', 'do it for us',
                 ],
-                'answer' => 'We build four things to order: your website; a chat and voice assistant, including a phone assistant that answers calls and books; automations for your CRM, follow-ups and invoices; and lead generation by cold email. One step to start: a free 30-minute call at flowstack.run/audit, then a written fixed price within 48 hours. You keep everything built. Which one are you after?',
+                'answer' => 'One thing, built to order: the chat and voice assistant, plus the wiring that files an answered enquiry into the calendar, sheet or CRM you already run. A phone assistant that answers calls and books comes with it. One step: a free 30-minute call at flowstack.run/audit, then a written fixed price in 48 hours. You keep what we build. What needs answering?',
             ],
             [
                 // Placed ahead of 'Pricing' deliberately: first match wins, and
@@ -227,10 +227,10 @@ class LandingFaqSeeder extends Seeder
                     'what do you do', 'what is this', 'what does the agent', 'how does it work', 'what can you do',
                     'what is flowstack', 'what do you actually do', 'what does flowstack do',
                 ],
-                // The site's frame since 2026-09-13: FOUR things, named as the
-                // header names them. The website chat is the only self-serve
-                // part; the phone assistant is built to order, never "in the app".
-                'answer' => 'Four things: your website, built or rebuilt; a chat and voice assistant that answers every enquiry from your own knowledge — the website chat runs from €19.99 a month and is live in a minute, the phone assistant is built to order; automations for your CRM, follow-ups and invoices; and lead generation — cold email, plus call-back and SMS to people who enquired. Take one, or the lot. Which one are you after?',
+                // ONE service since 2026-09-29 (narrowed from four). The website
+                // chat is the only self-serve part; the phone assistant is built
+                // to order, never "in the app".
+                'answer' => 'One thing: a chat that answers every enquiry on your site, day and night, in Greek and English, from your own documents. It captures the lead with the whole conversation, and we wire it into the calendar, sheet or CRM you already run. The chat is €19.99 a month; a phone assistant is built to order. What would it answer for you?',
             ],
             [
                 'category' => 'Book the audit',

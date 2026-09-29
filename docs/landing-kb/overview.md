@@ -1,32 +1,36 @@
 # What Flowstack is
 
-Flowstack sells four services, not a single product. It builds the whole online side of
-a business, end to end — for businesses just starting out, and for ones whose
-site and systems have fallen behind. Four things, and it helps to say which one
-a question is about:
+Flowstack sells one service and specialises in it: **the chat and voice
+assistant, and the wiring behind it**. It answers every enquiry on your own
+site, day and night, in Greek and English, from your own documents — and files
+the answer into the calendar, sheet or CRM you already run.
 
-1. **Website** — built or rebuilt, English or Greek, with the chat installed
-   from day one. Quoted per engagement.
-2. **Chat & voice assistant** — a chat on your site, trained on your own
-   knowledge: it answers questions, qualifies visitors, books and captures
-   leads. The website chat is the only self-serve part — a subscription at
-   €19.99 or €39.99 a month, and the piece you can switch on today. A
-   phone assistant that answers calls and books is built to order by us; it
-   is not part of the app or any plan, so never describe it as one.
-3. **Automations** — wired into your CRM and the tools you already use: email
-   follow-ups and reminders, invoice chasers, inbox triage, booking, and live
-   reports that build themselves. Quoted per engagement.
-4. **Lead generation** — cold email from your own address to a checked list,
-   plus an instant call-back and SMS follow-up to people who have enquired.
-   Call-back and SMS go only to people who asked to be contacted; there is no
-   cold SMS and no cold automated calling. Quoted per engagement. If someone
-   asks whether we do lead generation, prospecting, cold email or finding new
-   customers, that is this — cold outreach — not the chat's lead capture.
+**The chat.** Trained on your own knowledge: it answers questions, qualifies
+visitors and captures leads with the whole conversation. This is the only
+self-serve part — a subscription at €19.99 or €39.99 a month, live in about a
+minute. When it cannot answer, it hands over to your team with the conversation
+attached.
 
-Take one part, or hand over the lot under one quote. The category is business
-intelligence delegation: hand off the busywork and the reporting. The chat is
-the front door; the automations and pipelines behind it are the delegation
-layer.
+**The wiring.** An answered enquiry does not stop at the chat. It is booked,
+filed or passed into the calendar, spreadsheet or CRM you already use, so
+nobody retypes it in the morning. Built to order, 2–4 weeks, fixed price after
+a free call.
+
+**Also built to order, inside this same service:** a phone assistant that
+answers calls and books, and an instant call-back and SMS to people who have
+**enquired** on your own site. Never part of the app or any plan, so never
+describe them as one. Call-back and SMS go only to people who asked to be
+contacted; there is no cold SMS and no cold automated calling.
+
+**What Flowstack no longer sells (since 2026-09-29):** standalone website
+builds, standalone automations, and lead generation / cold outreach. If someone
+asks whether we do lead generation, prospecting, cold email or finding new
+customers, the honest answer is that we stopped selling it to specialise in
+answering enquiries — do not offer it, and do not confuse it with the chat's own
+lead capture, which is included.
+
+One service, one quote. The chat is the front door; the wiring behind it is
+what stops an answered enquiry dying in an inbox.
 
 The chat is the part you can switch on today, self-serve. You embed it on your
 website as a floating widget, or link to a hosted chat page. It greets every

@@ -32,10 +32,10 @@ class SuiteTest extends TestCase
                     && collect($modules)->firstWhere('key', 'own_key')['min_plan_label'] === Plan::Starter->label()
                 )
                 ->where('audit_url', config('suite.audit_url'))
-                // The four built-to-order services, in the site's order, each with its page.
+                // ONE built-to-order service since 2026-09-29, with its page.
                 ->where('modules', fn ($modules) => collect($modules)->where('line', 'services')->pluck('name')->values()->all()
-                    === ['Website', 'Chat & voice assistant', 'Automations', 'Lead generation']
-                    && collect($modules)->firstWhere('key', 'service_website')['url'] === 'https://www.flowstack.run/website')
+                    === ['Chat & voice assistant']
+                    && collect($modules)->firstWhere('key', 'service_chat_voice')['url'] === 'https://www.flowstack.run/chat-assistant')
             );
     }
 

@@ -2,10 +2,11 @@
 
 ## Is this just a chat widget?
 
-No. The chat is one of four things: a website, a chat and voice assistant,
-automations, and lead generation. Everything beyond the website chat is built
-around your own tools and scoped after the free 30-minute audit; the website
-chat is the part you switch on yourself.
+No. The chat is half of what we sell; the other half is the wiring that takes
+an answered enquiry and files it into the calendar, sheet or CRM you already
+run, so nobody retypes it in the morning. The website chat is the part you
+switch on yourself; the wiring is built around your own tools and scoped after
+the free 30-minute call.
 
 On its own the chat greets every visitor, does the job its role calls for
 (qualify a lead, answer a sales question, resolve a support ticket, walk a new
@@ -114,8 +115,9 @@ notified and someone picks the chat up.
 
 ## What do you sell, and what can I switch on myself?
 
-Four things, in this order: a website, a chat and voice assistant,
-automations, and lead generation. The website chat is the only part you run
+One thing: the chat and voice assistant, and the wiring behind it. We stopped
+selling standalone websites, standalone automations and lead generation on
+2026-09-29 to specialise. The website chat is the only part you run
 yourself — €19.99 or €39.99 a month, on your own card, cancel anytime. Everything else is built to order for businesses in Cyprus, quoted
 after a free 30-minute call and invoiced separately. A build client runs the
 chat too; the subscription stays theirs.

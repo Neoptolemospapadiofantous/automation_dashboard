@@ -8,7 +8,7 @@
 | Two kinds of entry, kept apart on purpose:
 |
 |   app      — self-serve software. Lives in this dashboard, billed by plan.
-|   services — built to order: the four services the site sells (Website,
+|   services — built to order: the ONE service the site sells (Chat & voice
 |              Chat & voice assistant, Automations, Lead generation), quoted
 |              after a free 30-minute call and invoiced separately. The
 |              dashboard only points at them.
@@ -150,45 +150,15 @@ return [
             'min_plan' => 'pro',
         ],
 
-        // ---- built to order: the four services ----------------------------
-        [
-            'key' => 'service_website',
-            'line' => 'services',
-            'status' => 'built',
-            'name' => 'Website',
-            'blurb' => 'Built or rebuilt, English or Greek, with the chat installed from day one.',
-            'route' => null,
-            'url' => 'https://www.flowstack.run/website',
-            'min_plan' => null,
-        ],
+        // ---- built to order: the one service (narrowed 2026-09-29) ---------
         [
             'key' => 'service_chat_voice',
             'line' => 'services',
             'status' => 'built',
             'name' => 'Chat & voice assistant',
-            'blurb' => 'The chat you run here, loaded and tuned by us — plus a phone assistant that answers calls and books, built to order and never part of a plan.',
+            'blurb' => 'The chat you run here, loaded and tuned by us, plus the wiring that files an answered enquiry into the calendar, sheet or CRM you already run — and a phone assistant that answers calls and books. Built to order, never part of a plan.',
             'route' => null,
             'url' => 'https://www.flowstack.run/chat-assistant',
-            'min_plan' => null,
-        ],
-        [
-            'key' => 'service_automations',
-            'line' => 'services',
-            'status' => 'built',
-            'name' => 'Automations',
-            'blurb' => 'Your CRM, follow-ups, reminders, invoice chasers, inbox triage and live reports, running themselves around the tools you already use.',
-            'route' => null,
-            'url' => 'https://www.flowstack.run/automations',
-            'min_plan' => null,
-        ],
-        [
-            'key' => 'service_lead_generation',
-            'line' => 'services',
-            'status' => 'built',
-            'name' => 'Lead generation',
-            'blurb' => 'Cold email from your own address to a checked list, in your voice, replies handed to you — you approve every word.',
-            'route' => null,
-            'url' => 'https://www.flowstack.run/lead-generation',
             'min_plan' => null,
         ],
     ],
