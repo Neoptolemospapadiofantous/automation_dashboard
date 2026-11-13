@@ -1,0 +1,57 @@
+# Pinterest — Clean Counter Kit yearly schedule.
+#
+# Posts the pins in marketing/pinterest/calendar.csv as they come due
+# (10 a day at peak hours, America/New_York). See marketing/pinterest/README.md.
+#
+# Cron is UTC. The lines below hit every slot in config.json under both EDT
+# (UTC-4) and EST (UTC-5), two minutes after the slot, so daylight saving
+# never drops a slot. Runs that land outside a slot find nothing due and exit.
+# If you change the slots in config.json, update these lines to match.
+#
+# Scheduled workflows only run from the default branch.
+name: Pinterest schedule
+
+on:
+  schedule:
+    - cron: '32 0-3,11-14,17,18,21-23 * * *' # :30 slots
+    - cron: '2 16,17,19,20 * * *'            # :00 slots (12:00, 15:00 ET)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'What to run'
+        type: choice
+        options: [post-due, dry-run, list-boards]
+        default: dry-run
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pinterest-schedule
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: marketing/pinterest
+
+      - name: Install PyNaCl (only used to save a rotated refresh token)
+        run: pip install --quiet pynacl
+
+      - name: Run
+        env:
+          PINTEREST_APP_ID: ${{ secrets.PINTEREST_APP_ID }}
+          PINTEREST_APP_SECRET: ${{ secrets.PINTEREST_APP_SECRET }}
+          PINTEREST_REFRESH_TOKEN: ${{ secrets.PINTEREST_REFRESH_TOKEN }}
+          GH_SECRETS_PAT: ${{ secrets.GH_SECRETS_PAT }}
+          MODE: ${{ inputs.mode || 'post-due' }}
+        run: |
+          case "$MODE" in
+            dry-run)     python3 marketing/pinterest/post_due_pins.py --dry-run ;;
+            list-boards) python3 marketing/pinterest/post_due_pins.py --list-boards ;;
+            *)           python3 marketing/pinterest/post_due_pins.py ;;
+          esac

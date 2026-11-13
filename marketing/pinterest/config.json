@@ -1,0 +1,26 @@
+{
+  "product_name": "Clean Counter Kit",
+  "brand": "Crispfolk",
+  "link": "https://crispfolk.com/shop/clean-counter-kit",
+  "utm": {
+    "utm_source": "pinterest",
+    "utm_medium": "social",
+    "utm_campaign": "clean-counter-kit-yearly"
+  },
+  "timezone": "America/New_York",
+  "start_date": "2026-11-14",
+  "days": 365,
+  "slots": ["07:30", "09:30", "12:00", "13:30", "15:00", "17:30", "19:30", "20:30", "21:30", "22:30"],
+  "boards": [
+    "REPLACE_WITH_BOARD_ID"
+  ],
+  "images": [
+    "REPLACE_WITH_PRODUCT_IMAGE_URL_1",
+    "REPLACE_WITH_PRODUCT_IMAGE_URL_2",
+    "REPLACE_WITH_PRODUCT_IMAGE_URL_3"
+  ],
+  "posting": {
+    "lookback_minutes": 240,
+    "max_pins_per_run": 3
+  }
+}
