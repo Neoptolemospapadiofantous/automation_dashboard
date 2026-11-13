@@ -108,7 +108,7 @@ def main() -> None:
     rows = build(cfg, copy)
     out = HERE / "calendar.csv"
     with out.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=COLUMNS)
+        writer = csv.DictWriter(fh, fieldnames=COLUMNS, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     titles = {r["title"] for r in rows}
