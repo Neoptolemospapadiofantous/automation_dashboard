@@ -12,6 +12,8 @@ Pinterest API, from a scheduled GitHub Action.
 | `calendar.csv` | The full year, one row per pin. Edit any row by hand. |
 | `post_due_pins.py` | Posts whatever is due now, and skips anything already posted |
 | `../../.github/workflows/pinterest-schedule.yml` | Runs the poster at every slot |
+| `APP_DESCRIPTION.md` | Wording for the Pinterest developer app (description, scopes) |
+| `site/privacy-policy.html` | Privacy policy page for crispfolk.com/privacy |
 
 ## Posting times (America/New_York)
 
@@ -29,6 +31,11 @@ close to these times, not to the minute.
    *Trial* access, which can't publish real pins, so apply for **Standard access**
    (approval usually takes a few days). Add a redirect URI such as
    `https://localhost/`.
+
+   Pinterest reviews the app's description and requires a privacy policy link.
+   Paste the wording from **`APP_DESCRIPTION.md`**, which matches exactly what the
+   script does. Publish **`site/privacy-policy.html`** at `https://crispfolk.com/privacy`
+   (fill in the highlighted placeholders first) and put that URL in the form.
 
 2. **Get a refresh token** (scopes `boards:read,pins:read,pins:write`). Open this
    URL, approve, and copy the `code=` value from the address you're redirected to:
