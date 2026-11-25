@@ -17,4 +17,11 @@ export default defineConfig({
             },
         }),
     ],
+    build: {
+        rollupOptions: {
+            // The Forge box caps the deploy user at 400 open files; Rollup's
+            // default of 1000 parallel reads fails the build there with EMFILE.
+            maxParallelFileOps: 50,
+        },
+    },
 });
